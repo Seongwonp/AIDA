@@ -1,0 +1,27 @@
+:root {
+  --black: #000000;
+  --white: #ffffff;
+  --neon: #ccff00;
+  --gray: #595959;
+  --muted: #8c8c8c;
+  --hair: #e0e0e0;
+
+  font: 16px/1.5 "Apple SD Gothic Neo", system-ui, sans-serif;
+  color: var(--black);
+  background: var(--white);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+h1,
+h2 {
+  color: var(--black);
+  margin: 0;
+}

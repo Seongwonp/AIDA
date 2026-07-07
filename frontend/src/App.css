@@ -1,0 +1,154 @@
+.app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+.app-header {
+  margin-bottom: 40px;
+}
+
+.app-kicker {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--gray);
+  margin-bottom: 4px;
+}
+
+.app-header h1 {
+  font-size: 40px;
+  font-weight: 700;
+}
+
+.error-banner {
+  color: var(--black);
+  background: #fafafa;
+  border: 1px solid var(--black);
+  padding: 12px 16px;
+  font-size: 14px;
+}
+
+.app-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+.card {
+  border: 1.5px solid var(--black);
+  padding: 24px;
+}
+
+.card h2 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+/* Quality score card */
+.score-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.score-value {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.score-number {
+  font-size: 56px;
+  font-weight: 700;
+  background: linear-gradient(transparent 60%, var(--neon) 60%);
+}
+
+.score-max {
+  font-size: 20px;
+  color: var(--muted);
+}
+
+.score-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--gray);
+}
+
+.badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border: 1px solid var(--black);
+}
+
+.badge-certified {
+  background: var(--neon);
+}
+
+.badge-pending {
+  background: var(--white);
+  color: var(--gray);
+  border-color: var(--hair);
+}
+
+.score-stats {
+  display: flex;
+  gap: 32px;
+  border-top: 1px solid var(--hair);
+  padding-top: 16px;
+}
+
+.score-stats > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.score-stats strong {
+  font-size: 22px;
+}
+
+.score-stats span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Report table */
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.report-table th,
+.report-table td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--hair);
+}
+
+.report-table th {
+  color: var(--gray);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.priority {
+  font-weight: 600;
+}
+
+.priority-높음 {
+  color: var(--black);
+}
+
+.priority-중간 {
+  color: var(--gray);
+}
+
+.priority-낮음 {
+  color: var(--muted);
+}

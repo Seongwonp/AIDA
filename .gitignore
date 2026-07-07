@@ -1,0 +1,32 @@
+# 환경변수 (.env.example은 추적하되 실제 .env는 절대 커밋하지 않음)
+.env
+.env.*
+!.env.example
+
+# Python
+backend/venv/
+experiment/venv/
+**/__pycache__/
+*.pyc
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# 실험 산출물 (대용량 데이터·모델·학습 결과는 커밋하지 않음)
+experiment/data/raw/
+experiment/data/processed/
+experiment/conditions/
+experiment/data_yaml/
+experiment/runs/
+experiment/*.pt
+
+# IDE
+.idea/
+.vscode/
+
+# Claude Code
+.claude/
+
+# OS
+.DS_Store
