@@ -20,6 +20,7 @@ experiment/conditions/
 experiment/data_yaml/
 experiment/runs/
 experiment/*.pt
+experiment/*.log
 
 # IDE
 .idea/
