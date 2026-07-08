@@ -192,7 +192,7 @@ URL 등)은 코드에 하드코딩하지 않고 `.env` 파일로 관리한다. �
 | `AIDA_EPOCHS` | `50` | YOLOv8n 학습 에폭 수 |
 | `AIDA_BATCH_SIZE` | `16` | 배치 크기 |
 | `AIDA_IMG_SIZE` | `640` | 입력 이미지 크기 |
-| `AIDA_DEVICE` | `mps` | 학습 디바이스 (M1 Mac 기준, 미지원 시 자동 cpu 폴백) |
+| `AIDA_DEVICE` | `auto` | 학습 디바이스. `auto`는 cuda > mps > cpu 순 자동 감지(M1 Mac·CUDA 데스크탑 어디서든 동일 설정으로 동작), 특정 디바이스 강제 시 `cuda`/`mps`/`cpu` 중 하나로 명시 |
 | `AIDA_KITTI_LABEL_URL` / `AIDA_KITTI_IMAGE_URL` | KITTI S3 URL | 원본 다운로드 경로 |
 
 ## 실제 실험 결과 반영하기

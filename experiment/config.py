@@ -36,7 +36,7 @@ ERROR_RATIO = float(os.environ.get("AIDA_ERROR_RATIO", 0.3))  # 라벨 중 오�
 EPOCHS = int(os.environ.get("AIDA_EPOCHS", 50))
 BATCH_SIZE = int(os.environ.get("AIDA_BATCH_SIZE", 16))
 IMG_SIZE = int(os.environ.get("AIDA_IMG_SIZE", 640))
-DEVICE = os.environ.get("AIDA_DEVICE", "mps")  # M1 Mac. 사용 불가 시 resolve_device()가 cpu로 폴백
+DEVICE = os.environ.get("AIDA_DEVICE", "auto")  # auto: resolve_device()가 cuda>mps>cpu 순 자동 감지
 
 KITTI_LABEL_URL = os.environ.get(
     "AIDA_KITTI_LABEL_URL", "https://s3.eu-central-1.amazonaws.com/avg-kitti/data_object_label_2.zip"
@@ -87,13 +87,21 @@ def conditions_in_run_order() -> list[Condition]:
 
 
 def resolve_device() -> str:
-    """DEVICE가 mps인데 이 머신에서 못 쓰면 cpu로 자동 폴백."""
-    if DEVICE == "mps":
-        try:
-            import torch
-            if torch.backends.mps.is_available():
-                return "mps"
-        except ImportError:
-            pass
-        return "cpu"
-    return DEVICE
+    """AIDA_DEVICE=auto(기본값)면 cuda > mps > cpu 순으로 이 머신에서 실제 쓸 수 있는
+    디바이스를 자동 감지한다. cuda/mps/cpu를 명시하면 가용성 확인 없이 그대로 쓴다
+    (다른 값을 강제하고 싶을 때 사용).
+
+    이 방식으로 M1 Mac(mps)과 NVIDIA GPU가 있는 데스크탑(cuda) 양쪽에서 .env 수정
+    없이 같은 코드가 최적 디바이스를 잡는다.
+    """
+    if DEVICE != "auto":
+        return DEVICE
+    try:
+        import torch
+        if torch.cuda.is_available():
+            return "cuda"
+        if torch.backends.mps.is_available():
+            return "mps"
+    except ImportError:
+        pass
+    return "cpu"

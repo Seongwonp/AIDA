@@ -4,6 +4,17 @@
 "왜 했는지"를 함께 남긴다. 의사결정의 배경(왜)은 [docs/06-decisions.md](docs/06-decisions.md)에
 더 자세히 정리되어 있다.
 
+## 2026-07-08 (4)
+
+### Changed
+
+- `experiment/config.py`의 `AIDA_DEVICE` 기본값을 `mps`(하드코딩된 M1 전용)에서
+  `auto`로 변경. `resolve_device()`가 `cuda > mps > cpu` 순으로 이 머신에서 실제
+  쓸 수 있는 디바이스를 자동 감지하도록 재작성
+- **이유**: 팀원 로컬(M1 Mac, MPS)뿐 아니라 데스크탑(RTX 3050, CUDA)에서도 git
+  clone 후 `.env` 수정 없이 동일하게 최적 디바이스로 학습이 돌아가야 함. 특정
+  디바이스를 강제하고 싶으면 여전히 `AIDA_DEVICE=cuda`/`mps`/`cpu`로 명시 가능
+
 ## 2026-07-08 (3)
 
 ### Added
