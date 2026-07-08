@@ -16,7 +16,9 @@
 9. [08-professor-review-email.md](./08-professor-review-email.md) — 교수님 기술 검토 요청 메일 완성본
 10. [09-getting-started.md](./09-getting-started.md) — **새 세션/새 개발자용 진입점**
 11. [10-competition-brief.md](./10-competition-brief.md) — 공식 공고문 기준 대회 일정·평가기준·시상 요약
-12. [../CHANGELOG.md](../CHANGELOG.md) — 개발 변경 이력
+12. [11-professor-feedback.md](./11-professor-feedback.md) — 김성호 교수님 기술 검토 회신 및 대응 방안
+13. [12-experiment-results.md](./12-experiment-results.md) — 핵심 7개 조건 실측 결과 및 분석
+14. [../CHANGELOG.md](../CHANGELOG.md) — 개발 변경 이력
 
 ## 한 줄 요약
 

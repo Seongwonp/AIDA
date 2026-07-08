@@ -117,3 +117,34 @@
 - `docs/07-roadmap.md`의 "2차 예선 통과 시 전원 수상" 메모가 공식 공고와 다름을
   확인 후 정정 (본선은 발표·시연 기반 경쟁 평가이며 최종 결과로 학생부/일반부
   각 6팀만 수상). 배경은 `docs/06-decisions.md` "2026-07-07 (3)" 항목 참고
+
+## 2026-07-08
+
+### Added
+
+- **핵심 7개 조건 실제 학습·평가 완료** — KITTI Car 400장(학습)+120장(평가)로
+  clean/width±30/height±30/rot±15 학습, `backend/app/data/metrics.csv`에 실측
+  결과 반영 (목업 데이터 → 실제 데이터로 최초 교체)
+- `docs/11-professor-feedback.md` — 김성호 교수님(영남대 AVIL) 기술 검토 회신 정리
+  및 2차 예선 전 대응 방안 (포지셔닝 문구 변경, 회전각 오류 한계 인정, IoU 기반
+  강도 지표 제안, ROI 정량화 등)
+- `docs/12-experiment-results.md` — 실측 결과 분석: (1) 세 오류 유형 모두 성능
+  저하 확인, (2) 회전각 오류가 가장 크고 양방향으로 대칭적인 저하를 보임 (교수님
+  피드백의 "축정렬 재계산이 방향성을 지운다" 지적과 일치), (3) Precision은 거의
+  불변, Recall만 뚜렷이 하락 — mAP 외 핵심 지표로 Recall 확인
+- `docs/assets/experiment-results-priority1.png` — PPT에 바로 쓸 수 있는 조건별
+  mAP@0.5·Recall 저하율 그래프
+
+### Changed
+
+- `run_all.py --priority 1` 실행 중 `clean`(50epoch) 완료 후 나머지 6개 조건은
+  25epoch로 단축 (실제 학습 속도가 예상보다 느려 시간 리스크 관리 목적). 배경과
+  트레이드오프는 `docs/06-decisions.md` "2026-07-08" 항목,
+  `docs/12-experiment-results.md` "한계" 절 참고
+
+### Next
+
+- [ ] 교수님 피드백 액션 아이템 반영 (발표 스크립트 포지셔닝 변경 등)
+- [ ] 세분화 6개 조건 실행 (`run_all.py --priority 2`)
+- [ ] `clean` 25epoch 재실행으로 공정 비교 기준 확보 (선택)
+- [ ] 2차 예선(2026-07-09~10) 발표 리허설

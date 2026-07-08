@@ -4,33 +4,37 @@
 읽어야 할 문서다. "지금 뭐가 되어 있고, 뭐가 안 되어 있고, 다음에 뭘 해야 하는지"만
 간단히 정리한다. 배경 설명이 필요하면 [00-overview.md](./00-overview.md)부터.
 
-## 지금까지 완료된 것 (2026-07-07 기준)
+## 지금까지 완료된 것 (2026-07-08 기준)
 
 - [x] 발표자료(PPT) 40장 초안 — `../AIDA_발표자료_초안.pptx`
 - [x] 기술 검증 실험 설계 확정 — [03-experiment-design.md](./03-experiment-design.md)
       (KITTI Car 클래스, 13개 오류 조건, YOLOv8n)
-- [x] 교수님(김성호) 기술 검토 요청 메일 완성 — [08-professor-review-email.md](./08-professor-review-email.md)
-- [x] MVP 웹 대시보드 스캐폴딩 — `backend/`(FastAPI) + `frontend/`(React+TS), **목업
-      데이터로 구동 확인 완료**
-- [x] `experiment/` 폴더 구현 완료 — KITTI 다운로드(Range 요청 부분 다운로드) →
-      전처리 → 에러 라벨 생성(13개 조건) → YOLOv8n 학습·평가 → `metrics.csv` 자동
-      갱신까지 전체 파이프라인. 작은 샘플(16장, 1 epoch)로 스모크 테스트 통과 확인.
-      **아직 실제 규모(400+120장, 13개 조건 풀 학습)로는 실행 안 함** — 아래 참고
+- [x] 교수님(김성호) 기술 검토 요청 메일 완성 및 **회신 도착** —
+      [08-professor-review-email.md](./08-professor-review-email.md),
+      [11-professor-feedback.md](./11-professor-feedback.md)
+- [x] MVP 웹 대시보드 스캐폴딩 — `backend/`(FastAPI) + `frontend/`(React+TS)
+- [x] `experiment/` 파이프라인 구현 및 **핵심 7개 조건 실제 학습·평가 완료**
+      (KITTI 400+120장, YOLOv8n) — `backend/app/data/metrics.csv`에 실측 결과 반영됨,
+      분석은 [12-experiment-results.md](./12-experiment-results.md) 참고
+- [x] 공식 공고문 정리 — [10-competition-brief.md](./10-competition-brief.md)
 
 ## 아직 안 된 것 (다음에 할 일, 우선순위 순)
 
-1. **`experiment/` 실제 규모 실행** — 코드는 완성됨, 실행만 남음
+1. **교수님 피드백 반영** — [11-professor-feedback.md](./11-professor-feedback.md)의
+   "2차 예선 전 실행 가능한 액션 아이템" 표 참고. 특히 우선순위 1~2번(포지셔닝
+   문구 변경, 회전각 한계 선제 설명)은 코드 변경 없이 발표 스크립트만 손보면 됨
+2. **세분화 6개 조건 실행** (선택, 시간 되면) — `width±15%, height±15%, rot±7.5°`
    ```bash
    cd experiment && source venv/bin/activate
-   python run_all.py --priority 1     # 핵심 7개 먼저 (clean, width±30, height±30, rot±15)
-   python run_all.py --priority 2     # 시간 남으면 세분화 6개 이어서
+   python run_all.py --priority 2 --skip-download --skip-preprocess
    ```
-   예상 소요: 이미지 다운로드(약 520장, Range 요청) 10~20분 + 조건당 학습 10~20분
-   (M1 MPS 기준) × 13 ≈ 2~4시간. `--priority 1`만으로도 핵심 가설 검증 가능.
-   완료되면 `backend/app/data/metrics.csv`가 자동으로 실제 결과로 갱신됨(수동 교체 불필요).
-2. 교수님 회신 반영 → 실험 설계/오류 유형 조정 필요 시 [06-decisions.md](./06-decisions.md)에
-   새 결정 기록
-3. 2차 예선(2026-07-09~10) 발표 리허설, MVP 데모(프론트엔드) 실제 시연 연습
+3. **`clean` 조건 25epoch로 재실행** (선택, ~15~20분) — 지금 clean은 50epoch,
+   나머지 6개는 25epoch로 학습해 절대 저하율 수치에 편향이 있음
+   ([12-experiment-results.md](./12-experiment-results.md) "한계" 참고). 공정 비교
+   기준을 원하면 `python train.py --condition clean --epochs 25 --evaluate`
+4. 2차 예선(2026-07-09~10) 발표 리허설, 결과 그래프
+   (`docs/assets/experiment-results-priority1.png`) PPT에 반영, MVP 데모(프론트엔드)
+   실제 시연 연습
 
 ## 실행 명령어 모음
 
