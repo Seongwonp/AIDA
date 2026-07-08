@@ -1,7 +1,12 @@
+"""API 응답 스키마. frontend/src/types.ts와 필드가 1:1로 대응해야 한다 —
+한쪽만 고치면 타입이 어긋난다.
+"""
 from pydantic import BaseModel
 
 
 class ConditionMetric(BaseModel):
+    # metrics.csv 한 행 + iou_table.csv 조인 결과. mean_iou* 는 iou_table.csv가
+    # 없으면 None으로 내려간다(IoU 계산을 아직 안 돌린 환경 대비).
     condition: str
     type: str
     magnitude: float

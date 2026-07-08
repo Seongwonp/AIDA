@@ -67,7 +67,10 @@ CONDITIONS: list[Condition] = [
     Condition("rot_m7_5", "rotation", -7.5),
     Condition("rot_p7_5", "rotation", 7.5),
     Condition("rot_p15", "rotation", 15),
-    # New conditions
+    # 확장 검증용 8개: 국방특허(10-2664201) 청구항에 명시된 오프셋은 가로·세로·회전각
+    # 3가지뿐이다(docs/06-decisions.md "특허 청구항과 오류 유형 정합성 확인"). 중심점
+    # 이동·스케일은 특허 청구항에 없는 보조 유형이라, 발표에서는 위 3유형(13개 조건)을
+    # 주력으로 내세우고 이 8개는 "확장 검증"으로 톤을 구분해야 한다.
     Condition("trans_x_m15", "translation_x", -15),
     Condition("trans_x_p15", "translation_x", 15),
     Condition("trans_y_m15", "translation_y", -15),
@@ -78,6 +81,8 @@ CONDITIONS: list[Condition] = [
     Condition("scale_p30", "scale", 30),
 ]
 
+# 위 "확장 검증용 8개"(중심점 이동·스케일). run_all.py --priority all 실행 시
+# 핵심 13개 다음 순서로 학습된다 (conditions_in_run_order 참고).
 NEXT_PHASE_CONDITIONS: list[Condition] = CONDITIONS[13:]
 
 # 시간 리스크 관리: 핵심 7개(clean, width±30, height±30, rot±15)를 먼저 실행하고

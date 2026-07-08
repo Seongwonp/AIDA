@@ -1,3 +1,10 @@
+"""experiment/가 만들어낸 metrics.csv(+iou_table.csv)를 읽어 대시보드용 API로 내보낸다.
+
+데이터 흐름: experiment/run_all.py가 조건별로 학습·평가한 결과를
+backend/app/data/metrics.csv에 쓰고, 이 파일이 그 CSV를 그대로 읽어 API 응답으로
+변환한다. 즉 실험을 다시 돌려서 metrics.csv가 갱신되면, 여기 코드를 고치지 않아도
+대시보드에 새 결과가 그대로 반영된다.
+"""
 from datetime import datetime, timezone
 
 import pandas as pd
@@ -79,6 +86,9 @@ def get_conditions() -> list[ConditionMetric]:
 
 @router.get("/roi-estimate", response_model=RoiEstimate)
 def get_roi_estimate() -> RoiEstimate:
+    # 아래 숫자는 실제 고객 계약 단가가 아니라 발표용 예시 가정값이다
+    # (사업계획서의 라벨링 단가 벤치마크, docs/13-ppt-visuals-checklist.md 5번 참고).
+    # 실제 절감률은 PoC를 통해 검증할 예정 — RoiEstimateCard.tsx의 캡션에도 명시돼 있음.
     assumptions = RoiAssumptions(
         dataset_labels=100_000,
         manual_review_minutes_per_label=0.5,
@@ -116,6 +126,15 @@ def get_roi_estimate() -> RoiEstimate:
 
 @router.get("/diagnose", response_model=DiagnosisResult)
 def get_diagnosis() -> DiagnosisResult:
+    """오류 유형별 재검수 우선순위 리포트.
+
+    지금은 "성능 패턴 DB(metrics.csv) 자체"를 진단 예시로 그대로 보여주는
+    단계다 — dataset_name이 실제 업로드된 고객 데이터셋이 아니라 고정값
+    "sample_customer_dataset_v1"인 이유. 실제 서비스에서는 고객이 올린
+    데이터셋을 같은 파이프라인으로 학습·평가해 나온 성능 벡터를 이 기준
+    패턴과 비교해야 하는데, 그 업로드→비교 로직은 아직 구현 전이다
+    (docs/09-getting-started.md "아직 안 된 것" 참고).
+    """
     df = _load_metrics()
     baseline = df.loc[df["condition"] == "clean", "map50"].iloc[0]
     non_baseline = df[df["condition"] != "clean"].copy()
@@ -123,7 +142,11 @@ def get_diagnosis() -> DiagnosisResult:
 
     reports: list[ErrorTypeReport] = []
     for error_type, group in non_baseline.groupby("type"):
+        # 유형별로 가장 저하가 큰 조건 하나만 대표값으로 뽑아 우선순위를 매김
         worst = group.loc[group["drop_pct"].idxmax()]
+        # 임계값(15%/8%)은 초기 목업 데이터 기준으로 잡은 값이라, 지금 실측
+        # 데이터(최대 저하가 6%대)에서는 전 조건이 "낮음"으로만 나온다 — 실제
+        # 서비스에서는 도메인별 데이터로 재보정이 필요하다.
         priority = "높음" if worst["drop_pct"] >= 15 else "중간" if worst["drop_pct"] >= 8 else "낮음"
         reports.append(
             ErrorTypeReport(

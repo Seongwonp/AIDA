@@ -1,5 +1,9 @@
 import type { RoiEstimate } from "../types";
 
+// RoiEstimate는 GET /api/roi-estimate 응답 그대로 — 계산은 전부 백엔드
+// (backend/app/routers/report.py의 get_roi_estimate)에서 하고, 이 컴포넌트는
+// 결과값을 원화·퍼센트로 포맷해서 보여주기만 한다.
+
 function formatKrw(value: number) {
   return `${value.toLocaleString("ko-KR")}원`;
 }

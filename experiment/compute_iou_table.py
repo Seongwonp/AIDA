@@ -32,6 +32,11 @@ def iou(a: Box, b: Box) -> float:
 
 
 def mean_iou_for_condition(condition: config.Condition, label_dir: Path, image_dir: Path) -> float:
+    # 주의: 여기서는 GT 박스 100%에 변형을 적용한다. 실제 학습 라벨(error_injector.py의
+    # build_condition_labels)은 config.ERROR_RATIO(30%)만 무작위로 변형하므로, 이 함수의
+    # 결과는 "이 조건이 이론상 얼마나 세게 박스를 왜곡하는가"이지 실제 학습에 들어간
+    # 라벨의 평균 IoU가 아니다. 둘을 섞어서 비교하면 안 됨 — docs/13-ppt-visuals-checklist.md
+    # 3번 항목의 "주의" 참고.
     if condition.type == "none":
         return 1.0
     ious = []
