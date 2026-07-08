@@ -27,7 +27,6 @@ experiment/*.log
 .idea/
 .vscode/
 
-# Claude Code
 .claude/
 
 # OS
