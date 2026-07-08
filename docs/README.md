@@ -19,7 +19,9 @@
 12. [11-professor-feedback.md](./11-professor-feedback.md) — 김성호 교수님 기술 검토 회신 및 대응 방안
 13. [12-experiment-results.md](./12-experiment-results.md) — 핵심 7개 조건 실측 결과 및 분석
 14. [13-ppt-visuals-checklist.md](./13-ppt-visuals-checklist.md) — 13개 조건 전체 결과 나온 후 PPT에 넣을 그래프·다이어그램 체크리스트
-15. [../CHANGELOG.md](../CHANGELOG.md) — 개발 변경 이력
+15. [14-dashboard-enhancement-plan.md](./14-dashboard-enhancement-plan.md) — 실험 완료 후 진행할 대시보드 고도화(상세 통계 표·CSV 다운로드) 계획
+16. [15-non-technical-guide.md](./15-non-technical-guide.md) — 비전공자 팀원용 테스트 결과·프로그램 흐름 설명서
+17. [../CHANGELOG.md](../CHANGELOG.md) — 개발 변경 이력
 
 ## 한 줄 요약
 

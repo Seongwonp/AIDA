@@ -6,6 +6,29 @@
 
 .app-header {
   margin-bottom: 40px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.refresh-button {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border: 1.5px solid var(--black);
+  background: var(--white);
+  cursor: pointer;
+}
+
+.refresh-button:disabled {
+  color: var(--muted);
+  border-color: var(--hair);
+  cursor: default;
+}
+
+.loading-banner {
+  color: var(--muted);
+  font-size: 14px;
 }
 
 .app-kicker {
@@ -158,4 +181,34 @@
 
 .priority-낮음 {
   color: var(--muted);
+}
+
+.card-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.card-heading-row h2 {
+  margin-bottom: 0;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.metrics-table {
+  min-width: 780px;
+}
+
+.metrics-table td:not(:first-child),
+.metrics-table th:not(:first-child) {
+  text-align: right;
+}
+
+.metrics-table td:nth-child(2),
+.metrics-table th:nth-child(2) {
+  text-align: left;
 }

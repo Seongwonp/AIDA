@@ -23,6 +23,9 @@ experiment/runs/
 experiment/*.pt
 experiment/*.log
 
+# 임시 작업 파일
+tmp/
+
 # IDE
 .idea/
 .vscode/

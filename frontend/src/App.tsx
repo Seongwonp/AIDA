@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 import { getConditions, getDiagnosis, getSummary } from "./api";
+import { ConditionsTable } from "./components/ConditionsTable";
 import { ErrorReportTable } from "./components/ErrorReportTable";
 import { PerformanceChart } from "./components/PerformanceChart";
 import { QualityScoreCard } from "./components/QualityScoreCard";
@@ -11,30 +12,42 @@ function App() {
   const [conditions, setConditions] = useState<ConditionMetric[]>([]);
   const [diagnosis, setDiagnosis] = useState<DiagnosisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true);
+    setError(null);
     Promise.all([getSummary(), getConditions(), getDiagnosis()])
       .then(([s, c, d]) => {
         setSummary(s);
         setConditions(c);
         setDiagnosis(d);
       })
-      .catch(() => setError("백엔드(http://localhost:8000)에 연결할 수 없습니다."));
-  }, []);
+      .catch(() => setError("백엔드(http://localhost:8000)에 연결할 수 없습니다."))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(load, []);
 
   return (
     <div className="app">
       <header className="app-header">
         <span className="app-kicker">AI 데이터 품질 인증 플랫폼</span>
         <h1>AIDA</h1>
+        <button className="refresh-button" onClick={load} disabled={loading}>
+          {loading ? "불러오는 중..." : "새로고침"}
+        </button>
       </header>
 
       {error && <p className="error-banner">{error}</p>}
+
+      {loading && !summary && <p className="loading-banner">데이터를 불러오는 중입니다...</p>}
 
       {summary && diagnosis && (
         <main className="app-grid">
           <QualityScoreCard summary={summary} />
           <PerformanceChart conditions={conditions} />
+          <ConditionsTable conditions={conditions} />
           <ErrorReportTable reports={diagnosis.error_reports} />
         </main>
       )}
@@ -43,3 +56,4 @@ function App() {
 }
 
 export default App;
+
