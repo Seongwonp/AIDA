@@ -4,6 +4,24 @@
 "왜 했는지"를 함께 남긴다. 의사결정의 배경(왜)은 [docs/06-decisions.md](docs/06-decisions.md)에
 더 자세히 정리되어 있다.
 
+## 2026-07-08 (3)
+
+### Added
+
+- `backend/tests/` — pytest 기반 API 테스트 12개. `conftest.py`가 결정론적 픽스처
+  CSV(`fixtures/metrics.csv`)로 `METRICS_CSV_PATH`를 오버라이드해 실제 실험 결과가
+  바뀌어도 테스트가 흔들리지 않도록 함. `/api/health`, `/api/summary` 형태 검증,
+  `/api/conditions`의 성능 저하율 계산, `/api/diagnose`의 재검수 우선순위 경계값
+  (15%/8% 정확히 걸치는 값)·정렬·라벨 검증. 임계값 로직을 일부러 깨뜨려 테스트가
+  실제로 실패하는지 확인 후 원복(뮤테이션 테스트로 유효성 검증)
+- `experiment/tests/` — `error_injector.py`의 좌표 변형 함수 pytest 8개 (GPU/학습
+  불필요, 순수 함수). 가로·세로 스케일링, 회전 변형, YOLO↔픽셀 좌표 왕복, 경계값
+  clamp 검증. 특히 `test_apply_rotation_nonzero_angle_enlarges_non_square_box`는
+  김성호 교수님이 지적한 한계("회전은 항상 박스를 키우는 방향으로만 작용해 방향성이
+  없다")를 코드 수준 회귀 테스트로 문서화함 — 향후 회전 오류 구현을 바꾸면 이
+  테스트가 먼저 반응하도록 설계
+- `README.md`에 테스트 실행 방법 추가
+
 ## 2026-07-08 (2)
 
 ### Added

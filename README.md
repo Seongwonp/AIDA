@@ -149,6 +149,16 @@ python run_all.py --priority 2     # 시간 남으면 세분화 6개 이어서
 개별 단계만 실행하려면 `download_kitti.py` → `data_loader.py` → `error_injector.py` →
 `train.py` → `evaluate.py` 순서로 각각 실행하면 된다.
 
+## 테스트
+
+```bash
+# 백엔드 (API 엔드포인트, 진단 로직 — 고정된 테스트용 CSV로 결정론적 검증)
+cd backend && source venv/bin/activate && python -m pytest tests/ -v
+
+# 실험 파이프라인 (오류 라벨 변형 로직 — GPU/학습 불필요, 순수 함수 단위 테스트)
+cd experiment && source venv/bin/activate && python -m pytest tests/ -v
+```
+
 ## 환경변수
 
 모든 설정값(포트, CORS origin, API base URL, 실험 하이퍼파라미터·시드·다운로드
