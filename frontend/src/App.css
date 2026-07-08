@@ -117,6 +117,13 @@
   color: var(--muted);
 }
 
+.report-caveat {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
 /* Report table */
 .report-table {
   width: 100%;

@@ -77,6 +77,11 @@ Base URL (로컬 개발): `http://localhost:8000`
 우선순위 기준(`backend/app/routers/report.py`): 성능 저하 15% 이상 → 높음,
 8~15% → 중간, 8% 미만 → 낮음.
 
+**포지셔닝 주의** (`docs/11-professor-feedback.md` 5번): 이 결과는 라벨 오류를 100%
+확정하는 것이 아니라, 성능 저하 패턴 기반으로 오류 가능성이 높은 유형을 추정해
+재검수 우선순위를 매기는 확률적 가이드다. 프론트엔드(`ErrorReportTable.tsx`)에도
+동일한 톤으로 캡션을 넣었으니, 문구를 바꿀 때는 이 포지셔닝을 유지할 것.
+
 ## 데이터 소스 교체 방법
 
 실제 YOLOv8 실험이 끝나면 `backend/app/data/metrics.csv`를 아래 스키마 그대로

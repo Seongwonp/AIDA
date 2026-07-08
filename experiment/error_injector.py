@@ -10,6 +10,7 @@
   회전된 꼭짓점을 감싸는 축정렬 사각형으로 재계산 (KITTI/YOLO는 회전 박스 미지원)
 """
 import math
+import os
 import random
 from pathlib import Path
 
@@ -110,12 +111,20 @@ def symlink_files(src_dir: Path, dst_dir: Path) -> None:
     (예: conditions/clean/images/train → resolve → data/processed/images/train,
     거기서 "images"→"labels" 치환하면 conditions/clean이 아닌 엉뚱한 경로가 됨).
     파일 단위 심볼릭 링크는 이 문제 없이 실제 이미지 복사 없이 디스크를 절약한다.
+
+    Windows는 심볼릭 링크 생성에 관리자 권한/개발자 모드가 필요하다
+    (`WinError 1314`). 권한이 없으면 하드 링크(`os.link`)로 대체한다 — 같은
+    볼륨 안에서는 하드 링크도 디스크 복제 없이 동일한 효과를 낸다.
     """
     dst_dir.mkdir(parents=True, exist_ok=True)
     for src_file in src_dir.iterdir():
         dst_file = dst_dir / src_file.name
-        if not dst_file.exists() and not dst_file.is_symlink():
+        if dst_file.exists() or dst_file.is_symlink():
+            continue
+        try:
             dst_file.symlink_to(src_file.resolve())
+        except OSError:
+            os.link(src_file.resolve(), dst_file)
 
 
 def write_data_yaml(condition_root: Path) -> Path:

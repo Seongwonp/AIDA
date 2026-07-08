@@ -1,0 +1,14 @@
+condition,type,magnitude,mean_iou,mean_iou_drop_pct
+clean,none,0,1.0,0.0
+width_m30,width,-30,0.7,30.0
+width_m15,width,-15,0.85,15.0
+width_p15,width,15,0.8696,13.04
+width_p30,width,30,0.7692,23.08
+height_m30,height,-30,0.7,30.0
+height_m15,height,-15,0.85,15.0
+height_p15,height,15,0.8696,13.04
+height_p30,height,30,0.7692,23.08
+rot_m15,rotation,-15,0.6309,36.91
+rot_m7_5,rotation,-7.5,0.7669,23.31
+rot_p7_5,rotation,7.5,0.7669,23.31
+rot_p15,rotation,15,0.6309,36.91
