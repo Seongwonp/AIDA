@@ -111,3 +111,17 @@
   50epoch로 더 수렴한 clean과 비교한 절대 저하율(%)은 과대추정됐을 수 있음. 상세
   분석과 저비용 보완 방법(clean 25epoch 재실행)은
   [12-experiment-results.md](./12-experiment-results.md) "한계" 절 참고
+
+### 2026-07-08 (2) — 학습 디바이스를 mps 하드코딩에서 auto 자동감지로 변경
+
+- **결정**: `experiment/config.py`의 `AIDA_DEVICE` 기본값을 `mps`에서 `auto`로
+  바꾸고, `resolve_device()`가 `cuda > mps > cpu` 순으로 실제 사용 가능한 디바이스를
+  자동 감지하도록 재작성
+- **이유**: 팀원이 CUDA GPU(RTX 3050)가 있는 데스크탑에도 이 저장소를 clone해서
+  같이 실험을 돌리기로 함. 기존엔 `mps`가 기본값이라 CUDA 머신에서는 매번 `.env`를
+  손으로 고쳐야 했음. `auto`로 바꾸면 M1 Mac이든 CUDA 데스크탑이든 같은 코드·같은
+  `.env.example`로 각자 최적 디바이스를 자동으로 잡는다
+- **후속 계획**: CUDA가 M1 MPS보다 훨씬 빠를 것으로 예상돼, 데스크탑에서는 13개
+  조건 전체를 동일 50epoch로 재실행해 앞선 결정(2026-07-08)에서 생긴 epoch 불일치
+  한계를 없앨 계획 — [09-getting-started.md](./09-getting-started.md) "아직 안 된 것"
+  1번 참고

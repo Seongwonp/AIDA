@@ -27,9 +27,11 @@
 | rot_m15 | 회전각 | -15° | 0.812 | 0.534 | 0.848 | 0.730 | **7.6%** |
 | rot_p15 | 회전각 | +15° | 0.819 | 0.547 | 0.855 | 0.719 | **6.8%** |
 
-나머지 6개 세분화 조건(width/height ±15%, rot ±7.5°)은 아직 목업 데이터다
-(`docs/09-getting-started.md`의 "아직 안 된 것" 1번 — `run_all.py --priority 2`로
-이어서 실행 예정).
+나머지 6개 세분화 조건(width/height ±15%, rot ±7.5°)은 아직 목업 데이터다.
+CUDA 데스크탑에서 13개 조건 전체를 동일 50epoch로 재실행할 예정 —
+[09-getting-started.md](./09-getting-started.md) "아직 안 된 것" 1번,
+[06-decisions.md](./06-decisions.md) "2026-07-08 (2)" 항목 참고. 재실행 완료 시 이
+문서의 결과표와 아래 "한계" 1번(epoch 불일치)도 갱신할 것.
 
 ![오류 유형별 성능 저하 그래프](./assets/experiment-results-priority1.png)
 
@@ -94,9 +96,13 @@ width_p30 -3.9%, rot_p15 -0.9%는 개선 방향)되는 반면, Recall은 전 조
 
 ## 다음 액션
 
-- [ ] (선택, ~15~20분) `clean`을 25epoch로 재실행해 공정 비교 기준 확보
-- [ ] 세분화 6개 조건 실행 (`run_all.py --priority 2`)
-- [ ] 발표자료(PPT)에 위 그래프와 "핵심 발견 3가지" 반영, 한계는
-      [11-professor-feedback.md](./11-professor-feedback.md)의 대응 방안대로 선제 설명
-- [ ] `/api/diagnose`, 프론트엔드 문구를 "확정 진단" → "확률적 진단 + 재검수
-      우선순위 가이드"로 톤 조정 (교수님 피드백 5번, 코드 변경 없이 문구만)
+- [ ] **13개 조건 전체를 CUDA 데스크탑에서 동일 50epoch로 재실행** — clean/나머지
+      epoch 불일치(한계 1번) 해결 + 세분화 6개 조건 확보를 한 번에.
+      `python run_all.py --priority all` ([09-getting-started.md](./09-getting-started.md)
+      "아직 안 된 것" 1번 참고). 완료되면 이 문서의 결과표·그래프·"한계" 절 갱신할 것
+- [x] 발표자료(PPT)에 결과 그래프·핵심 발견·완화된 진단 문구 반영 완료 —
+      `../AIDA_발표자료_v2(결과반영).pptx`
+- [ ] `/api/diagnose`, 프론트엔드 실제 문구를 "확정 진단" → "확률적 진단 + 재검수
+      우선순위 가이드"로 톤 조정 (교수님 피드백 5번). PPT 슬라이드 16 문구는 이미
+      반영했지만, 코드(`backend/app/routers/report.py`, 프론트엔드)의 실제 API
+      응답·화면 문구는 아직 그대로임 — 별도로 반영 필요
