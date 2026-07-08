@@ -49,8 +49,8 @@ KITTI_IMAGE_URL = os.environ.get(
 @dataclass(frozen=True)
 class Condition:
     name: str
-    type: str  # none | width | height | rotation
-    magnitude: float  # % (width/height) 또는 degree (rotation)
+    type: str  # none | width | height | rotation | translation_x | translation_y | scale
+    magnitude: float  # % (width/height/scale/translation) 또는 degree (rotation)
 
 
 CONDITIONS: list[Condition] = [
@@ -67,7 +67,18 @@ CONDITIONS: list[Condition] = [
     Condition("rot_m7_5", "rotation", -7.5),
     Condition("rot_p7_5", "rotation", 7.5),
     Condition("rot_p15", "rotation", 15),
+    # New conditions
+    Condition("trans_x_m15", "translation_x", -15),
+    Condition("trans_x_p15", "translation_x", 15),
+    Condition("trans_y_m15", "translation_y", -15),
+    Condition("trans_y_p15", "translation_y", 15),
+    Condition("scale_m15", "scale", -15),
+    Condition("scale_p15", "scale", 15),
+    Condition("scale_m30", "scale", -30),
+    Condition("scale_p30", "scale", 30),
 ]
+
+NEXT_PHASE_CONDITIONS: list[Condition] = CONDITIONS[13:]
 
 # 시간 리스크 관리: 핵심 7개(clean, width±30, height±30, rot±15)를 먼저 실행하고
 # 세분화 6개(width±15, height±15, rot±7.5)는 이어서 실행한다.
@@ -82,7 +93,7 @@ _BY_NAME = {c.name: c for c in CONDITIONS}
 
 
 def conditions_in_run_order() -> list[Condition]:
-    ordered_names = PRIORITY_1_NAMES + PRIORITY_2_NAMES
+    ordered_names = PRIORITY_1_NAMES + PRIORITY_2_NAMES + [c.name for c in NEXT_PHASE_CONDITIONS]
     return [_BY_NAME[n] for n in ordered_names]
 
 

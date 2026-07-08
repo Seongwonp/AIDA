@@ -6,6 +6,8 @@
 공유한다 — 그래야 "같은 잣대"로 조건별 성능을 비교할 수 있다.
 
 - 크기 오류: `w, h *= (1 + magnitude/100)`, 중심 고정
+- 중심점 이동 오류: 박스 크기는 유지하고 중심만 가로/세로 길이의 `magnitude%`만큼 이동
+- 스케일 오류: 가로·세로를 같은 비율로 확대/축소
 - 회전 오류: 박스 네 꼭짓점을 중심 기준 `magnitude`도(度)만큼 회전 →
   회전된 꼭짓점을 감싸는 축정렬 사각형으로 재계산 (KITTI/YOLO는 회전 박스 미지원)
 """
@@ -54,6 +56,27 @@ def apply_height(box: Box, magnitude_pct: float) -> Box:
     return left, cy - new_h / 2, right, cy + new_h / 2
 
 
+def apply_translation_x(box: Box, magnitude_pct: float) -> Box:
+    left, top, right, bottom = box
+    dx = (right - left) * magnitude_pct / 100
+    return left + dx, top, right + dx, bottom
+
+
+def apply_translation_y(box: Box, magnitude_pct: float) -> Box:
+    left, top, right, bottom = box
+    dy = (bottom - top) * magnitude_pct / 100
+    return left, top + dy, right, bottom + dy
+
+
+def apply_scale(box: Box, magnitude_pct: float) -> Box:
+    left, top, right, bottom = box
+    cx, cy = (left + right) / 2, (top + bottom) / 2
+    factor = 1 + magnitude_pct / 100
+    new_w = (right - left) * factor
+    new_h = (bottom - top) * factor
+    return cx - new_w / 2, cy - new_h / 2, cx + new_w / 2, cy + new_h / 2
+
+
 def apply_rotation(box: Box, angle_deg: float) -> Box:
     left, top, right, bottom = box
     cx, cy = (left + right) / 2, (top + bottom) / 2
@@ -78,6 +101,12 @@ def transform_box(box: Box, condition: Condition) -> Box:
         return apply_width(box, condition.magnitude)
     if condition.type == "height":
         return apply_height(box, condition.magnitude)
+    if condition.type == "translation_x":
+        return apply_translation_x(box, condition.magnitude)
+    if condition.type == "translation_y":
+        return apply_translation_y(box, condition.magnitude)
+    if condition.type == "scale":
+        return apply_scale(box, condition.magnitude)
     if condition.type == "rotation":
         return apply_rotation(box, condition.magnitude)
     raise ValueError(f"unknown condition type: {condition.type}")

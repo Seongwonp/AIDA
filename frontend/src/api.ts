@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { ConditionMetric, DatasetSummary, DiagnosisResult } from "./types";
+import type { ConditionMetric, DatasetSummary, DiagnosisResult, RoiEstimate } from "./types";
 
 const client = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000",
@@ -13,3 +13,6 @@ export const getConditions = () =>
 
 export const getDiagnosis = () =>
   client.get<DiagnosisResult>("/api/diagnose").then((res) => res.data);
+
+export const getRoiEstimate = () =>
+  client.get<RoiEstimate>("/api/roi-estimate").then((res) => res.data);

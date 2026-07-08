@@ -12,3 +12,11 @@ rot_m15,rotation,-15,0.6309,36.91
 rot_m7_5,rotation,-7.5,0.7669,23.31
 rot_p7_5,rotation,7.5,0.7669,23.31
 rot_p15,rotation,15,0.6309,36.91
+trans_x_m15,translation_x,-15,0.7391,26.09
+trans_x_p15,translation_x,15,0.7391,26.09
+trans_y_m15,translation_y,-15,0.7391,26.09
+trans_y_p15,translation_y,15,0.7391,26.09
+scale_m15,scale,-15,0.7225,27.75
+scale_p15,scale,15,0.7561,24.39
+scale_m30,scale,-30,0.49,51.0
+scale_p30,scale,30,0.5917,40.83

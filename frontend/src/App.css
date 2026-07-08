@@ -200,7 +200,7 @@
 }
 
 .metrics-table {
-  min-width: 780px;
+  min-width: 920px;
 }
 
 .metrics-table td:not(:first-child),
@@ -211,4 +211,63 @@
 .metrics-table td:nth-child(2),
 .metrics-table th:nth-child(2) {
   text-align: left;
+}
+
+.estimate-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border: 1px solid var(--black);
+  background: var(--neon);
+}
+
+.roi-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.roi-summary,
+.roi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.roi-summary > div,
+.roi-grid > div {
+  border-top: 1px solid var(--hair);
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.roi-summary span,
+.roi-grid span,
+.roi-grid small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.roi-summary strong {
+  font-size: 28px;
+}
+
+.roi-grid strong {
+  font-size: 20px;
+}
+
+@media (max-width: 720px) {
+  .app-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .roi-summary,
+  .roi-grid {
+    grid-template-columns: 1fr;
+  }
 }

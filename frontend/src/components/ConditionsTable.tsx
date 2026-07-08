@@ -19,8 +19,16 @@ function formatDrop(value: number) {
   return `-${value.toFixed(1)}%`;
 }
 
-function toCsvValue(value: string | number) {
-  const text = String(value);
+function formatOptionalNumber(value: number | null, digits: number) {
+  return value === null ? "-" : value.toFixed(digits);
+}
+
+function formatOptionalDrop(value: number | null) {
+  return value === null ? "-" : `-${value.toFixed(2)}%`;
+}
+
+function toCsvValue(value: string | number | null) {
+  const text = value === null ? "" : String(value);
   return text.includes(",") || text.includes('"') || text.includes("\n")
     ? `"${text.replace(/"/g, '""')}"`
     : text;
@@ -35,6 +43,8 @@ function downloadConditionsCsv(conditions: ConditionMetric[]) {
     "map50_95",
     "precision",
     "recall",
+    "mean_iou",
+    "mean_iou_drop_pct",
     "performance_drop_pct",
   ];
   const rows = conditions.map((condition) =>
@@ -77,6 +87,8 @@ export function ConditionsTable({ conditions }: { conditions: ConditionMetric[] 
               <th>mAP@0.5:0.95</th>
               <th>Precision</th>
               <th>Recall</th>
+              <th>평균 IoU</th>
+              <th>IoU 감소율</th>
               <th>성능 변화</th>
             </tr>
           </thead>
@@ -90,6 +102,8 @@ export function ConditionsTable({ conditions }: { conditions: ConditionMetric[] 
                 <td>{condition.map50_95.toFixed(3)}</td>
                 <td>{condition.precision.toFixed(3)}</td>
                 <td>{condition.recall.toFixed(3)}</td>
+                <td>{formatOptionalNumber(condition.mean_iou, 4)}</td>
+                <td>{formatOptionalDrop(condition.mean_iou_drop_pct)}</td>
                 <td>{formatDrop(condition.performance_drop_pct)}</td>
               </tr>
             ))}

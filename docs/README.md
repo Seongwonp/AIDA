@@ -21,7 +21,9 @@
 14. [13-ppt-visuals-checklist.md](./13-ppt-visuals-checklist.md) — 13개 조건 전체 결과 나온 후 PPT에 넣을 그래프·다이어그램 체크리스트
 15. [14-dashboard-enhancement-plan.md](./14-dashboard-enhancement-plan.md) — 실험 완료 후 진행할 대시보드 고도화(상세 통계 표·CSV 다운로드) 계획
 16. [15-non-technical-guide.md](./15-non-technical-guide.md) — 비전공자 팀원용 테스트 결과·프로그램 흐름 설명서
-17. [../CHANGELOG.md](../CHANGELOG.md) — 개발 변경 이력
+17. [16-obb-adoption-review.md](./16-obb-adoption-review.md) — OBB 도입 범위·비용·후속 로드맵 검토
+18. [17-professor-feedback-response.md](./17-professor-feedback-response.md) — 교수님 피드백에 대한 답변 및 통합 실험 결과 보고서 (실측 결과 포함)
+19. [../CHANGELOG.md](../CHANGELOG.md) — 개발 변경 이력
 
 ## 한 줄 요약
 

@@ -14,6 +14,9 @@ const TYPE_LABELS: Record<string, string> = {
   width: "가로 오류",
   height: "세로 오류",
   rotation: "회전각 오류",
+  translation_x: "가로이동 오류",
+  translation_y: "세로이동 오류",
+  scale: "스케일 오류",
 };
 
 export function PerformanceChart({ conditions }: { conditions: ConditionMetric[] }) {

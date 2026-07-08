@@ -12,6 +12,8 @@ def test_clean_baseline_has_zero_drop(client):
     body = client.get("/api/conditions").json()
     clean = next(row for row in body if row["condition"] == "clean")
     assert clean["performance_drop_pct"] == 0.0
+    assert clean["mean_iou"] == 1.0
+    assert clean["mean_iou_drop_pct"] == 0.0
 
 
 def test_performance_drop_pct_computed_relative_to_clean(client):
@@ -27,3 +29,13 @@ def test_performance_drop_pct_computed_relative_to_clean(client):
 
     # rot_test map50이 clean과 동일 → 저하 없음
     assert by_condition["rot_test"]["performance_drop_pct"] == 0.0
+
+
+def test_iou_metrics_are_joined_by_condition(client):
+    body = client.get("/api/conditions").json()
+    by_condition = {row["condition"]: row for row in body}
+
+    assert by_condition["width_big"]["mean_iou"] == 0.75
+    assert by_condition["width_big"]["mean_iou_drop_pct"] == 25.0
+    assert by_condition["rot_test"]["mean_iou"] == 0.7
+    assert by_condition["rot_test"]["mean_iou_drop_pct"] == 30.0

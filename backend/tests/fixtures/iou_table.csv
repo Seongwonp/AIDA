@@ -1,0 +1,5 @@
+condition,mean_iou,mean_iou_drop_pct
+clean,1.0,0.0
+width_big,0.75,25.0
+height_small,0.88,12.0
+rot_test,0.7,30.0

@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BACKEND_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = BACKEND_ROOT.parent
 
 
 def _split_csv(value: str) -> list[str]:
@@ -20,3 +21,4 @@ HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "8000"))
 CORS_ORIGINS = _split_csv(os.environ.get("CORS_ORIGINS", "http://localhost:5173"))
 METRICS_CSV_PATH = Path(os.environ.get("METRICS_CSV_PATH", str(BACKEND_ROOT / "app" / "data" / "metrics.csv")))
+IOU_TABLE_CSV_PATH = Path(os.environ.get("IOU_TABLE_CSV_PATH", str(PROJECT_ROOT / "experiment" / "iou_table.csv")))

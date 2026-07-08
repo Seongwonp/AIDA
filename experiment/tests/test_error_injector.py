@@ -9,10 +9,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from error_injector import (  # noqa: E402
     apply_height,
     apply_rotation,
+    apply_scale,
+    apply_translation_x,
+    apply_translation_y,
     apply_width,
     pixel_to_yolo_line,
+    transform_box,
     yolo_to_pixel,
 )
+from config import Condition  # noqa: E402
 
 BOX = (0.0, 0.0, 100.0, 50.0)  # left, top, right, bottom (width=100, height=50)
 
@@ -32,6 +37,30 @@ def test_apply_height_shrinks_around_center():
     left, top, right, bottom = apply_height(BOX, -30)
     assert (top, bottom) == pytest.approx((7.5, 42.5))
     assert (left, right) == pytest.approx((0.0, 100.0))  # 가로는 불변
+
+
+def test_apply_translation_x_moves_center_without_resizing():
+    left, top, right, bottom = apply_translation_x(BOX, 15)
+    assert (left, right) == pytest.approx((15.0, 115.0))
+    assert (top, bottom) == pytest.approx((0.0, 50.0))
+    assert (right - left, bottom - top) == pytest.approx((100.0, 50.0))
+
+
+def test_apply_translation_y_moves_center_without_resizing():
+    left, top, right, bottom = apply_translation_y(BOX, -20)
+    assert (left, right) == pytest.approx((0.0, 100.0))
+    assert (top, bottom) == pytest.approx((-10.0, 40.0))
+    assert (right - left, bottom - top) == pytest.approx((100.0, 50.0))
+
+
+def test_apply_scale_resizes_both_axes_around_center():
+    left, top, right, bottom = apply_scale(BOX, 20)
+    assert (left, top, right, bottom) == pytest.approx((-10.0, -5.0, 110.0, 55.0))
+
+
+def test_transform_box_supports_next_phase_conditions():
+    condition = Condition("scale_p20", "scale", 20)
+    assert transform_box(BOX, condition) == pytest.approx((-10.0, -5.0, 110.0, 55.0))
 
 
 def test_apply_rotation_zero_degrees_is_identity():

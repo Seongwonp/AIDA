@@ -34,7 +34,8 @@ Base URL (로컬 개발): `http://localhost:8000`
 
 ## GET /api/conditions
 
-실험 조건별(7개) 성능 지표. `backend/app/data/metrics.csv`를 그대로 반영.
+실험 조건별 성능 지표. `backend/app/data/metrics.csv`에
+`experiment/iou_table.csv`를 조건명 기준으로 조인해서 반환한다.
 
 ```json
 [
@@ -46,7 +47,9 @@ Base URL (로컬 개발): `http://localhost:8000`
     "map50_95": 0.681,
     "precision": 0.903,
     "recall": 0.887,
-    "performance_drop_pct": 0.0
+    "performance_drop_pct": 0.0,
+    "mean_iou": 1.0,
+    "mean_iou_drop_pct": 0.0
   },
   { "condition": "width_m30", "type": "width", "magnitude": -30, "...": "..." }
 ]
@@ -54,6 +57,37 @@ Base URL (로컬 개발): `http://localhost:8000`
 
 `performance_drop_pct`는 백엔드에서 `clean` 조건의 `map50`을 기준으로 계산해서
 채워주는 파생 필드다 (CSV에는 없음).
+`mean_iou`와 `mean_iou_drop_pct`는 라벨 변형 전후의 평균 IoU와 IoU 감소율이다.
+IoU 표가 없는 환경에서는 `null`로 내려간다.
+
+## GET /api/roi-estimate
+
+수작업 검수 비용과 GPU 재학습 비용 절감 효과를 보여주는 가정값 기반 추정 예시.
+실제 고객 단가가 아니라 발표/사업화 설명을 위한 샘플 계산이다.
+
+```json
+{
+  "label": "추정 예시",
+  "assumptions": {
+    "dataset_labels": 100000,
+    "manual_review_minutes_per_label": 0.5,
+    "reviewer_hourly_cost_krw": 25000,
+    "suspected_review_ratio": 0.3,
+    "gpu_retrain_runs_without_aida": 6,
+    "gpu_retrain_runs_with_aida": 2,
+    "gpu_cost_per_run_krw": 120000
+  },
+  "manual_review_savings_krw": 14583333,
+  "gpu_savings_krw": 480000,
+  "total_savings_krw": 15063333,
+  "review_scope_reduction_pct": 70.0
+}
+```
+
+계산식:
+
+- 수작업 검수 비용 = 라벨 수 × 건당 검수 시간 ÷ 60 × 시간당 인건비
+- GPU 비용 = 재학습 횟수 × 1회 재학습 비용
 
 ## GET /api/diagnose
 
