@@ -29,16 +29,17 @@ def evaluate_obb_condition(condition: config.Condition) -> dict:
         name=f"{condition.name}_val",
         exist_ok=True,
     )
-    # OBB 모델은 metrics.obb.*로 결과를 제공한다
-    obb = metrics.obb
+    # 설치된 ultralytics 버전에서는 OBBMetrics도 DetMetrics와 동일하게
+    # metrics.box.*로 결과를 제공한다 (metrics.obb 속성은 없음)
+    box = metrics.box
     return {
         "condition": condition.name,
         "type": condition.type,
         "magnitude": condition.magnitude,
-        "map50": round(float(obb.map50), 3),
-        "map50_95": round(float(obb.map), 3),
-        "precision": round(float(obb.mp), 3),
-        "recall": round(float(obb.mr), 3),
+        "map50": round(float(box.map50), 3),
+        "map50_95": round(float(box.map), 3),
+        "precision": round(float(box.mp), 3),
+        "recall": round(float(box.mr), 3),
     }
 
 
