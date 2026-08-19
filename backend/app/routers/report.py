@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 import pandas as pd
 from fastapi import APIRouter
 
-from app.config import IOU_TABLE_CSV_PATH, METRICS_CSV_PATH as DATA_PATH
+from app.config import IOU_TABLE_CSV_PATH, METRICS_CSV_PATH as DATA_PATH, OBB_METRICS_CSV_PATH
 from app.models import (
     ConditionMetric,
     DatasetSummary,
@@ -122,6 +122,41 @@ def get_roi_estimate() -> RoiEstimate:
         total_savings_krw=(manual_without - manual_with) + (gpu_without - gpu_with),
         review_scope_reduction_pct=round((1 - assumptions.suspected_review_ratio) * 100, 1),
     )
+
+
+@router.get("/obb/conditions", response_model=list[ConditionMetric])
+def get_obb_conditions() -> list[ConditionMetric]:
+    """OBB 실험 결과(metrics_obb.csv)를 반환한다.
+
+    metrics_obb.csv가 없으면 빈 배열을 반환한다 — run_obb.py 실행 전에는 데이터 없음.
+    """
+    if not OBB_METRICS_CSV_PATH.exists():
+        return []
+
+    df = pd.read_csv(OBB_METRICS_CSV_PATH)
+    baseline_rows = df[df["condition"] == "obb_clean"]["map50"]
+    if baseline_rows.empty:
+        return []
+    baseline = baseline_rows.iloc[0]
+
+    results: list[ConditionMetric] = []
+    for _, row in df.iterrows():
+        drop_pct = (baseline - row["map50"]) / baseline * 100
+        results.append(
+            ConditionMetric(
+                condition=row["condition"],
+                type=row["type"],
+                magnitude=row["magnitude"],
+                map50=row["map50"],
+                map50_95=row["map50_95"],
+                precision=row["precision"],
+                recall=row["recall"],
+                performance_drop_pct=round(drop_pct, 1),
+                mean_iou=None,
+                mean_iou_drop_pct=None,
+            )
+        )
+    return results
 
 
 @router.get("/diagnose", response_model=DiagnosisResult)

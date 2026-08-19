@@ -186,6 +186,104 @@ def build_condition(condition: Condition) -> Path:
     return yaml_path
 
 
+# ── OBB 오류 주입 ──────────────────────────────────────────────────────────────
+# YOLO OBB polygon 포맷: class x1 y1 x2 y2 x3 y3 x4 y4 (정규화 좌표)
+# 4개 꼭짓점을 직접 회전시켜 방향성이 있는 오류를 주입한다.
+# AABB와의 핵심 차이: 회전 후 외접 박스(AABB)를 쓰지 않고 rotated polygon 그대로 유지.
+
+ObbPoly = tuple[tuple[float, float], tuple[float, float], tuple[float, float], tuple[float, float]]
+
+
+def yolo_obb_to_pixel(line: str, img_w: int, img_h: int) -> ObbPoly:
+    parts = line.split()
+    coords = [float(v) for v in parts[1:9]]
+    return tuple((coords[i] * img_w, coords[i + 1] * img_h) for i in range(0, 8, 2))  # type: ignore[return-value]
+
+
+def pixel_obb_to_yolo_line(poly: ObbPoly, img_w: int, img_h: int) -> str:
+    pts = [(min(max(x / img_w, 0.0), 1.0), min(max(y / img_h, 0.0), 1.0)) for x, y in poly]
+    coords = " ".join(f"{x:.6f} {y:.6f}" for x, y in pts)
+    return f"{config.CLASS_ID} {coords}"
+
+
+def rotate_obb_poly(poly: ObbPoly, angle_deg: float) -> ObbPoly:
+    """polygon 중심 기준으로 angle_deg만큼 회전 — 방향성 있는 라벨 오류 표현."""
+    cx = sum(p[0] for p in poly) / 4
+    cy = sum(p[1] for p in poly) / 4
+    theta = math.radians(angle_deg)
+    cos_t, sin_t = math.cos(theta), math.sin(theta)
+    rotated = []
+    for x, y in poly:
+        dx, dy = x - cx, y - cy
+        rotated.append((cx + dx * cos_t - dy * sin_t, cy + dx * sin_t + dy * cos_t))
+    return tuple(rotated)  # type: ignore[return-value]
+
+
+def build_obb_condition_labels(condition: config.Condition, image_dir: Path,
+                                gt_label_dir: Path, out_label_dir: Path) -> None:
+    """OBB GT 라벨(polygon)을 읽어 조건별 오류를 주입한다.
+
+    rotation 조건: rotate_obb_poly()로 polygon 자체를 회전 → 방향성 보존
+    그 외 조건: 중심/크기 변환 후 새 polygon 재생성 (angle=0 유지)
+    """
+    out_label_dir.mkdir(parents=True, exist_ok=True)
+    rng = random.Random(f"{config.SEED}:{condition.name}")
+
+    for gt_path in sorted(gt_label_dir.glob("*.txt")):
+        lines = [l for l in gt_path.read_text().splitlines() if l.strip()]
+        if not lines:
+            (out_label_dir / gt_path.name).write_text("")
+            continue
+
+        img = Image.open(image_dir / f"{gt_path.stem}.png")
+        out_lines = []
+        for line in lines:
+            poly = yolo_obb_to_pixel(line, img.width, img.height)
+            if condition.type != "none" and rng.random() < config.ERROR_RATIO:
+                if condition.type == "rotation":
+                    # 핵심: polygon을 직접 회전 → 방향성 보존 (AABB 외접 박스 X)
+                    poly = rotate_obb_poly(poly, condition.magnitude)
+                else:
+                    # 나머지 오류 유형은 AABB 변환 후 polygon 재생성
+                    xs = [p[0] for p in poly]
+                    ys = [p[1] for p in poly]
+                    box: Box = (min(xs), min(ys), max(xs), max(ys))
+                    box = transform_box(box, condition)
+                    left, top, right, bottom = box
+                    poly = (
+                        (left, top), (right, top),
+                        (right, bottom), (left, bottom),
+                    )
+            out_lines.append(pixel_obb_to_yolo_line(poly, img.width, img.height))
+        (out_label_dir / gt_path.name).write_text("\n".join(out_lines) + "\n")
+
+
+def build_obb_condition(condition: config.Condition) -> Path:
+    root = config.OBB_CONDITIONS_DIR / condition.name
+    symlink_files(config.IMAGES_TRAIN_DIR, root / "images" / "train")
+    symlink_files(config.IMAGES_VAL_DIR, root / "images" / "val")
+    symlink_files(config.OBB_LABELS_GT_VAL_DIR, root / "labels" / "val")
+
+    build_obb_condition_labels(
+        condition,
+        image_dir=config.IMAGES_TRAIN_DIR,
+        gt_label_dir=config.OBB_LABELS_GT_TRAIN_DIR,
+        out_label_dir=root / "labels" / "train",
+    )
+
+    data = {
+        "path": str(root.resolve()),
+        "train": "images/train",
+        "val": "images/val",
+        "names": {config.CLASS_ID: config.TARGET_CLASS},
+    }
+    config.OBB_DATA_YAML_DIR.mkdir(parents=True, exist_ok=True)
+    yaml_path = config.OBB_DATA_YAML_DIR / f"{condition.name}.yaml"
+    yaml_path.write_text(yaml.safe_dump(data, allow_unicode=True, sort_keys=False))
+    print(f"[OBB {condition.name}] 데이터셋 생성 완료 → {root}")
+    return yaml_path
+
+
 def main():
     for condition in config.conditions_in_run_order():
         build_condition(condition)

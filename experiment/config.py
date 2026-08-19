@@ -94,7 +94,28 @@ PRIORITY_2_NAMES = [
     "width_m15", "width_p15", "height_m15", "height_p15", "rot_m7_5", "rot_p7_5",
 ]
 
+# ── OBB 실험 설정 ──────────────────────────────────────────────────────────────
+# 기존 AABB 파이프라인과 완전히 독립된 경로를 사용한다.
+# 이미지는 동일한 KITTI 이미지를 심볼릭 링크로 재사용하고,
+# 라벨만 polygon OBB 포맷(class x1 y1 x2 y2 x3 y3 x4 y4)으로 달라진다.
+OBB_LABELS_GT_TRAIN_DIR = PROCESSED_DIR / "labels_gt_obb" / "train"
+OBB_LABELS_GT_VAL_DIR = PROCESSED_DIR / "labels_gt_obb" / "val"
+OBB_CONDITIONS_DIR = EXPERIMENT_ROOT / "conditions_obb"
+OBB_DATA_YAML_DIR = EXPERIMENT_ROOT / "data_yaml_obb"
+OBB_RUNS_DIR = EXPERIMENT_ROOT / "runs_obb"
+OBB_METRICS_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metrics_obb.csv"
+
+# 회전 오류에 집중: AABB의 rot_m15 ≈ rot_p15(방향 소실) vs OBB의 rot_m15 ≠ rot_p15(방향 보존)
+OBB_CONDITIONS: list[Condition] = [
+    Condition("obb_clean", "none", 0),
+    Condition("obb_rot_m15", "rotation", -15),
+    Condition("obb_rot_m7_5", "rotation", -7.5),
+    Condition("obb_rot_p7_5", "rotation", 7.5),
+    Condition("obb_rot_p15", "rotation", 15),
+]
+
 _BY_NAME = {c.name: c for c in CONDITIONS}
+_OBB_BY_NAME = {c.name: c for c in OBB_CONDITIONS}
 
 
 def conditions_in_run_order() -> list[Condition]:

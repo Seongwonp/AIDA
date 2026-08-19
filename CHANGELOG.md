@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-08-19
+
+### Added
+
+- **OBB(회전 바운딩박스) 실험 파이프라인 추가** — 교수님 피드백의 핵심 지적
+  ("회전 오류가 AABB 외접 박스 근사라 방향성이 없다")을 해결하는 신규 파이프라인.
+  기존 21개 조건 AABB 결과는 완전히 보존하고 OBB 실험을 독립적으로 추가함.
+  - `experiment/config.py`: OBB 전용 경로·조건 5개 추가
+    (`obb_clean`, `obb_rot_m15/m7_5/p7_5/p15`)
+  - `experiment/data_loader.py`: `to_yolo_obb_line()` 등 OBB GT 라벨 생성 함수 추가
+    (KITTI AABB → polygon 포맷 변환, angle=0이 참값)
+  - `experiment/error_injector.py`: `rotate_obb_poly()` 추가 — AABB는 회전 후 외접
+    박스를 써서 방향성이 사라지지만, OBB는 polygon 꼭짓점 자체를 회전시켜 +θ/-θ가
+    서로 다른 라벨로 저장됨. 검증: `rot+15°`와 `rot-15°`의 polygon이 다름을 확인.
+  - `experiment/train_obb.py`, `evaluate_obb.py`, `run_obb.py` — OBB 전용
+    파인튜닝(yolov8n-obb.pt)·평가·파이프라인 진입점 신규 생성
+  - `backend/app/config.py`: `OBB_METRICS_CSV_PATH` 추가
+  - `backend/app/routers/report.py`: `/api/obb/conditions` 엔드포인트 추가
+    (metrics_obb.csv 없으면 빈 배열 반환 — 실험 전 대시보드가 깨지지 않도록)
+  - `frontend/src/components/ObbComparisonChart.tsx`: AABB vs OBB 회전 저하율
+    나란히 비교하는 차트 신규 생성. OBB 데이터 없으면 실행 안내 메시지 표시.
+  - `frontend/src/App.tsx`, `api.ts`: OBB 섹션·API 호출 추가
+
+### Next
+
+- [ ] 로컬 CUDA 데스크탑에서 `python run_obb.py` 실행 (5조건 × 50epoch)
+- [ ] 결과 확인: metrics_obb.csv 생성 후 대시보드 OBB 비교 차트에서 방향성 차이 확인
+
 이 프로젝트의 개발 이력을 시간순으로 기록한다. 각 항목은 "무엇을 했는지"와
 "왜 했는지"를 함께 남긴다. 의사결정의 배경(왜)은 [docs/06-decisions.md](docs/06-decisions.md)에
 더 자세히 정리되어 있다.

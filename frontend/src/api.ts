@@ -16,3 +16,6 @@ export const getDiagnosis = () =>
 
 export const getRoiEstimate = () =>
   client.get<RoiEstimate>("/api/roi-estimate").then((res) => res.data);
+
+export const getObbConditions = () =>
+  client.get<ConditionMetric[]>("/api/obb/conditions").then((res) => res.data);

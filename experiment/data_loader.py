@@ -75,6 +75,41 @@ def build_split(frame_ids: list[str], image_src_dir: Path, label_src_dir: Path,
     return n_objects
 
 
+def to_yolo_obb_line(box: dict, img_w: int, img_h: int) -> str:
+    """KITTI AABB → YOLO OBB polygon 포맷 (angle=0, TL→TR→BR→BL 순서).
+
+    KITTI 정면 카메라 특성상 차량은 거의 수평이므로 angle=0이 참값이다.
+    OBB 오류 주입 시에는 이 polygon을 회전시켜 오류 각도를 표현한다.
+    """
+    left, top, right, bottom = box["left"], box["top"], box["right"], box["bottom"]
+    # 4 꼭짓점 정규화 (TL, TR, BR, BL)
+    pts = [
+        (left / img_w, top / img_h),
+        (right / img_w, top / img_h),
+        (right / img_w, bottom / img_h),
+        (left / img_w, bottom / img_h),
+    ]
+    coords = " ".join(f"{x:.6f} {y:.6f}" for x, y in pts)
+    return f"{config.CLASS_ID} {coords}"
+
+
+def build_obb_split(frame_ids: list[str], image_src_dir: Path, label_src_dir: Path,
+                    image_dst_dir: Path, label_dst_dir: Path) -> int:
+    """KITTI 라벨을 OBB polygon 포맷(angle=0)으로 변환해 저장한다."""
+    image_dst_dir.mkdir(parents=True, exist_ok=True)
+    label_dst_dir.mkdir(parents=True, exist_ok=True)
+    n_objects = 0
+    for fid in frame_ids:
+        src_img = image_src_dir / f"{fid}.png"
+        img = Image.open(src_img)
+        boxes = parse_kitti_label(label_src_dir / f"{fid}.txt")
+        n_objects += len(boxes)
+        lines = [to_yolo_obb_line(b, img.width, img.height) for b in boxes]
+        (label_dst_dir / f"{fid}.txt").write_text("\n".join(lines) + ("\n" if lines else ""))
+        # 이미지는 AABB 실험과 동일하므로 복사 불필요 (error_injector_obb.py가 symlink 재사용)
+    return n_objects
+
+
 def main():
     selection_file = config.RAW_DIR / "selected_frames.txt"
     if not selection_file.exists():
@@ -94,6 +129,29 @@ def main():
 
     print(f"Car 객체 수: train {n_train_obj}개 / val {n_val_obj}개")
     print(f"완료 → {config.PROCESSED_DIR}")
+
+
+def main_obb():
+    """OBB 실험용 GT 라벨(polygon 포맷)을 생성한다.
+
+    AABB 실험의 data_loader.main()이 이미 완료된 상태를 전제한다
+    (selected_frames.txt와 이미지가 있어야 함).
+    """
+    selection_file = config.RAW_DIR / "selected_frames.txt"
+    if not selection_file.exists():
+        raise RuntimeError("download_kitti.py → data_loader.py 순서로 먼저 실행하세요")
+
+    frame_ids = selection_file.read_text().split()
+    train_ids, val_ids = split_frames(frame_ids)
+
+    image_src_dir = config.RAW_DIR / "training" / "image_2"
+    label_src_dir = config.RAW_DIR / "training" / "label_2"
+
+    n_train = build_obb_split(train_ids, image_src_dir, label_src_dir,
+                               config.IMAGES_TRAIN_DIR, config.OBB_LABELS_GT_TRAIN_DIR)
+    n_val = build_obb_split(val_ids, image_src_dir, label_src_dir,
+                             config.IMAGES_VAL_DIR, config.OBB_LABELS_GT_VAL_DIR)
+    print(f"OBB GT 라벨 생성 완료: train {n_train}개 / val {n_val}개 → {config.PROCESSED_DIR}")
 
 
 if __name__ == "__main__":
