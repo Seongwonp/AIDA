@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { ConditionMetric, DatasetSummary, DiagnosisResult, RoiEstimate } from "./types";
+import type { ConditionMetric, ConditionMetricAgg, DatasetSummary, DiagnosisResult, RoiEstimate } from "./types";
 
 const client = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000",
@@ -19,3 +19,9 @@ export const getRoiEstimate = () =>
 
 export const getObbConditions = () =>
   client.get<ConditionMetric[]>("/api/obb/conditions").then((res) => res.data);
+
+export const getAggregatedConditions = () =>
+  client.get<ConditionMetricAgg[]>("/api/conditions/aggregated").then((res) => res.data);
+
+export const getObbAggregatedConditions = () =>
+  client.get<ConditionMetricAgg[]>("/api/obb/conditions/aggregated").then((res) => res.data);

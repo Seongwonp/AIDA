@@ -10,9 +10,16 @@ from datetime import datetime, timezone
 import pandas as pd
 from fastapi import APIRouter
 
-from app.config import IOU_TABLE_CSV_PATH, METRICS_CSV_PATH as DATA_PATH, OBB_METRICS_CSV_PATH
+from app.config import (
+    AGG_METRICS_CSV_PATH,
+    IOU_TABLE_CSV_PATH,
+    METRICS_CSV_PATH as DATA_PATH,
+    OBB_AGG_METRICS_CSV_PATH,
+    OBB_METRICS_CSV_PATH,
+)
 from app.models import (
     ConditionMetric,
+    ConditionMetricAgg,
     DatasetSummary,
     DiagnosisResult,
     ErrorTypeReport,
@@ -122,6 +129,42 @@ def get_roi_estimate() -> RoiEstimate:
         total_savings_krw=(manual_without - manual_with) + (gpu_without - gpu_with),
         review_scope_reduction_pct=round((1 - assumptions.suspected_review_ratio) * 100, 1),
     )
+
+
+def _load_agg(csv_path) -> list[ConditionMetricAgg]:
+    if not csv_path.exists():
+        return []
+    df = pd.read_csv(csv_path)
+    results = []
+    for _, row in df.iterrows():
+        results.append(ConditionMetricAgg(
+            condition=row["condition"],
+            type=row["type"],
+            magnitude=row["magnitude"],
+            n_seeds=int(row["n_seeds"]),
+            map50_mean=row["map50_mean"],
+            map50_std=row["map50_std"],
+            map50_95_mean=row["map50_95_mean"],
+            map50_95_std=row["map50_95_std"],
+            precision_mean=row["precision_mean"],
+            precision_std=row["precision_std"],
+            recall_mean=row["recall_mean"],
+            recall_std=row["recall_std"],
+            drop_pct_mean=None if pd.isna(row.get("drop_pct_mean")) else row["drop_pct_mean"],
+            drop_pct_std=None if pd.isna(row.get("drop_pct_std")) else row["drop_pct_std"],
+        ))
+    return results
+
+
+@router.get("/conditions/aggregated", response_model=list[ConditionMetricAgg])
+def get_conditions_aggregated() -> list[ConditionMetricAgg]:
+    """다중 seed 집계 결과(mean ± std). aggregate_seeds.py 실행 전엔 빈 배열."""
+    return _load_agg(AGG_METRICS_CSV_PATH)
+
+
+@router.get("/obb/conditions/aggregated", response_model=list[ConditionMetricAgg])
+def get_obb_conditions_aggregated() -> list[ConditionMetricAgg]:
+    return _load_agg(OBB_AGG_METRICS_CSV_PATH)
 
 
 @router.get("/obb/conditions", response_model=list[ConditionMetric])

@@ -18,12 +18,25 @@ IMAGES_TRAIN_DIR = PROCESSED_DIR / "images" / "train"
 IMAGES_VAL_DIR = PROCESSED_DIR / "images" / "val"
 LABELS_GT_TRAIN_DIR = PROCESSED_DIR / "labels_gt" / "train"
 LABELS_GT_VAL_DIR = PROCESSED_DIR / "labels_gt" / "val"
-CONDITIONS_DIR = EXPERIMENT_ROOT / "conditions"
-DATA_YAML_DIR = EXPERIMENT_ROOT / "data_yaml"
-RUNS_DIR = EXPERIMENT_ROOT / "runs"
+SEED = int(os.environ.get("AIDA_SEED", 42))
+# 오류 주입 전용 시드. train/val 분할(SEED)은 고정하고 오류 주입 패턴만 바꿔
+# 동일 데이터셋에서 반복 실험을 수행한다. 기본값은 SEED와 동일(기존 동작 유지).
+ERROR_SEED = int(os.environ.get("AIDA_ERROR_SEED", SEED))
+
+# ERROR_SEED가 기본값(SEED=42)이 아닐 때 별도 디렉토리를 사용해 기존 결과를 보존한다.
+_esuffix = f"_e{ERROR_SEED}" if ERROR_SEED != 42 else ""
+
+CONDITIONS_DIR = EXPERIMENT_ROOT / f"conditions{_esuffix}"
+DATA_YAML_DIR = EXPERIMENT_ROOT / f"data_yaml{_esuffix}"
+RUNS_DIR = EXPERIMENT_ROOT / f"runs{_esuffix}"
 METRICS_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metrics.csv"
 
-SEED = int(os.environ.get("AIDA_SEED", 42))
+# 다중 seed 실험용 누적 CSV (모든 seed 결과 포함, error_seed 컬럼 추가)
+MULTI_SEED_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metrics_multi_seed.csv"
+OBB_MULTI_SEED_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metrics_obb_multi_seed.csv"
+# 집계 CSV: aggregate_seeds.py가 mean/std를 계산해 여기 저장
+AGG_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metrics_agg.csv"
+OBB_AGG_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metrics_obb_agg.csv"
 TARGET_CLASS = os.environ.get("AIDA_TARGET_CLASS", "Car")
 CLASS_ID = 0  # YOLO 클래스 인덱스 (Car 단일 클래스이므로 항상 0)
 
@@ -100,9 +113,9 @@ PRIORITY_2_NAMES = [
 # 라벨만 polygon OBB 포맷(class x1 y1 x2 y2 x3 y3 x4 y4)으로 달라진다.
 OBB_LABELS_GT_TRAIN_DIR = PROCESSED_DIR / "labels_gt_obb" / "train"
 OBB_LABELS_GT_VAL_DIR = PROCESSED_DIR / "labels_gt_obb" / "val"
-OBB_CONDITIONS_DIR = EXPERIMENT_ROOT / "conditions_obb"
-OBB_DATA_YAML_DIR = EXPERIMENT_ROOT / "data_yaml_obb"
-OBB_RUNS_DIR = EXPERIMENT_ROOT / "runs_obb"
+OBB_CONDITIONS_DIR = EXPERIMENT_ROOT / f"conditions_obb{_esuffix}"
+OBB_DATA_YAML_DIR = EXPERIMENT_ROOT / f"data_yaml_obb{_esuffix}"
+OBB_RUNS_DIR = EXPERIMENT_ROOT / f"runs_obb{_esuffix}"
 OBB_METRICS_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metrics_obb.csv"
 
 # 회전 오류에 집중: AABB의 rot_m15 ≈ rot_p15(방향 소실) vs OBB의 rot_m15 ≠ rot_p15(방향 보존)

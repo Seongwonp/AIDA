@@ -61,6 +61,22 @@ def append_obb_metrics(row: dict, csv_path=config.OBB_METRICS_CSV) -> None:
     print(f"[OBB {row['condition']}] metrics_obb.csv 갱신 → {csv_path}")
 
 
+def append_obb_multi_seed_metrics(row: dict, csv_path=config.OBB_MULTI_SEED_CSV) -> None:
+    cols = ["error_seed"] + METRICS_COLUMNS
+    if csv_path.exists():
+        df = pd.read_csv(csv_path)
+    else:
+        df = pd.DataFrame(columns=cols)
+
+    mask = (df["error_seed"] == row["error_seed"]) & (df["condition"] == row["condition"])
+    df = df[~mask]
+    df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
+    df = df.sort_values(["error_seed", "condition"])
+
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(csv_path, index=False)
+
+
 def main():
     parser = argparse.ArgumentParser(description="OBB 조건별 평가 및 metrics_obb.csv 갱신")
     parser.add_argument("--condition", help="특정 조건 하나만 평가 (예: obb_clean)")

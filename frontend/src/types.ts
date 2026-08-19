@@ -34,6 +34,23 @@ export interface DiagnosisResult {
   error_reports: ErrorTypeReport[];
 }
 
+export interface ConditionMetricAgg {
+  condition: string;
+  type: string;
+  magnitude: number;
+  n_seeds: number;
+  map50_mean: number;
+  map50_std: number;
+  map50_95_mean: number;
+  map50_95_std: number;
+  precision_mean: number;
+  precision_std: number;
+  recall_mean: number;
+  recall_std: number;
+  drop_pct_mean: number | null;
+  drop_pct_std: number | null;
+}
+
 export interface RoiAssumptions {
   dataset_labels: number;
   manual_review_minutes_per_label: number;

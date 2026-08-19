@@ -59,6 +59,24 @@ def append_metrics(row: dict, csv_path=config.METRICS_CSV) -> None:
     print(f"[{row['condition']}] metrics.csv 갱신 → {csv_path}")
 
 
+def append_multi_seed_metrics(row: dict, csv_path=config.MULTI_SEED_CSV) -> None:
+    """error_seed 컬럼을 포함해 누적 CSV에 저장한다 (기존 행은 덮어쓰지 않음)."""
+    cols = ["error_seed"] + METRICS_COLUMNS
+    if csv_path.exists():
+        df = pd.read_csv(csv_path)
+    else:
+        df = pd.DataFrame(columns=cols)
+
+    # 같은 (error_seed, condition) 조합은 덮어쓴다 (재실행 안전)
+    mask = (df["error_seed"] == row["error_seed"]) & (df["condition"] == row["condition"])
+    df = df[~mask]
+    df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
+    df = df.sort_values(["error_seed", "condition"])
+
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(csv_path, index=False)
+
+
 def main():
     parser = argparse.ArgumentParser(description="조건별 평가 및 metrics.csv 갱신")
     parser.add_argument("--priority", choices=["1", "2", "all"], default="all")

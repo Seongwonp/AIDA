@@ -114,7 +114,7 @@ def transform_box(box: Box, condition: Condition) -> Box:
 
 def build_condition_labels(condition: Condition, image_dir: Path, gt_label_dir: Path, out_label_dir: Path) -> None:
     out_label_dir.mkdir(parents=True, exist_ok=True)
-    rng = random.Random(f"{config.SEED}:{condition.name}")
+    rng = random.Random(f"{config.ERROR_SEED}:{condition.name}")
 
     for gt_path in sorted(gt_label_dir.glob("*.txt")):
         lines = [l for l in gt_path.read_text().splitlines() if l.strip()]
@@ -227,7 +227,7 @@ def build_obb_condition_labels(condition: config.Condition, image_dir: Path,
     그 외 조건: 중심/크기 변환 후 새 polygon 재생성 (angle=0 유지)
     """
     out_label_dir.mkdir(parents=True, exist_ok=True)
-    rng = random.Random(f"{config.SEED}:{condition.name}")
+    rng = random.Random(f"{config.ERROR_SEED}:{condition.name}")
 
     for gt_path in sorted(gt_label_dir.glob("*.txt")):
         lines = [l for l in gt_path.read_text().splitlines() if l.strip()]

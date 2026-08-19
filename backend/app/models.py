@@ -19,6 +19,23 @@ class ConditionMetric(BaseModel):
     mean_iou_drop_pct: float | None = None
 
 
+class ConditionMetricAgg(BaseModel):
+    condition: str
+    type: str
+    magnitude: float
+    n_seeds: int
+    map50_mean: float
+    map50_std: float
+    map50_95_mean: float
+    map50_95_std: float
+    precision_mean: float
+    precision_std: float
+    recall_mean: float
+    recall_std: float
+    drop_pct_mean: float | None = None
+    drop_pct_std: float | None = None
+
+
 class DatasetSummary(BaseModel):
     total_images: int
     total_objects: int

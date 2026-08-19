@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import "./App.css";
-import { getConditions, getDiagnosis, getObbConditions, getRoiEstimate, getSummary } from "./api";
+import { getAggregatedConditions, getConditions, getDiagnosis, getObbConditions, getRoiEstimate, getSummary } from "./api";
 import { ConditionsTable } from "./components/ConditionsTable";
 import { ErrorReportTable } from "./components/ErrorReportTable";
 import { ObbComparisonChart } from "./components/ObbComparisonChart";
 import { PerformanceChart } from "./components/PerformanceChart";
 import { QualityScoreCard } from "./components/QualityScoreCard";
 import { RoiEstimateCard } from "./components/RoiEstimateCard";
-import type { ConditionMetric, DatasetSummary, DiagnosisResult, RoiEstimate } from "./types";
+import type { ConditionMetric, ConditionMetricAgg, DatasetSummary, DiagnosisResult, RoiEstimate } from "./types";
 
 function App() {
   const [summary, setSummary] = useState<DatasetSummary | null>(null);
@@ -15,19 +15,21 @@ function App() {
   const [diagnosis, setDiagnosis] = useState<DiagnosisResult | null>(null);
   const [roiEstimate, setRoiEstimate] = useState<RoiEstimate | null>(null);
   const [obbConditions, setObbConditions] = useState<ConditionMetric[]>([]);
+  const [aggregated, setAggregated] = useState<ConditionMetricAgg[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = () => {
     setLoading(true);
     setError(null);
-    Promise.all([getSummary(), getConditions(), getDiagnosis(), getRoiEstimate(), getObbConditions()])
-      .then(([s, c, d, r, obb]) => {
+    Promise.all([getSummary(), getConditions(), getDiagnosis(), getRoiEstimate(), getObbConditions(), getAggregatedConditions()])
+      .then(([s, c, d, r, obb, agg]) => {
         setSummary(s);
         setConditions(c);
         setDiagnosis(d);
         setRoiEstimate(r);
         setObbConditions(obb);
+        setAggregated(agg);
       })
       .catch(() => setError("백엔드(http://localhost:8000)에 연결할 수 없습니다."))
       .finally(() => setLoading(false));
@@ -53,7 +55,7 @@ function App() {
         <main className="app-grid">
           <QualityScoreCard summary={summary} />
           <RoiEstimateCard estimate={roiEstimate} />
-          <PerformanceChart conditions={conditions} />
+          <PerformanceChart conditions={conditions} aggregated={aggregated} />
           <ConditionsTable conditions={conditions} />
           <ObbComparisonChart aabbConditions={conditions} obbConditions={obbConditions} />
           <ErrorReportTable reports={diagnosis.error_reports} />
