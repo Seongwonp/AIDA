@@ -90,6 +90,7 @@ def run_seed(seed: int, epochs: int | None, aabb: bool, obb: bool) -> None:
         )
         # run_all.py가 metrics.csv에 쓴 결과를 multi_seed_csv로 복사
         _copy_to_multi_seed(config.MULTI_SEED_CSV, seed, is_obb=False, env=env)
+        _restore_canonical(config.METRICS_CSV, config.MULTI_SEED_CSV, seed)
 
     if obb:
         print(f"\n── OBB 오류 주입 (seed={seed}) ──")
@@ -105,6 +106,27 @@ def run_seed(seed: int, epochs: int | None, aabb: bool, obb: bool) -> None:
             env=env, check=True,
         )
         _copy_to_multi_seed(config.OBB_MULTI_SEED_CSV, seed, is_obb=True, env=env)
+        _restore_canonical(config.OBB_METRICS_CSV, config.OBB_MULTI_SEED_CSV, seed)
+
+
+def _restore_canonical(canonical_csv: Path, multi_csv: Path, seed: int) -> None:
+    """run_all.py/run_obb.py는 항상 canonical_csv(metrics.csv 등)를 덮어쓴다.
+
+    seed!=42 실행 직후에는 canonical_csv가 방금 돌린 seed의 결과로 남아있는
+    상태다. metrics.csv/metrics_obb.csv는 "seed=42 기준값"이라는 의미로
+    대시보드 폴백·리포트·문서 등 여러 곳에서 직접 참조하므로, 해당 seed의
+    복사가 끝나는 즉시 seed=42 기준값으로 되돌려 놓는다. multi_csv에 이미
+    error_seed=42 행이 있다는 전제이므로 migrate_seed42()가 먼저 실행돼야
+    한다(main()에서 항상 그렇게 함).
+    """
+    if seed == 42 or not multi_csv.exists():
+        return
+    df = pd.read_csv(multi_csv)
+    baseline = df[df["error_seed"] == 42].drop(columns="error_seed")
+    if baseline.empty:
+        print(f"[경고] {multi_csv}에 error_seed=42 행이 없어 {canonical_csv} 복원 불가")
+        return
+    baseline.to_csv(canonical_csv, index=False)
 
 
 def _copy_to_multi_seed(multi_csv: Path, seed: int, is_obb: bool, env: dict) -> None:
