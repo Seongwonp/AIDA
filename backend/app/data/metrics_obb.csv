@@ -2,5 +2,5 @@ condition,type,magnitude,map50,map50_95,precision,recall
 obb_clean,none,0.0,0.862,0.701,0.84,0.825
 obb_rot_m15,rotation,-15.0,0.869,0.704,0.883,0.783
 obb_rot_m7_5,rotation,-7.5,0.882,0.709,0.886,0.813
-obb_rot_p7_5,rotation,7.5,0.872,0.706,0.858,0.811
 obb_rot_p15,rotation,15.0,0.876,0.704,0.878,0.809
+obb_rot_p7_5,rotation,7.5,0.872,0.706,0.858,0.811

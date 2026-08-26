@@ -1,0 +1,16 @@
+error_seed,condition,type,magnitude,map50,map50_95,precision,recall
+42,obb_clean,none,0.0,0.862,0.701,0.84,0.825
+42,obb_rot_m15,rotation,-15.0,0.869,0.704,0.883,0.783
+42,obb_rot_m7_5,rotation,-7.5,0.882,0.709,0.886,0.813
+42,obb_rot_p15,rotation,15.0,0.876,0.704,0.878,0.809
+42,obb_rot_p7_5,rotation,7.5,0.872,0.706,0.858,0.811
+123,obb_clean,none,0.0,0.862,0.701,0.84,0.825
+123,obb_rot_m15,rotation,-15.0,0.87,0.695,0.917,0.766
+123,obb_rot_m7_5,rotation,-7.5,0.87,0.699,0.867,0.815
+123,obb_rot_p15,rotation,15.0,0.868,0.702,0.863,0.815
+123,obb_rot_p7_5,rotation,7.5,0.86,0.702,0.868,0.815
+2024,obb_clean,none,0.0,0.862,0.701,0.84,0.825
+2024,obb_rot_m15,rotation,-15.0,0.881,0.705,0.88,0.811
+2024,obb_rot_m7_5,rotation,-7.5,0.871,0.708,0.889,0.788
+2024,obb_rot_p15,rotation,15.0,0.866,0.705,0.863,0.811
+2024,obb_rot_p7_5,rotation,7.5,0.871,0.707,0.883,0.795

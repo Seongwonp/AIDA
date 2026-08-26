@@ -1,0 +1,6 @@
+condition,type,magnitude,n_seeds,map50_mean,map50_std,map50_95_mean,map50_95_std,precision_mean,precision_std,recall_mean,recall_std,drop_pct_mean,drop_pct_std
+obb_clean,none,0.0,3,0.862,0.0,0.701,0.0,0.84,0.0,0.825,0.0,0.0,0.0
+obb_rot_m15,rotation,-15.0,3,0.8733,0.0067,0.7013,0.0055,0.8933,0.0206,0.7867,0.0227,-1.31,0.78
+obb_rot_m7_5,rotation,-7.5,3,0.8743,0.0067,0.7053,0.0055,0.8807,0.0119,0.8053,0.015,-1.43,0.78
+obb_rot_p15,rotation,15.0,3,0.87,0.0053,0.7037,0.0015,0.868,0.0087,0.8117,0.0031,-0.93,0.61
+obb_rot_p7_5,rotation,7.5,3,0.8677,0.0067,0.705,0.0026,0.8697,0.0126,0.807,0.0106,-0.66,0.78

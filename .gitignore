@@ -18,11 +18,17 @@ frontend/dist/
 experiment/data/raw/
 experiment/data/processed/
 experiment/conditions/
+experiment/conditions_e*/
 experiment/conditions_obb/
+experiment/conditions_obb_e*/
 experiment/data_yaml/
+experiment/data_yaml_e*/
 experiment/data_yaml_obb/
+experiment/data_yaml_obb_e*/
 experiment/runs/
+experiment/runs_e*/
 experiment/runs_obb/
+experiment/runs_obb_e*/
 experiment/*.pt
 experiment/*.log
 
