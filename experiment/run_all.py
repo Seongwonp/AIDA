@@ -40,7 +40,10 @@ def main():
     elif args.priority == "2":
         names = config.PRIORITY_2_NAMES
     else:
-        names = config.PRIORITY_1_NAMES + config.PRIORITY_2_NAMES
+        # PRIORITY_1/2(13개)만 쓰면 나중에 추가된 NEXT_PHASE_CONDITIONS(스케일·
+        # 중심점이동 8개)가 "all"에서 빠진다 — conditions_in_run_order()가 21개
+        # 전체(핵심 13개 + 확장 8개)를 올바른 순서로 반환한다.
+        names = [c.name for c in config.conditions_in_run_order()]
 
     for i, name in enumerate(names, 1):
         condition = by_name[name]
