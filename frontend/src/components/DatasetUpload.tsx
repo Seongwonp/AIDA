@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { diagnoseDataset, uploadDataset } from "../api";
+import { diagnoseDataset, getDatasetReportUrl, uploadDataset } from "../api";
 import type { UploadDiagnosisResult, UploadedDatasetInfo } from "../types";
 
 type Status = "idle" | "uploading" | "diagnosing" | "done" | "error";
@@ -74,9 +74,18 @@ export function DatasetUpload() {
 
       {result && (
         <div className="upload-result">
-          <div className="score-value">
-            <span className="score-number">{result.quality_score}</span>
-            <span className="score-max">/100</span>
+          <div className="card-heading-row">
+            <div className="score-value">
+              <span className="score-number">{result.quality_score}</span>
+              <span className="score-max">/100</span>
+            </div>
+            <a
+              className="refresh-button"
+              href={getDatasetReportUrl(result.dataset_id)}
+              download={`aida_report_${result.dataset_id}.html`}
+            >
+              리포트 다운로드
+            </a>
           </div>
           <div className="score-stats">
             <div>

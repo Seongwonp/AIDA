@@ -9,8 +9,10 @@ import type {
   UploadedDatasetInfo,
 } from "./types";
 
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+
 const client = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000",
+  baseURL: API_BASE_URL,
 });
 
 export const getSummary = () =>
@@ -48,3 +50,6 @@ export const diagnoseDataset = (datasetId: string) =>
   client
     .post<UploadDiagnosisResult>(`/api/datasets/${datasetId}/diagnose`)
     .then((res) => res.data);
+
+export const getDatasetReportUrl = (datasetId: string) =>
+  `${API_BASE_URL}/api/datasets/${datasetId}/report`;

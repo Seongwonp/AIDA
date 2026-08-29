@@ -201,9 +201,14 @@ API·자동화 파이프라인·리포트 생성까지 걸친 새로운 프로�
   backend는 읽기만 함)를 그대로 따르는 게 일관적이었다. backend는
   `POST /api/datasets/{id}/diagnose`에서 experiment venv 파이썬으로
   `diagnose_upload.py`를 서브프로세스 실행하고 결과 JSON을 읽기만 한다.
-- **리포트 확장(3번)은 이번 범위에서 뺐다** — 업로드→진단까지 되는 걸
-  먼저 검증하는 게 우선이라 다운로드 가능한 리포트 생성은 다음 이터레이션으로
-  미뤘다.
+- **리포트 확장(3번)은 처음엔 이번 범위에서 뺐다가, 같은 날 바로 이어서
+  마무리했다** — `generate_report.py`(교수님 피드백 문서 전용, 하드코딩된
+  1회성 스크립트)를 확장하는 대신, `diagnosis.json`을 읽어 독립적인 HTML
+  문서를 만드는 `GET /api/datasets/{id}/report`를 새로 추가했다. 백엔드에
+  PDF 라이브러리를 새로 얹지 않으려고 자체 스타일이 담긴 HTML을
+  `Content-Disposition: attachment`로 내려준다 — 브라우저가 바로 다운로드
+  받고, 필요하면 브라우저 인쇄 기능으로 PDF 변환도 가능하다. 대시보드
+  "내 데이터셋 진단" 카드에 "리포트 다운로드" 버튼으로 연결.
 
 **매칭 로직**: 계획대로 `metrics_agg.csv`가 아니라 `metrics.csv`
 (precision, recall) 기준 유클리드 거리로 구현했다 — missing/duplicate처럼
