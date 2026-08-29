@@ -18,6 +18,8 @@ const TYPE_LABELS: Record<string, string> = {
   translation_x: "가로이동 오류",
   translation_y: "세로이동 오류",
   scale: "스케일 오류",
+  missing: "라벨 누락",
+  duplicate: "라벨 중복",
 };
 
 function label(c: { type: string; magnitude: number }) {
