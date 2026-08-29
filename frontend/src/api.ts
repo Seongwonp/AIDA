@@ -1,5 +1,13 @@
 import axios from "axios";
-import type { ConditionMetric, ConditionMetricAgg, DatasetSummary, DiagnosisResult, RoiEstimate } from "./types";
+import type {
+  ConditionMetric,
+  ConditionMetricAgg,
+  DatasetSummary,
+  DiagnosisResult,
+  RoiEstimate,
+  UploadDiagnosisResult,
+  UploadedDatasetInfo,
+} from "./types";
 
 const client = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000",
@@ -25,3 +33,18 @@ export const getAggregatedConditions = () =>
 
 export const getObbAggregatedConditions = () =>
   client.get<ConditionMetricAgg[]>("/api/obb/conditions/aggregated").then((res) => res.data);
+
+export const uploadDataset = (file: File) => {
+  const form = new FormData();
+  form.append("file", file);
+  return client
+    .post<UploadedDatasetInfo>("/api/datasets/upload", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    })
+    .then((res) => res.data);
+};
+
+export const diagnoseDataset = (datasetId: string) =>
+  client
+    .post<UploadDiagnosisResult>(`/api/datasets/${datasetId}/diagnose`)
+    .then((res) => res.data);

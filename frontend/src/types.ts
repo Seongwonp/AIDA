@@ -51,6 +51,37 @@ export interface ConditionMetricAgg {
   drop_pct_std: number | null;
 }
 
+export interface UploadedDatasetInfo {
+  dataset_id: string;
+  uploaded_at: string;
+  num_images: number;
+  num_labels: number;
+}
+
+export interface PerformanceVector {
+  map50: number;
+  map50_95: number;
+  precision: number;
+  recall: number;
+}
+
+export interface ErrorTypeCandidate {
+  error_type: string;
+  label: string;
+  closest_condition: string;
+  closest_magnitude: number;
+  distance: number;
+}
+
+export interface UploadDiagnosisResult {
+  dataset_id: string;
+  generated_at: string;
+  performance_vector: PerformanceVector;
+  quality_score: number;
+  candidates: ErrorTypeCandidate[];
+  caveat: string;
+}
+
 export interface RoiAssumptions {
   dataset_labels: number;
   manual_review_minutes_per_label: number;

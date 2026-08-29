@@ -69,6 +69,37 @@ class RoiAssumptions(BaseModel):
     gpu_cost_per_run_krw: int
 
 
+class UploadedDatasetInfo(BaseModel):
+    dataset_id: str
+    uploaded_at: str
+    num_images: int
+    num_labels: int
+
+
+class PerformanceVector(BaseModel):
+    map50: float
+    map50_95: float
+    precision: float
+    recall: float
+
+
+class ErrorTypeCandidate(BaseModel):
+    error_type: str
+    label: str
+    closest_condition: str
+    closest_magnitude: float
+    distance: float
+
+
+class UploadDiagnosisResult(BaseModel):
+    dataset_id: str
+    generated_at: str
+    performance_vector: PerformanceVector
+    quality_score: int
+    candidates: list[ErrorTypeCandidate]
+    caveat: str
+
+
 class RoiEstimate(BaseModel):
     label: str
     assumptions: RoiAssumptions

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import { getAggregatedConditions, getConditions, getDiagnosis, getObbConditions, getRoiEstimate, getSummary } from "./api";
 import { ConditionsTable } from "./components/ConditionsTable";
+import { DatasetUpload } from "./components/DatasetUpload";
 import { ErrorReportTable } from "./components/ErrorReportTable";
 import { ObbComparisonChart } from "./components/ObbComparisonChart";
 import { PerformanceChart } from "./components/PerformanceChart";
@@ -59,6 +60,7 @@ function App() {
           <ConditionsTable conditions={conditions} />
           <ObbComparisonChart aabbConditions={conditions} obbConditions={obbConditions} />
           <ErrorReportTable reports={diagnosis.error_reports} />
+          <DatasetUpload />
         </main>
       )}
     </div>

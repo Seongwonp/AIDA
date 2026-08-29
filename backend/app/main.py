@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import CORS_ORIGINS
-from app.routers import report
+from app.routers import report, upload
 
 app = FastAPI(title="AIDA API", version="0.1.0")
 
@@ -15,6 +15,7 @@ app.add_middleware(
 )
 
 app.include_router(report.router)
+app.include_router(upload.router)
 
 
 @app.get("/api/health")
