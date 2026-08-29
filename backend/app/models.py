@@ -49,6 +49,8 @@ class ErrorTypeReport(BaseModel):
     label: str
     max_performance_drop_pct: float
     review_priority: str
+    # 등급만 보여주면 "왜 이게 높음인가"를 확인할 방법이 없어서 근거를 함께 내려준다
+    priority_rationale: str = ""
 
 
 class DiagnosisResult(BaseModel):

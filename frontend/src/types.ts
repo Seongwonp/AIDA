@@ -24,6 +24,7 @@ export interface ErrorTypeReport {
   label: string;
   max_performance_drop_pct: number;
   review_priority: string;
+  priority_rationale: string;
 }
 
 export interface DiagnosisResult {

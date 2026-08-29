@@ -321,3 +321,9 @@
     grid-template-columns: 1fr;
   }
 }
+
+.priority-rationale {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}

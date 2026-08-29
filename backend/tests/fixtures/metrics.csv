@@ -1,5 +1,6 @@
 condition,type,magnitude,map50,map50_95,precision,recall
 clean,none,0,0.900,0.700,0.900,0.900
 width_big,width,-30,0.765,0.600,0.800,0.800
-height_small,height,15,0.828,0.650,0.850,0.850
-rot_test,rotation,-15,0.900,0.700,0.900,0.900
+height_mid,height,15,0.846,0.650,0.850,0.850
+rot_noise,rotation,-15,0.840,0.640,0.840,0.840
+scale_tiny,scale,15,0.891,0.690,0.890,0.890

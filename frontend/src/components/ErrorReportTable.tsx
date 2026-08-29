@@ -15,6 +15,7 @@ export function ErrorReportTable({ reports }: { reports: ErrorTypeReport[] }) {
             <th>오류 유형</th>
             <th>최대 성능 저하</th>
             <th>재검수 우선순위</th>
+            <th>판단 근거</th>
           </tr>
         </thead>
         <tbody>
@@ -27,6 +28,7 @@ export function ErrorReportTable({ reports }: { reports: ErrorTypeReport[] }) {
                   {r.review_priority}
                 </span>
               </td>
+              <td className="priority-rationale">{r.priority_rationale}</td>
             </tr>
           ))}
         </tbody>

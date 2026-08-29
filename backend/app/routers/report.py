@@ -204,6 +204,70 @@ def get_obb_conditions() -> list[ConditionMetric]:
     return results
 
 
+# ── 재검수 우선순위 기준 ────────────────────────────────────────────────────
+# 예전 기준(15%/8% 고정)은 목업 데이터 시절 값이라, 실측 데이터에서는 최대
+# 저하가 6%대여서 모든 유형이 "낮음"으로만 나왔다 — 데모에서 바로 티가 났다.
+#
+# 재보정은 두 가지를 쓴다:
+#  1) 통계적 유의성 — 3-seed 실측에 표준편차가 있으므로 "이 저하가 학습
+#     흔들림과 구분되는가"를 먼저 묻는다. 예: 세로 길이 오류의 0.99% 저하는
+#     표준편차 0.89%로 1.1σ에 불과해, 크기만 보면 실재하는 듯하지만 사실은
+#     노이즈와 구분되지 않는다. 이걸 "중간"으로 올리면 없는 문제에 검수
+#     예산을 쓰게 만든다.
+#  2) 상대적 크기 — 절대 %는 데이터셋·모델에 따라 스케일이 달라지므로,
+#     관측된 최대 저하 대비 비율로 나눈다. 성능 패턴 DB가 갱신돼도 기준이
+#     같이 따라간다(고정 상수였다면 또 어긋났을 것이다).
+MIN_SIGNIFICANT_SIGMA = 2.0  # 이보다 작으면 노이즈와 구분 불가
+HIGH_PRIORITY_FRACTION = 0.5  # 최대 저하의 절반 이상이면 높음
+MEDIUM_PRIORITY_FRACTION = 0.25
+
+
+def _load_drop_std() -> dict[str, float]:
+    """조건별 저하율 표준편차 (3-seed 집계). 없으면 빈 dict."""
+    if not AGG_METRICS_CSV_PATH.exists():
+        return {}
+    df = pd.read_csv(AGG_METRICS_CSV_PATH)
+    if "drop_pct_std" not in df.columns:
+        return {}
+    return {
+        row["condition"]: float(row["drop_pct_std"])
+        for _, row in df.iterrows()
+        if pd.notna(row.get("drop_pct_std"))
+    }
+
+
+def _review_priority(drop_pct: float, worst_overall: float,
+                     drop_std: float | None) -> tuple[str, str]:
+    """(우선순위, 근거 문구). 근거를 함께 돌려주는 이유는, 등급만 보여주면
+    고객이 "왜 이게 높음인가"를 확인할 방법이 없기 때문이다."""
+    if drop_std is not None and drop_std > 0:
+        sigma = drop_pct / drop_std
+        if sigma < MIN_SIGNIFICANT_SIGMA:
+            return "낮음", (
+                f"저하 {drop_pct:.1f}%가 시드 간 편차({drop_std:.1f}%p)의 "
+                f"{sigma:.1f}배에 불과해 학습 흔들림과 구분되지 않습니다"
+            )
+
+    if worst_overall <= 0:
+        return "낮음", "성능 저하가 관측되지 않았습니다"
+
+    share = drop_pct / worst_overall
+    if share >= HIGH_PRIORITY_FRACTION:
+        return "높음", (
+            f"저하 {drop_pct:.1f}%로, 관측된 최대 저하({worst_overall:.1f}%)의 "
+            f"{share * 100:.0f}% 수준입니다"
+        )
+    if share >= MEDIUM_PRIORITY_FRACTION:
+        return "중간", (
+            f"저하 {drop_pct:.1f}%로 중간 수준입니다 "
+            f"(최대 저하 대비 {share * 100:.0f}%)"
+        )
+    return "낮음", (
+        f"저하 {drop_pct:.1f}%로, 관측된 최대 저하({worst_overall:.1f}%) 대비 "
+        f"{share * 100:.0f}%에 그칩니다"
+    )
+
+
 @router.get("/diagnose", response_model=DiagnosisResult)
 def get_diagnosis() -> DiagnosisResult:
     """오류 유형별 재검수 우선순위 리포트.
@@ -220,20 +284,25 @@ def get_diagnosis() -> DiagnosisResult:
     non_baseline = df[df["condition"] != "clean"].copy()
     non_baseline["drop_pct"] = (baseline - non_baseline["map50"]) / baseline * 100
 
+    worst_overall = non_baseline["drop_pct"].max()
+    std_by_condition = _load_drop_std()
+
     reports: list[ErrorTypeReport] = []
     for error_type, group in non_baseline.groupby("type"):
         # 유형별로 가장 저하가 큰 조건 하나만 대표값으로 뽑아 우선순위를 매김
         worst = group.loc[group["drop_pct"].idxmax()]
-        # 임계값(15%/8%)은 초기 목업 데이터 기준으로 잡은 값이라, 지금 실측
-        # 데이터(최대 저하가 6%대)에서는 전 조건이 "낮음"으로만 나온다 — 실제
-        # 서비스에서는 도메인별 데이터로 재보정이 필요하다.
-        priority = "높음" if worst["drop_pct"] >= 15 else "중간" if worst["drop_pct"] >= 8 else "낮음"
+        priority, rationale = _review_priority(
+            drop_pct=worst["drop_pct"],
+            worst_overall=worst_overall,
+            drop_std=std_by_condition.get(worst["condition"]),
+        )
         reports.append(
             ErrorTypeReport(
                 error_type=error_type,
                 label=TYPE_LABELS.get(error_type, error_type),
                 max_performance_drop_pct=round(worst["drop_pct"], 1),
                 review_priority=priority,
+                priority_rationale=rationale,
             )
         )
 
