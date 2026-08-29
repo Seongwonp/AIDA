@@ -39,6 +39,18 @@ def mean_iou_for_condition(condition: config.Condition, label_dir: Path, image_d
     # 3번 항목의 "주의" 참고.
     if condition.type == "none":
         return 1.0
+    if condition.type == "missing":
+        # 박스가 통째로 사라지므로 "형태가 왜곡됐다"는 IoU 개념 자체가 성립하지
+        # 않는다. 대신 "라벨 1개를 무작위로 뽑았을 때 그 라벨이 남아있을 확률
+        # 기준 기대 IoU"로 정의한다: magnitude%는 사라지고(IoU 0) 나머지는
+        # 그대로 남는다(IoU 1) → 기대값은 1 - magnitude/100.
+        return 1 - condition.magnitude / 100
+    if condition.type == "duplicate":
+        # 원본 박스 자체는 모양이 바뀌지 않는다(IoU 1.0 유지) — duplicate는
+        # 기존 박스를 왜곡하는 오류가 아니라 여분의 노이즈 박스를 추가하는
+        # 오류라, IoU 감소율로는 이 조건의 심각도를 드러낼 수 없다. mAP/
+        # Precision 저하율 쪽 지표로 봐야 한다.
+        return 1.0
     ious = []
     for label_path in sorted(label_dir.glob("*.txt")):
         lines = [l for l in label_path.read_text().splitlines() if l.strip()]

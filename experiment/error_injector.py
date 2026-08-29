@@ -94,6 +94,19 @@ def apply_rotation(box: Box, angle_deg: float) -> Box:
     return min(xs), min(ys), max(xs), max(ys)
 
 
+def apply_duplicate_offset(box: Box) -> Box:
+    """중복 박스용: 원본을 폭·높이의 8%만큼 살짝 어긋나게 옮긴 복제본을 만든다.
+
+    완전히 동일한 좌표로 중복시키면 YOLO가 사실상 같은 라벨 두 번으로 보고
+    학습에 영향이 거의 없다 — 실무에서 라벨러가 같은 객체를 두 번 클릭했을 때
+    나오는 "비슷하지만 완전히 겹치진 않는" 중복 박스를 흉내낸다.
+    """
+    left, top, right, bottom = box
+    w, h = right - left, bottom - top
+    dx, dy = w * 0.08, h * 0.08
+    return left + dx, top + dy, right + dx, bottom + dy
+
+
 def transform_box(box: Box, condition: Condition) -> Box:
     if condition.type == "none":
         return box
@@ -112,6 +125,12 @@ def transform_box(box: Box, condition: Condition) -> Box:
     raise ValueError(f"unknown condition type: {condition.type}")
 
 
+# missing/duplicate는 박스 모양이 아니라 "박스가 몇 개 있는가" 자체를 바꾸는
+# 오류라 나머지 타입들의 transform_box 경로(1줄 입력 → 1줄 출력)로는 표현할
+# 수 없다. build_condition_labels 안에서 별도 분기로 처리한다.
+LINE_COUNT_CHANGING_TYPES = {"missing", "duplicate"}
+
+
 def build_condition_labels(condition: Condition, image_dir: Path, gt_label_dir: Path, out_label_dir: Path) -> None:
     out_label_dir.mkdir(parents=True, exist_ok=True)
     rng = random.Random(f"{config.ERROR_SEED}:{condition.name}")
@@ -126,9 +145,22 @@ def build_condition_labels(condition: Condition, image_dir: Path, gt_label_dir: 
         out_lines = []
         for line in lines:
             box = yolo_to_pixel(line, img.width, img.height)
-            if condition.type != "none" and rng.random() < config.ERROR_RATIO:
-                box = transform_box(box, condition)
-            out_lines.append(pixel_to_yolo_line(box, img.width, img.height))
+
+            if condition.type == "missing":
+                # magnitude% 확률로 이 라벨 자체를 통째로 누락시킨다 (줄을 아예 안 씀).
+                if rng.random() < condition.magnitude / 100:
+                    continue
+                out_lines.append(pixel_to_yolo_line(box, img.width, img.height))
+            elif condition.type == "duplicate":
+                # 원본은 그대로 두고, magnitude% 확률로 살짝 어긋난 복제 박스를 추가한다.
+                out_lines.append(pixel_to_yolo_line(box, img.width, img.height))
+                if rng.random() < condition.magnitude / 100:
+                    dup_box = apply_duplicate_offset(box)
+                    out_lines.append(pixel_to_yolo_line(dup_box, img.width, img.height))
+            else:
+                if condition.type != "none" and rng.random() < config.ERROR_RATIO:
+                    box = transform_box(box, condition)
+                out_lines.append(pixel_to_yolo_line(box, img.width, img.height))
         (out_label_dir / gt_path.name).write_text("\n".join(out_lines) + "\n")
 
 

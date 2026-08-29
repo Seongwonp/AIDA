@@ -36,6 +36,8 @@ TYPE_LABELS = {
     "translation_x": "중심점 가로 이동",
     "translation_y": "중심점 세로 이동",
     "scale": "스케일 오류",
+    "missing": "라벨 누락",
+    "duplicate": "라벨 중복",
 }
 
 

@@ -62,8 +62,11 @@ KITTI_IMAGE_URL = os.environ.get(
 @dataclass(frozen=True)
 class Condition:
     name: str
-    type: str  # none | width | height | rotation | translation_x | translation_y | scale
+    type: str  # none | width | height | rotation | translation_x | translation_y | scale | missing | duplicate
     magnitude: float  # % (width/height/scale/translation) 또는 degree (rotation)
+    # missing/duplicate에서는 magnitude가 "라벨의 몇 %가 이 오류를 겪는가" 자체다
+    # (다른 타입처럼 ERROR_RATIO 30% 중 얼마나 세게 변형하는지가 아니라, 영향받는
+    # 라벨의 비율 자체를 의미 — error_injector.build_condition_labels 참고)
 
 
 CONDITIONS: list[Condition] = [
@@ -92,11 +95,25 @@ CONDITIONS: list[Condition] = [
     Condition("scale_p15", "scale", 15),
     Condition("scale_m30", "scale", -30),
     Condition("scale_p30", "scale", 30),
+    # 라벨링 실무에서 흔한 두 가지 오류(기하학적 왜곡이 아니라 "박스 존재 자체"의
+    # 오류): missing(라벨 누락), duplicate(같은 객체에 라벨 중복). docs/21 B 항목.
+    Condition("missing_10", "missing", 10),
+    Condition("missing_20", "missing", 20),
+    Condition("missing_30", "missing", 30),
+    Condition("duplicate_10", "duplicate", 10),
+    Condition("duplicate_20", "duplicate", 20),
+    Condition("duplicate_30", "duplicate", 30),
 ]
 
 # 위 "확장 검증용 8개"(중심점 이동·스케일). run_all.py --priority all 실행 시
 # 핵심 13개 다음 순서로 학습된다 (conditions_in_run_order 참고).
-NEXT_PHASE_CONDITIONS: list[Condition] = CONDITIONS[13:]
+NEXT_PHASE_CONDITIONS: list[Condition] = CONDITIONS[13:21]
+
+# missing/duplicate 6개. NEXT_PHASE_CONDITIONS와 마찬가지로
+# conditions_in_run_order()가 유일한 조건 출처가 되도록 여기 등록한다 —
+# run_all.py가 하드코딩된 이름 리스트를 다시 쓰다가 조건을 빠뜨리는 사고가
+# 있었으므로(docs/21 "다중 seed 검증 결과" 참고) 절대 반복하지 말 것.
+NEW_ERROR_TYPE_CONDITIONS: list[Condition] = CONDITIONS[21:]
 
 # 시간 리스크 관리: 핵심 7개(clean, width±30, height±30, rot±15)를 먼저 실행하고
 # 세분화 6개(width±15, height±15, rot±7.5)는 이어서 실행한다.
@@ -132,7 +149,12 @@ _OBB_BY_NAME = {c.name: c for c in OBB_CONDITIONS}
 
 
 def conditions_in_run_order() -> list[Condition]:
-    ordered_names = PRIORITY_1_NAMES + PRIORITY_2_NAMES + [c.name for c in NEXT_PHASE_CONDITIONS]
+    ordered_names = (
+        PRIORITY_1_NAMES
+        + PRIORITY_2_NAMES
+        + [c.name for c in NEXT_PHASE_CONDITIONS]
+        + [c.name for c in NEW_ERROR_TYPE_CONDITIONS]
+    )
     return [_BY_NAME[n] for n in ordered_names]
 
 

@@ -20,3 +20,9 @@ scale_m15,scale,-15,0.7225,27.75
 scale_p15,scale,15,0.7561,24.39
 scale_m30,scale,-30,0.49,51.0
 scale_p30,scale,30,0.5917,40.83
+missing_10,missing,10,0.9,10.0
+missing_20,missing,20,0.8,20.0
+missing_30,missing,30,0.7,30.0
+duplicate_10,duplicate,10,1.0,0.0
+duplicate_20,duplicate,20,1.0,0.0
+duplicate_30,duplicate,30,1.0,0.0
