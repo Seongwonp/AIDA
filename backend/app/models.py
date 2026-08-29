@@ -100,6 +100,39 @@ class UploadDiagnosisResult(BaseModel):
     caveat: str
 
 
+class SuspicionTypeCount(BaseModel):
+    suspicion: str
+    label: str
+    count: int
+    ratio: float
+
+
+class ReviewQueueItem(BaseModel):
+    """재검수 대기열 한 줄 — "몇 번 이미지의 몇 번 박스를 왜 다시 봐야 하는지"."""
+    rank: int
+    image: str
+    label_index: int | None  # 누락 의심이면 가리킬 라벨이 없어 None
+    suspicion: str
+    label: str
+    severity: float
+    detail: str
+
+
+class LabelDiagnosisResult(BaseModel):
+    dataset_id: str
+    generated_at: str
+    total_labels: int
+    total_findings: int
+    suspicion_ratio: float
+    dominant_type: str | None
+    dominant_label: str | None
+    dominant_ratio: float
+    systematic: bool
+    by_type: list[SuspicionTypeCount]
+    review_queue: list[ReviewQueueItem]
+    caveat: str
+
+
 class RoiEstimate(BaseModel):
     label: str
     assumptions: RoiAssumptions

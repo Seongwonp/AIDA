@@ -294,6 +294,21 @@
   padding-top: 16px;
 }
 
+.subsection-heading {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.verdict {
+  font-size: 14px;
+  line-height: 1.6;
+  background: #fafafa;
+  border: 1px solid var(--hair);
+  padding: 14px 16px;
+  margin: 0;
+}
+
 @media (max-width: 720px) {
   .app-header {
     align-items: flex-start;

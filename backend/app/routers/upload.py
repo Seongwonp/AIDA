@@ -18,13 +18,34 @@ from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse
 
 from app.config import EXPERIMENT_PYTHON, EXPERIMENT_ROOT, UPLOADS_DIR
-from app.models import ErrorTypeCandidate, PerformanceVector, UploadDiagnosisResult, UploadedDatasetInfo
+from app.models import (
+    ErrorTypeCandidate,
+    LabelDiagnosisResult,
+    PerformanceVector,
+    ReviewQueueItem,
+    SuspicionTypeCount,
+    UploadDiagnosisResult,
+    UploadedDatasetInfo,
+)
 from app.routers.report import TYPE_LABELS
 
 router = APIRouter(prefix="/api/datasets", tags=["upload"])
 
 MAX_UPLOAD_BYTES = 200 * 1024 * 1024  # 200MB
 DIAGNOSE_TIMEOUT_SEC = 300
+
+# 박스 단위 의심 유형 한글 라벨. report.py의 TYPE_LABELS(조건 type 기준)와
+# 겹치는 이름이 많지만, 여기엔 missing/duplicate가 "라벨이 빠졌다/겹쳤다"는
+# 박스 단위 의미로 들어가므로 별도로 둔다.
+SUSPICION_LABELS = {
+    "width": "가로 길이 어긋남",
+    "height": "세로 길이 어긋남",
+    "scale": "전체 크기 어긋남",
+    "translation_x": "중심점 가로 이동",
+    "translation_y": "중심점 세로 이동",
+    "missing": "라벨 누락 의심",
+    "duplicate": "라벨 중복 의심",
+}
 
 
 def _validate_dataset_dir(dataset_dir: Path) -> tuple[int, int]:
@@ -206,8 +227,12 @@ async def upload_dataset(file: UploadFile) -> UploadedDatasetInfo:
     )
 
 
-@router.post("/{dataset_id}/diagnose", response_model=UploadDiagnosisResult)
-def diagnose_dataset(dataset_id: str) -> UploadDiagnosisResult:
+def _run_experiment_script(dataset_id: str, script_name: str, extra_args: list[str]) -> None:
+    """experiment/venv 파이썬으로 진단 스크립트를 돌린다.
+
+    ultralytics/torch를 backend에 얹지 않으려고 서브프로세스로 분리한 구조라,
+    데이터셋/라벨 단위 진단이 이 함수를 공유한다.
+    """
     dataset_dir = UPLOADS_DIR / dataset_id
     if not dataset_dir.is_dir():
         raise HTTPException(404, "데이터셋을 찾을 수 없습니다. 먼저 업로드하세요.")
@@ -219,10 +244,10 @@ def diagnose_dataset(dataset_id: str) -> UploadDiagnosisResult:
             "(진단은 GPU가 있는 로컬 환경에서만 가능).",
         )
 
-    script = EXPERIMENT_ROOT / "diagnose_upload.py"
+    script = EXPERIMENT_ROOT / script_name
     try:
         proc = subprocess.run(
-            [str(EXPERIMENT_PYTHON), str(script), dataset_id],
+            [str(EXPERIMENT_PYTHON), str(script), *extra_args],
             capture_output=True,
             text=True,
             timeout=DIAGNOSE_TIMEOUT_SEC,
@@ -234,7 +259,73 @@ def diagnose_dataset(dataset_id: str) -> UploadDiagnosisResult:
     if proc.returncode != 0:
         raise HTTPException(500, f"진단 실패: {proc.stderr[-2000:]}")
 
+
+@router.post("/{dataset_id}/diagnose", response_model=UploadDiagnosisResult)
+def diagnose_dataset(dataset_id: str) -> UploadDiagnosisResult:
+    _run_experiment_script(dataset_id, "diagnose_upload.py", [dataset_id])
     return _load_diagnosis_json(dataset_id)
+
+
+def _load_label_diagnosis_json(dataset_id: str) -> LabelDiagnosisResult:
+    result_path = UPLOADS_DIR / dataset_id / "label_diagnosis.json"
+    if not result_path.exists():
+        raise HTTPException(404, "아직 라벨 단위 진단을 하지 않았습니다.")
+
+    data = json.loads(result_path.read_text(encoding="utf-8"))
+    summary = data["summary"]
+    dominant = summary["dominant_type"]
+
+    return LabelDiagnosisResult(
+        dataset_id=dataset_id,
+        generated_at=data["generated_at"],
+        total_labels=summary["total_labels"],
+        total_findings=summary["total_findings"],
+        suspicion_ratio=summary["suspicion_ratio"],
+        dominant_type=dominant,
+        dominant_label=SUSPICION_LABELS.get(dominant, dominant) if dominant else None,
+        dominant_ratio=summary["dominant_ratio"],
+        systematic=summary["systematic"],
+        by_type=[
+            SuspicionTypeCount(
+                suspicion=t["suspicion"],
+                label=SUSPICION_LABELS.get(t["suspicion"], t["suspicion"]),
+                count=t["count"],
+                ratio=t["ratio"],
+            )
+            for t in summary["by_type"]
+        ],
+        review_queue=[
+            ReviewQueueItem(
+                rank=item["rank"],
+                image=item["image"],
+                label_index=item["label_index"],
+                suspicion=item["suspicion"],
+                label=SUSPICION_LABELS.get(item["suspicion"], item["suspicion"]),
+                severity=item["severity"],
+                detail=item["detail"],
+            )
+            for item in data["review_queue"]
+        ],
+        caveat=data["caveat"],
+    )
+
+
+@router.post("/{dataset_id}/diagnose-labels", response_model=LabelDiagnosisResult)
+def diagnose_dataset_labels(dataset_id: str) -> LabelDiagnosisResult:
+    """박스 단위 진단 — 재검수 우선순위 목록을 만든다.
+
+    /diagnose(데이터셋 단위 성능 비교)와 달리 예측 박스와 라벨을 1:1로
+    대조하므로, "어느 이미지의 어느 박스를 다시 봐야 하는지"까지 나온다.
+    27개 조건 실측 기준 진단 정확도 92.6%
+    (experiment/label_diagnosis_eval.json).
+    """
+    _run_experiment_script(dataset_id, "diagnose_labels.py", ["--upload-id", dataset_id])
+    return _load_label_diagnosis_json(dataset_id)
+
+
+@router.get("/{dataset_id}/label-diagnosis", response_model=LabelDiagnosisResult)
+def get_label_diagnosis(dataset_id: str) -> LabelDiagnosisResult:
+    return _load_label_diagnosis_json(dataset_id)
 
 
 @router.get("/{dataset_id}/diagnosis", response_model=UploadDiagnosisResult)

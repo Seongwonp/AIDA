@@ -1,0 +1,1330 @@
+{
+  "accuracy": 0.9259,
+  "results": [
+    {
+      "condition": "clean",
+      "type": "none",
+      "magnitude": 0,
+      "expected": "계통적 오류 없음",
+      "dominant_type": "width",
+      "dominant_ratio": 0.067,
+      "systematic": false,
+      "suspicion_ratio": 0.2011,
+      "total_labels": 358,
+      "total_findings": 72,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "width",
+          "count": 24,
+          "ratio": 0.067
+        },
+        {
+          "suspicion": "missing",
+          "count": 17,
+          "ratio": 0.0475
+        },
+        {
+          "suspicion": "height",
+          "count": 16,
+          "ratio": 0.0447
+        },
+        {
+          "suspicion": "scale",
+          "count": 6,
+          "ratio": 0.0168
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 4,
+          "ratio": 0.0112
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 4,
+          "ratio": 0.0112
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.0028
+        }
+      ]
+    },
+    {
+      "condition": "width_m30",
+      "type": "width",
+      "magnitude": -30,
+      "expected": "width",
+      "dominant_type": "width",
+      "dominant_ratio": 0.3492,
+      "systematic": true,
+      "suspicion_ratio": 0.4637,
+      "total_labels": 358,
+      "total_findings": 166,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "width",
+          "count": 125,
+          "ratio": 0.3492
+        },
+        {
+          "suspicion": "missing",
+          "count": 18,
+          "ratio": 0.0503
+        },
+        {
+          "suspicion": "height",
+          "count": 9,
+          "ratio": 0.0251
+        },
+        {
+          "suspicion": "scale",
+          "count": 7,
+          "ratio": 0.0196
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 4,
+          "ratio": 0.0112
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 2,
+          "ratio": 0.0056
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.0028
+        }
+      ]
+    },
+    {
+      "condition": "width_p30",
+      "type": "width",
+      "magnitude": 30,
+      "expected": "width",
+      "dominant_type": "width",
+      "dominant_ratio": 0.3073,
+      "systematic": true,
+      "suspicion_ratio": 0.433,
+      "total_labels": 358,
+      "total_findings": 155,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "width",
+          "count": 110,
+          "ratio": 0.3073
+        },
+        {
+          "suspicion": "missing",
+          "count": 19,
+          "ratio": 0.0531
+        },
+        {
+          "suspicion": "height",
+          "count": 12,
+          "ratio": 0.0335
+        },
+        {
+          "suspicion": "scale",
+          "count": 9,
+          "ratio": 0.0251
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 2,
+          "ratio": 0.0056
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 2,
+          "ratio": 0.0056
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.0028
+        }
+      ]
+    },
+    {
+      "condition": "height_m30",
+      "type": "height",
+      "magnitude": -30,
+      "expected": "height",
+      "dominant_type": "height",
+      "dominant_ratio": 0.2793,
+      "systematic": true,
+      "suspicion_ratio": 0.4078,
+      "total_labels": 358,
+      "total_findings": 146,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "height",
+          "count": 100,
+          "ratio": 0.2793
+        },
+        {
+          "suspicion": "width",
+          "count": 18,
+          "ratio": 0.0503
+        },
+        {
+          "suspicion": "missing",
+          "count": 17,
+          "ratio": 0.0475
+        },
+        {
+          "suspicion": "scale",
+          "count": 7,
+          "ratio": 0.0196
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 2,
+          "ratio": 0.0056
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 1,
+          "ratio": 0.0028
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.0028
+        }
+      ]
+    },
+    {
+      "condition": "height_p30",
+      "type": "height",
+      "magnitude": 30,
+      "expected": "height",
+      "dominant_type": "height",
+      "dominant_ratio": 0.2542,
+      "systematic": true,
+      "suspicion_ratio": 0.3994,
+      "total_labels": 358,
+      "total_findings": 143,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "height",
+          "count": 91,
+          "ratio": 0.2542
+        },
+        {
+          "suspicion": "width",
+          "count": 20,
+          "ratio": 0.0559
+        },
+        {
+          "suspicion": "missing",
+          "count": 16,
+          "ratio": 0.0447
+        },
+        {
+          "suspicion": "scale",
+          "count": 8,
+          "ratio": 0.0223
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 5,
+          "ratio": 0.014
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 2,
+          "ratio": 0.0056
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.0028
+        }
+      ]
+    },
+    {
+      "condition": "rot_m15",
+      "type": "rotation",
+      "magnitude": -15,
+      "expected": "height|scale|width",
+      "dominant_type": "height",
+      "dominant_ratio": 0.1564,
+      "systematic": true,
+      "suspicion_ratio": 0.405,
+      "total_labels": 358,
+      "total_findings": 145,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "height",
+          "count": 56,
+          "ratio": 0.1564
+        },
+        {
+          "suspicion": "scale",
+          "count": 47,
+          "ratio": 0.1313
+        },
+        {
+          "suspicion": "missing",
+          "count": 19,
+          "ratio": 0.0531
+        },
+        {
+          "suspicion": "width",
+          "count": 15,
+          "ratio": 0.0419
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 4,
+          "ratio": 0.0112
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 2,
+          "ratio": 0.0056
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 2,
+          "ratio": 0.0056
+        }
+      ]
+    },
+    {
+      "condition": "rot_p15",
+      "type": "rotation",
+      "magnitude": 15,
+      "expected": "height|scale|width",
+      "dominant_type": "scale",
+      "dominant_ratio": 0.1704,
+      "systematic": true,
+      "suspicion_ratio": 0.4274,
+      "total_labels": 358,
+      "total_findings": 153,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "scale",
+          "count": 61,
+          "ratio": 0.1704
+        },
+        {
+          "suspicion": "height",
+          "count": 48,
+          "ratio": 0.1341
+        },
+        {
+          "suspicion": "missing",
+          "count": 19,
+          "ratio": 0.0531
+        },
+        {
+          "suspicion": "width",
+          "count": 18,
+          "ratio": 0.0503
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 3,
+          "ratio": 0.0084
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 3,
+          "ratio": 0.0084
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.0028
+        }
+      ]
+    },
+    {
+      "condition": "width_m15",
+      "type": "width",
+      "magnitude": -15,
+      "expected": "width",
+      "dominant_type": "width",
+      "dominant_ratio": 0.2542,
+      "systematic": true,
+      "suspicion_ratio": 0.3827,
+      "total_labels": 358,
+      "total_findings": 137,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "width",
+          "count": 91,
+          "ratio": 0.2542
+        },
+        {
+          "suspicion": "missing",
+          "count": 17,
+          "ratio": 0.0475
+        },
+        {
+          "suspicion": "height",
+          "count": 14,
+          "ratio": 0.0391
+        },
+        {
+          "suspicion": "scale",
+          "count": 7,
+          "ratio": 0.0196
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 4,
+          "ratio": 0.0112
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 3,
+          "ratio": 0.0084
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.0028
+        }
+      ]
+    },
+    {
+      "condition": "width_p15",
+      "type": "width",
+      "magnitude": 15,
+      "expected": "width",
+      "dominant_type": "width",
+      "dominant_ratio": 0.243,
+      "systematic": true,
+      "suspicion_ratio": 0.3659,
+      "total_labels": 358,
+      "total_findings": 131,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "width",
+          "count": 87,
+          "ratio": 0.243
+        },
+        {
+          "suspicion": "missing",
+          "count": 17,
+          "ratio": 0.0475
+        },
+        {
+          "suspicion": "height",
+          "count": 12,
+          "ratio": 0.0335
+        },
+        {
+          "suspicion": "scale",
+          "count": 8,
+          "ratio": 0.0223
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 3,
+          "ratio": 0.0084
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 3,
+          "ratio": 0.0084
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.0028
+        }
+      ]
+    },
+    {
+      "condition": "height_m15",
+      "type": "height",
+      "magnitude": -15,
+      "expected": "height",
+      "dominant_type": "height",
+      "dominant_ratio": 0.2626,
+      "systematic": true,
+      "suspicion_ratio": 0.405,
+      "total_labels": 358,
+      "total_findings": 145,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "height",
+          "count": 94,
+          "ratio": 0.2626
+        },
+        {
+          "suspicion": "width",
+          "count": 20,
+          "ratio": 0.0559
+        },
+        {
+          "suspicion": "missing",
+          "count": 16,
+          "ratio": 0.0447
+        },
+        {
+          "suspicion": "scale",
+          "count": 8,
+          "ratio": 0.0223
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 4,
+          "ratio": 0.0112
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 2,
+          "ratio": 0.0056
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.0028
+        }
+      ]
+    },
+    {
+      "condition": "height_p15",
+      "type": "height",
+      "magnitude": 15,
+      "expected": "height",
+      "dominant_type": "height",
+      "dominant_ratio": 0.2374,
+      "systematic": true,
+      "suspicion_ratio": 0.3966,
+      "total_labels": 358,
+      "total_findings": 142,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "height",
+          "count": 85,
+          "ratio": 0.2374
+        },
+        {
+          "suspicion": "width",
+          "count": 21,
+          "ratio": 0.0587
+        },
+        {
+          "suspicion": "missing",
+          "count": 18,
+          "ratio": 0.0503
+        },
+        {
+          "suspicion": "scale",
+          "count": 9,
+          "ratio": 0.0251
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 4,
+          "ratio": 0.0112
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 4,
+          "ratio": 0.0112
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.0028
+        }
+      ]
+    },
+    {
+      "condition": "rot_m7_5",
+      "type": "rotation",
+      "magnitude": -7.5,
+      "expected": "height|scale|width",
+      "dominant_type": "height",
+      "dominant_ratio": 0.1983,
+      "systematic": true,
+      "suspicion_ratio": 0.3939,
+      "total_labels": 358,
+      "total_findings": 141,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "height",
+          "count": 71,
+          "ratio": 0.1983
+        },
+        {
+          "suspicion": "scale",
+          "count": 25,
+          "ratio": 0.0698
+        },
+        {
+          "suspicion": "missing",
+          "count": 20,
+          "ratio": 0.0559
+        },
+        {
+          "suspicion": "width",
+          "count": 14,
+          "ratio": 0.0391
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 5,
+          "ratio": 0.014
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 4,
+          "ratio": 0.0112
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 2,
+          "ratio": 0.0056
+        }
+      ]
+    },
+    {
+      "condition": "rot_p7_5",
+      "type": "rotation",
+      "magnitude": 7.5,
+      "expected": "height|scale|width",
+      "dominant_type": "height",
+      "dominant_ratio": 0.2542,
+      "systematic": true,
+      "suspicion_ratio": 0.4469,
+      "total_labels": 358,
+      "total_findings": 160,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "height",
+          "count": 91,
+          "ratio": 0.2542
+        },
+        {
+          "suspicion": "width",
+          "count": 25,
+          "ratio": 0.0698
+        },
+        {
+          "suspicion": "missing",
+          "count": 18,
+          "ratio": 0.0503
+        },
+        {
+          "suspicion": "scale",
+          "count": 17,
+          "ratio": 0.0475
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 4,
+          "ratio": 0.0112
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 4,
+          "ratio": 0.0112
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.0028
+        }
+      ]
+    },
+    {
+      "condition": "trans_x_m15",
+      "type": "translation_x",
+      "magnitude": -15,
+      "expected": "translation_x",
+      "dominant_type": "translation_x",
+      "dominant_ratio": 0.2123,
+      "systematic": true,
+      "suspicion_ratio": 0.3939,
+      "total_labels": 358,
+      "total_findings": 141,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "translation_x",
+          "count": 76,
+          "ratio": 0.2123
+        },
+        {
+          "suspicion": "width",
+          "count": 23,
+          "ratio": 0.0642
+        },
+        {
+          "suspicion": "missing",
+          "count": 17,
+          "ratio": 0.0475
+        },
+        {
+          "suspicion": "height",
+          "count": 15,
+          "ratio": 0.0419
+        },
+        {
+          "suspicion": "scale",
+          "count": 6,
+          "ratio": 0.0168
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 4,
+          "ratio": 0.0112
+        }
+      ]
+    },
+    {
+      "condition": "trans_x_p15",
+      "type": "translation_x",
+      "magnitude": 15,
+      "expected": "translation_x",
+      "dominant_type": "translation_x",
+      "dominant_ratio": 0.2486,
+      "systematic": true,
+      "suspicion_ratio": 0.4413,
+      "total_labels": 358,
+      "total_findings": 158,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "translation_x",
+          "count": 89,
+          "ratio": 0.2486
+        },
+        {
+          "suspicion": "width",
+          "count": 26,
+          "ratio": 0.0726
+        },
+        {
+          "suspicion": "missing",
+          "count": 19,
+          "ratio": 0.0531
+        },
+        {
+          "suspicion": "height",
+          "count": 14,
+          "ratio": 0.0391
+        },
+        {
+          "suspicion": "scale",
+          "count": 5,
+          "ratio": 0.014
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 4,
+          "ratio": 0.0112
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.0028
+        }
+      ]
+    },
+    {
+      "condition": "trans_y_m15",
+      "type": "translation_y",
+      "magnitude": -15,
+      "expected": "translation_y",
+      "dominant_type": "translation_y",
+      "dominant_ratio": 0.2598,
+      "systematic": true,
+      "suspicion_ratio": 0.4385,
+      "total_labels": 358,
+      "total_findings": 157,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "translation_y",
+          "count": 93,
+          "ratio": 0.2598
+        },
+        {
+          "suspicion": "width",
+          "count": 21,
+          "ratio": 0.0587
+        },
+        {
+          "suspicion": "missing",
+          "count": 19,
+          "ratio": 0.0531
+        },
+        {
+          "suspicion": "height",
+          "count": 15,
+          "ratio": 0.0419
+        },
+        {
+          "suspicion": "scale",
+          "count": 6,
+          "ratio": 0.0168
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 3,
+          "ratio": 0.0084
+        }
+      ]
+    },
+    {
+      "condition": "trans_y_p15",
+      "type": "translation_y",
+      "magnitude": 15,
+      "expected": "translation_y",
+      "dominant_type": "translation_y",
+      "dominant_ratio": 0.2458,
+      "systematic": true,
+      "suspicion_ratio": 0.4358,
+      "total_labels": 358,
+      "total_findings": 156,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "translation_y",
+          "count": 88,
+          "ratio": 0.2458
+        },
+        {
+          "suspicion": "width",
+          "count": 23,
+          "ratio": 0.0642
+        },
+        {
+          "suspicion": "missing",
+          "count": 18,
+          "ratio": 0.0503
+        },
+        {
+          "suspicion": "height",
+          "count": 16,
+          "ratio": 0.0447
+        },
+        {
+          "suspicion": "scale",
+          "count": 6,
+          "ratio": 0.0168
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 4,
+          "ratio": 0.0112
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.0028
+        }
+      ]
+    },
+    {
+      "condition": "scale_m15",
+      "type": "scale",
+      "magnitude": -15,
+      "expected": "scale",
+      "dominant_type": "scale",
+      "dominant_ratio": 0.1285,
+      "systematic": true,
+      "suspicion_ratio": 0.3436,
+      "total_labels": 358,
+      "total_findings": 123,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "scale",
+          "count": 46,
+          "ratio": 0.1285
+        },
+        {
+          "suspicion": "width",
+          "count": 28,
+          "ratio": 0.0782
+        },
+        {
+          "suspicion": "height",
+          "count": 25,
+          "ratio": 0.0698
+        },
+        {
+          "suspicion": "missing",
+          "count": 17,
+          "ratio": 0.0475
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 3,
+          "ratio": 0.0084
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 3,
+          "ratio": 0.0084
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.0028
+        }
+      ]
+    },
+    {
+      "condition": "scale_p15",
+      "type": "scale",
+      "magnitude": 15,
+      "expected": "scale",
+      "dominant_type": "scale",
+      "dominant_ratio": 0.1704,
+      "systematic": true,
+      "suspicion_ratio": 0.3966,
+      "total_labels": 358,
+      "total_findings": 142,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "scale",
+          "count": 61,
+          "ratio": 0.1704
+        },
+        {
+          "suspicion": "width",
+          "count": 29,
+          "ratio": 0.081
+        },
+        {
+          "suspicion": "height",
+          "count": 23,
+          "ratio": 0.0642
+        },
+        {
+          "suspicion": "missing",
+          "count": 19,
+          "ratio": 0.0531
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 5,
+          "ratio": 0.014
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 4,
+          "ratio": 0.0112
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.0028
+        }
+      ]
+    },
+    {
+      "condition": "scale_m30",
+      "type": "scale",
+      "magnitude": -30,
+      "expected": "scale",
+      "dominant_type": "scale",
+      "dominant_ratio": 0.2402,
+      "systematic": true,
+      "suspicion_ratio": 0.4106,
+      "total_labels": 358,
+      "total_findings": 147,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "scale",
+          "count": 86,
+          "ratio": 0.2402
+        },
+        {
+          "suspicion": "width",
+          "count": 21,
+          "ratio": 0.0587
+        },
+        {
+          "suspicion": "missing",
+          "count": 19,
+          "ratio": 0.0531
+        },
+        {
+          "suspicion": "height",
+          "count": 13,
+          "ratio": 0.0363
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 4,
+          "ratio": 0.0112
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 4,
+          "ratio": 0.0112
+        }
+      ]
+    },
+    {
+      "condition": "scale_p30",
+      "type": "scale",
+      "magnitude": 30,
+      "expected": "scale",
+      "dominant_type": "scale",
+      "dominant_ratio": 0.2877,
+      "systematic": true,
+      "suspicion_ratio": 0.4637,
+      "total_labels": 358,
+      "total_findings": 166,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "scale",
+          "count": 103,
+          "ratio": 0.2877
+        },
+        {
+          "suspicion": "width",
+          "count": 22,
+          "ratio": 0.0615
+        },
+        {
+          "suspicion": "missing",
+          "count": 21,
+          "ratio": 0.0587
+        },
+        {
+          "suspicion": "height",
+          "count": 13,
+          "ratio": 0.0363
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 3,
+          "ratio": 0.0084
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 3,
+          "ratio": 0.0084
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.0028
+        }
+      ]
+    },
+    {
+      "condition": "missing_10",
+      "type": "missing",
+      "magnitude": 10,
+      "expected": "missing",
+      "dominant_type": "missing",
+      "dominant_ratio": 0.1084,
+      "systematic": false,
+      "suspicion_ratio": 0.262,
+      "total_labels": 332,
+      "total_findings": 87,
+      "correct": false,
+      "by_type": [
+        {
+          "suspicion": "missing",
+          "count": 36,
+          "ratio": 0.1084
+        },
+        {
+          "suspicion": "width",
+          "count": 23,
+          "ratio": 0.0693
+        },
+        {
+          "suspicion": "height",
+          "count": 14,
+          "ratio": 0.0422
+        },
+        {
+          "suspicion": "scale",
+          "count": 6,
+          "ratio": 0.0181
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 4,
+          "ratio": 0.012
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 3,
+          "ratio": 0.009
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.003
+        }
+      ]
+    },
+    {
+      "condition": "missing_20",
+      "type": "missing",
+      "magnitude": 20,
+      "expected": "missing",
+      "dominant_type": "missing",
+      "dominant_ratio": 0.2569,
+      "systematic": true,
+      "suspicion_ratio": 0.4028,
+      "total_labels": 288,
+      "total_findings": 116,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "missing",
+          "count": 74,
+          "ratio": 0.2569
+        },
+        {
+          "suspicion": "width",
+          "count": 20,
+          "ratio": 0.0694
+        },
+        {
+          "suspicion": "height",
+          "count": 12,
+          "ratio": 0.0417
+        },
+        {
+          "suspicion": "scale",
+          "count": 4,
+          "ratio": 0.0139
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 3,
+          "ratio": 0.0104
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 3,
+          "ratio": 0.0104
+        }
+      ]
+    },
+    {
+      "condition": "missing_30",
+      "type": "missing",
+      "magnitude": 30,
+      "expected": "missing",
+      "dominant_type": "missing",
+      "dominant_ratio": 0.4315,
+      "systematic": true,
+      "suspicion_ratio": 0.5927,
+      "total_labels": 248,
+      "total_findings": 147,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "missing",
+          "count": 107,
+          "ratio": 0.4315
+        },
+        {
+          "suspicion": "width",
+          "count": 17,
+          "ratio": 0.0685
+        },
+        {
+          "suspicion": "height",
+          "count": 13,
+          "ratio": 0.0524
+        },
+        {
+          "suspicion": "scale",
+          "count": 5,
+          "ratio": 0.0202
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 3,
+          "ratio": 0.0121
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 2,
+          "ratio": 0.0081
+        }
+      ]
+    },
+    {
+      "condition": "duplicate_10",
+      "type": "duplicate",
+      "magnitude": 10,
+      "expected": "duplicate",
+      "dominant_type": "duplicate",
+      "dominant_ratio": 0.0875,
+      "systematic": false,
+      "suspicion_ratio": 0.2725,
+      "total_labels": 400,
+      "total_findings": 109,
+      "correct": false,
+      "by_type": [
+        {
+          "suspicion": "duplicate",
+          "count": 35,
+          "ratio": 0.0875
+        },
+        {
+          "suspicion": "width",
+          "count": 25,
+          "ratio": 0.0625
+        },
+        {
+          "suspicion": "height",
+          "count": 16,
+          "ratio": 0.04
+        },
+        {
+          "suspicion": "missing",
+          "count": 14,
+          "ratio": 0.035
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 7,
+          "ratio": 0.0175
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 6,
+          "ratio": 0.015
+        },
+        {
+          "suspicion": "scale",
+          "count": 6,
+          "ratio": 0.015
+        }
+      ]
+    },
+    {
+      "condition": "duplicate_20",
+      "type": "duplicate",
+      "magnitude": 20,
+      "expected": "duplicate",
+      "dominant_type": "duplicate",
+      "dominant_ratio": 0.1306,
+      "systematic": true,
+      "suspicion_ratio": 0.304,
+      "total_labels": 421,
+      "total_findings": 128,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "duplicate",
+          "count": 55,
+          "ratio": 0.1306
+        },
+        {
+          "suspicion": "width",
+          "count": 24,
+          "ratio": 0.057
+        },
+        {
+          "suspicion": "missing",
+          "count": 17,
+          "ratio": 0.0404
+        },
+        {
+          "suspicion": "height",
+          "count": 17,
+          "ratio": 0.0404
+        },
+        {
+          "suspicion": "scale",
+          "count": 6,
+          "ratio": 0.0143
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 5,
+          "ratio": 0.0119
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 4,
+          "ratio": 0.0095
+        }
+      ]
+    },
+    {
+      "condition": "duplicate_30",
+      "type": "duplicate",
+      "magnitude": 30,
+      "expected": "duplicate",
+      "dominant_type": "duplicate",
+      "dominant_ratio": 0.197,
+      "systematic": true,
+      "suspicion_ratio": 0.3636,
+      "total_labels": 462,
+      "total_findings": 168,
+      "correct": true,
+      "by_type": [
+        {
+          "suspicion": "duplicate",
+          "count": 91,
+          "ratio": 0.197
+        },
+        {
+          "suspicion": "width",
+          "count": 25,
+          "ratio": 0.0541
+        },
+        {
+          "suspicion": "height",
+          "count": 17,
+          "ratio": 0.0368
+        },
+        {
+          "suspicion": "missing",
+          "count": 15,
+          "ratio": 0.0325
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 9,
+          "ratio": 0.0195
+        },
+        {
+          "suspicion": "scale",
+          "count": 7,
+          "ratio": 0.0152
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 4,
+          "ratio": 0.0087
+        }
+      ]
+    }
+  ]
+}

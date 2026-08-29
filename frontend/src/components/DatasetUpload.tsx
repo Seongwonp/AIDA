@@ -1,6 +1,15 @@
 import { useState } from "react";
-import { diagnoseDataset, getDatasetReportUrl, uploadDataset } from "../api";
-import type { UploadDiagnosisResult, UploadedDatasetInfo } from "../types";
+import {
+  diagnoseDataset,
+  diagnoseDatasetLabels,
+  getDatasetReportUrl,
+  uploadDataset,
+} from "../api";
+import type {
+  LabelDiagnosisResult,
+  UploadDiagnosisResult,
+  UploadedDatasetInfo,
+} from "../types";
 
 type Status = "idle" | "uploading" | "diagnosing" | "done" | "error";
 
@@ -8,6 +17,7 @@ export function DatasetUpload() {
   const [file, setFile] = useState<File | null>(null);
   const [dataset, setDataset] = useState<UploadedDatasetInfo | null>(null);
   const [result, setResult] = useState<UploadDiagnosisResult | null>(null);
+  const [labelResult, setLabelResult] = useState<LabelDiagnosisResult | null>(null);
   const [status, setStatus] = useState<Status>("idle");
 
   const busy = status === "uploading" || status === "diagnosing";
@@ -16,11 +26,18 @@ export function DatasetUpload() {
     if (!file) return;
     setStatus("uploading");
     setResult(null);
+    setLabelResult(null);
     try {
       const info = await uploadDataset(file);
       setDataset(info);
       setStatus("diagnosing");
-      const diagnosis = await diagnoseDataset(info.dataset_id);
+      // 박스 단위 진단이 실제 재검수 목록을 만드는 핵심이고, 데이터셋 단위
+      // 진단은 성능 패턴 DB와의 비교 근거를 함께 보여주기 위해 같이 돌린다.
+      const [labels, diagnosis] = await Promise.all([
+        diagnoseDatasetLabels(info.dataset_id),
+        diagnoseDataset(info.dataset_id),
+      ]);
+      setLabelResult(labels);
       setResult(diagnosis);
       setStatus("done");
     } catch {
@@ -127,6 +144,80 @@ export function DatasetUpload() {
           </div>
 
           <p className="report-caveat">{result.caveat}</p>
+        </div>
+      )}
+
+      {labelResult && (
+        <div className="upload-result">
+          <h3 className="subsection-heading">재검수 우선순위</h3>
+
+          <p className="verdict">
+            {labelResult.systematic ? (
+              <>
+                라벨 {labelResult.total_labels.toLocaleString()}개 중{" "}
+                <strong>{labelResult.total_findings.toLocaleString()}개</strong>가 의심되며,
+                그중 <strong>{labelResult.dominant_label}</strong>이(가){" "}
+                {(labelResult.dominant_ratio * 100).toFixed(1)}%로 몰려 있어{" "}
+                <strong>계통적 라벨 오류로 판단</strong>됩니다.
+              </>
+            ) : (
+              <>
+                라벨 {labelResult.total_labels.toLocaleString()}개 중{" "}
+                {labelResult.total_findings.toLocaleString()}개가 의심되지만 특정 유형에
+                몰리지 않아, <strong>계통적 오류로 보기는 어렵습니다</strong>. (모델 예측
+                자체의 흔들림일 가능성)
+              </>
+            )}
+          </p>
+
+          <div className="table-scroll">
+            <table className="report-table">
+              <thead>
+                <tr>
+                  <th>의심 유형</th>
+                  <th>건수</th>
+                  <th>라벨 대비 비율</th>
+                </tr>
+              </thead>
+              <tbody>
+                {labelResult.by_type.map((t) => (
+                  <tr key={t.suspicion}>
+                    <td>{t.label}</td>
+                    <td>{t.count.toLocaleString()}</td>
+                    <td>{(t.ratio * 100).toFixed(1)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <h4 className="subsection-heading">우선 재검수 박스 (상위 20개)</h4>
+          <div className="table-scroll">
+            <table className="report-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>이미지</th>
+                  <th>라벨</th>
+                  <th>의심 유형</th>
+                  <th>근거</th>
+                </tr>
+              </thead>
+              <tbody>
+                {labelResult.review_queue.slice(0, 20).map((item) => (
+                  <tr key={`${item.image}-${item.label_index}-${item.rank}`}>
+                    <td>{item.rank}</td>
+                    <td>{item.image}</td>
+                    <td>{item.label_index === null ? "—" : `#${item.label_index}`}</td>
+                    <td>{item.label}</td>
+                    <td>{item.detail}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p className="report-caveat">{labelResult.caveat}</p>
         </div>
       )}
     </section>

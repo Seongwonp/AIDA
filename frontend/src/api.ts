@@ -4,6 +4,7 @@ import type {
   ConditionMetricAgg,
   DatasetSummary,
   DiagnosisResult,
+  LabelDiagnosisResult,
   RoiEstimate,
   UploadDiagnosisResult,
   UploadedDatasetInfo,
@@ -49,6 +50,11 @@ export const uploadDataset = (file: File) => {
 export const diagnoseDataset = (datasetId: string) =>
   client
     .post<UploadDiagnosisResult>(`/api/datasets/${datasetId}/diagnose`)
+    .then((res) => res.data);
+
+export const diagnoseDatasetLabels = (datasetId: string) =>
+  client
+    .post<LabelDiagnosisResult>(`/api/datasets/${datasetId}/diagnose-labels`)
     .then((res) => res.data);
 
 export const getDatasetReportUrl = (datasetId: string) =>

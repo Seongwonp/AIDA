@@ -82,6 +82,38 @@ export interface UploadDiagnosisResult {
   caveat: string;
 }
 
+export interface SuspicionTypeCount {
+  suspicion: string;
+  label: string;
+  count: number;
+  ratio: number;
+}
+
+export interface ReviewQueueItem {
+  rank: number;
+  image: string;
+  label_index: number | null;
+  suspicion: string;
+  label: string;
+  severity: number;
+  detail: string;
+}
+
+export interface LabelDiagnosisResult {
+  dataset_id: string;
+  generated_at: string;
+  total_labels: number;
+  total_findings: number;
+  suspicion_ratio: number;
+  dominant_type: string | null;
+  dominant_label: string | null;
+  dominant_ratio: number;
+  systematic: boolean;
+  by_type: SuspicionTypeCount[];
+  review_queue: ReviewQueueItem[];
+  caveat: string;
+}
+
 export interface RoiAssumptions {
   dataset_labels: number;
   manual_review_minutes_per_label: number;
