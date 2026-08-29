@@ -26,6 +26,8 @@ def main():
     parser.add_argument("--skip-download", action="store_true")
     parser.add_argument("--skip-preprocess", action="store_true", help="data_loader/error_injector 스킵")
     parser.add_argument("--epochs", type=int, default=None, help="config.EPOCHS 대신 사용 (스모크 테스트용)")
+    parser.add_argument("--conditions", nargs="+",
+                        help="특정 조건만 실행 (예: 이미 끝난 조건을 다시 돌리지 않을 때)")
     args = parser.parse_args()
 
     if not args.skip_download:
@@ -44,6 +46,12 @@ def main():
         # 중심점이동 8개)가 "all"에서 빠진다 — conditions_in_run_order()가 21개
         # 전체(핵심 13개 + 확장 8개)를 올바른 순서로 반환한다.
         names = [c.name for c in config.conditions_in_run_order()]
+
+    if args.conditions:
+        unknown = [n for n in args.conditions if n not in by_name]
+        if unknown:
+            raise SystemExit(f"알 수 없는 조건: {unknown}")
+        names = [n for n in names if n in set(args.conditions)]
 
     for i, name in enumerate(names, 1):
         condition = by_name[name]

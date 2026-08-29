@@ -68,7 +68,8 @@ def _merge_into(new_df: pd.DataFrame, csv_path: Path) -> None:
     combined.to_csv(csv_path, index=False)
 
 
-def run_seed(seed: int, epochs: int | None, aabb: bool, obb: bool) -> None:
+def run_seed(seed: int, epochs: int | None, aabb: bool, obb: bool,
+             conditions: list[str] | None = None) -> None:
     """하나의 error-seed에 대해 오류 주입 → 학습 → 평가 → CSV 저장 순으로 실행."""
     print(f"\n{'='*60}")
     print(f" error_seed = {seed}")
@@ -76,6 +77,8 @@ def run_seed(seed: int, epochs: int | None, aabb: bool, obb: bool) -> None:
 
     env = {**os.environ, "AIDA_ERROR_SEED": str(seed)}
     extra = ["--epochs", str(epochs)] if epochs else []
+    if conditions:
+        extra += ["--conditions", *conditions]
 
     if aabb:
         print(f"\n── AABB 오류 주입 (seed={seed}) ──")
@@ -89,7 +92,8 @@ def run_seed(seed: int, epochs: int | None, aabb: bool, obb: bool) -> None:
             env=env, check=True,
         )
         # run_all.py가 metrics.csv에 쓴 결과를 multi_seed_csv로 복사
-        _copy_to_multi_seed(config.MULTI_SEED_CSV, seed, is_obb=False, env=env)
+        _copy_to_multi_seed(config.MULTI_SEED_CSV, seed, is_obb=False, env=env,
+                            only=conditions)
         _restore_canonical(config.METRICS_CSV, config.MULTI_SEED_CSV, seed)
 
     if obb:
@@ -129,7 +133,8 @@ def _restore_canonical(canonical_csv: Path, multi_csv: Path, seed: int) -> None:
     baseline.to_csv(canonical_csv, index=False)
 
 
-def _copy_to_multi_seed(multi_csv: Path, seed: int, is_obb: bool, env: dict) -> None:
+def _copy_to_multi_seed(multi_csv: Path, seed: int, is_obb: bool, env: dict,
+                         only: list[str] | None = None) -> None:
     """run_all/run_obb가 갱신한 단일-seed CSV를 multi_seed CSV에 합친다.
 
     run_all.py는 AIDA_ERROR_SEED에 따라 다른 RUNS_DIR을 쓰지만
@@ -144,6 +149,11 @@ def _copy_to_multi_seed(multi_csv: Path, seed: int, is_obb: bool, env: dict) -> 
         return
 
     df = pd.read_csv(src)
+    if only:
+        # 일부 조건만 돌렸다면 그 조건 행만 옮긴다. metrics.csv에는 안 돌린
+        # 조건의 seed=42 값이 그대로 남아 있는데, 그걸 통째로 복사하면 이미
+        # 제대로 측정해둔 다른 seed 결과를 seed=42 값으로 덮어쓰게 된다.
+        df = df[df["condition"].isin(only)]
     df.insert(0, "error_seed", seed)
     _merge_into(df, multi_csv)
     label = "OBB" if is_obb else "AABB"
@@ -159,6 +169,8 @@ def main() -> None:
     parser.add_argument("--epochs", type=int, default=None, help="스모크 테스트용 epoch 수")
     parser.add_argument("--aabb-only", action="store_true", help="AABB만 실행")
     parser.add_argument("--obb-only", action="store_true", help="OBB만 실행")
+    parser.add_argument("--conditions", nargs="+",
+                        help="AABB 조건 중 일부만 실행 (이미 끝난 조건 재실행 방지)")
     args = parser.parse_args()
 
     run_aabb = not args.obb_only
@@ -174,7 +186,7 @@ def main() -> None:
     total = len(args.seeds)
     for i, seed in enumerate(args.seeds, 1):
         print(f"\n[{i}/{total}] error_seed={seed} 시작")
-        run_seed(seed, args.epochs, run_aabb, run_obb)
+        run_seed(seed, args.epochs, run_aabb, run_obb, args.conditions)
 
     print(f"\n\n전체 완료!")
     print(f"  AABB 누적: {config.MULTI_SEED_CSV}")
