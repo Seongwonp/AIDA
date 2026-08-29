@@ -11,6 +11,7 @@
 - 회전 오류: 박스 네 꼭짓점을 중심 기준 `magnitude`도(度)만큼 회전 →
   회전된 꼭짓점을 감싸는 축정렬 사각형으로 재계산 (KITTI/YOLO는 회전 박스 미지원)
 """
+import json
 import math
 import os
 import random
@@ -131,9 +132,23 @@ def transform_box(box: Box, condition: Condition) -> Box:
 LINE_COUNT_CHANGING_TYPES = {"missing", "duplicate"}
 
 
-def build_condition_labels(condition: Condition, image_dir: Path, gt_label_dir: Path, out_label_dir: Path) -> None:
+def build_condition_labels(condition: Condition, image_dir: Path, gt_label_dir: Path,
+                            out_label_dir: Path) -> dict[str, dict]:
+    """조건별 오류 라벨을 만들고, "어느 박스에 오류를 넣었는지" 기록을 함께 반환한다.
+
+    기록은 진단 정확도를 박스 단위로 재기 위한 정답지다
+    (evaluate_box_accuracy.py). 이미지 stem별로:
+      errored: 오류가 들어간 **출력 파일 기준** 라벨 인덱스
+      dropped: 누락시킨 박스의 정규화 좌표 [cx, cy, w, h]
+
+    출력 기준 인덱스인 게 중요하다 — missing은 줄을 지우고 duplicate는 줄을
+    끼워 넣으므로, 입력(GT) 인덱스와 출력 인덱스가 어긋난다. 진단은 출력
+    파일을 보고 "몇 번째 라벨"이라고 말하므로 정답지도 출력 기준이어야 한다.
+    missing만은 가리킬 출력 줄이 아예 없어서 좌표로 기록한다.
+    """
     out_label_dir.mkdir(parents=True, exist_ok=True)
     rng = random.Random(f"{config.ERROR_SEED}:{condition.name}")
+    record: dict[str, dict] = {}
 
     for gt_path in sorted(gt_label_dir.glob("*.txt")):
         lines = [l for l in gt_path.read_text().splitlines() if l.strip()]
@@ -143,12 +158,16 @@ def build_condition_labels(condition: Condition, image_dir: Path, gt_label_dir: 
 
         img = Image.open(image_dir / f"{gt_path.stem}.png")
         out_lines = []
+        errored: list[int] = []
+        dropped: list[list[float]] = []
         for line in lines:
             box = yolo_to_pixel(line, img.width, img.height)
 
             if condition.type == "missing":
                 # magnitude% 확률로 이 라벨 자체를 통째로 누락시킨다 (줄을 아예 안 씀).
                 if rng.random() < condition.magnitude / 100:
+                    cx, cy, w, h = center_size_normalized(box, img.width, img.height)
+                    dropped.append([cx, cy, w, h])
                     continue
                 out_lines.append(pixel_to_yolo_line(box, img.width, img.height))
             elif condition.type == "duplicate":
@@ -156,12 +175,30 @@ def build_condition_labels(condition: Condition, image_dir: Path, gt_label_dir: 
                 out_lines.append(pixel_to_yolo_line(box, img.width, img.height))
                 if rng.random() < condition.magnitude / 100:
                     dup_box = apply_duplicate_offset(box)
+                    # 새로 끼워 넣은 줄이 곧 오류 박스다
+                    errored.append(len(out_lines))
                     out_lines.append(pixel_to_yolo_line(dup_box, img.width, img.height))
             else:
                 if condition.type != "none" and rng.random() < config.ERROR_RATIO:
                     box = transform_box(box, condition)
+                    errored.append(len(out_lines))
                 out_lines.append(pixel_to_yolo_line(box, img.width, img.height))
+
         (out_label_dir / gt_path.name).write_text("\n".join(out_lines) + "\n")
+        if errored or dropped:
+            record[gt_path.stem] = {"errored": errored, "dropped": dropped}
+
+    return record
+
+
+def center_size_normalized(box: Box, img_w: int, img_h: int) -> tuple[float, float, float, float]:
+    left, top, right, bottom = box
+    return (
+        round((left + right) / 2 / img_w, 6),
+        round((top + bottom) / 2 / img_h, 6),
+        round((right - left) / img_w, 6),
+        round((bottom - top) / img_h, 6),
+    )
 
 
 def symlink_files(src_dir: Path, dst_dir: Path) -> None:
@@ -207,11 +244,15 @@ def build_condition(condition: Condition) -> Path:
     symlink_files(config.IMAGES_VAL_DIR, root / "images" / "val")
     symlink_files(config.LABELS_GT_VAL_DIR, root / "labels" / "val")
 
-    build_condition_labels(
+    record = build_condition_labels(
         condition,
         image_dir=config.IMAGES_TRAIN_DIR,
         gt_label_dir=config.LABELS_GT_TRAIN_DIR,
         out_label_dir=root / "labels" / "train",
+    )
+    # 박스 단위 진단 정확도의 정답지 (evaluate_box_accuracy.py가 읽는다)
+    (root / "injection_record.json").write_text(
+        json.dumps(record, ensure_ascii=False), encoding="utf-8"
     )
     yaml_path = write_data_yaml(root)
     print(f"[{condition.name}] 라벨/데이터셋 생성 완료 → {root} (data.yaml: {yaml_path})")

@@ -18,10 +18,12 @@ from error_injector import (  # noqa: E402
     apply_width,
 )
 from label_diagnosis import (  # noqa: E402
+    TYPE_RELIABILITY,
     classify_geometry,
     diagnose_image,
     iou,
     match_boxes,
+    severity_for,
     summarize,
 )
 
@@ -69,9 +71,11 @@ def test_small_noise_is_tolerated():
 
 
 def test_detects_width_error():
-    suspicion, severity, _ = classify_geometry(PRED, apply_width(PRED, -30))
+    # 두 번째 반환값은 원시 신호(변형률)다 — 재검수 정렬에 쓰는 severity는
+    # severity_for()가 유형 신뢰도를 곱해 따로 만든다.
+    suspicion, raw, _ = classify_geometry(PRED, apply_width(PRED, -30))
     assert suspicion == "width"
-    assert severity == pytest.approx(0.30, abs=0.01)
+    assert raw == pytest.approx(0.30, abs=0.01)
 
 
 def test_detects_height_error():
@@ -81,9 +85,9 @@ def test_detects_height_error():
 
 def test_scale_error_reported_as_scale_not_width_or_height():
     """가로·세로가 함께 변하면 width/height 둘 다 걸리지만 scale로 불러야 한다."""
-    suspicion, severity, _ = classify_geometry(PRED, apply_scale(PRED, -30))
+    suspicion, raw, _ = classify_geometry(PRED, apply_scale(PRED, -30))
     assert suspicion == "scale"
-    assert severity == pytest.approx(0.30, abs=0.01)
+    assert raw == pytest.approx(0.30, abs=0.01)
 
 
 def test_detects_translation_x():
@@ -161,3 +165,43 @@ def test_scattered_noise_is_not_flagged_systematic():
     summary = summarize(findings, total_labels=100)
     assert summary["total_findings"] == 3
     assert summary["systematic"] is False
+
+
+# ── 심각도(재검수 정렬 키) ───────────────────────────────────────────────────
+# 초기 버전은 유형별 원시 신호(누락=확신도, 크기=변형률)를 그대로 severity로
+# 썼는데, 단위가 서로 달라 확신도 0.9대인 누락 의심이 목록 상단을 점령했다.
+# 정작 누락은 유형별 정밀도가 가장 낮아서(27%) 상위 10% 정밀도가 28.5%로
+# 전체 평균(58.9%)보다 낮아지는 역전이 일어났다. 아래 테스트들이 그 회귀를 막는다.
+
+def test_severity_is_comparable_across_types():
+    """신뢰도 낮은 유형은 신호가 최대여도 신뢰도 높은 유형의 최소보다 낮아야 한다."""
+    strongest_missing = severity_for("missing", 1.0)  # 확신도 100%
+    weakest_duplicate = severity_for("duplicate", 0.5)  # 임계값 턱걸이
+    assert strongest_missing < weakest_duplicate
+
+
+def test_severity_orders_by_type_reliability():
+    """같은 신호 세기라면 신뢰도 순서가 그대로 심각도 순서가 된다."""
+    ranked = sorted(TYPE_RELIABILITY, key=lambda t: -TYPE_RELIABILITY[t])
+    severities = [severity_for(t, 1.0) for t in ranked]
+    assert severities == sorted(severities, reverse=True)
+
+
+def test_severity_rises_with_signal_within_a_type():
+    """같은 유형 안에서는 더 크게 어긋난 박스가 먼저 와야 한다."""
+    assert severity_for("scale", 0.40) > severity_for("scale", 0.15)
+
+
+def test_severity_never_exceeds_type_reliability():
+    """심각도는 '진짜 오류일 가능성' 추정치이므로 유형 신뢰도를 넘을 수 없다."""
+    for suspicion, reliability in TYPE_RELIABILITY.items():
+        assert severity_for(suspicion, 999.0) <= reliability + 1e-9
+
+
+def test_missing_findings_rank_below_geometric_in_queue():
+    """실제 대기열 정렬에서 누락 의심이 크기 오류보다 아래로 가야 한다."""
+    findings = diagnose_image("a.png", [PRED], [0.99], [])  # 확신도 높은 누락
+    findings += diagnose_image("b.png", [PRED], [0.9], [apply_scale(PRED, -30)])
+    ranked = sorted(findings, key=lambda f: -f.severity)
+    assert ranked[0].suspicion == "scale"
+    assert ranked[-1].suspicion == "missing"

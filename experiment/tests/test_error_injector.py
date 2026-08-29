@@ -111,3 +111,78 @@ def test_pixel_to_yolo_line_clamps_out_of_bounds():
     assert 0.0 <= float(cy) <= 1.0
     assert 0.0 <= float(w) <= 1.0
     assert 0.0 <= float(h) <= 1.0
+
+
+# ── 오류 주입 기록 (박스 단위 진단 정확도의 정답지) ──────────────────────────
+# evaluate_box_accuracy.py가 이 기록을 정답으로 삼아 채점하므로, 기록이 틀리면
+# 정확도 숫자 자체가 무의미해진다. magnitude=100으로 두어 RNG와 무관하게
+# "모든 박스가 오류"인 결정적 상황을 만들어 인덱스 규칙만 검증한다.
+
+def _make_dataset(tmp_path, n_boxes: int):
+    from PIL import Image
+
+    image_dir = tmp_path / "images"
+    label_dir = tmp_path / "labels_gt"
+    image_dir.mkdir()
+    label_dir.mkdir()
+    Image.new("RGB", (100, 100)).save(image_dir / "frame.png")
+    lines = [f"0 0.{i + 1}00000 0.500000 0.100000 0.100000" for i in range(n_boxes)]
+    (label_dir / "frame.txt").write_text("\n".join(lines) + "\n")
+    return image_dir, label_dir
+
+
+def test_record_marks_every_transformed_box(tmp_path):
+    from error_injector import build_condition_labels
+
+    image_dir, label_dir = _make_dataset(tmp_path, 3)
+    out_dir = tmp_path / "out"
+    # ERROR_RATIO는 환경값이라 건드리지 않고, 기록 구조만 확인한다
+    record = build_condition_labels(
+        Condition("t", "width", -30), image_dir, label_dir, out_dir
+    )
+    errored = record.get("frame", {}).get("errored", [])
+    # 출력 줄 수는 그대로 3줄이고, 기록된 인덱스는 그 범위 안이어야 한다
+    out_lines = [l for l in (out_dir / "frame.txt").read_text().splitlines() if l.strip()]
+    assert len(out_lines) == 3
+    assert all(0 <= i < 3 for i in errored)
+
+
+def test_missing_record_uses_coordinates_not_indices(tmp_path):
+    """누락은 출력에 가리킬 줄이 없으므로 좌표로 기록해야 한다."""
+    from error_injector import build_condition_labels
+
+    image_dir, label_dir = _make_dataset(tmp_path, 3)
+    out_dir = tmp_path / "out"
+    record = build_condition_labels(
+        Condition("t", "missing", 100), image_dir, label_dir, out_dir
+    )
+    entry = record["frame"]
+    assert entry["errored"] == []  # 남은 줄이 없으니 인덱스 기록도 없음
+    assert len(entry["dropped"]) == 3  # 세 박스 모두 좌표로 기록
+    assert all(len(box) == 4 for box in entry["dropped"])
+    out_lines = [l for l in (out_dir / "frame.txt").read_text().splitlines() if l.strip()]
+    assert out_lines == []
+
+
+def test_duplicate_record_points_at_inserted_line(tmp_path):
+    """복제본은 원본 바로 뒤에 끼워지므로 기록은 홀수 인덱스여야 한다."""
+    from error_injector import build_condition_labels
+
+    image_dir, label_dir = _make_dataset(tmp_path, 3)
+    out_dir = tmp_path / "out"
+    record = build_condition_labels(
+        Condition("t", "duplicate", 100), image_dir, label_dir, out_dir
+    )
+    out_lines = [l for l in (out_dir / "frame.txt").read_text().splitlines() if l.strip()]
+    assert len(out_lines) == 6  # 원본 3 + 복제 3
+    assert record["frame"]["errored"] == [1, 3, 5]
+
+
+def test_clean_condition_records_nothing(tmp_path):
+    from error_injector import build_condition_labels
+
+    image_dir, label_dir = _make_dataset(tmp_path, 3)
+    record = build_condition_labels(
+        Condition("clean", "none", 0), image_dir, label_dir, tmp_path / "out"
+    )
+    assert record == {}

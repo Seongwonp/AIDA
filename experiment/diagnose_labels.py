@@ -124,6 +124,7 @@ def build_result(name: str, findings: list[BoxFinding], total_labels: int, top_n
             }
             for i, f in enumerate(ranked[:top_n])
         ],
+        "total_in_queue": len(ranked),
         "caveat": (
             "기준 모델(clean)의 예측과 라벨을 대조한 결과입니다. 모델 예측 자체도 "
             "완벽하지 않으므로 확정 오류가 아니라 재검수 우선순위로 활용하세요."

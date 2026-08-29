@@ -38,6 +38,54 @@ MISSING_CONFIDENCE_THRESHOLD = 0.5
 # (26%+) 사이에 두되, 약한 오류(10% 주입)까지 놓치지 않도록 낮게 잡았다.
 SYSTEMATIC_ERROR_RATIO = 0.12
 
+# ── 심각도 계산 ─────────────────────────────────────────────────────────────
+# severity는 재검수 목록의 정렬 키이므로 "이게 진짜 오류일 가능성"을 뜻해야
+# 하고, 유형이 달라도 서로 비교 가능해야 한다. 유형별 원시 신호(누락은 확신도,
+# 중복은 겹침, 크기는 변형률)는 단위도 범위도 달라서 그냥 쓰면 안 된다 —
+# 실제로 초기 버전이 원시값을 그대로 써서 상위 10% 정밀도가 28.5%로 전체
+# 평균(58.9%)보다 낮았다. 확신도 0.9대인 누락 의심이 목록 상단을 점령했는데
+# 정작 누락은 유형별 정밀도가 27%로 가장 낮았기 때문이다.
+#
+# 그래서 두 가지를 곱한다:
+#   1) 유형 신뢰도 — 그 유형이 얼마나 미더운지 (아래 실측 상수)
+#   2) 신호 세기 — 임계값을 얼마나 넘었는지 0~1로 정규화
+# 유형끼리는 신뢰도가 순서를 정하고, 같은 유형 안에서는 세기가 정한다.
+#
+# 유형 신뢰도는 evaluate_box_accuracy.py로 KITTI Car 26개 조건에서 실측한
+# 유형별 정밀도다. **도메인이 바뀌면 재보정해야 한다** — 예를 들어 누락이
+# 27%로 낮은 건 KITTI가 원거리·가려진 차를 애초에 라벨링하지 않아 모델의
+# 정상 탐지가 "누락"으로 오인되기 때문이고, 이건 KITTI 고유의 사정이다.
+TYPE_RELIABILITY = {
+    "duplicate": 0.90,
+    "scale": 0.81,
+    "translation_y": 0.73,
+    "translation_x": 0.70,
+    "height": 0.67,
+    "width": 0.49,
+    "missing": 0.27,
+}
+# 유형별 (임계값, 이 값 이상이면 신호가 최대) — 신호 세기 정규화 구간.
+_STRENGTH_RANGE = {
+    "width": (SIZE_DEVIATION_THRESHOLD, 0.40),
+    "height": (SIZE_DEVIATION_THRESHOLD, 0.40),
+    "scale": (SIZE_DEVIATION_THRESHOLD, 0.40),
+    "translation_x": (CENTER_SHIFT_THRESHOLD, 0.40),
+    "translation_y": (CENTER_SHIFT_THRESHOLD, 0.40),
+    "missing": (MISSING_CONFIDENCE_THRESHOLD, 1.0),
+    "duplicate": (DUPLICATE_IOU_THRESHOLD, 1.0),
+}
+
+
+def severity_for(suspicion: str, raw_signal: float) -> float:
+    """유형 신뢰도 × 신호 세기 → 유형이 달라도 비교 가능한 재검수 우선순위 점수."""
+    floor, ceiling = _STRENGTH_RANGE.get(suspicion, (0.0, 1.0))
+    span = ceiling - floor
+    strength = (raw_signal - floor) / span if span > 0 else 1.0
+    strength = min(max(strength, 0.0), 1.0)
+    reliability = TYPE_RELIABILITY.get(suspicion, 0.5)
+    # 세기는 0.5~1.0 구간으로 눌러서, 유형 신뢰도가 순서의 주도권을 갖게 한다
+    return round(reliability * (0.5 + 0.5 * strength), 4)
+
 
 @dataclass(frozen=True)
 class BoxFinding:
@@ -47,6 +95,11 @@ class BoxFinding:
     suspicion: str  # missing | duplicate | scale | width | height | translation_x | translation_y
     severity: float  # 0~1, 클수록 확실. 재검수 우선순위 정렬 키
     detail: str  # 사람이 읽을 근거 ("예측 대비 28% 작음" 등)
+    # 문제의 박스 위치. 라벨이 있는 의심은 그 라벨 박스, 누락 의심은 "라벨이
+    # 있어야 할 자리"인 예측 박스다. 좌표계는 입력과 같다(보통 픽셀).
+    # 누락 의심은 가리킬 인덱스가 없어서, 이 좌표가 그 박스를 지목하는
+    # 유일한 수단이다 — 박스 단위 정확도 측정도 이 좌표로 대조한다.
+    box: Box = (0.0, 0.0, 0.0, 0.0)
 
 
 def center_size(box: Box) -> tuple[float, float, float, float]:
@@ -150,8 +203,10 @@ def diagnose_image(
     for li, pi in matched.items():
         verdict = classify_geometry(predictions[pi], labels[li])
         if verdict is not None:
-            suspicion, severity, detail = verdict
-            findings.append(BoxFinding(image, li, suspicion, round(severity, 3), detail))
+            suspicion, raw, detail = verdict
+            findings.append(BoxFinding(
+                image, li, suspicion, severity_for(suspicion, raw), detail, labels[li],
+            ))
 
     # 2) 짝 없는 라벨: 이미 짝지어진 예측과 크게 겹치면 중복 라벨
     for li in unmatched_labels:
@@ -160,8 +215,9 @@ def diagnose_image(
             best_iou = max(best_iou, iou(predictions[pi], labels[li]))
         if best_iou >= DUPLICATE_IOU_THRESHOLD:
             findings.append(BoxFinding(
-                image, li, "duplicate", round(best_iou, 3),
+                image, li, "duplicate", severity_for("duplicate", best_iou),
                 f"다른 라벨과 같은 객체를 가리킴 (겹침 {best_iou:.2f})",
+                labels[li],
             ))
 
     # 3) 짝 없는 예측: 모델이 확신하는데 라벨이 없으면 누락 의심
@@ -169,8 +225,9 @@ def diagnose_image(
         conf = confidences[pi] if pi < len(confidences) else 0.0
         if conf >= MISSING_CONFIDENCE_THRESHOLD:
             findings.append(BoxFinding(
-                image, None, "missing", round(conf, 3),
+                image, None, "missing", severity_for("missing", conf),
                 f"모델이 확신({conf:.2f})하는 위치에 라벨 없음",
+                predictions[pi],
             ))
 
     return findings
