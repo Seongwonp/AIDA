@@ -62,18 +62,36 @@ SYSTEMATIC_ERROR_RATIO = 0.12
 # (KITTI가 원거리·가려진 차를 라벨링하지 않아 모델의 정상 탐지가 "누락"으로
 # 오인되는데, 그 오탐이 누락 없는 23개 조건에서 대량으로 나왔다.)
 #
-# 그래서 2단으로 나눈다. 데이터셋이 계통적으로 그 유형을 갖고 있다고 이미
-# 판정했다면, "있기는 한가"는 해소됐으므로 높은 쪽을 쓴다.
-TYPE_RELIABILITY_DOMINANT = {
+# 그래서 2단으로 나눈다. 데이터셋이 계통적으로 그 유형을 갖고 있다면
+# "있기는 한가"는 해소됐으므로 높은 쪽을 쓴다.
+#
+# 가르는 기준은 "그 유형이 1등인가"가 아니라 **"계통적 임계값을 넘는가"**다.
+# 처음엔 대표(1등) 유형만 승격시켰는데, 혼합 오류 조건(calibrate_mixed.py)으로
+# 재보정해보니 **2차 유형도 실제로 존재하기만 하면 대표 유형만큼 미더웠다**:
+#
+#   유형            대표일 때        2차로 존재할 때
+#   duplicate       97.9%(n=146)    100.0%(n=39)
+#   translation_y   97.8%(n=181)     97.4%(n=39)
+#   scale           93.8%(n=357)     93.5%(n=46)
+#   height          86.9%(n=588)     83.9%(n=56)
+#   width           82.6%(n=413)     80.0%(n=60)
+#   missing         82.9%(n=181)     71.2%(n=59)
+#
+# 즉 신뢰도를 가르는 건 순위가 아니라 존재 여부였다. 1등만 승격시키면 두 번째
+# 오류 유형이 노이즈 취급을 받아(누락의 경우 71.2%인데 4%로) 목록 바닥에
+# 깔린다. 아래 값은 두 측정을 건수로 가중평균한 것이다.
+TYPE_RELIABILITY_PRESENT = {
     "duplicate": 0.98,
     "translation_y": 0.98,
-    "translation_x": 0.96,
+    "translation_x": 0.95,
     "scale": 0.94,
     "height": 0.87,
-    "missing": 0.83,
-    "width": 0.83,
+    "width": 0.82,
+    "missing": 0.80,
 }
-TYPE_RELIABILITY_OTHER = {
+# 계통적 수준으로 존재하지 않을 때 = 사실상 모델 예측 흔들림에서 나온 오탐.
+# 단일 유형 조건 26개에서 "그 유형이 주입되지 않았을 때"로 실측한 값이다.
+TYPE_RELIABILITY_NOISE = {
     "duplicate": 0.69,
     "scale": 0.60,
     "height": 0.31,
@@ -94,18 +112,18 @@ _STRENGTH_RANGE = {
 }
 
 
-def severity_for(suspicion: str, raw_signal: float, is_dominant: bool = False) -> float:
+def severity_for(suspicion: str, raw_signal: float, is_present: bool = False) -> float:
     """유형 신뢰도 × 신호 세기 → 유형이 달라도 비교 가능한 재검수 우선순위 점수.
 
-    is_dominant는 "이 유형이 데이터셋의 계통적 대표 오류로 판정됐는가"다.
-    이미지 한 장만 볼 때는 알 수 없으므로 기본값은 False이고, 데이터셋 전체를
-    본 뒤 rescore()가 다시 매긴다.
+    is_present는 "이 유형이 데이터셋에 계통적 수준으로 존재하는가"다. 이미지
+    한 장만 볼 때는 알 수 없으므로 기본값은 False이고, 데이터셋 전체를 본 뒤
+    rescore()가 다시 매긴다.
     """
     floor, ceiling = _STRENGTH_RANGE.get(suspicion, (0.0, 1.0))
     span = ceiling - floor
     strength = (raw_signal - floor) / span if span > 0 else 1.0
     strength = min(max(strength, 0.0), 1.0)
-    table = TYPE_RELIABILITY_DOMINANT if is_dominant else TYPE_RELIABILITY_OTHER
+    table = TYPE_RELIABILITY_PRESENT if is_present else TYPE_RELIABILITY_NOISE
     reliability = table.get(suspicion, 0.5)
     # 세기는 0.5~1.0 구간으로 눌러서, 유형 신뢰도가 순서의 주도권을 갖게 한다
     return round(reliability * (0.5 + 0.5 * strength), 4)
@@ -130,24 +148,36 @@ class BoxFinding:
     raw_signal: float = 0.0
 
 
+def present_types(summary: dict) -> set[str]:
+    """데이터셋에 계통적 수준으로 존재한다고 볼 오류 유형들.
+
+    1등만 뽑지 않는다 — 혼합 오류 실측에서 2차 유형도 존재하기만 하면 대표
+    유형만큼 미더웠기 때문이다(TYPE_RELIABILITY_PRESENT 주석 참고).
+    dominant_ratio가 임계값을 넘는다는 건 곧 이 집합이 비지 않는다는 뜻이라,
+    기존의 systematic 판정과도 어긋나지 않는다.
+    """
+    return {
+        t["suspicion"] for t in summary.get("by_type", [])
+        if t["ratio"] >= SYSTEMATIC_ERROR_RATIO
+    }
+
+
 def rescore(findings: list[BoxFinding], summary: dict) -> list[BoxFinding]:
     """데이터셋 전체를 본 뒤 severity를 다시 매긴다.
 
-    diagnose_image는 이미지 한 장씩 처리하므로 "이 데이터셋의 대표 오류가
-    무엇인지"를 알 수 없다. 그래서 일단 보수적인(비대표) 신뢰도로 점수를
-    매겨두고, summarize()가 대표 유형을 확정한 뒤 여기서 갱신한다.
+    diagnose_image는 이미지 한 장씩 처리하므로 "이 데이터셋에 어떤 오류가
+    계통적으로 있는지"를 알 수 없다. 그래서 일단 보수적인(노이즈) 신뢰도로
+    점수를 매겨두고, summarize()가 유형별 비율을 낸 뒤 여기서 갱신한다.
 
-    계통적(systematic)이 아니면 아무것도 바꾸지 않는다 — 대표 유형 판정이
-    미덥지 않은 상태에서 특정 유형을 밀어올리면 오류가 증폭되기 때문이다.
+    계통적 수준의 유형이 하나도 없으면 아무것도 바꾸지 않는다 — 근거가 약한
+    상태에서 특정 유형을 밀어올리면 오류가 증폭되기 때문이다.
     """
-    if not summary.get("systematic"):
-        return findings
-    dominant = summary.get("dominant_type")
-    if dominant is None:
+    present = present_types(summary)
+    if not present:
         return findings
     return [
-        f if f.suspicion != dominant else
-        replace(f, severity=severity_for(f.suspicion, f.raw_signal, is_dominant=True))
+        replace(f, severity=severity_for(f.suspicion, f.raw_signal, is_present=True))
+        if f.suspicion in present else f
         for f in findings
     ]
 

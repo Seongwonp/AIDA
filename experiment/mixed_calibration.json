@@ -1,0 +1,825 @@
+{
+  "secondary_reliability": {
+    "width": 0.8,
+    "missing": 0.7119,
+    "height": 0.8393,
+    "scale": 0.9348,
+    "translation_x": 0.907,
+    "duplicate": 1.0,
+    "translation_y": 0.9744
+  },
+  "conditions": [
+    {
+      "name": "mix_scale_missing",
+      "primary_type": "scale",
+      "secondary_type": "missing",
+      "predicted_dominant": "scale",
+      "dominant_matches_primary": true,
+      "per_type": {
+        "missing": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            42,
+            59
+          ]
+        },
+        "scale": {
+          "dominant": [
+            93,
+            96
+          ],
+          "secondary": [
+            0,
+            0
+          ]
+        },
+        "width": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            0,
+            18
+          ]
+        },
+        "height": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            2,
+            14
+          ]
+        },
+        "translation_y": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            0,
+            1
+          ]
+        },
+        "duplicate": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            1,
+            1
+          ]
+        },
+        "translation_x": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            1,
+            3
+          ]
+        }
+      },
+      "by_type": [
+        {
+          "suspicion": "scale",
+          "count": 96,
+          "ratio": 0.3117
+        },
+        {
+          "suspicion": "missing",
+          "count": 59,
+          "ratio": 0.1916
+        },
+        {
+          "suspicion": "width",
+          "count": 18,
+          "ratio": 0.0584
+        },
+        {
+          "suspicion": "height",
+          "count": 14,
+          "ratio": 0.0455
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 3,
+          "ratio": 0.0097
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 1,
+          "ratio": 0.0032
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.0032
+        }
+      ]
+    },
+    {
+      "name": "mix_missing_scale",
+      "primary_type": "missing",
+      "secondary_type": "scale",
+      "predicted_dominant": "missing",
+      "dominant_matches_primary": true,
+      "per_type": {
+        "missing": {
+          "dominant": [
+            86,
+            101
+          ],
+          "secondary": [
+            0,
+            0
+          ]
+        },
+        "width": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            0,
+            15
+          ]
+        },
+        "scale": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            43,
+            46
+          ]
+        },
+        "height": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            3,
+            13
+          ]
+        },
+        "translation_x": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            0,
+            1
+          ]
+        },
+        "translation_y": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            0,
+            1
+          ]
+        },
+        "duplicate": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            0,
+            1
+          ]
+        }
+      },
+      "by_type": [
+        {
+          "suspicion": "missing",
+          "count": 101,
+          "ratio": 0.3976
+        },
+        {
+          "suspicion": "scale",
+          "count": 46,
+          "ratio": 0.1811
+        },
+        {
+          "suspicion": "width",
+          "count": 15,
+          "ratio": 0.0591
+        },
+        {
+          "suspicion": "height",
+          "count": 13,
+          "ratio": 0.0512
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 1,
+          "ratio": 0.0039
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 1,
+          "ratio": 0.0039
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.0039
+        }
+      ]
+    },
+    {
+      "name": "mix_width_height",
+      "primary_type": "width",
+      "secondary_type": "height",
+      "predicted_dominant": "width",
+      "dominant_matches_primary": true,
+      "per_type": {
+        "height": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            47,
+            56
+          ]
+        },
+        "width": {
+          "dominant": [
+            81,
+            98
+          ],
+          "secondary": [
+            0,
+            0
+          ]
+        },
+        "missing": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            0,
+            18
+          ]
+        },
+        "translation_x": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            1,
+            2
+          ]
+        },
+        "scale": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            4,
+            8
+          ]
+        },
+        "translation_y": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            1,
+            1
+          ]
+        },
+        "duplicate": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            0,
+            1
+          ]
+        }
+      },
+      "by_type": [
+        {
+          "suspicion": "width",
+          "count": 98,
+          "ratio": 0.2737
+        },
+        {
+          "suspicion": "height",
+          "count": 56,
+          "ratio": 0.1564
+        },
+        {
+          "suspicion": "missing",
+          "count": 18,
+          "ratio": 0.0503
+        },
+        {
+          "suspicion": "scale",
+          "count": 8,
+          "ratio": 0.0223
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 2,
+          "ratio": 0.0056
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 1,
+          "ratio": 0.0028
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.0028
+        }
+      ]
+    },
+    {
+      "name": "mix_height_width",
+      "primary_type": "height",
+      "secondary_type": "width",
+      "predicted_dominant": "height",
+      "dominant_matches_primary": true,
+      "per_type": {
+        "height": {
+          "dominant": [
+            91,
+            97
+          ],
+          "secondary": [
+            0,
+            0
+          ]
+        },
+        "width": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            48,
+            60
+          ]
+        },
+        "missing": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            0,
+            19
+          ]
+        },
+        "translation_y": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            0,
+            2
+          ]
+        },
+        "scale": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            3,
+            6
+          ]
+        },
+        "duplicate": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            2,
+            2
+          ]
+        },
+        "translation_x": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            1,
+            1
+          ]
+        }
+      },
+      "by_type": [
+        {
+          "suspicion": "height",
+          "count": 97,
+          "ratio": 0.2709
+        },
+        {
+          "suspicion": "width",
+          "count": 60,
+          "ratio": 0.1676
+        },
+        {
+          "suspicion": "missing",
+          "count": 19,
+          "ratio": 0.0531
+        },
+        {
+          "suspicion": "scale",
+          "count": 6,
+          "ratio": 0.0168
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 2,
+          "ratio": 0.0056
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 2,
+          "ratio": 0.0056
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 1,
+          "ratio": 0.0028
+        }
+      ]
+    },
+    {
+      "name": "mix_scale_transx",
+      "primary_type": "scale",
+      "secondary_type": "translation_x",
+      "predicted_dominant": "scale",
+      "dominant_matches_primary": true,
+      "per_type": {
+        "scale": {
+          "dominant": [
+            103,
+            107
+          ],
+          "secondary": [
+            0,
+            0
+          ]
+        },
+        "missing": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            0,
+            17
+          ]
+        },
+        "width": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            6,
+            16
+          ]
+        },
+        "translation_x": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            39,
+            43
+          ]
+        },
+        "translation_y": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            1,
+            3
+          ]
+        },
+        "height": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            4,
+            10
+          ]
+        },
+        "duplicate": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            1,
+            1
+          ]
+        }
+      },
+      "by_type": [
+        {
+          "suspicion": "scale",
+          "count": 107,
+          "ratio": 0.2989
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 43,
+          "ratio": 0.1201
+        },
+        {
+          "suspicion": "missing",
+          "count": 17,
+          "ratio": 0.0475
+        },
+        {
+          "suspicion": "width",
+          "count": 16,
+          "ratio": 0.0447
+        },
+        {
+          "suspicion": "height",
+          "count": 10,
+          "ratio": 0.0279
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 3,
+          "ratio": 0.0084
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 1,
+          "ratio": 0.0028
+        }
+      ]
+    },
+    {
+      "name": "mix_missing_duplicate",
+      "primary_type": "missing",
+      "secondary_type": "duplicate",
+      "predicted_dominant": "missing",
+      "dominant_matches_primary": true,
+      "per_type": {
+        "missing": {
+          "dominant": [
+            88,
+            103
+          ],
+          "secondary": [
+            0,
+            0
+          ]
+        },
+        "width": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            4,
+            19
+          ]
+        },
+        "duplicate": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            39,
+            39
+          ]
+        },
+        "height": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            3,
+            14
+          ]
+        },
+        "translation_x": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            2,
+            4
+          ]
+        },
+        "scale": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            4,
+            6
+          ]
+        },
+        "translation_y": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            1,
+            4
+          ]
+        }
+      },
+      "by_type": [
+        {
+          "suspicion": "missing",
+          "count": 103,
+          "ratio": 0.3411
+        },
+        {
+          "suspicion": "duplicate",
+          "count": 39,
+          "ratio": 0.1291
+        },
+        {
+          "suspicion": "width",
+          "count": 19,
+          "ratio": 0.0629
+        },
+        {
+          "suspicion": "height",
+          "count": 14,
+          "ratio": 0.0464
+        },
+        {
+          "suspicion": "scale",
+          "count": 6,
+          "ratio": 0.0199
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 4,
+          "ratio": 0.0132
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 4,
+          "ratio": 0.0132
+        }
+      ]
+    },
+    {
+      "name": "mix_duplicate_transy",
+      "primary_type": "duplicate",
+      "secondary_type": "translation_y",
+      "predicted_dominant": "duplicate",
+      "dominant_matches_primary": true,
+      "per_type": {
+        "duplicate": {
+          "dominant": [
+            91,
+            92
+          ],
+          "secondary": [
+            0,
+            0
+          ]
+        },
+        "missing": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            0,
+            17
+          ]
+        },
+        "translation_y": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            38,
+            39
+          ]
+        },
+        "width": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            13,
+            25
+          ]
+        },
+        "translation_x": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            6,
+            9
+          ]
+        },
+        "scale": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            3,
+            6
+          ]
+        },
+        "height": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            6,
+            16
+          ]
+        }
+      },
+      "by_type": [
+        {
+          "suspicion": "duplicate",
+          "count": 92,
+          "ratio": 0.1974
+        },
+        {
+          "suspicion": "translation_y",
+          "count": 39,
+          "ratio": 0.0837
+        },
+        {
+          "suspicion": "width",
+          "count": 25,
+          "ratio": 0.0536
+        },
+        {
+          "suspicion": "missing",
+          "count": 17,
+          "ratio": 0.0365
+        },
+        {
+          "suspicion": "height",
+          "count": 16,
+          "ratio": 0.0343
+        },
+        {
+          "suspicion": "translation_x",
+          "count": 9,
+          "ratio": 0.0193
+        },
+        {
+          "suspicion": "scale",
+          "count": 6,
+          "ratio": 0.0129
+        }
+      ]
+    }
+  ]
+}

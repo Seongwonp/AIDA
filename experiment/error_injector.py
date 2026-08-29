@@ -201,6 +201,92 @@ def center_size_normalized(box: Box, img_w: int, img_h: int) -> tuple[float, flo
     )
 
 
+def build_mixed_condition_labels(mixed: config.MixedCondition, image_dir: Path,
+                                  gt_label_dir: Path, out_label_dir: Path) -> dict[str, dict]:
+    """두 유형이 섞인 라벨을 만든다 (docs/21 F 재보정용).
+
+    박스 하나에는 최대 한 유형만 주입한다 — primary에 걸리지 않은 박스만
+    secondary 추첨을 받는다. 그래야 "어느 박스가 어느 유형 오류인지"가
+    명확해져 2차 유형 신뢰도를 깨끗하게 잴 수 있다.
+
+    기록에는 유형까지 남긴다(errored_types) — 단일 유형 조건과 달리 조건
+    이름만으로는 그 박스가 무슨 오류인지 알 수 없기 때문이다.
+    """
+    out_label_dir.mkdir(parents=True, exist_ok=True)
+    rng = random.Random(f"{config.ERROR_SEED}:{mixed.name}")
+    record: dict[str, dict] = {}
+
+    def as_condition(kind: str, magnitude: float) -> Condition:
+        return Condition(f"{mixed.name}:{kind}", kind, magnitude)
+
+    for gt_path in sorted(gt_label_dir.glob("*.txt")):
+        lines = [l for l in gt_path.read_text().splitlines() if l.strip()]
+        if not lines:
+            (out_label_dir / gt_path.name).write_text("")
+            continue
+
+        img = Image.open(image_dir / f"{gt_path.stem}.png")
+        out_lines: list[str] = []
+        errored: list[int] = []
+        errored_types: list[str] = []
+        dropped: list[list[float]] = []
+
+        for line in lines:
+            box = yolo_to_pixel(line, img.width, img.height)
+            roll = rng.random()
+            if roll < mixed.primary_rate:
+                kind, magnitude = mixed.primary_type, mixed.primary_magnitude
+            elif roll < mixed.primary_rate + mixed.secondary_rate:
+                kind, magnitude = mixed.secondary_type, mixed.secondary_magnitude
+            else:
+                out_lines.append(pixel_to_yolo_line(box, img.width, img.height))
+                continue
+
+            if kind == "missing":
+                cx, cy, w, h = center_size_normalized(box, img.width, img.height)
+                dropped.append([cx, cy, w, h])
+            elif kind == "duplicate":
+                out_lines.append(pixel_to_yolo_line(box, img.width, img.height))
+                errored.append(len(out_lines))
+                errored_types.append("duplicate")
+                out_lines.append(
+                    pixel_to_yolo_line(apply_duplicate_offset(box), img.width, img.height))
+            else:
+                errored.append(len(out_lines))
+                errored_types.append(kind)
+                out_lines.append(pixel_to_yolo_line(
+                    transform_box(box, as_condition(kind, magnitude)), img.width, img.height))
+
+        (out_label_dir / gt_path.name).write_text("\n".join(out_lines) + "\n")
+        if errored or dropped:
+            record[gt_path.stem] = {
+                "errored": errored,
+                "errored_types": errored_types,
+                "dropped": dropped,
+            }
+    return record
+
+
+def build_mixed_condition(mixed: config.MixedCondition) -> Path:
+    root = config.MIXED_CONDITIONS_DIR / mixed.name
+    symlink_files(config.IMAGES_TRAIN_DIR, root / "images" / "train")
+
+    record = build_mixed_condition_labels(
+        mixed,
+        image_dir=config.IMAGES_TRAIN_DIR,
+        gt_label_dir=config.LABELS_GT_TRAIN_DIR,
+        out_label_dir=root / "labels" / "train",
+    )
+    (root / "injection_record.json").write_text(
+        json.dumps(record, ensure_ascii=False), encoding="utf-8")
+    n_err = sum(len(v["errored"]) for v in record.values())
+    n_drop = sum(len(v["dropped"]) for v in record.values())
+    print(f"[{mixed.name}] {mixed.primary_type} {mixed.primary_rate:.0%} + "
+          f"{mixed.secondary_type} {mixed.secondary_rate:.0%} "
+          f"→ 변형 {n_err}건 / 누락 {n_drop}건")
+    return root
+
+
 def symlink_files(src_dir: Path, dst_dir: Path) -> None:
     """dst_dir 자체는 실제 디렉토리로 만들고, 그 안의 파일들만 심볼릭 링크한다.
 

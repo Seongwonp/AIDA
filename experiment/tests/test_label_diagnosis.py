@@ -18,12 +18,13 @@ from error_injector import (  # noqa: E402
     apply_width,
 )
 from label_diagnosis import (  # noqa: E402
-    TYPE_RELIABILITY_DOMINANT,
-    TYPE_RELIABILITY_OTHER,
+    TYPE_RELIABILITY_NOISE,
+    TYPE_RELIABILITY_PRESENT,
     classify_geometry,
     diagnose_image,
     iou,
     match_boxes,
+    present_types,
     rescore,
     severity_for,
     summarize,
@@ -184,7 +185,7 @@ def test_severity_is_comparable_across_types():
 
 def test_severity_orders_by_type_reliability():
     """같은 신호 세기라면 신뢰도 순서가 그대로 심각도 순서가 된다."""
-    ranked = sorted(TYPE_RELIABILITY_OTHER, key=lambda t: -TYPE_RELIABILITY_OTHER[t])
+    ranked = sorted(TYPE_RELIABILITY_NOISE, key=lambda t: -TYPE_RELIABILITY_NOISE[t])
     severities = [severity_for(t, 1.0) for t in ranked]
     assert severities == sorted(severities, reverse=True)
 
@@ -196,10 +197,10 @@ def test_severity_rises_with_signal_within_a_type():
 
 def test_severity_never_exceeds_type_reliability():
     """심각도는 '진짜 오류일 가능성' 추정치이므로 유형 신뢰도를 넘을 수 없다."""
-    for suspicion, reliability in TYPE_RELIABILITY_OTHER.items():
+    for suspicion, reliability in TYPE_RELIABILITY_NOISE.items():
         assert severity_for(suspicion, 999.0) <= reliability + 1e-9
-    for suspicion, reliability in TYPE_RELIABILITY_DOMINANT.items():
-        assert severity_for(suspicion, 999.0, is_dominant=True) <= reliability + 1e-9
+    for suspicion, reliability in TYPE_RELIABILITY_PRESENT.items():
+        assert severity_for(suspicion, 999.0, is_present=True) <= reliability + 1e-9
 
 
 def test_missing_findings_rank_below_geometric_in_queue():
@@ -241,15 +242,15 @@ def test_rescore_leaves_non_systematic_dataset_alone():
     assert rescore(findings, summary) == findings
 
 
-def test_rescore_only_touches_the_dominant_type():
-    """대표가 아닌 유형은 그대로 둔다 — 한 유형만 승격시키는 게 목적이다."""
+def test_rescore_leaves_noise_level_types_alone():
+    """계통적 수준에 못 미치는 유형은 그대로 둔다 — 오탐을 밀어올리면 안 된다."""
     findings = _missing_findings(30)
     findings += diagnose_image("x.png", [PRED], [0.9], [apply_scale(PRED, -30)])
     summary = summarize(findings, total_labels=100)
 
     rescored = rescore(findings, summary)
     for before, after in zip(findings, rescored):
-        if before.suspicion == summary["dominant_type"]:
+        if before.suspicion in present_types(summary):
             assert after.severity > before.severity
         else:
             assert after.severity == before.severity
@@ -265,3 +266,27 @@ def test_rescore_changes_only_severity():
     for before, after in zip(findings, rescored):
         assert (after.image, after.label_index, after.suspicion, after.detail, after.box) == \
                (before.image, before.label_index, before.suspicion, before.detail, before.box)
+
+
+def test_rescore_promotes_secondary_present_type_too():
+    """1등이 아니어도 계통적 수준으로 존재하면 승격해야 한다.
+
+    혼합 오류 실측에서 2차 유형도 존재하기만 하면 대표 유형만큼 미더웠다
+    (누락: 대표일 때 82.9% / 2차일 때 71.2%). 1등만 승격시키면 두 번째 오류가
+    노이즈 신뢰도(누락 4%)로 목록 바닥에 깔린다.
+    """
+    findings = []
+    for i in range(30):  # 대표: 스케일 30%
+        findings += diagnose_image(f"s{i}.png", [PRED], [0.9], [apply_scale(PRED, -30)])
+    for i in range(15):  # 2차: 가로 15% — 1등은 아니지만 임계값(12%)은 넘는다
+        findings += diagnose_image(f"w{i}.png", [PRED], [0.9], [apply_width(PRED, -30)])
+
+    summary = summarize(findings, total_labels=100)
+    assert summary["dominant_type"] == "scale"
+    assert present_types(summary) == {"scale", "width"}
+
+    before = {f.suspicion: f.severity for f in findings}
+    rescored = rescore(findings, summary)
+    after = {f.suspicion: f.severity for f in rescored}
+    assert after["width"] > before["width"]  # 2차 유형도 올라간다
+    assert after["scale"] > before["scale"]

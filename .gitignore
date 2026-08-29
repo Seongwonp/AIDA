@@ -21,6 +21,8 @@ experiment/conditions/
 experiment/conditions_e*/
 experiment/conditions_obb/
 experiment/conditions_obb_e*/
+experiment/conditions_mixed/
+experiment/conditions_mixed_e*/
 experiment/data_yaml/
 experiment/data_yaml_e*/
 experiment/data_yaml_obb/

@@ -124,6 +124,49 @@ PRIORITY_2_NAMES = [
     "width_m15", "width_p15", "height_m15", "height_p15", "rot_m7_5", "rot_p7_5",
 ]
 
+# ── 혼합 오류 조건 (docs/21 F 재보정용) ────────────────────────────────────────
+# 기존 26개 조건은 각각 오류 유형이 하나뿐이라, 진단 신뢰도를 "대표 유형일
+# 때 / 아닐 때"로 갈라 재면 후자가 사실상 "그 유형이 아예 없을 때"의 값이
+# 된다. 실제로 두 유형이 섞인 데이터셋에서 2차 유형이 얼마나 미더운지는
+# 그 조건들로는 알 수 없어서, 여기서 섞인 조건을 따로 만든다.
+#
+# **학습하지 않는다.** 라벨 단위 진단은 clean 모델로 추론만 하고 라벨과
+# 대조하므로(diagnose_labels.run 참고) 라벨만 있으면 된다. 그래서 이 목록은
+# conditions_in_run_order()에 일부러 넣지 않는다 — 넣으면 run_all.py가
+# 학습까지 돌려 몇 시간을 낭비한다.
+
+
+@dataclass(frozen=True)
+class MixedCondition:
+    """두 오류 유형이 섞인 조건. 라벨 하나에는 최대 한 유형만 주입한다
+    (라벨러가 박스마다 다른 실수를 하는 상황에 대응).
+
+    rate가 주입 비율이고, magnitude는 기하학적 변형 강도다. missing/duplicate는
+    변형 강도라는 게 없어서 magnitude를 쓰지 않는다(rate가 곧 강도).
+    """
+    name: str
+    primary_type: str
+    primary_magnitude: float
+    primary_rate: float
+    secondary_type: str
+    secondary_magnitude: float
+    secondary_rate: float
+
+
+# primary 30% / secondary 15%로 고정해 대표 유형이 뚜렷하게 갈리도록 했다.
+# 7개 유형이 각각 한 번씩 secondary로 등장한다.
+MIXED_CONDITIONS: list[MixedCondition] = [
+    MixedCondition("mix_scale_missing", "scale", -30, 0.30, "missing", 0, 0.15),
+    MixedCondition("mix_missing_scale", "missing", 0, 0.30, "scale", -30, 0.15),
+    MixedCondition("mix_width_height", "width", -30, 0.30, "height", 30, 0.15),
+    MixedCondition("mix_height_width", "height", 30, 0.30, "width", -30, 0.15),
+    MixedCondition("mix_scale_transx", "scale", -30, 0.30, "translation_x", 15, 0.15),
+    MixedCondition("mix_missing_duplicate", "missing", 0, 0.30, "duplicate", 0, 0.15),
+    MixedCondition("mix_duplicate_transy", "duplicate", 0, 0.30, "translation_y", 15, 0.15),
+]
+MIXED_CONDITIONS_DIR = EXPERIMENT_ROOT / f"conditions_mixed{_esuffix}"
+
+
 # ── OBB 실험 설정 ──────────────────────────────────────────────────────────────
 # 기존 AABB 파이프라인과 완전히 독립된 경로를 사용한다.
 # 이미지는 동일한 KITTI 이미지를 심볼릭 링크로 재사용하고,
