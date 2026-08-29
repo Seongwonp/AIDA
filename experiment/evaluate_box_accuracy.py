@@ -30,11 +30,23 @@ from PIL import Image
 
 import config
 from diagnose_labels import IMAGE_SUFFIXES, load_yolo_labels
-from label_diagnosis import iou
+from label_diagnosis import iou, rescore, summarize
 
 # 누락 의심 예측 박스가 "지워진 그 박스"를 가리키는 것으로 인정할 최소 IoU.
 # 위치가 이 정도로 겹치면 같은 객체를 지목했다고 본다.
 MISSING_MATCH_IOU = 0.4
+
+
+VERDICT_CACHE = config.EXPERIMENT_ROOT / "box_accuracy_verdicts.json"
+
+
+def _verdict(correct: bool, finding, predicted_dominant: str | None) -> tuple:
+    """채점 결과 한 건. severity와 함께 raw_signal도 남기는 게 핵심이다 —
+    TP/FP 판정은 severity와 무관하므로, 원시 신호만 있으면 심각도 공식을
+    바꿔도 추론을 다시 돌리지 않고 순위를 재계산할 수 있다(--reuse-cache).
+    """
+    return (correct, finding.suspicion, finding.severity,
+            finding.suspicion == predicted_dominant, finding.raw_signal)
 
 
 def load_injection_record(condition_name: str) -> dict:
@@ -52,8 +64,16 @@ def score_condition(condition: config.Condition, limit: int | None) -> dict:
 
     root = config.CONDITIONS_DIR / condition.name
     images_dir, labels_dir = root / "images" / "train", root / "labels" / "train"
-    findings, _ = run(images_dir, labels_dir, limit)
+    findings, total_labels = run(images_dir, labels_dir, limit)
     record = load_injection_record(condition.name)
+
+    # 진단이 스스로 예측한 대표 유형 — 신뢰도 보정 기준은 정답(주입 유형)이
+    # 아니라 이 예측값이어야 한다. 런타임에는 정답을 모르므로, 정답으로
+    # 보정하면 실제보다 낙관적인 상수가 나온다(docs/21 F 계획 1단계 참고).
+    summary = summarize(findings, total_labels)
+    predicted_dominant = summary["dominant_type"] if summary["systematic"] else None
+    # 제품과 같은 2패스를 거쳐야 실제로 고객이 보는 순서를 평가하게 된다
+    findings = rescore(findings, summary)
 
     # 평가 대상 이미지만 정답지에서 추린다 (limit을 걸면 일부만 돌기 때문)
     scanned = sorted(p for p in images_dir.iterdir() if p.suffix.lower() in IMAGE_SUFFIXES)
@@ -68,7 +88,8 @@ def score_condition(condition: config.Condition, limit: int | None) -> dict:
     # 심각도 순위대로 (정답여부, 의심유형, 심각도)를 기록해둔다 — 우선순위가
     # 실제로 작동하는지(위에서부터 보면 알짜가 더 많은지) 재고, 유형별로
     # 신뢰도가 얼마나 다른지 분석하는 데 쓴다.
-    verdicts_by_rank: list[tuple[bool, str, float]] = []
+    # (정답여부, 의심유형, 심각도, 예측대표유형과일치, 원시신호)
+    verdicts_by_rank: list[tuple] = []
 
     findings = sorted(findings, key=lambda f: -f.severity)
     for f in findings:
@@ -94,10 +115,10 @@ def score_condition(condition: config.Condition, limit: int | None) -> dict:
                 tp += 1
                 type_correct += 1  # 누락을 누락이라 불렀으므로 유형도 맞음
                 matched_dropped.add((stem, hit_index))
-                verdicts_by_rank.append((True, f.suspicion, f.severity))
+                verdicts_by_rank.append(_verdict(True, f, predicted_dominant))
             else:
                 fp += 1
-                verdicts_by_rank.append((False, f.suspicion, f.severity))
+                verdicts_by_rank.append(_verdict(False, f, predicted_dominant))
         else:
             hit = _errored_index_for(condition.type, f.label_index, entry["errored"])
             if hit is not None:
@@ -105,10 +126,10 @@ def score_condition(condition: config.Condition, limit: int | None) -> dict:
                 matched_errored.add((stem, hit))
                 if _type_matches(condition.type, f.suspicion):
                     type_correct += 1
-                verdicts_by_rank.append((True, f.suspicion, f.severity))
+                verdicts_by_rank.append(_verdict(True, f, predicted_dominant))
             else:
                 fp += 1
-                verdicts_by_rank.append((False, f.suspicion, f.severity))
+                verdicts_by_rank.append(_verdict(False, f, predicted_dominant))
 
     total_injected = 0
     for stem in scanned_stems:
@@ -133,6 +154,7 @@ def score_condition(condition: config.Condition, limit: int | None) -> dict:
     return {
         "condition": condition.name,
         "type": condition.type,
+        "predicted_dominant": predicted_dominant,
         "magnitude": condition.magnitude,
         "injected": total_injected,
         "flagged": tp + fp,
@@ -149,7 +171,7 @@ def score_condition(condition: config.Condition, limit: int | None) -> dict:
     }
 
 
-def precision_at_k(verdicts: list[tuple[bool, str, float]], k: int) -> float:
+def precision_at_k(verdicts: list[tuple], k: int) -> float:
     """상위 k건만 봤을 때의 정밀도.
 
     제품의 핵심 주장이 "우선순위"이므로, 목록 전체의 정밀도보다 위에서부터
@@ -248,7 +270,7 @@ def main():
     # 미덥다"는 뜻이므로, 유형별로 정밀도와 심각도 분포를 같이 본다.
     per_type: dict[str, dict] = {}
     for r in rows:
-        for correct, suspicion, severity in r["verdicts_by_rank"]:
+        for correct, suspicion, severity, _is_dominant, _raw in r["verdicts_by_rank"]:
             d = per_type.setdefault(suspicion, {"tp": 0, "n": 0, "sev": 0.0})
             d["n"] += 1
             d["sev"] += severity
@@ -264,6 +286,38 @@ def main():
                             "mean_severity": round(mean_sev, 4)}
         print(f"{name:<16} {d['n']:>6} {prec * 100:>7.1f}% {mean_sev:>10.3f}")
 
+    # F 계획 1단계: 유형 신뢰도를 "그 유형이 데이터셋의 예측 대표 유형인가"로
+    # 나눠서 잰다. 전역 상수가 낮은 이유가 "그 유형이 원래 안 미더워서"인지
+    # "그 유형이 없는 데이터셋까지 섞여서"인지 여기서 갈린다.
+    split: dict[str, dict] = {}
+    for r in rows:
+        for correct, suspicion, _sev, is_dominant, _raw in r["verdicts_by_rank"]:
+            bucket = split.setdefault(suspicion, {
+                "matched": [0, 0], "unmatched": [0, 0],  # [tp, n]
+            })
+            key = "matched" if is_dominant else "unmatched"
+            bucket[key][1] += 1
+            if correct:
+                bucket[key][0] += 1
+
+    print(f"\n{'의심유형':<16} {'대표유형일때':>20} {'아닐때':>18}")
+    print("-" * 58)
+    conditional = {}
+    for name in sorted(split, key=lambda n: -split[n]["matched"][1]):
+        m_tp, m_n = split[name]["matched"]
+        u_tp, u_n = split[name]["unmatched"]
+        m_p = m_tp / m_n if m_n else None
+        u_p = u_tp / u_n if u_n else None
+        conditional[name] = {
+            "matched_precision": round(m_p, 4) if m_p is not None else None,
+            "matched_n": m_n,
+            "unmatched_precision": round(u_p, 4) if u_p is not None else None,
+            "unmatched_n": u_n,
+        }
+        m_s = f"{m_p * 100:5.1f}% (n={m_n})" if m_p is not None else f"    -  (n={m_n})"
+        u_s = f"{u_p * 100:5.1f}% (n={u_n})" if u_p is not None else f"    -  (n={u_n})"
+        print(f"{name:<16} {m_s:>20} {u_s:>18}")
+
     summary = {
         "micro_precision": round(micro_p, 4),
         "micro_recall": round(micro_r, 4),
@@ -271,9 +325,14 @@ def main():
         "tp": tp, "fp": fp, "injected": injected, "caught": caught,
         "precision_at_k": pak,
         "per_suspicion_type": type_stats,
+        "conditional_reliability": conditional,
         # verdicts_by_rank는 조건당 수백 건이라 JSON에서는 뺀다 (표에 이미 요약됨)
         "per_condition": [{k: v for k, v in r.items() if k != "verdicts_by_rank"} for r in rows],
     }
+    VERDICT_CACHE.write_text(json.dumps(
+        {r["condition"]: r["verdicts_by_rank"] for r in rows}, ensure_ascii=False
+    ), encoding="utf-8")
+
     json_path = config.EXPERIMENT_ROOT / "box_accuracy_eval.json"
     json_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
 

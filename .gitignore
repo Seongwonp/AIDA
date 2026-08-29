@@ -31,6 +31,8 @@ experiment/runs_obb/
 experiment/runs_obb_e*/
 experiment/*.pt
 experiment/*.log
+# 박스 단위 채점 원시 판정 캐시 — 재생성 가능한 중간 산출물
+experiment/box_accuracy_verdicts.json
 
 # 고객이 업로드한 데이터셋 (docs/21 C) — 실제 데이터라 커밋하지 않음
 backend/app/data/uploads/

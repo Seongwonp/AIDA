@@ -18,7 +18,7 @@ from PIL import Image
 from ultralytics import YOLO
 
 import config
-from label_diagnosis import Box, BoxFinding, diagnose_image, summarize
+from label_diagnosis import Box, BoxFinding, diagnose_image, rescore, summarize
 
 UPLOADS_DIR = config.EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "uploads"
 CLEAN_WEIGHTS = config.RUNS_DIR / "clean" / "weights" / "best.pt"
@@ -107,12 +107,19 @@ def run(images_dir: Path, labels_dir: Path, limit: int | None = None) -> tuple[l
 
 
 def build_result(name: str, findings: list[BoxFinding], total_labels: int, top_n: int) -> dict:
+    # 2패스 구조: 이미지별 진단은 데이터셋 전체를 못 보므로 보수적인 신뢰도로
+    # 점수를 매겨두고, summarize()가 대표 오류 유형을 확정한 뒤 rescore()가
+    # 그 유형의 severity를 올린다. 그래야 "이 데이터셋의 문제는 누락"이라는
+    # 판정과 재검수 목록의 순서가 어긋나지 않는다.
+    summary = summarize(findings, total_labels)
+    findings = rescore(findings, summary)
+
     # 심각도 높은 순 = 재검수 우선순위. 이게 AIDA가 원래 약속한 산출물이다.
     ranked = sorted(findings, key=lambda f: -f.severity)
     return {
         "dataset": name,
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "summary": summarize(findings, total_labels),
+        "summary": summary,
         "review_queue": [
             {
                 "rank": i + 1,

@@ -18,11 +18,13 @@ from error_injector import (  # noqa: E402
     apply_width,
 )
 from label_diagnosis import (  # noqa: E402
-    TYPE_RELIABILITY,
+    TYPE_RELIABILITY_DOMINANT,
+    TYPE_RELIABILITY_OTHER,
     classify_geometry,
     diagnose_image,
     iou,
     match_boxes,
+    rescore,
     severity_for,
     summarize,
 )
@@ -182,7 +184,7 @@ def test_severity_is_comparable_across_types():
 
 def test_severity_orders_by_type_reliability():
     """같은 신호 세기라면 신뢰도 순서가 그대로 심각도 순서가 된다."""
-    ranked = sorted(TYPE_RELIABILITY, key=lambda t: -TYPE_RELIABILITY[t])
+    ranked = sorted(TYPE_RELIABILITY_OTHER, key=lambda t: -TYPE_RELIABILITY_OTHER[t])
     severities = [severity_for(t, 1.0) for t in ranked]
     assert severities == sorted(severities, reverse=True)
 
@@ -194,8 +196,10 @@ def test_severity_rises_with_signal_within_a_type():
 
 def test_severity_never_exceeds_type_reliability():
     """심각도는 '진짜 오류일 가능성' 추정치이므로 유형 신뢰도를 넘을 수 없다."""
-    for suspicion, reliability in TYPE_RELIABILITY.items():
+    for suspicion, reliability in TYPE_RELIABILITY_OTHER.items():
         assert severity_for(suspicion, 999.0) <= reliability + 1e-9
+    for suspicion, reliability in TYPE_RELIABILITY_DOMINANT.items():
+        assert severity_for(suspicion, 999.0, is_dominant=True) <= reliability + 1e-9
 
 
 def test_missing_findings_rank_below_geometric_in_queue():
@@ -205,3 +209,59 @@ def test_missing_findings_rank_below_geometric_in_queue():
     ranked = sorted(findings, key=lambda f: -f.severity)
     assert ranked[0].suspicion == "scale"
     assert ranked[-1].suspicion == "missing"
+
+
+# ── rescore: 데이터셋 전체를 본 뒤 대표 유형의 심각도를 올린다 ────────────────
+# 전역 상수 하나로는 "이 유형이 미더운가"와 "이 유형이 있기는 한가"가 뒤섞인다.
+# 실측: 누락 의심은 대표 유형일 때 82.9%, 아닐 때 4.3%로 20배 가까이 갈린다.
+
+def _missing_findings(n: int):
+    findings = []
+    for i in range(n):
+        findings += diagnose_image(f"{i}.png", [PRED], [0.9], [])
+    return findings
+
+
+def test_rescore_promotes_dominant_type():
+    """계통적 누락 데이터셋이면 누락 의심의 심각도가 올라가야 한다."""
+    findings = _missing_findings(30)
+    summary = summarize(findings, total_labels=100)
+    assert summary["dominant_type"] == "missing" and summary["systematic"]
+
+    before = findings[0].severity
+    after = rescore(findings, summary)[0].severity
+    assert after > before
+
+
+def test_rescore_leaves_non_systematic_dataset_alone():
+    """대표 유형 판정이 미덥지 않으면 건드리지 않는다 — 깨끗한 데이터셋 보호."""
+    findings = _missing_findings(3)
+    summary = summarize(findings, total_labels=100)
+    assert summary["systematic"] is False
+    assert rescore(findings, summary) == findings
+
+
+def test_rescore_only_touches_the_dominant_type():
+    """대표가 아닌 유형은 그대로 둔다 — 한 유형만 승격시키는 게 목적이다."""
+    findings = _missing_findings(30)
+    findings += diagnose_image("x.png", [PRED], [0.9], [apply_scale(PRED, -30)])
+    summary = summarize(findings, total_labels=100)
+
+    rescored = rescore(findings, summary)
+    for before, after in zip(findings, rescored):
+        if before.suspicion == summary["dominant_type"]:
+            assert after.severity > before.severity
+        else:
+            assert after.severity == before.severity
+
+
+def test_rescore_changes_only_severity():
+    """판정 자체(개수·유형·위치)는 그대로여야 한다 — 순서만 바꾸는 단계다."""
+    findings = _missing_findings(30)
+    summary = summarize(findings, total_labels=100)
+    rescored = rescore(findings, summary)
+
+    assert len(rescored) == len(findings)
+    for before, after in zip(findings, rescored):
+        assert (after.image, after.label_index, after.suspicion, after.detail, after.box) == \
+               (before.image, before.label_index, before.suspicion, before.detail, before.box)

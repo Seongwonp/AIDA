@@ -13,7 +13,7 @@
 GPU/모델 의존이 없는 순수 함수만 둔다 — 실제 추론은 diagnose_labels.py가
 맡고, 여기 로직은 테스트로 검증한다(tests/test_label_diagnosis.py).
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 # error_injector.py와 같은 좌표 규약 (픽셀 기준 left, top, right, bottom)
 Box = tuple[float, float, float, float]
@@ -52,17 +52,35 @@ SYSTEMATIC_ERROR_RATIO = 0.12
 # 유형끼리는 신뢰도가 순서를 정하고, 같은 유형 안에서는 세기가 정한다.
 #
 # 유형 신뢰도는 evaluate_box_accuracy.py로 KITTI Car 26개 조건에서 실측한
-# 유형별 정밀도다. **도메인이 바뀌면 재보정해야 한다** — 예를 들어 누락이
-# 27%로 낮은 건 KITTI가 원거리·가려진 차를 애초에 라벨링하지 않아 모델의
-# 정상 탐지가 "누락"으로 오인되기 때문이고, 이건 KITTI 고유의 사정이다.
-TYPE_RELIABILITY = {
-    "duplicate": 0.90,
-    "scale": 0.81,
-    "translation_y": 0.73,
-    "translation_x": 0.70,
-    "height": 0.67,
-    "width": 0.49,
-    "missing": 0.27,
+# 유형별 정밀도다. **도메인이 바뀌면 재보정해야 한다.**
+#
+# 신뢰도는 "그 유형이 이 데이터셋의 대표 오류 유형으로 판정됐는가"에 따라 크게
+# 갈린다. 하나의 전역 상수로는 **"이 유형이 얼마나 미더운가"와 "이 유형이
+# 애초에 있기는 한가"를 뒤섞게 된다.** 실측이 이를 뚜렷하게 보여준다 —
+# 누락 의심은 대표 유형일 때 82.9%(n=181)인데 아닐 때는 4.3%(n=445)로,
+# 예전 전역 상수 27%는 성격이 전혀 다른 두 모집단을 평균낸 값이었다.
+# (KITTI가 원거리·가려진 차를 라벨링하지 않아 모델의 정상 탐지가 "누락"으로
+# 오인되는데, 그 오탐이 누락 없는 23개 조건에서 대량으로 나왔다.)
+#
+# 그래서 2단으로 나눈다. 데이터셋이 계통적으로 그 유형을 갖고 있다고 이미
+# 판정했다면, "있기는 한가"는 해소됐으므로 높은 쪽을 쓴다.
+TYPE_RELIABILITY_DOMINANT = {
+    "duplicate": 0.98,
+    "translation_y": 0.98,
+    "translation_x": 0.96,
+    "scale": 0.94,
+    "height": 0.87,
+    "missing": 0.83,
+    "width": 0.83,
+}
+TYPE_RELIABILITY_OTHER = {
+    "duplicate": 0.69,
+    "scale": 0.60,
+    "height": 0.31,
+    "translation_y": 0.21,
+    "translation_x": 0.21,
+    "width": 0.20,
+    "missing": 0.04,
 }
 # 유형별 (임계값, 이 값 이상이면 신호가 최대) — 신호 세기 정규화 구간.
 _STRENGTH_RANGE = {
@@ -76,13 +94,19 @@ _STRENGTH_RANGE = {
 }
 
 
-def severity_for(suspicion: str, raw_signal: float) -> float:
-    """유형 신뢰도 × 신호 세기 → 유형이 달라도 비교 가능한 재검수 우선순위 점수."""
+def severity_for(suspicion: str, raw_signal: float, is_dominant: bool = False) -> float:
+    """유형 신뢰도 × 신호 세기 → 유형이 달라도 비교 가능한 재검수 우선순위 점수.
+
+    is_dominant는 "이 유형이 데이터셋의 계통적 대표 오류로 판정됐는가"다.
+    이미지 한 장만 볼 때는 알 수 없으므로 기본값은 False이고, 데이터셋 전체를
+    본 뒤 rescore()가 다시 매긴다.
+    """
     floor, ceiling = _STRENGTH_RANGE.get(suspicion, (0.0, 1.0))
     span = ceiling - floor
     strength = (raw_signal - floor) / span if span > 0 else 1.0
     strength = min(max(strength, 0.0), 1.0)
-    reliability = TYPE_RELIABILITY.get(suspicion, 0.5)
+    table = TYPE_RELIABILITY_DOMINANT if is_dominant else TYPE_RELIABILITY_OTHER
+    reliability = table.get(suspicion, 0.5)
     # 세기는 0.5~1.0 구간으로 눌러서, 유형 신뢰도가 순서의 주도권을 갖게 한다
     return round(reliability * (0.5 + 0.5 * strength), 4)
 
@@ -100,6 +124,32 @@ class BoxFinding:
     # 누락 의심은 가리킬 인덱스가 없어서, 이 좌표가 그 박스를 지목하는
     # 유일한 수단이다 — 박스 단위 정확도 측정도 이 좌표로 대조한다.
     box: Box = (0.0, 0.0, 0.0, 0.0)
+    # severity를 만들기 전의 원시 신호(누락=확신도, 중복=겹침, 기하=변형률).
+    # 데이터셋 전체를 본 뒤 severity를 다시 매기려면(rescore) 원시 신호가
+    # 남아 있어야 한다 — severity만 있으면 신뢰도를 되돌릴 수 없다.
+    raw_signal: float = 0.0
+
+
+def rescore(findings: list[BoxFinding], summary: dict) -> list[BoxFinding]:
+    """데이터셋 전체를 본 뒤 severity를 다시 매긴다.
+
+    diagnose_image는 이미지 한 장씩 처리하므로 "이 데이터셋의 대표 오류가
+    무엇인지"를 알 수 없다. 그래서 일단 보수적인(비대표) 신뢰도로 점수를
+    매겨두고, summarize()가 대표 유형을 확정한 뒤 여기서 갱신한다.
+
+    계통적(systematic)이 아니면 아무것도 바꾸지 않는다 — 대표 유형 판정이
+    미덥지 않은 상태에서 특정 유형을 밀어올리면 오류가 증폭되기 때문이다.
+    """
+    if not summary.get("systematic"):
+        return findings
+    dominant = summary.get("dominant_type")
+    if dominant is None:
+        return findings
+    return [
+        f if f.suspicion != dominant else
+        replace(f, severity=severity_for(f.suspicion, f.raw_signal, is_dominant=True))
+        for f in findings
+    ]
 
 
 def center_size(box: Box) -> tuple[float, float, float, float]:
@@ -205,7 +255,8 @@ def diagnose_image(
         if verdict is not None:
             suspicion, raw, detail = verdict
             findings.append(BoxFinding(
-                image, li, suspicion, severity_for(suspicion, raw), detail, labels[li],
+                image, li, suspicion, severity_for(suspicion, raw), detail,
+                labels[li], raw,
             ))
 
     # 2) 짝 없는 라벨: 이미 짝지어진 예측과 크게 겹치면 중복 라벨
@@ -217,7 +268,7 @@ def diagnose_image(
             findings.append(BoxFinding(
                 image, li, "duplicate", severity_for("duplicate", best_iou),
                 f"다른 라벨과 같은 객체를 가리킴 (겹침 {best_iou:.2f})",
-                labels[li],
+                labels[li], best_iou,
             ))
 
     # 3) 짝 없는 예측: 모델이 확신하는데 라벨이 없으면 누락 의심
@@ -227,7 +278,7 @@ def diagnose_image(
             findings.append(BoxFinding(
                 image, None, "missing", severity_for("missing", conf),
                 f"모델이 확신({conf:.2f})하는 위치에 라벨 없음",
-                predictions[pi],
+                predictions[pi], conf,
             ))
 
     return findings
