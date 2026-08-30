@@ -479,14 +479,21 @@ def diagnose_image(
     for li in unmatched_labels:
         if li in class_mismatched:
             continue
-        best_iou = 0.0
+        best_iou, best_pi = 0.0, None
         for pi in matched.values():
-            best_iou = max(best_iou, iou(predictions[pi], labels[li]))
+            v = iou(predictions[pi], labels[li])
+            if v > best_iou:
+                best_iou, best_pi = v, pi
         if best_iou >= DUPLICATE_IOU_THRESHOLD:
+            # 확신도는 아직 심각도에 안 쓴다(중복은 CONFIDENCE_WEIGHTED_TYPES에
+            # 없음). 다른 유형에서 확신도가 최고의 판별 신호였으므로, 중복에서도
+            # 그런지 재려면 기록은 남겨야 한다.
+            dup_conf = (confidences[best_pi]
+                        if best_pi is not None and best_pi < len(confidences) else 1.0)
             findings.append(BoxFinding(
                 image, li, "duplicate", severity_for("duplicate", best_iou),
                 f"다른 라벨과 같은 객체를 가리킴 (겹침 {best_iou:.2f})",
-                labels[li], best_iou,
+                labels[li], best_iou, dup_conf,
             ))
 
     # 4) 짝 없는 예측: 모델이 확신하는데 라벨이 없으면 누락 의심.
