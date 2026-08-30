@@ -146,3 +146,16 @@ class RoiEstimate(BaseModel):
     gpu_savings_krw: int
     total_savings_krw: int
     review_scope_reduction_pct: float
+
+
+class ReliabilityProfileInfo(BaseModel):
+    """고를 수 있는 유형 신뢰도 보정 프로파일.
+
+    유형 신뢰도는 도메인마다 다르다 — 특히 "그 유형이 없을 때"의 값이
+    크게 흔들린다(docs/21 L). name=""은 기본값(KITTI Car 실측)을 뜻한다.
+    """
+    name: str
+    label: str
+    types: list[str]
+    # 이 상수를 잰 클래스 구성. 진단도 같은 구성으로 돌아간다.
+    classes: list[str] = []

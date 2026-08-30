@@ -351,7 +351,10 @@ def main():
     if args.write_profile:
         # 방금 실측한 값을 그대로 신뢰도 프로파일로 떨군다. 표본이 너무 적은
         # 유형은 뺀다 — 근거 없는 상수를 프로파일에 굳히면 기본값보다 나쁘다.
-        profile = {"present": {}, "noise": {}}
+        # 클래스 구성을 함께 적는다. 신뢰도 상수만 갈아끼우고 모델·라벨 구성은
+        # 그대로면 반쪽짜리다 — 그 상수는 이 클래스 구성에서 잰 값이므로
+        # 프로파일을 쓰는 쪽이 같은 구성으로 진단해야 한다.
+        profile = {"classes": config.CLASS_NAMES, "present": {}, "noise": {}}
         for name, d in conditional.items():
             if d["matched_n"] >= MIN_PROFILE_SAMPLES:
                 profile["present"][name] = min(round(d["matched_precision"], 4),

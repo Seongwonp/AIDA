@@ -1,4 +1,10 @@
 {
+  "classes": [
+    "Car",
+    "Van",
+    "Pedestrian",
+    "Cyclist"
+  ],
   "present": {
     "height": 0.8925,
     "width": 0.8008,

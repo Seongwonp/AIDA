@@ -1,0 +1,63 @@
+"""신뢰도 프로파일 API.
+
+유형 신뢰도 상수는 도메인을 탄다 — 다중 클래스로 검증했을 때 "그 유형이
+없을 때"의 값이 크게 흔들렸다(docs/21 L, 누락 88% → 22%). 그래서 데이터셋마다
+보정 프로파일을 골라 쓸 수 있어야 한다.
+"""
+import pytest
+
+from app.routers import upload
+
+
+def test_default_profile_is_always_first(client):
+    """프로파일 파일이 하나도 없어도 기본값은 고를 수 있어야 한다."""
+    rows = client.get("/api/datasets/reliability-profiles").json()
+    assert rows[0]["name"] == ""
+
+
+def test_profiles_expose_their_calibrated_types(client):
+    rows = client.get("/api/datasets/reliability-profiles").json()
+    for row in rows[1:]:
+        assert row["types"], f"{row['name']}에 보정된 유형이 없음"
+
+
+def test_unknown_profile_is_rejected():
+    """이름을 그대로 경로로 쓰면 임의 파일을 읽히는 통로가 된다."""
+    from fastapi import HTTPException
+    for bad in ["../../etc/passwd", "없는프로파일", "/tmp/x"]:
+        with pytest.raises(HTTPException) as e:
+            upload._resolve_profile(bad)
+        assert e.value.status_code == 400
+
+
+def test_no_profile_means_no_env_override():
+    """기본값을 골랐으면 진단 서브프로세스에 아무것도 안 넘긴다."""
+    assert upload._profile_env(None) == {}
+    assert upload._profile_env("") == {}
+
+
+def test_known_profile_resolves_under_experiment_root():
+    names = upload._available_profiles()
+    if not names:
+        pytest.skip("이 환경에 보정 프로파일 파일이 없음")
+    env = upload._profile_env(names[0])
+    assert env["AIDA_RELIABILITY_PROFILE"].endswith(f"reliability_profile_{names[0]}.json")
+
+
+def test_profile_carries_its_class_configuration():
+    """상수만 갈아끼우고 클래스 구성이 그대로면 반쪽짜리다.
+
+    그 상수는 특정 클래스 구성에서 잰 값이라, 진단도 같은 구성(같은 기준
+    모델·같은 클래스 인덱스)으로 돌아가야 한다.
+    """
+    names = [n for n in upload._available_profiles()
+             if upload._profile_classes(upload._resolve_profile(n))]
+    if not names:
+        pytest.skip("클래스 구성이 적힌 프로파일이 이 환경에 없음")
+    env = upload._profile_env(names[0])
+    assert "AIDA_CLASSES" in env and env["AIDA_CLASSES"]
+
+
+def test_profile_listing_exposes_classes(client):
+    rows = client.get("/api/datasets/reliability-profiles").json()
+    assert rows[0]["classes"] == ["Car"]

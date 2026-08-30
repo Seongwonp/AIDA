@@ -5,6 +5,7 @@ import type {
   DatasetSummary,
   DiagnosisResult,
   LabelDiagnosisResult,
+  ReliabilityProfile,
   RoiEstimate,
   UploadDiagnosisResult,
   UploadedDatasetInfo,
@@ -52,9 +53,18 @@ export const diagnoseDataset = (datasetId: string) =>
     .post<UploadDiagnosisResult>(`/api/datasets/${datasetId}/diagnose`)
     .then((res) => res.data);
 
-export const diagnoseDatasetLabels = (datasetId: string) =>
+// profile은 유형 신뢰도 보정 프로파일 이름. 빈 값이면 기본값(KITTI Car 실측).
+// 유형 신뢰도가 도메인을 타기 때문에 고를 수 있게 해둔 것이다 (docs/21 L).
+export const diagnoseDatasetLabels = (datasetId: string, profile = "") =>
   client
-    .post<LabelDiagnosisResult>(`/api/datasets/${datasetId}/diagnose-labels`)
+    .post<LabelDiagnosisResult>(`/api/datasets/${datasetId}/diagnose-labels`, null, {
+      params: profile ? { profile } : undefined,
+    })
+    .then((res) => res.data);
+
+export const getReliabilityProfiles = () =>
+  client
+    .get<ReliabilityProfile[]>("/api/datasets/reliability-profiles")
     .then((res) => res.data);
 
 export const getDatasetReportUrl = (datasetId: string) =>

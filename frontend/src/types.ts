@@ -137,3 +137,13 @@ export interface RoiEstimate {
   total_savings_krw: number;
   review_scope_reduction_pct: number;
 }
+
+
+/** 유형 신뢰도 보정 프로파일. name이 빈 문자열이면 기본값(KITTI Car 실측). */
+export interface ReliabilityProfile {
+  name: string;
+  label: string;
+  types: string[];
+  /** 이 상수를 잰 클래스 구성. 진단도 같은 구성으로 돌아간다. */
+  classes: string[];
+}

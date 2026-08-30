@@ -327,3 +327,16 @@
   font-size: 12px;
   line-height: 1.5;
 }
+
+.profile-select {
+  font-size: 12px;
+  padding: 5px 8px;
+  border: 1.5px solid var(--black);
+  background: var(--white);
+  max-width: 320px;
+}
+
+.profile-select:disabled {
+  color: var(--muted);
+  border-color: var(--hair);
+}

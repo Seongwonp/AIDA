@@ -173,8 +173,9 @@ def _load_reliability_profile() -> None:
     누락이 88% → 22%로 무너졌다(docs/21 L). 그래서 상수를 코드에 박아두는
     대신 프로파일로 갈아끼울 수 있게 한다.
 
-    프로파일 형식: {"present": {유형: 0~1}, "noise": {유형: 0~1}}
-    빠진 유형은 기본값을 그대로 쓴다.
+    프로파일 형식: {"classes": [...], "present": {유형: 0~1}, "noise": {유형: 0~1}}
+    빠진 유형은 기본값을 그대로 쓴다. classes는 이 상수를 잰 클래스 구성으로,
+    진단을 돌리는 쪽(백엔드)이 AIDA_CLASSES를 맞추는 데 쓴다.
     """
     path = os.environ.get("AIDA_RELIABILITY_PROFILE", "")
     if not path:

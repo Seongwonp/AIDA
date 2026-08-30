@@ -7,6 +7,7 @@ backend에 얹지 않는 것과 같은 구조다.
 """
 import html
 import json
+import os
 import shutil
 import subprocess
 import uuid
@@ -22,6 +23,7 @@ from app.models import (
     ErrorTypeCandidate,
     LabelDiagnosisResult,
     PerformanceVector,
+    ReliabilityProfileInfo,
     ReviewQueueItem,
     SuspicionTypeCount,
     UploadDiagnosisResult,
@@ -33,6 +35,9 @@ router = APIRouter(prefix="/api/datasets", tags=["upload"])
 
 MAX_UPLOAD_BYTES = 200 * 1024 * 1024  # 200MB
 DIAGNOSE_TIMEOUT_SEC = 300
+
+# 프로파일 파일 이름 → 사람이 읽을 이름. 없으면 파일 이름을 그대로 쓴다.
+PROFILE_LABELS = {"mc": "다중 클래스 (Car/Van/Pedestrian/Cyclist 실측)"}
 
 # 박스 단위 의심 유형 한글 라벨. report.py의 TYPE_LABELS(조건 type 기준)와
 # 겹치는 이름이 많지만, 여기엔 missing/duplicate가 "라벨이 빠졌다/겹쳤다"는
@@ -227,7 +232,76 @@ async def upload_dataset(file: UploadFile) -> UploadedDatasetInfo:
     )
 
 
-def _run_experiment_script(dataset_id: str, script_name: str, extra_args: list[str]) -> None:
+def _profile_env(profile: str | None) -> dict[str, str]:
+    """진단 서브프로세스에 넘길 신뢰도 프로파일 환경변수.
+
+    유형 신뢰도 상수는 도메인을 탄다 — 다중 클래스로 검증해보니 "부재 시"
+    값이 크게 흔들렸다(누락 88% → 22%, docs/21 L). 그래서 데이터셋마다
+    보정 프로파일을 골라 쓸 수 있게 한다. 안 고르면 기본값(KITTI Car 실측).
+    """
+    if not profile:
+        return {}
+    path = _resolve_profile(profile)
+    env = {"AIDA_RELIABILITY_PROFILE": str(path)}
+    # 상수만 갈아끼우면 반쪽이다 — 그 상수는 특정 클래스 구성에서 잰 값이므로
+    # 진단도 같은 구성(같은 기준 모델·같은 클래스 인덱스)으로 돌려야 한다.
+    classes = _profile_classes(path)
+    if classes:
+        env["AIDA_CLASSES"] = ",".join(classes)
+    return env
+
+
+def _profile_classes(path: Path) -> list[str]:
+    try:
+        return list(json.loads(path.read_text(encoding="utf-8")).get("classes", []))
+    except (OSError, json.JSONDecodeError):
+        return []
+
+
+def _resolve_profile(name: str) -> Path:
+    """프로파일 이름을 파일 경로로 바꾼다.
+
+    이름만 받고 경로는 서버가 정한다 — 사용자가 준 문자열을 그대로 경로로
+    쓰면 임의 파일을 읽히는 통로가 된다.
+    """
+    if name not in _available_profiles():
+        raise HTTPException(400, f"알 수 없는 신뢰도 프로파일: {name}")
+    return EXPERIMENT_ROOT / f"reliability_profile_{name}.json"
+
+
+def _available_profiles() -> list[str]:
+    """experiment/reliability_profile_<이름>.json 에서 이름만 뽑는다."""
+    if not EXPERIMENT_ROOT.is_dir():
+        return []
+    return sorted(
+        p.stem[len("reliability_profile_"):]
+        for p in EXPERIMENT_ROOT.glob("reliability_profile_*.json")
+    )
+
+
+@router.get("/reliability-profiles", response_model=list[ReliabilityProfileInfo])
+def list_reliability_profiles() -> list[ReliabilityProfileInfo]:
+    """고를 수 있는 신뢰도 프로파일 목록. 기본값(프로파일 없음)이 항상 첫 항목."""
+    profiles = [ReliabilityProfileInfo(
+        name="", label="기본 (KITTI Car 단일 클래스 실측)", types=[], classes=["Car"],
+    )]
+    for name in _available_profiles():
+        try:
+            data = json.loads(
+                (EXPERIMENT_ROOT / f"reliability_profile_{name}.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        profiles.append(ReliabilityProfileInfo(
+            name=name,
+            label=PROFILE_LABELS.get(name, name),
+            types=sorted(data.get("present", {})),
+            classes=list(data.get("classes", [])),
+        ))
+    return profiles
+
+
+def _run_experiment_script(dataset_id: str, script_name: str, extra_args: list[str],
+                           env_extra: dict[str, str] | None = None) -> None:
     """experiment/venv 파이썬으로 진단 스크립트를 돌린다.
 
     ultralytics/torch를 backend에 얹지 않으려고 서브프로세스로 분리한 구조라,
@@ -252,6 +326,7 @@ def _run_experiment_script(dataset_id: str, script_name: str, extra_args: list[s
             text=True,
             timeout=DIAGNOSE_TIMEOUT_SEC,
             cwd=str(EXPERIMENT_ROOT),
+            env={**os.environ, **(env_extra or {})},
         )
     except subprocess.TimeoutExpired:
         raise HTTPException(504, f"진단이 {DIAGNOSE_TIMEOUT_SEC}초 안에 끝나지 않았습니다.")
@@ -311,7 +386,7 @@ def _load_label_diagnosis_json(dataset_id: str) -> LabelDiagnosisResult:
 
 
 @router.post("/{dataset_id}/diagnose-labels", response_model=LabelDiagnosisResult)
-def diagnose_dataset_labels(dataset_id: str) -> LabelDiagnosisResult:
+def diagnose_dataset_labels(dataset_id: str, profile: str | None = None) -> LabelDiagnosisResult:
     """박스 단위 진단 — 재검수 우선순위 목록을 만든다.
 
     /diagnose(데이터셋 단위 성능 비교)와 달리 예측 박스와 라벨을 1:1로
@@ -319,7 +394,8 @@ def diagnose_dataset_labels(dataset_id: str) -> LabelDiagnosisResult:
     27개 조건 실측 기준 진단 정확도 92.6%
     (experiment/label_diagnosis_eval.json).
     """
-    _run_experiment_script(dataset_id, "diagnose_labels.py", ["--upload-id", dataset_id])
+    _run_experiment_script(dataset_id, "diagnose_labels.py", ["--upload-id", dataset_id],
+                           env_extra=_profile_env(profile))
     return _load_label_diagnosis_json(dataset_id)
 
 

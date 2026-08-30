@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   diagnoseDataset,
   diagnoseDatasetLabels,
   getDatasetReportUrl,
+  getReliabilityProfiles,
   uploadDataset,
 } from "../api";
 import type {
   LabelDiagnosisResult,
+  ReliabilityProfile,
   UploadDiagnosisResult,
   UploadedDatasetInfo,
 } from "../types";
@@ -19,8 +21,18 @@ export function DatasetUpload() {
   const [result, setResult] = useState<UploadDiagnosisResult | null>(null);
   const [labelResult, setLabelResult] = useState<LabelDiagnosisResult | null>(null);
   const [status, setStatus] = useState<Status>("idle");
+  // 유형 신뢰도는 도메인마다 다르다 — 다중 클래스로 재보니 "그 유형이 없을 때"의
+  // 값이 크게 흔들렸다(docs/21 L). 그래서 보정 프로파일을 고를 수 있게 한다.
+  const [profiles, setProfiles] = useState<ReliabilityProfile[]>([]);
+  const [profile, setProfile] = useState("");
+
+  useEffect(() => {
+    // 프로파일을 못 불러와도 진단 자체는 기본값으로 돌아가야 하므로 조용히 넘긴다
+    getReliabilityProfiles().then(setProfiles).catch(() => setProfiles([]));
+  }, []);
 
   const busy = status === "uploading" || status === "diagnosing";
+  const selectedProfile = profiles.find((p) => p.name === profile);
 
   const handleRun = async () => {
     if (!file) return;
@@ -34,7 +46,7 @@ export function DatasetUpload() {
       // 박스 단위 진단이 실제 재검수 목록을 만드는 핵심이고, 데이터셋 단위
       // 진단은 성능 패턴 DB와의 비교 근거를 함께 보여주기 위해 같이 돌린다.
       const [labels, diagnosis] = await Promise.all([
-        diagnoseDatasetLabels(info.dataset_id),
+        diagnoseDatasetLabels(info.dataset_id, profile),
         diagnoseDataset(info.dataset_id),
       ]);
       setLabelResult(labels);
@@ -69,10 +81,39 @@ export function DatasetUpload() {
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           disabled={busy}
         />
+        {profiles.length > 1 && (
+          <>
+            <label htmlFor="reliability-profile-select" className="sr-only">
+              유형 신뢰도 보정 프로파일
+            </label>
+            <select
+              id="reliability-profile-select"
+              className="profile-select"
+              value={profile}
+              onChange={(e) => setProfile(e.target.value)}
+              disabled={busy}
+            >
+              {profiles.map((p) => (
+                <option key={p.name} value={p.name}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
         <button className="refresh-button" onClick={handleRun} disabled={!file || busy}>
           {status === "uploading" ? "업로드 중..." : status === "diagnosing" ? "진단 중..." : "업로드 & 진단"}
         </button>
       </div>
+
+      {selectedProfile && selectedProfile.classes.length > 0 && (
+        <p className="upload-meta">
+          진단 클래스: {selectedProfile.classes.join(", ")}
+          {selectedProfile.name
+            ? " — 이 구성에서 실측한 유형 신뢰도를 적용합니다."
+            : " — 기본 기준 모델입니다."}
+        </p>
+      )}
 
       {status === "error" && (
         <p className="error-banner">
