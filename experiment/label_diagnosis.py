@@ -48,6 +48,17 @@ MISSING_CONFIDENCE_THRESHOLD = 0.70
 # 라벨된 차 뒤에 가려진 차다(KITTI는 심하게 가려진 차를 Car로 라벨링하지 않아
 # 정상 탐지가 누락으로 오인된다). 확신도만으로는 이게 안 걸러진다.
 MISSING_MAX_COVERED_RATIO = 0.7
+# 클래스 불일치를 말하려면 모델이 자기 클래스를 이만큼은 확신해야 한다.
+#
+# 진단은 "라벨의 클래스가 틀렸다"와 "모델의 클래스 예측이 틀렸다"를 구분할
+# 수단이 없다 — 둘 다 겉보기엔 같은 불일치다. 실측해보니 확신도가 그 둘을
+# 거의 완벽하게 갈랐다(다중 클래스 299건 표본): 진짜 클래스 오기입은 확신도
+# 중앙값 0.835인데 오탐은 0.546이었고, **오탐 48건이 전부 0.60 아래였다.**
+# 겹침(IoU)은 전혀 갈라내지 못했다(0.881 vs 0.805).
+#
+# 문턱 아래면 아무 판정도 내리지 않는다. 근거 없이 다른 유형(누락·중복)으로
+# 부르면 틀린 말을 하는 것이고, 침묵하는 편이 낫다.
+CLASS_MISMATCH_CONFIDENCE_THRESHOLD = 0.60
 # 한 유형의 의심이 전체 라벨의 이 비율을 넘으면 "계통적 오류"로 판정한다.
 # clean의 최대 유형 비율(7.4% 실측)과 실제 오류 조건의 최대 유형 비율
 # (26%+) 사이에 두되, 약한 오류(10% 주입)까지 놓치지 않도록 낮게 잡았다.
@@ -105,10 +116,10 @@ TYPE_RELIABILITY_PRESENT = {
     # 누락 필터(확신도 0.70 + 삼켜짐 0.7) 적용 후 재측정: 대표일 때 100%(n=120),
     # 2차로 존재할 때 94.9%(n=39) → 합쳐 98.7%. 필터 전에는 82.9%/71.2%였다.
     "missing": 0.99,
-    # 클래스 오기입. **아직 실측하지 않았다** — error_injector가 클래스를 바꾸는
-    # 조건을 만들지 않아서 정답지가 없다. 다른 유형들처럼 재기 전까지는
-    # 중간값을 쓰고, 실측 후 갱신할 것.
-    "class_mismatch": 0.70,
+    # 클래스 오기입. 확신도 문턱(0.60)을 통과한 것만 세면 실측 100%(n=171)인데,
+    # 표본 수백 건짜리 100%를 "절대 안 틀린다"로 굳히지 않으려고 0.99로 둔다.
+    # 다중 클래스 조건에서 잰 값이다 — 단일 클래스에서는 이 유형이 안 나온다.
+    "class_mismatch": 0.99,
 }
 # 계통적 수준으로 존재하지 않을 때 = 사실상 모델 예측 흔들림에서 나온 오탐.
 # 단일 유형 조건 26개에서 "그 유형이 주입되지 않았을 때"로 실측한 값이다.
@@ -127,7 +138,9 @@ TYPE_RELIABILITY_NOISE = {
     # 0.04를 그대로 두면 계통적 임계값(12%)에 못 미치는 성긴 누락을 가진
     # 데이터셋에서 진짜 누락이 목록 바닥에 깔린다.
     "missing": 0.88,
-    "class_mismatch": 0.35,  # 위와 같이 미측정 — 부재 시라 더 보수적으로
+    # 부재 시도 실측 100%지만 n=30으로 얇다. 확신도 문턱이 이미 걸러낸 뒤라
+    # 두 단계가 갈리지 않는 유형이다.
+    "class_mismatch": 0.99,
 }
 # 기하 의심(크기·이동)의 심각도에 예측 확신도를 얼마나 반영할지.
 # 심각도는 원래 확신도를 아예 안 봤다 — 유형 신뢰도와 변형률만 봤다. 그런데
@@ -444,15 +457,20 @@ def diagnose_image(
                     best, best_pi = v, pi
             if best_pi is None:
                 continue
+            # 확신도가 낮으면 이 라벨도 예측도 더는 건드리지 않는다. 판정은
+            # 못 하지만, 그렇다고 예측을 "누락"으로 라벨을 "중복"으로 부르면
+            # 없는 오류를 만들어낸다.
+            conf = confidences[best_pi] if best_pi < len(confidences) else 1.0
             class_mismatched.add(li)
             matched_preds.add(best_pi)
+            if conf < CLASS_MISMATCH_CONFIDENCE_THRESHOLD:
+                continue
             findings.append(BoxFinding(
                 image, li, "class_mismatch",
                 severity_for("class_mismatch", best),
                 f"모델은 {cname(pred_classes[best_pi])}로 보는데 "
                 f"라벨은 {cname(label_classes[li])} (겹침 {best:.2f})",
-                labels[li], best,
-                confidences[best_pi] if best_pi < len(confidences) else 1.0,
+                labels[li], best, conf,
             ))
         # 클래스 불일치로 쓰인 예측은 "라벨 없는 자리"가 아니므로 누락에서 뺀다
         unmatched_preds = [pi for pi in unmatched_preds if pi not in matched_preds]

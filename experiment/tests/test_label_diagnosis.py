@@ -404,3 +404,15 @@ def test_same_class_boxes_still_diagnosed_geometrically():
                               pred_classes=[0], label_classes=[0],
                               class_names=["Car", "Van"])
     assert [f.suspicion for f in findings] == ["width"]
+
+
+def test_unsure_class_prediction_stays_silent():
+    """모델이 클래스를 확신 못 하면 클래스 불일치로 부르지 않는다.
+
+    실측 오탐 48건이 전부 확신도 0.60 아래였다. 그렇다고 누락·중복으로
+    부르면 안 된다 — 판정할 근거가 없는 것이지, 다른 오류인 게 아니다.
+    """
+    findings = diagnose_image("a.png", [PRED], [0.45], [PRED],
+                              pred_classes=[0], label_classes=[1],
+                              class_names=["Car", "Van"])
+    assert findings == []

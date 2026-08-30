@@ -39,6 +39,9 @@ MISSING_MATCH_IOU = 0.4
 # 프로파일에 쓸 최소 표본 수. 이보다 적으면 그 유형은 기본값을 유지한다 —
 # J에서 누락의 부재 시 신뢰도를 n=17로 정했다가 근거가 얇다고 적어둔 일이 있다.
 MIN_PROFILE_SAMPLES = 30
+# 프로파일 값 상한. 표본 수백 건에서 정밀도 100%가 나와도 "이 유형은 절대
+# 틀리지 않는다"로 굳히지는 않는다. 순서는 그대로 두면서 여지를 남긴다.
+MAX_PROFILE_RELIABILITY = 0.99
 
 
 VERDICT_CACHE = config.EXPERIMENT_ROOT / f"box_accuracy_verdicts{config._csuffix}.json"
@@ -50,7 +53,8 @@ def _verdict(correct: bool, finding, predicted_dominant: str | None) -> tuple:
     바꿔도 추론을 다시 돌리지 않고 순위를 재계산할 수 있다(--reuse-cache).
     """
     return (correct, finding.suspicion, finding.severity,
-            finding.suspicion == predicted_dominant, finding.raw_signal)
+            finding.suspicion == predicted_dominant, finding.raw_signal,
+            finding.confidence)
 
 
 def load_injection_record(condition_name: str) -> dict:
@@ -233,7 +237,7 @@ def main():
 
     conditions = [c for c in config.conditions_in_run_order() if c.type != "none"]
     if args.conditions:
-        by_name = {c.name: c for c in config.CONDITIONS}
+        by_name = {c.name: c for c in config.CONDITIONS + config.CLASS_SWAP_CONDITIONS}
         conditions = [by_name[n] for n in args.conditions]
 
     rows = []
@@ -279,7 +283,8 @@ def main():
     # 미덥다"는 뜻이므로, 유형별로 정밀도와 심각도 분포를 같이 본다.
     per_type: dict[str, dict] = {}
     for r in rows:
-        for correct, suspicion, severity, _is_dominant, _raw in r["verdicts_by_rank"]:
+        for v in r["verdicts_by_rank"]:
+            correct, suspicion, severity = v[0], v[1], v[2]
             d = per_type.setdefault(suspicion, {"tp": 0, "n": 0, "sev": 0.0})
             d["n"] += 1
             d["sev"] += severity
@@ -300,7 +305,8 @@ def main():
     # "그 유형이 없는 데이터셋까지 섞여서"인지 여기서 갈린다.
     split: dict[str, dict] = {}
     for r in rows:
-        for correct, suspicion, _sev, is_dominant, _raw in r["verdicts_by_rank"]:
+        for v in r["verdicts_by_rank"]:
+            correct, suspicion, is_dominant = v[0], v[1], v[3]
             bucket = split.setdefault(suspicion, {
                 "matched": [0, 0], "unmatched": [0, 0],  # [tp, n]
             })
@@ -348,9 +354,11 @@ def main():
         profile = {"present": {}, "noise": {}}
         for name, d in conditional.items():
             if d["matched_n"] >= MIN_PROFILE_SAMPLES:
-                profile["present"][name] = round(d["matched_precision"], 4)
+                profile["present"][name] = min(round(d["matched_precision"], 4),
+                                               MAX_PROFILE_RELIABILITY)
             if d["unmatched_n"] >= MIN_PROFILE_SAMPLES:
-                profile["noise"][name] = round(d["unmatched_precision"], 4)
+                profile["noise"][name] = min(round(d["unmatched_precision"], 4),
+                                             MAX_PROFILE_RELIABILITY)
         skipped = sorted(
             {n for n, d in conditional.items()
              if d["matched_n"] < MIN_PROFILE_SAMPLES or d["unmatched_n"] < MIN_PROFILE_SAMPLES}
