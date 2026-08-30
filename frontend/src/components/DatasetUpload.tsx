@@ -64,10 +64,11 @@ export function DatasetUpload() {
         <span className="badge badge-pending">베타</span>
       </div>
       <p className="report-caveat">
-        images/ + labels/(YOLO 포맷, 클래스 1개) 폴더를 담은 zip을 올리면, 이미
-        학습된 기준 모델로 추론해 어떤 오류 유형과 가장 비슷한지 후보를
-        보여줍니다. 이 데이터셋이 KITTI Car와 비슷한 난이도라고 가정하는
-        확률적 추정이며, 확정 진단이 아닙니다.
+        images/ + labels/(YOLO 포맷) 폴더를 담은 zip을 올리면, 이미 학습된
+        기준 모델로 추론해 어떤 오류 유형과 가장 비슷한지 후보를 보여줍니다.
+        아래에서 고른 클래스 구성과 같은 라벨이어야 합니다. 이 데이터셋이
+        기준 모델의 데이터와 비슷한 난이도라고 가정하는 확률적 추정이며,
+        확정 진단이 아닙니다.
       </p>
 
       <div className="upload-controls">
