@@ -31,9 +31,22 @@ PREDICT_CONFIDENCE_FLOOR = 0.25
 
 def load_yolo_labels(label_path: Path, img_w: int, img_h: int) -> list[Box]:
     """YOLO 정규화 라벨(class cx cy w h)을 픽셀 Box로 바꾼다."""
+    return load_yolo_labels_with_classes(label_path, img_w, img_h)[0]
+
+
+def load_yolo_labels_with_classes(
+    label_path: Path, img_w: int, img_h: int
+) -> tuple[list[Box], list[int]]:
+    """위와 같되 클래스 인덱스도 함께 돌려준다.
+
+    예전에는 클래스를 그냥 버렸다. 단일 클래스에서는 문제가 없었지만
+    다중 클래스에서는 사람 라벨에 자동차 예측이 붙는 짝이 생겨서, 없는
+    기하 오류를 만들어냈다(docs/21 L 참고).
+    """
     if not label_path.exists():
-        return []
+        return [], []
     boxes: list[Box] = []
+    classes: list[int] = []
     for line in label_path.read_text().splitlines():
         parts = line.split()
         if len(parts) < 5:
@@ -41,7 +54,8 @@ def load_yolo_labels(label_path: Path, img_w: int, img_h: int) -> list[Box]:
         cx, cy, w, h = (float(v) for v in parts[1:5])
         cx, cy, w, h = cx * img_w, cy * img_h, w * img_w, h * img_h
         boxes.append((cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2))
-    return boxes
+        classes.append(int(float(parts[0])))
+    return boxes, classes
 
 
 def resolve_dataset(args) -> tuple[Path, Path, str]:
@@ -94,14 +108,24 @@ def run(images_dir: Path, labels_dir: Path, limit: int | None = None) -> tuple[l
         for path, result in zip(batch, results):
             with Image.open(path) as img:
                 img_w, img_h = img.width, img.height
-            labels = load_yolo_labels(labels_dir / f"{path.stem}.txt", img_w, img_h)
+            labels, label_classes = load_yolo_labels_with_classes(
+                labels_dir / f"{path.stem}.txt", img_w, img_h)
             total_labels += len(labels)
 
             xyxy = result.boxes.xyxy.tolist() if result.boxes is not None else []
             confs = result.boxes.conf.tolist() if result.boxes is not None else []
+            pred_classes = ([int(c) for c in result.boxes.cls.tolist()]
+                            if result.boxes is not None else [])
             predictions: list[Box] = [tuple(b) for b in xyxy]  # type: ignore[misc]
 
-            findings.extend(diagnose_image(path.name, predictions, confs, labels))
+            # 클래스가 하나뿐이면 클래스 대조는 아무 의미가 없으므로 넘기지
+            # 않는다 — 예전 동작(Car 단일 결과 A~K)을 그대로 재현하기 위함이다.
+            findings.extend(diagnose_image(
+                path.name, predictions, confs, labels,
+                pred_classes=pred_classes if config.MULTICLASS else None,
+                label_classes=label_classes if config.MULTICLASS else None,
+                class_names=config.CLASS_NAMES if config.MULTICLASS else None,
+            ))
 
     return findings, total_labels
 

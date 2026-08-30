@@ -31,10 +31,18 @@ experiment/runs/
 experiment/runs_e*/
 experiment/runs_obb/
 experiment/runs_obb_e*/
+# 다중 클래스 실험(docs/21 L) 산출물 — 위와 같은 이유로 제외
+experiment/conditions_mc/
+experiment/conditions_mc_e*/
+experiment/data_yaml_mc/
+experiment/data_yaml_mc_e*/
+experiment/runs_mc/
+experiment/runs_mc_e*/
 experiment/*.pt
 experiment/*.log
 # 박스 단위 채점 원시 판정 캐시 — 재생성 가능한 중간 산출물
 experiment/box_accuracy_verdicts.json
+experiment/box_accuracy_verdicts_mc.json
 
 # 고객이 업로드한 데이터셋 (docs/21 C) — 실제 데이터라 커밋하지 않음
 backend/app/data/uploads/

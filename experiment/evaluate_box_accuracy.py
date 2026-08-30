@@ -36,8 +36,12 @@ from label_diagnosis import iou, rescore, summarize
 # 위치가 이 정도로 겹치면 같은 객체를 지목했다고 본다.
 MISSING_MATCH_IOU = 0.4
 
+# 프로파일에 쓸 최소 표본 수. 이보다 적으면 그 유형은 기본값을 유지한다 —
+# J에서 누락의 부재 시 신뢰도를 n=17로 정했다가 근거가 얇다고 적어둔 일이 있다.
+MIN_PROFILE_SAMPLES = 30
 
-VERDICT_CACHE = config.EXPERIMENT_ROOT / "box_accuracy_verdicts.json"
+
+VERDICT_CACHE = config.EXPERIMENT_ROOT / f"box_accuracy_verdicts{config._csuffix}.json"
 
 
 def _verdict(correct: bool, finding, predicted_dominant: str | None) -> tuple:
@@ -213,6 +217,8 @@ def _type_matches(condition_type: str, suspicion: str) -> bool:
     """
     if condition_type == "rotation":
         return suspicion in {"width", "height", "scale"}
+    if condition_type == "class_swap":
+        return suspicion == "class_mismatch"
     return condition_type == suspicion
 
 
@@ -220,6 +226,9 @@ def main():
     parser = argparse.ArgumentParser(description="박스 단위 진단 정확도 평가")
     parser.add_argument("--limit", type=int, default=80, help="조건당 이미지 수")
     parser.add_argument("--conditions", nargs="+", help="특정 조건만")
+    parser.add_argument("--write-profile", metavar="PATH",
+                        help="실측한 유형 신뢰도를 프로파일 JSON으로 저장 "
+                             "(AIDA_RELIABILITY_PROFILE로 지정해 쓰면 됨)")
     args = parser.parse_args()
 
     conditions = [c for c in config.conditions_in_run_order() if c.type != "none"]
@@ -333,10 +342,33 @@ def main():
         {r["condition"]: r["verdicts_by_rank"] for r in rows}, ensure_ascii=False
     ), encoding="utf-8")
 
-    json_path = config.EXPERIMENT_ROOT / "box_accuracy_eval.json"
+    if args.write_profile:
+        # 방금 실측한 값을 그대로 신뢰도 프로파일로 떨군다. 표본이 너무 적은
+        # 유형은 뺀다 — 근거 없는 상수를 프로파일에 굳히면 기본값보다 나쁘다.
+        profile = {"present": {}, "noise": {}}
+        for name, d in conditional.items():
+            if d["matched_n"] >= MIN_PROFILE_SAMPLES:
+                profile["present"][name] = round(d["matched_precision"], 4)
+            if d["unmatched_n"] >= MIN_PROFILE_SAMPLES:
+                profile["noise"][name] = round(d["unmatched_precision"], 4)
+        skipped = sorted(
+            {n for n, d in conditional.items()
+             if d["matched_n"] < MIN_PROFILE_SAMPLES or d["unmatched_n"] < MIN_PROFILE_SAMPLES}
+        )
+        out = Path(args.write_profile)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(profile, ensure_ascii=False, indent=2), encoding="utf-8")
+        print()
+        print(f"신뢰도 프로파일 저장 → {out}")
+        if skipped:
+            print(f"  표본 {MIN_PROFILE_SAMPLES}건 미만이라 기본값을 유지한 유형: {', '.join(skipped)}")
+
+    # 클래스 구성이 다르면 결과도 다른 실험이다 — Car 단일 결과를 덮지 않게 분리
+    json_path = config.EXPERIMENT_ROOT / f"box_accuracy_eval{config._csuffix}.json"
     json_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    csv_path = config.EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "box_accuracy_eval.csv"
+    csv_path = (config.EXPERIMENT_ROOT.parent / "backend" / "app" / "data"
+                / f"box_accuracy_eval{config._csuffix}.csv")
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     fields = ["condition", "type", "magnitude", "injected", "flagged", "tp", "fp",
               "caught", "fn", "precision", "recall", "f1", "type_accuracy"]

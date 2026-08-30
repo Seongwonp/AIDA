@@ -32,7 +32,13 @@ def yolo_to_pixel(line: str, img_w: int, img_h: int) -> Box:
     return cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2
 
 
-def pixel_to_yolo_line(box: Box, img_w: int, img_h: int) -> str:
+def class_of(line: str) -> int:
+    """라벨 줄의 클래스 인덱스. 다중 클래스에서는 오류를 주입해도 보존해야 한다 —
+    안 그러면 기하 오류를 넣는 김에 클래스까지 바꿔버려 조건이 오염된다."""
+    return int(line.split()[0])
+
+
+def pixel_to_yolo_line(box: Box, img_w: int, img_h: int, class_id: int | None = None) -> str:
     left, top, right, bottom = box
     cx = (left + right) / 2 / img_w
     cy = (top + bottom) / 2 / img_h
@@ -40,7 +46,8 @@ def pixel_to_yolo_line(box: Box, img_w: int, img_h: int) -> str:
     h = (bottom - top) / img_h
     cx, cy = min(max(cx, 0.0), 1.0), min(max(cy, 0.0), 1.0)
     w, h = min(max(w, 0.0), 1.0), min(max(h, 0.0), 1.0)
-    return f"{config.CLASS_ID} {cx:.6f} {cy:.6f} {w:.6f} {h:.6f}"
+    cid = config.CLASS_ID if class_id is None else class_id
+    return f"{cid} {cx:.6f} {cy:.6f} {w:.6f} {h:.6f}"
 
 
 def apply_width(box: Box, magnitude_pct: float) -> Box:
@@ -162,6 +169,7 @@ def build_condition_labels(condition: Condition, image_dir: Path, gt_label_dir: 
         dropped: list[list[float]] = []
         for line in lines:
             box = yolo_to_pixel(line, img.width, img.height)
+            cid = class_of(line)
 
             if condition.type == "missing":
                 # magnitude% 확률로 이 라벨 자체를 통째로 누락시킨다 (줄을 아예 안 씀).
@@ -169,20 +177,29 @@ def build_condition_labels(condition: Condition, image_dir: Path, gt_label_dir: 
                     cx, cy, w, h = center_size_normalized(box, img.width, img.height)
                     dropped.append([cx, cy, w, h])
                     continue
-                out_lines.append(pixel_to_yolo_line(box, img.width, img.height))
+                out_lines.append(pixel_to_yolo_line(box, img.width, img.height, cid))
+            elif condition.type == "class_swap":
+                # magnitude% 확률로 클래스만 다른 값으로 바꾼다. 박스 좌표는
+                # 그대로 — 라벨링 현장에서 가장 흔한 오류가 좌표는 맞는데
+                # 클래스를 잘못 고르는 경우다.
+                if len(config.CLASS_NAMES) > 1 and rng.random() < condition.magnitude / 100:
+                    others = [i for i in range(len(config.CLASS_NAMES)) if i != cid]
+                    cid = rng.choice(others)
+                    errored.append(len(out_lines))
+                out_lines.append(pixel_to_yolo_line(box, img.width, img.height, cid))
             elif condition.type == "duplicate":
                 # 원본은 그대로 두고, magnitude% 확률로 살짝 어긋난 복제 박스를 추가한다.
-                out_lines.append(pixel_to_yolo_line(box, img.width, img.height))
+                out_lines.append(pixel_to_yolo_line(box, img.width, img.height, cid))
                 if rng.random() < condition.magnitude / 100:
                     dup_box = apply_duplicate_offset(box)
                     # 새로 끼워 넣은 줄이 곧 오류 박스다
                     errored.append(len(out_lines))
-                    out_lines.append(pixel_to_yolo_line(dup_box, img.width, img.height))
+                    out_lines.append(pixel_to_yolo_line(dup_box, img.width, img.height, cid))
             else:
                 if condition.type != "none" and rng.random() < config.ERROR_RATIO:
                     box = transform_box(box, condition)
                     errored.append(len(out_lines))
-                out_lines.append(pixel_to_yolo_line(box, img.width, img.height))
+                out_lines.append(pixel_to_yolo_line(box, img.width, img.height, cid))
 
         (out_label_dir / gt_path.name).write_text("\n".join(out_lines) + "\n")
         if errored or dropped:
@@ -233,29 +250,31 @@ def build_mixed_condition_labels(mixed: config.MixedCondition, image_dir: Path,
 
         for line in lines:
             box = yolo_to_pixel(line, img.width, img.height)
+            cid = class_of(line)
             roll = rng.random()
             if roll < mixed.primary_rate:
                 kind, magnitude = mixed.primary_type, mixed.primary_magnitude
             elif roll < mixed.primary_rate + mixed.secondary_rate:
                 kind, magnitude = mixed.secondary_type, mixed.secondary_magnitude
             else:
-                out_lines.append(pixel_to_yolo_line(box, img.width, img.height))
+                out_lines.append(pixel_to_yolo_line(box, img.width, img.height, cid))
                 continue
 
             if kind == "missing":
                 cx, cy, w, h = center_size_normalized(box, img.width, img.height)
                 dropped.append([cx, cy, w, h])
             elif kind == "duplicate":
-                out_lines.append(pixel_to_yolo_line(box, img.width, img.height))
+                out_lines.append(pixel_to_yolo_line(box, img.width, img.height, cid))
                 errored.append(len(out_lines))
                 errored_types.append("duplicate")
                 out_lines.append(
-                    pixel_to_yolo_line(apply_duplicate_offset(box), img.width, img.height))
+                    pixel_to_yolo_line(apply_duplicate_offset(box), img.width, img.height, cid))
             else:
                 errored.append(len(out_lines))
                 errored_types.append(kind)
                 out_lines.append(pixel_to_yolo_line(
-                    transform_box(box, as_condition(kind, magnitude)), img.width, img.height))
+                    transform_box(box, as_condition(kind, magnitude)),
+                    img.width, img.height, cid))
 
         (out_label_dir / gt_path.name).write_text("\n".join(out_lines) + "\n")
         if errored or dropped:
@@ -316,7 +335,7 @@ def write_data_yaml(condition_root: Path) -> Path:
         "path": str(condition_root.resolve()),
         "train": "images/train",
         "val": "images/val",
-        "names": {config.CLASS_ID: config.TARGET_CLASS},
+        "names": dict(enumerate(config.CLASS_NAMES)),
     }
     yaml_path = config.DATA_YAML_DIR / f"{condition_root.name}.yaml"
     config.DATA_YAML_DIR.mkdir(parents=True, exist_ok=True)
@@ -434,7 +453,7 @@ def build_obb_condition(condition: config.Condition) -> Path:
         "path": str(root.resolve()),
         "train": "images/train",
         "val": "images/val",
-        "names": {config.CLASS_ID: config.TARGET_CLASS},
+        "names": dict(enumerate(config.CLASS_NAMES)),
     }
     config.OBB_DATA_YAML_DIR.mkdir(parents=True, exist_ok=True)
     yaml_path = config.OBB_DATA_YAML_DIR / f"{condition.name}.yaml"

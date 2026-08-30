@@ -13,7 +13,10 @@
 GPU/모델 의존이 없는 순수 함수만 둔다 — 실제 추론은 diagnose_labels.py가
 맡고, 여기 로직은 테스트로 검증한다(tests/test_label_diagnosis.py).
 """
+import json
+import os
 from dataclasses import dataclass, replace
+from pathlib import Path
 
 # error_injector.py와 같은 좌표 규약 (픽셀 기준 left, top, right, bottom)
 Box = tuple[float, float, float, float]
@@ -102,6 +105,10 @@ TYPE_RELIABILITY_PRESENT = {
     # 누락 필터(확신도 0.70 + 삼켜짐 0.7) 적용 후 재측정: 대표일 때 100%(n=120),
     # 2차로 존재할 때 94.9%(n=39) → 합쳐 98.7%. 필터 전에는 82.9%/71.2%였다.
     "missing": 0.99,
+    # 클래스 오기입. **아직 실측하지 않았다** — error_injector가 클래스를 바꾸는
+    # 조건을 만들지 않아서 정답지가 없다. 다른 유형들처럼 재기 전까지는
+    # 중간값을 쓰고, 실측 후 갱신할 것.
+    "class_mismatch": 0.70,
 }
 # 계통적 수준으로 존재하지 않을 때 = 사실상 모델 예측 흔들림에서 나온 오탐.
 # 단일 유형 조건 26개에서 "그 유형이 주입되지 않았을 때"로 실측한 값이다.
@@ -120,6 +127,7 @@ TYPE_RELIABILITY_NOISE = {
     # 0.04를 그대로 두면 계통적 임계값(12%)에 못 미치는 성긴 누락을 가진
     # 데이터셋에서 진짜 누락이 목록 바닥에 깔린다.
     "missing": 0.88,
+    "class_mismatch": 0.35,  # 위와 같이 미측정 — 부재 시라 더 보수적으로
 }
 # 기하 의심(크기·이동)의 심각도에 예측 확신도를 얼마나 반영할지.
 # 심각도는 원래 확신도를 아예 안 봤다 — 유형 신뢰도와 변형률만 봤다. 그런데
@@ -144,6 +152,30 @@ CONFIDENCE_FLOOR = 0.5
 # 안 해서 넣지 않았다 — 이미 정밀도 90%로 약한 고리가 아니다.
 CONFIDENCE_WEIGHTED_TYPES = {"width", "height", "scale", "translation_x", "translation_y"}
 
+def _load_reliability_profile() -> None:
+    """도메인별로 재보정한 신뢰도를 기본 상수 위에 덮어쓴다.
+
+    기본값은 KITTI Car 단일 클래스 실측치다. 다중 클래스로 검증해보니
+    **"존재 시" 값은 잘 옮겨가지만 "부재 시" 값은 크게 달라졌다** —
+    누락이 88% → 22%로 무너졌다(docs/21 L). 그래서 상수를 코드에 박아두는
+    대신 프로파일로 갈아끼울 수 있게 한다.
+
+    프로파일 형식: {"present": {유형: 0~1}, "noise": {유형: 0~1}}
+    빠진 유형은 기본값을 그대로 쓴다.
+    """
+    path = os.environ.get("AIDA_RELIABILITY_PROFILE", "")
+    if not path:
+        return
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    for key, table in (("present", TYPE_RELIABILITY_PRESENT),
+                       ("noise", TYPE_RELIABILITY_NOISE)):
+        for suspicion, value in data.get(key, {}).items():
+            table[suspicion] = float(value)
+
+
+_load_reliability_profile()
+
+
 # 유형별 (임계값, 이 값 이상이면 신호가 최대) — 신호 세기 정규화 구간.
 _STRENGTH_RANGE = {
     "width": (SIZE_DEVIATION_THRESHOLD, 0.40),
@@ -153,6 +185,7 @@ _STRENGTH_RANGE = {
     "translation_y": (CENTER_SHIFT_THRESHOLD, 0.40),
     "missing": (MISSING_CONFIDENCE_THRESHOLD, 1.0),
     "duplicate": (DUPLICATE_IOU_THRESHOLD, 1.0),
+    "class_mismatch": (MATCH_IOU_THRESHOLD, 1.0),
 }
 
 
@@ -185,7 +218,8 @@ class BoxFinding:
     """의심 박스 하나. image/label_index로 고객이 바로 그 박스를 찾아갈 수 있다."""
     image: str
     label_index: int | None  # 누락 의심이면 대응하는 라벨이 없으므로 None
-    suspicion: str  # missing | duplicate | scale | width | height | translation_x | translation_y
+    suspicion: str  # missing | duplicate | class_mismatch | scale | width | height
+                    # | translation_x | translation_y
     severity: float  # 0~1, 클수록 확실. 재검수 우선순위 정렬 키
     detail: str  # 사람이 읽을 근거 ("예측 대비 28% 작음" 등)
     # 문제의 박스 위치. 라벨이 있는 의심은 그 라벨 박스, 누락 의심은 "라벨이
@@ -276,16 +310,30 @@ def match_boxes(
     predictions: list[Box],
     labels: list[Box],
     iou_threshold: float = MATCH_IOU_THRESHOLD,
+    pred_classes: list[int] | None = None,
+    label_classes: list[int] | None = None,
 ) -> tuple[dict[int, int], list[int], list[int]]:
     """IoU가 큰 쌍부터 욕심껏 1:1로 짝짓는다.
 
+    클래스 정보가 주어지면 **같은 클래스끼리만** 짝짓는다. 단일 클래스에서는
+    아무 차이가 없지만, 다중 클래스에서 클래스를 무시하면 사람 라벨에 자동차
+    예측이 붙는 식의 짝이 생긴다. 그 쌍의 기하 편차는 라벨 오류가 아니라
+    서로 다른 물체를 비교한 결과라, 없는 오류를 만들어낸다.
+
     반환: (label_index -> pred_index 매칭, 짝 없는 예측 인덱스, 짝 없는 라벨 인덱스)
     """
+    def compatible(pi: int, li: int) -> bool:
+        if pred_classes is None or label_classes is None:
+            return True
+        if pi >= len(pred_classes) or li >= len(label_classes):
+            return True
+        return pred_classes[pi] == label_classes[li]
+
     pairs = [
         (iou(p, l), pi, li)
         for pi, p in enumerate(predictions)
         for li, l in enumerate(labels)
-        if iou(p, l) >= iou_threshold
+        if iou(p, l) >= iou_threshold and compatible(pi, li)
     ]
     pairs.sort(reverse=True)
 
@@ -347,10 +395,22 @@ def diagnose_image(
     predictions: list[Box],
     confidences: list[float],
     labels: list[Box],
+    pred_classes: list[int] | None = None,
+    label_classes: list[int] | None = None,
+    class_names: list[str] | None = None,
 ) -> list[BoxFinding]:
-    """이미지 한 장의 예측/라벨을 대조해 의심 박스 목록을 만든다."""
-    matched, unmatched_preds, unmatched_labels = match_boxes(predictions, labels)
+    """이미지 한 장의 예측/라벨을 대조해 의심 박스 목록을 만든다.
+
+    클래스 정보는 선택이다 — 안 주면 예전처럼 클래스를 무시하고 위치만 본다.
+    """
+    matched, unmatched_preds, unmatched_labels = match_boxes(
+        predictions, labels, pred_classes=pred_classes, label_classes=label_classes)
     findings: list[BoxFinding] = []
+
+    def cname(i: int) -> str:
+        if class_names and 0 <= i < len(class_names):
+            return class_names[i]
+        return f"클래스 {i}"
 
     # 1) 짝지어진 라벨: 기하학적으로 어긋났는지 본다
     for li, pi in matched.items():
@@ -364,8 +424,43 @@ def diagnose_image(
                 labels[li], raw, conf,
             ))
 
-    # 2) 짝 없는 라벨: 이미 짝지어진 예측과 크게 겹치면 중복 라벨
+    # 2) 짝 없는 라벨: 먼저 "클래스만 다른 예측"이 같은 자리에 있는지 본다.
+    #    클래스 인식 매칭을 켜면 클래스가 틀린 라벨은 짝을 못 찾는데, 그걸
+    #    그냥 두면 예측 쪽이 "누락"으로, 라벨 쪽이 "중복"으로 잘못 불린다.
+    #    실제 라벨링 현장에서 가장 흔한 오류가 클래스 오기입이라, 이걸
+    #    별도 유형으로 부르는 게 맞다.
+    class_mismatched: set[int] = set()
+    if pred_classes is not None and label_classes is not None:
+        matched_preds = set(matched.values())
+        for li in unmatched_labels:
+            best, best_pi = MATCH_IOU_THRESHOLD, None
+            for pi, pbox in enumerate(predictions):
+                if pi in matched_preds or li >= len(label_classes):
+                    continue
+                if pi < len(pred_classes) and pred_classes[pi] == label_classes[li]:
+                    continue  # 같은 클래스인데 안 붙었으면 클래스 문제가 아니다
+                v = iou(pbox, labels[li])
+                if v >= best:
+                    best, best_pi = v, pi
+            if best_pi is None:
+                continue
+            class_mismatched.add(li)
+            matched_preds.add(best_pi)
+            findings.append(BoxFinding(
+                image, li, "class_mismatch",
+                severity_for("class_mismatch", best),
+                f"모델은 {cname(pred_classes[best_pi])}로 보는데 "
+                f"라벨은 {cname(label_classes[li])} (겹침 {best:.2f})",
+                labels[li], best,
+                confidences[best_pi] if best_pi < len(confidences) else 1.0,
+            ))
+        # 클래스 불일치로 쓰인 예측은 "라벨 없는 자리"가 아니므로 누락에서 뺀다
+        unmatched_preds = [pi for pi in unmatched_preds if pi not in matched_preds]
+
+    # 3) 짝 없는 라벨: 이미 짝지어진 예측과 크게 겹치면 중복 라벨
     for li in unmatched_labels:
+        if li in class_mismatched:
+            continue
         best_iou = 0.0
         for pi in matched.values():
             best_iou = max(best_iou, iou(predictions[pi], labels[li]))
@@ -376,7 +471,7 @@ def diagnose_image(
                 labels[li], best_iou,
             ))
 
-    # 3) 짝 없는 예측: 모델이 확신하는데 라벨이 없으면 누락 의심.
+    # 4) 짝 없는 예측: 모델이 확신하는데 라벨이 없으면 누락 의심.
     #    단, 기존 라벨에 대부분 삼켜진 예측은 제외한다 — 라벨된 객체의
     #    중복 탐지이거나 그 뒤에 가려진 객체라서, 누락 라벨이 아니다.
     for pi in unmatched_preds:

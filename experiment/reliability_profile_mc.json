@@ -1,0 +1,22 @@
+{
+  "present": {
+    "height": 0.8925,
+    "width": 0.8008,
+    "scale": 0.9411,
+    "translation_y": 0.9612,
+    "class_mismatch": 0.9801,
+    "translation_x": 0.9424,
+    "duplicate": 0.9881,
+    "missing": 0.9701
+  },
+  "noise": {
+    "height": 0.3214,
+    "width": 0.1782,
+    "scale": 0.4135,
+    "translation_y": 0.1071,
+    "class_mismatch": 0.551,
+    "translation_x": 0.1685,
+    "duplicate": 0.7403,
+    "missing": 0.2222
+  }
+}

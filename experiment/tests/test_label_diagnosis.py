@@ -357,3 +357,50 @@ def test_rescore_promotes_secondary_present_type_too():
     after = {f.suspicion: f.severity for f in rescored}
     assert after["width"] > before["width"]  # 2차 유형도 올라간다
     assert after["scale"] > before["scale"]
+
+
+# ── 다중 클래스 ──────────────────────────────────────────────────────────────
+# Car 단일 클래스에서는 클래스를 아예 안 봐도 문제가 없었다. 다중 클래스로
+# 검증해보니 클래스를 무시하면 사람 라벨에 자동차 예측이 붙는 짝이 생겨서
+# 없는 기하 오류를 만들어내고, 정작 가장 흔한 오류인 클래스 오기입은
+# 재현율 11.8%로 사실상 못 잡았다(docs/21 L).
+
+def test_class_info_is_optional():
+    """클래스를 안 넘기면 예전 동작 그대로여야 한다 (Car 단일 결과 재현성)."""
+    label = apply_width(PRED, -30)
+    assert diagnose_image("a.png", [PRED], [0.9], [label]) == \
+           diagnose_image("a.png", [PRED], [0.9], [label],
+                          pred_classes=None, label_classes=None)
+
+
+def test_boxes_of_different_classes_are_not_matched():
+    """클래스가 다르면 같은 자리라도 기하 오류로 부르면 안 된다."""
+    label = apply_width(PRED, -30)
+    findings = diagnose_image("a.png", [PRED], [0.9], [label],
+                              pred_classes=[0], label_classes=[2],
+                              class_names=["Car", "Van", "Pedestrian"])
+    assert [f.suspicion for f in findings] == ["class_mismatch"]
+
+
+def test_class_mismatch_names_both_classes():
+    """검수자가 무엇을 무엇으로 바꿔야 하는지 근거에 나와야 한다."""
+    findings = diagnose_image("a.png", [PRED], [0.9], [PRED],
+                              pred_classes=[0], label_classes=[2],
+                              class_names=["Car", "Van", "Pedestrian"])
+    assert "Car" in findings[0].detail and "Pedestrian" in findings[0].detail
+
+
+def test_class_mismatch_does_not_also_raise_missing():
+    """같은 오류를 누락과 클래스 불일치로 두 번 세면 검수 목록이 부풀려진다."""
+    findings = diagnose_image("a.png", [PRED], [0.99], [PRED],
+                              pred_classes=[0], label_classes=[1],
+                              class_names=["Car", "Van"])
+    assert [f.suspicion for f in findings] == ["class_mismatch"]
+
+
+def test_same_class_boxes_still_diagnosed_geometrically():
+    """클래스가 같으면 예전처럼 기하 대조를 한다."""
+    findings = diagnose_image("a.png", [PRED], [0.9], [apply_width(PRED, -30)],
+                              pred_classes=[0], label_classes=[0],
+                              class_names=["Car", "Van"])
+    assert [f.suspicion for f in findings] == ["width"]

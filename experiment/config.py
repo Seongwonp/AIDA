@@ -16,8 +16,17 @@ RAW_DIR = EXPERIMENT_ROOT / "data" / "raw"
 PROCESSED_DIR = EXPERIMENT_ROOT / "data" / "processed"
 IMAGES_TRAIN_DIR = PROCESSED_DIR / "images" / "train"
 IMAGES_VAL_DIR = PROCESSED_DIR / "images" / "val"
-LABELS_GT_TRAIN_DIR = PROCESSED_DIR / "labels_gt" / "train"
-LABELS_GT_VAL_DIR = PROCESSED_DIR / "labels_gt" / "val"
+LABELS_GT_TRAIN_DIR: Path  # 아래 _csuffix 확정 후 대입
+
+# 학습·진단에 쓸 KITTI 클래스. 쉼표로 여러 개를 주면 다중 클래스 실험이 된다
+# (예: AIDA_CLASSES="Car,Van,Pedestrian,Cyclist"). 순서가 곧 YOLO 클래스 인덱스다.
+CLASS_NAMES = [c.strip() for c in os.environ.get("AIDA_CLASSES", "Car").split(",") if c.strip()]
+CLASS_IDS = {name: i for i, name in enumerate(CLASS_NAMES)}
+# 단일 클래스 시절 이름들 — 기존 스크립트 호환용
+TARGET_CLASS = os.environ.get("AIDA_TARGET_CLASS", CLASS_NAMES[0])
+CLASS_ID = 0
+MULTICLASS = len(CLASS_NAMES) > 1
+
 SEED = int(os.environ.get("AIDA_SEED", 42))
 # 오류 주입 전용 시드. train/val 분할(SEED)은 고정하고 오류 주입 패턴만 바꿔
 # 동일 데이터셋에서 반복 실험을 수행한다. 기본값은 SEED와 동일(기존 동작 유지).
@@ -25,11 +34,18 @@ ERROR_SEED = int(os.environ.get("AIDA_ERROR_SEED", SEED))
 
 # ERROR_SEED가 기본값(SEED=42)이 아닐 때 별도 디렉토리를 사용해 기존 결과를 보존한다.
 _esuffix = f"_e{ERROR_SEED}" if ERROR_SEED != 42 else ""
+# 클래스 구성이 바뀌면 라벨·가중치·지표가 전부 달라진다. Car 단일 클래스로
+# 쌓아온 결과(docs/21 A~K)를 덮어쓰지 않도록 경로를 통째로 분리한다.
+_csuffix = "" if CLASS_NAMES == ["Car"] else "_mc"
+_esuffix = _csuffix + _esuffix
+
+LABELS_GT_TRAIN_DIR = PROCESSED_DIR / f"labels_gt{_csuffix}" / "train"
+LABELS_GT_VAL_DIR = PROCESSED_DIR / f"labels_gt{_csuffix}" / "val"
 
 CONDITIONS_DIR = EXPERIMENT_ROOT / f"conditions{_esuffix}"
 DATA_YAML_DIR = EXPERIMENT_ROOT / f"data_yaml{_esuffix}"
 RUNS_DIR = EXPERIMENT_ROOT / f"runs{_esuffix}"
-METRICS_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metrics.csv"
+METRICS_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / f"metrics{_csuffix}.csv"
 
 # 다중 seed 실험용 누적 CSV (모든 seed 결과 포함, error_seed 컬럼 추가)
 MULTI_SEED_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metrics_multi_seed.csv"
@@ -37,14 +53,17 @@ OBB_MULTI_SEED_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metr
 # 집계 CSV: aggregate_seeds.py가 mean/std를 계산해 여기 저장
 AGG_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metrics_agg.csv"
 OBB_AGG_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metrics_obb_agg.csv"
-TARGET_CLASS = os.environ.get("AIDA_TARGET_CLASS", "Car")
-CLASS_ID = 0  # YOLO 클래스 인덱스 (Car 단일 클래스이므로 항상 0)
 
 # 스모크 테스트 시 AIDA_N_TRAIN=20 AIDA_N_VAL=10 AIDA_EPOCHS=1 처럼 .env나 환경변수로 오버라이드
 N_TRAIN = int(os.environ.get("AIDA_N_TRAIN", 400))  # 300~500장 범위 중간값
 N_VAL = int(os.environ.get("AIDA_N_VAL", 120))  # 100~150장 범위 중간값
 
 ERROR_RATIO = float(os.environ.get("AIDA_ERROR_RATIO", 0.3))  # 라벨 중 오류를 주입할 비율
+
+# 유형 신뢰도 보정 프로파일(JSON) 경로. 지정하면 label_diagnosis의 기본 상수
+# 위에 덮어쓴다. 기본 상수는 KITTI Car 단일 클래스 실측값이고, 도메인이
+# 바뀌면 evaluate_box_accuracy.py --write-profile 로 새로 재서 지정하면 된다.
+RELIABILITY_PROFILE = os.environ.get("AIDA_RELIABILITY_PROFILE", "")
 
 EPOCHS = int(os.environ.get("AIDA_EPOCHS", 50))
 BATCH_SIZE = int(os.environ.get("AIDA_BATCH_SIZE", 16))
@@ -166,6 +185,14 @@ MIXED_CONDITIONS: list[MixedCondition] = [
 ]
 MIXED_CONDITIONS_DIR = EXPERIMENT_ROOT / f"conditions_mixed{_esuffix}"
 
+# 클래스 오기입 조건 — 다중 클래스에서만 의미가 있어서 CONDITIONS와 분리했다.
+# 단일 클래스 실행에는 아예 안 들어간다(바꿀 다른 클래스가 없다).
+CLASS_SWAP_CONDITIONS: list[Condition] = [
+    Condition("class_swap_10", "class_swap", 10),
+    Condition("class_swap_20", "class_swap", 20),
+    Condition("class_swap_30", "class_swap", 30),
+]
+
 
 # ── OBB 실험 설정 ──────────────────────────────────────────────────────────────
 # 기존 AABB 파이프라인과 완전히 독립된 경로를 사용한다.
@@ -187,18 +214,25 @@ OBB_CONDITIONS: list[Condition] = [
     Condition("obb_rot_p15", "rotation", 15),
 ]
 
-_BY_NAME = {c.name: c for c in CONDITIONS}
+_BY_NAME = {c.name: c for c in CONDITIONS + CLASS_SWAP_CONDITIONS}
 _OBB_BY_NAME = {c.name: c for c in OBB_CONDITIONS}
 
 
 def conditions_in_run_order() -> list[Condition]:
+    if MULTICLASS:
+        # 다중 클래스에서는 클래스 오기입 조건이 추가된다
+        return ([_BY_NAME[n] for n in _single_class_order()] + CLASS_SWAP_CONDITIONS)
+    return [_BY_NAME[n] for n in _single_class_order()]
+
+
+def _single_class_order() -> list[str]:
     ordered_names = (
         PRIORITY_1_NAMES
         + PRIORITY_2_NAMES
         + [c.name for c in NEXT_PHASE_CONDITIONS]
         + [c.name for c in NEW_ERROR_TYPE_CONDITIONS]
     )
-    return [_BY_NAME[n] for n in ordered_names]
+    return ordered_names
 
 
 def resolve_device() -> str:

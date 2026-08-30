@@ -1,7 +1,8 @@
 """KITTI 원본 라벨 → YOLO 포맷 변환 + train/val 고정 분할.
 
-- Car 클래스만 추출한다 (DontCare 등 다른 클래스는 라벨에서 아예 제외 —
-  YOLO 학습에 negative/ignore로 관여하지 않도록 함).
+- config.CLASS_NAMES에 있는 클래스만 추출한다 (기본값은 Car 하나. DontCare 등
+  나머지는 라벨에서 아예 제외 — YOLO 학습에 negative/ignore로 관여하지 않도록 함).
+  CLASS_NAMES 순서가 곧 YOLO 클래스 인덱스다.
 - train/val 분할은 SEED로 고정하며, 이후 모든 오류 조건(error_injector.py)과
   학습(train.py)에서 동일한 분할을 재사용한다. 그래야 조건 간 성능 차이가
   순수하게 라벨 오류 때문이라고 말할 수 있다.
@@ -31,9 +32,11 @@ def parse_kitti_label(label_path: Path) -> list[dict]:
             continue
         fields = line.split(" ")
         row = dict(zip(KITTI_LABEL_COLUMNS, fields))
-        if row["type"] != config.TARGET_CLASS:
+        if row["type"] not in config.CLASS_IDS:
             continue
         boxes.append({
+            "class_id": config.CLASS_IDS[row["type"]],
+            "class_name": row["type"],
             "left": float(row["bbox_left"]),
             "top": float(row["bbox_top"]),
             "right": float(row["bbox_right"]),
@@ -47,7 +50,7 @@ def to_yolo_line(box: dict, img_w: int, img_h: int) -> str:
     cy = (box["top"] + box["bottom"]) / 2 / img_h
     w = (box["right"] - box["left"]) / img_w
     h = (box["bottom"] - box["top"]) / img_h
-    return f"{config.CLASS_ID} {cx:.6f} {cy:.6f} {w:.6f} {h:.6f}"
+    return f"{box['class_id']} {cx:.6f} {cy:.6f} {w:.6f} {h:.6f}"
 
 
 def split_frames(frame_ids: list[str]) -> tuple[list[str], list[str]]:
@@ -127,7 +130,7 @@ def main():
     n_val_obj = build_split(val_ids, image_src_dir, label_src_dir,
                              config.IMAGES_VAL_DIR, config.LABELS_GT_VAL_DIR)
 
-    print(f"Car 객체 수: train {n_train_obj}개 / val {n_val_obj}개")
+    print(f"{'/'.join(config.CLASS_NAMES)} 객체 수: train {n_train_obj}개 / val {n_val_obj}개")
     print(f"완료 → {config.PROCESSED_DIR}")
 
 
