@@ -80,10 +80,14 @@ def score_mixed(mixed: config.MixedCondition, limit: int | None) -> dict:
         scored.append({
             "correct": correct,
             "suspicion": f.suspicion,
+            # confidence를 빼먹으면 제품이 실제로 쓰는 심각도가 아니라 옛 공식을
+            # 비교하게 된다 — 실제로 한 번 그래서 값이 바이트 단위로 안 변했다.
             "severity_present": severity_for(
-                f.suspicion, f.raw_signal, is_present=f.suspicion in present),
+                f.suspicion, f.raw_signal, is_present=f.suspicion in present,
+                confidence=f.confidence),
             "severity_dominant_only": severity_for(
-                f.suspicion, f.raw_signal, is_present=f.suspicion == dominant),
+                f.suspicion, f.raw_signal, is_present=f.suspicion == dominant,
+                confidence=f.confidence),
         })
 
     return {

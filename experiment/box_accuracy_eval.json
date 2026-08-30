@@ -7,9 +7,9 @@
   "injected": 2534,
   "caught": 2163,
   "precision_at_k": {
-    "top_10pct": 0.9168,
-    "top_25pct": 0.9432,
-    "top_50pct": 0.9202,
+    "top_10pct": 0.9968,
+    "top_25pct": 0.9871,
+    "top_50pct": 0.937,
     "top_100pct": 0.6657
   },
   "per_suspicion_type": {
@@ -26,27 +26,27 @@
     "scale": {
       "count": 566,
       "precision": 0.8127,
-      "mean_severity": 0.6183
+      "mean_severity": 0.4534
     },
     "height": {
       "count": 906,
       "precision": 0.6711,
-      "mean_severity": 0.4943
+      "mean_severity": 0.3746
     },
     "translation_y": {
       "count": 267,
       "precision": 0.7303,
-      "mean_severity": 0.4308
+      "mean_severity": 0.3371
     },
     "translation_x": {
       "count": 252,
       "precision": 0.6984,
-      "mean_severity": 0.4135
+      "mean_severity": 0.3186
     },
     "width": {
       "count": 891,
       "precision": 0.4893,
-      "mean_severity": 0.3391
+      "mean_severity": 0.2457
     }
   },
   "conditional_reliability": {

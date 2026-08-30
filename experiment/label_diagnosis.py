@@ -121,6 +121,29 @@ TYPE_RELIABILITY_NOISE = {
     # 데이터셋에서 진짜 누락이 목록 바닥에 깔린다.
     "missing": 0.88,
 }
+# 기하 의심(크기·이동)의 심각도에 예측 확신도를 얼마나 반영할지.
+# 심각도는 원래 확신도를 아예 안 봤다 — 유형 신뢰도와 변형률만 봤다. 그런데
+# 기하 의심 2936건을 재보니 확신도가 유형을 가리지 않고 가장 잘 갈랐다:
+#
+#   유형            진짜(중앙값)   오탐(중앙값)
+#   width              0.828        0.620
+#   height             0.79         0.62
+#   scale              0.83         0.62
+#
+# 이유는 단순하다. 진단은 예측 박스를 자로 삼아 라벨을 재는데, 모델이
+# 확신하지 못한 예측은 자 자체가 흔들린다. 그 자로 잰 변형률은 라벨이 아니라
+# 모델의 불확실성을 재고 있는 것이다.
+#
+# 확신도로 후보를 잘라내는 대신(재현율이 20% 넘게 깎인다) 순위에만 반영한다 —
+# 버리는 건 없고 순서만 바뀌므로 재현율이 그대로다. 세기 항과 같은 형태로
+# 0.5~1.0 구간에 눌러, 유형 신뢰도가 순서의 주도권을 유지하게 한다.
+# 가중치는 0.2~1.0을 훑어 상위 10% 정밀도가 가장 높은 지점으로 잡았다
+# (0.5에서 78.3%, 0.7 이상에서는 다시 떨어짐).
+CONFIDENCE_FLOOR = 0.5
+# 누락은 확신도가 곧 원시 신호이므로 제외한다(이중 계산). 중복은 실측을
+# 안 해서 넣지 않았다 — 이미 정밀도 90%로 약한 고리가 아니다.
+CONFIDENCE_WEIGHTED_TYPES = {"width", "height", "scale", "translation_x", "translation_y"}
+
 # 유형별 (임계값, 이 값 이상이면 신호가 최대) — 신호 세기 정규화 구간.
 _STRENGTH_RANGE = {
     "width": (SIZE_DEVIATION_THRESHOLD, 0.40),
@@ -133,7 +156,8 @@ _STRENGTH_RANGE = {
 }
 
 
-def severity_for(suspicion: str, raw_signal: float, is_present: bool = False) -> float:
+def severity_for(suspicion: str, raw_signal: float, is_present: bool = False,
+                 confidence: float | None = None) -> float:
     """유형 신뢰도 × 신호 세기 → 유형이 달라도 비교 가능한 재검수 우선순위 점수.
 
     is_present는 "이 유형이 데이터셋에 계통적 수준으로 존재하는가"다. 이미지
@@ -147,7 +171,13 @@ def severity_for(suspicion: str, raw_signal: float, is_present: bool = False) ->
     table = TYPE_RELIABILITY_PRESENT if is_present else TYPE_RELIABILITY_NOISE
     reliability = table.get(suspicion, 0.5)
     # 세기는 0.5~1.0 구간으로 눌러서, 유형 신뢰도가 순서의 주도권을 갖게 한다
-    return round(reliability * (0.5 + 0.5 * strength), 4)
+    score = reliability * (0.5 + 0.5 * strength)
+    if confidence is not None and suspicion in CONFIDENCE_WEIGHTED_TYPES:
+        # 라벨을 잰 자(예측 박스)가 얼마나 미더운가. 세기와 같은 형태로 눌러
+        # 최대 절반까지만 깎으므로, 심각도 <= 유형 신뢰도는 그대로 유지된다.
+        c = (confidence - CONFIDENCE_FLOOR) / (1.0 - CONFIDENCE_FLOOR)
+        score *= 0.5 + 0.5 * min(max(c, 0.0), 1.0)
+    return round(score, 4)
 
 
 @dataclass(frozen=True)
@@ -167,6 +197,9 @@ class BoxFinding:
     # 데이터셋 전체를 본 뒤 severity를 다시 매기려면(rescore) 원시 신호가
     # 남아 있어야 한다 — severity만 있으면 신뢰도를 되돌릴 수 없다.
     raw_signal: float = 0.0
+    # 이 의심을 만든 예측 박스의 확신도. rescore가 심각도를 다시 매길 때
+    # 원시 신호와 함께 필요하다. 기본 1.0은 "확신도 정보 없음 = 감점 없음"이다.
+    confidence: float = 1.0
 
 
 def present_types(summary: dict) -> set[str]:
@@ -197,7 +230,8 @@ def rescore(findings: list[BoxFinding], summary: dict) -> list[BoxFinding]:
     if not present:
         return findings
     return [
-        replace(f, severity=severity_for(f.suspicion, f.raw_signal, is_present=True))
+        replace(f, severity=severity_for(f.suspicion, f.raw_signal, is_present=True,
+                                         confidence=f.confidence))
         if f.suspicion in present else f
         for f in findings
     ]
@@ -323,9 +357,11 @@ def diagnose_image(
         verdict = classify_geometry(predictions[pi], labels[li])
         if verdict is not None:
             suspicion, raw, detail = verdict
+            conf = confidences[pi] if pi < len(confidences) else 1.0
             findings.append(BoxFinding(
-                image, li, suspicion, severity_for(suspicion, raw), detail,
-                labels[li], raw,
+                image, li, suspicion,
+                severity_for(suspicion, raw, confidence=conf), detail,
+                labels[li], raw, conf,
             ))
 
     # 2) 짝 없는 라벨: 이미 짝지어진 예측과 크게 겹치면 중복 라벨

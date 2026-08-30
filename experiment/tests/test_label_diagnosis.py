@@ -18,6 +18,7 @@ from error_injector import (  # noqa: E402
     apply_width,
 )
 from label_diagnosis import (  # noqa: E402
+    CONFIDENCE_WEIGHTED_TYPES,
     TYPE_RELIABILITY_NOISE,
     TYPE_RELIABILITY_PRESENT,
     classify_geometry,
@@ -221,6 +222,36 @@ def test_severity_orders_by_type_reliability():
     ranked = sorted(TYPE_RELIABILITY_NOISE, key=lambda t: -TYPE_RELIABILITY_NOISE[t])
     severities = [severity_for(t, 1.0) for t in ranked]
     assert severities == sorted(severities, reverse=True)
+
+
+def test_severity_falls_when_the_measuring_stick_is_shaky():
+    """확신도 낮은 예측으로 잰 기하 의심은 순위가 내려가야 한다.
+
+    진단은 예측 박스를 자로 삼아 라벨을 잰다. 모델이 확신 못 한 예측은 자가
+    흔들리므로, 그 자로 잰 변형률은 라벨이 아니라 모델의 불확실성을 잰다.
+    """
+    assert severity_for("width", 0.30, confidence=0.95) >            severity_for("width", 0.30, confidence=0.55)
+
+
+def test_confidence_does_not_double_count_for_missing():
+    """누락은 확신도가 곧 원시 신호라 확신도 계수를 또 곱하면 이중 계산이다."""
+    assert severity_for("missing", 0.9, confidence=0.9) == severity_for("missing", 0.9)
+
+
+def test_confidence_attenuation_is_bounded():
+    """확신도가 심각도를 깎을 수 있는 한계를 못박는다.
+
+    세기 항과 확신도 항이 각각 최대 절반까지 깎으므로, 최악의 경우 유형
+    신뢰도의 1/4까지 내려간다. 이 말은 **신뢰도가 4배 이내로 차이 나는 두
+    유형은 순서가 뒤집힐 수 있다**는 뜻이다 (예: 확신도 만점 width 0.20이
+    확신도 바닥 scale 0.15을 앞선다). 실측상 그 편이 상위권 정밀도가 높아서
+    (69.0% → 78.3%) 의도한 동작이지만, 가중치를 건드리면 이 경계가 같이
+    움직이므로 여기서 고정해둔다.
+    """
+    for suspicion in CONFIDENCE_WEIGHTED_TYPES:
+        floor = severity_for(suspicion, 0.0, confidence=0.0)
+        ceiling = severity_for(suspicion, 999.0, confidence=1.0)
+        assert abs(floor - ceiling / 4) < 1e-6
 
 
 def test_severity_rises_with_signal_within_a_type():
