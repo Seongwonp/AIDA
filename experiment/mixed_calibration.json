@@ -1,10 +1,10 @@
 {
   "secondary_reliability": {
     "width": 0.8,
-    "missing": 0.7119,
     "height": 0.8393,
     "scale": 0.9348,
     "translation_x": 0.907,
+    "missing": 0.9487,
     "duplicate": 1.0,
     "translation_y": 0.9744
   },
@@ -22,8 +22,8 @@
             0
           ],
           "secondary": [
-            42,
-            59
+            37,
+            39
           ]
         },
         "scale": {
@@ -95,8 +95,8 @@
         },
         {
           "suspicion": "missing",
-          "count": 59,
-          "ratio": 0.1916
+          "count": 39,
+          "ratio": 0.1266
         },
         {
           "suspicion": "width",
@@ -134,8 +134,8 @@
       "per_type": {
         "missing": {
           "dominant": [
-            86,
-            101
+            64,
+            65
           ],
           "secondary": [
             0,
@@ -206,8 +206,8 @@
       "by_type": [
         {
           "suspicion": "missing",
-          "count": 101,
-          "ratio": 0.3976
+          "count": 65,
+          "ratio": 0.2559
         },
         {
           "suspicion": "scale",
@@ -268,16 +268,6 @@
             0
           ]
         },
-        "missing": {
-          "dominant": [
-            0,
-            0
-          ],
-          "secondary": [
-            0,
-            18
-          ]
-        },
         "translation_x": {
           "dominant": [
             0,
@@ -331,11 +321,6 @@
           "ratio": 0.1564
         },
         {
-          "suspicion": "missing",
-          "count": 18,
-          "ratio": 0.0503
-        },
-        {
           "suspicion": "scale",
           "count": 8,
           "ratio": 0.0223
@@ -382,16 +367,6 @@
           "secondary": [
             48,
             60
-          ]
-        },
-        "missing": {
-          "dominant": [
-            0,
-            0
-          ],
-          "secondary": [
-            0,
-            19
           ]
         },
         "translation_y": {
@@ -447,11 +422,6 @@
           "ratio": 0.1676
         },
         {
-          "suspicion": "missing",
-          "count": 19,
-          "ratio": 0.0531
-        },
-        {
           "suspicion": "scale",
           "count": 6,
           "ratio": 0.0168
@@ -490,16 +460,6 @@
             0
           ]
         },
-        "missing": {
-          "dominant": [
-            0,
-            0
-          ],
-          "secondary": [
-            0,
-            17
-          ]
-        },
         "width": {
           "dominant": [
             0,
@@ -528,6 +488,16 @@
           "secondary": [
             1,
             3
+          ]
+        },
+        "missing": {
+          "dominant": [
+            0,
+            0
+          ],
+          "secondary": [
+            0,
+            1
           ]
         },
         "height": {
@@ -563,11 +533,6 @@
           "ratio": 0.1201
         },
         {
-          "suspicion": "missing",
-          "count": 17,
-          "ratio": 0.0475
-        },
-        {
           "suspicion": "width",
           "count": 16,
           "ratio": 0.0447
@@ -581,6 +546,11 @@
           "suspicion": "translation_y",
           "count": 3,
           "ratio": 0.0084
+        },
+        {
+          "suspicion": "missing",
+          "count": 1,
+          "ratio": 0.0028
         },
         {
           "suspicion": "duplicate",
@@ -598,8 +568,8 @@
       "per_type": {
         "missing": {
           "dominant": [
-            88,
-            103
+            70,
+            70
           ],
           "secondary": [
             0,
@@ -670,8 +640,8 @@
       "by_type": [
         {
           "suspicion": "missing",
-          "count": 103,
-          "ratio": 0.3411
+          "count": 70,
+          "ratio": 0.2318
         },
         {
           "suspicion": "duplicate",
@@ -720,16 +690,6 @@
           "secondary": [
             0,
             0
-          ]
-        },
-        "missing": {
-          "dominant": [
-            0,
-            0
-          ],
-          "secondary": [
-            0,
-            17
           ]
         },
         "translation_y": {
@@ -798,11 +758,6 @@
           "suspicion": "width",
           "count": 25,
           "ratio": 0.0536
-        },
-        {
-          "suspicion": "missing",
-          "count": 17,
-          "ratio": 0.0365
         },
         {
           "suspicion": "height",

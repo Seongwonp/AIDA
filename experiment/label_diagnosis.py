@@ -32,7 +32,19 @@ MATCH_IOU_THRESHOLD = 0.4
 DUPLICATE_IOU_THRESHOLD = 0.5
 # 라벨이 없는 자리에서 모델이 이 정도 확신을 보이면 "누락된 라벨" 후보로 본다.
 # 낮추면 모델의 오탐까지 누락으로 잡아 오진이 늘어난다.
-MISSING_CONFIDENCE_THRESHOLD = 0.5
+#
+# 처음엔 0.5로 잡았는데, 누락은 8개 유형 중 정밀도가 꼴찌였다(존재해도 71~83%).
+# collect_missing_features.py로 570건의 누락 의심을 실측해 원인을 찾아보니,
+# 확신도 하나가 다른 어떤 맥락 신호(박스 크기, 화면 위치, 주변 라벨 밀도)보다
+# 압도적으로 잘 갈랐다 — 진짜 누락은 확신도 중앙값 0.84, 오탐은 0.59.
+# 0.5~0.7 구간은 사실상 오탐 구간이었다: 그 구간 239건 중 진짜는 79건뿐.
+MISSING_CONFIDENCE_THRESHOLD = 0.70
+# 이 예측이 기존 라벨에 이만큼 삼켜져 있으면 누락으로 보지 않는다.
+# IoU와 다르다 — 작은 예측이 큰 라벨 안에 통째로 들어가면 IoU는 낮지만 이 값은
+# 1.0이다. 이런 건 "라벨 없는 객체"가 아니라 이미 라벨된 객체를 두 번 잡았거나,
+# 라벨된 차 뒤에 가려진 차다(KITTI는 심하게 가려진 차를 Car로 라벨링하지 않아
+# 정상 탐지가 누락으로 오인된다). 확신도만으로는 이게 안 걸러진다.
+MISSING_MAX_COVERED_RATIO = 0.7
 # 한 유형의 의심이 전체 라벨의 이 비율을 넘으면 "계통적 오류"로 판정한다.
 # clean의 최대 유형 비율(7.4% 실측)과 실제 오류 조건의 최대 유형 비율
 # (26%+) 사이에 두되, 약한 오류(10% 주입)까지 놓치지 않도록 낮게 잡았다.
@@ -87,7 +99,9 @@ TYPE_RELIABILITY_PRESENT = {
     "scale": 0.94,
     "height": 0.87,
     "width": 0.82,
-    "missing": 0.80,
+    # 누락 필터(확신도 0.70 + 삼켜짐 0.7) 적용 후 재측정: 대표일 때 100%(n=120),
+    # 2차로 존재할 때 94.9%(n=39) → 합쳐 98.7%. 필터 전에는 82.9%/71.2%였다.
+    "missing": 0.99,
 }
 # 계통적 수준으로 존재하지 않을 때 = 사실상 모델 예측 흔들림에서 나온 오탐.
 # 단일 유형 조건 26개에서 "그 유형이 주입되지 않았을 때"로 실측한 값이다.
@@ -98,7 +112,14 @@ TYPE_RELIABILITY_NOISE = {
     "translation_y": 0.21,
     "translation_x": 0.21,
     "width": 0.20,
-    "missing": 0.04,
+    # 필터 적용 후 88.2%(n=15/17). 예전 값 0.04는 n=445 표본에서 나왔는데,
+    # 그 445건이 대부분 KITTI 관행에서 오는 오탐이었고 필터가 그걸 걷어냈다.
+    # **n=17은 다른 유형(n=55~478)에 비해 훨씬 작다** — 이 값은 근거가 얇다.
+    # 다만 방향은 분명하다: 누락 없는 조건 8개에서 살아남은 의심이 640장 중
+    # 2건뿐이라, 이 상수가 잘못돼도 영향받는 건수 자체가 거의 없다. 오히려
+    # 0.04를 그대로 두면 계통적 임계값(12%)에 못 미치는 성긴 누락을 가진
+    # 데이터셋에서 진짜 누락이 목록 바닥에 깔린다.
+    "missing": 0.88,
 }
 # 유형별 (임계값, 이 값 이상이면 신호가 최대) — 신호 세기 정규화 구간.
 _STRENGTH_RANGE = {
@@ -197,6 +218,24 @@ def iou(a: Box, b: Box) -> float:
     area_b = max(0.0, bx2 - bx1) * max(0.0, by2 - by1)
     union = area_a + area_b - inter
     return inter / union if union > 0 else 0.0
+
+
+def covered_ratio(box: Box, others: list[Box]) -> float:
+    """box가 others에 얼마나 삼켜져 있는가 — (교집합 / box 면적)의 최대값.
+
+    iou()와 달리 비대칭이다. 큰 라벨 안에 작은 예측이 통째로 들어간 경우
+    iou는 작지만 이 값은 1.0이 되어, "이미 라벨된 영역"임을 잡아낸다.
+    """
+    l, t, r, b = box
+    area = max(r - l, 0.0) * max(b - t, 0.0)
+    if area <= 0:
+        return 0.0
+    best = 0.0
+    for ol, ot, orr, ob in others:
+        iw = max(min(r, orr) - max(l, ol), 0.0)
+        ih = max(min(b, ob) - max(t, ot), 0.0)
+        best = max(best, iw * ih / area)
+    return best
 
 
 def match_boxes(
@@ -301,15 +340,20 @@ def diagnose_image(
                 labels[li], best_iou,
             ))
 
-    # 3) 짝 없는 예측: 모델이 확신하는데 라벨이 없으면 누락 의심
+    # 3) 짝 없는 예측: 모델이 확신하는데 라벨이 없으면 누락 의심.
+    #    단, 기존 라벨에 대부분 삼켜진 예측은 제외한다 — 라벨된 객체의
+    #    중복 탐지이거나 그 뒤에 가려진 객체라서, 누락 라벨이 아니다.
     for pi in unmatched_preds:
         conf = confidences[pi] if pi < len(confidences) else 0.0
-        if conf >= MISSING_CONFIDENCE_THRESHOLD:
-            findings.append(BoxFinding(
-                image, None, "missing", severity_for("missing", conf),
-                f"모델이 확신({conf:.2f})하는 위치에 라벨 없음",
-                predictions[pi], conf,
-            ))
+        if conf < MISSING_CONFIDENCE_THRESHOLD:
+            continue
+        if covered_ratio(predictions[pi], labels) >= MISSING_MAX_COVERED_RATIO:
+            continue
+        findings.append(BoxFinding(
+            image, None, "missing", severity_for("missing", conf),
+            f"모델이 확신({conf:.2f})하는 위치에 라벨 없음",
+            predictions[pi], conf,
+        ))
 
     return findings
 

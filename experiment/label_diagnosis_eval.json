@@ -9,20 +9,15 @@
       "dominant_type": "width",
       "dominant_ratio": 0.067,
       "systematic": false,
-      "suspicion_ratio": 0.2011,
+      "suspicion_ratio": 0.1536,
       "total_labels": 358,
-      "total_findings": 72,
+      "total_findings": 55,
       "correct": true,
       "by_type": [
         {
           "suspicion": "width",
           "count": 24,
           "ratio": 0.067
-        },
-        {
-          "suspicion": "missing",
-          "count": 17,
-          "ratio": 0.0475
         },
         {
           "suspicion": "height",
@@ -59,20 +54,15 @@
       "dominant_type": "width",
       "dominant_ratio": 0.3492,
       "systematic": true,
-      "suspicion_ratio": 0.4637,
+      "suspicion_ratio": 0.4162,
       "total_labels": 358,
-      "total_findings": 166,
+      "total_findings": 149,
       "correct": true,
       "by_type": [
         {
           "suspicion": "width",
           "count": 125,
           "ratio": 0.3492
-        },
-        {
-          "suspicion": "missing",
-          "count": 18,
-          "ratio": 0.0503
         },
         {
           "suspicion": "height",
@@ -95,6 +85,11 @@
           "ratio": 0.0056
         },
         {
+          "suspicion": "missing",
+          "count": 1,
+          "ratio": 0.0028
+        },
+        {
           "suspicion": "duplicate",
           "count": 1,
           "ratio": 0.0028
@@ -109,20 +104,15 @@
       "dominant_type": "width",
       "dominant_ratio": 0.3073,
       "systematic": true,
-      "suspicion_ratio": 0.433,
+      "suspicion_ratio": 0.3799,
       "total_labels": 358,
-      "total_findings": 155,
+      "total_findings": 136,
       "correct": true,
       "by_type": [
         {
           "suspicion": "width",
           "count": 110,
           "ratio": 0.3073
-        },
-        {
-          "suspicion": "missing",
-          "count": 19,
-          "ratio": 0.0531
         },
         {
           "suspicion": "height",
@@ -159,9 +149,9 @@
       "dominant_type": "height",
       "dominant_ratio": 0.2793,
       "systematic": true,
-      "suspicion_ratio": 0.4078,
+      "suspicion_ratio": 0.3603,
       "total_labels": 358,
-      "total_findings": 146,
+      "total_findings": 129,
       "correct": true,
       "by_type": [
         {
@@ -173,11 +163,6 @@
           "suspicion": "width",
           "count": 18,
           "ratio": 0.0503
-        },
-        {
-          "suspicion": "missing",
-          "count": 17,
-          "ratio": 0.0475
         },
         {
           "suspicion": "scale",
@@ -209,9 +194,9 @@
       "dominant_type": "height",
       "dominant_ratio": 0.2542,
       "systematic": true,
-      "suspicion_ratio": 0.3994,
+      "suspicion_ratio": 0.3547,
       "total_labels": 358,
-      "total_findings": 143,
+      "total_findings": 127,
       "correct": true,
       "by_type": [
         {
@@ -223,11 +208,6 @@
           "suspicion": "width",
           "count": 20,
           "ratio": 0.0559
-        },
-        {
-          "suspicion": "missing",
-          "count": 16,
-          "ratio": 0.0447
         },
         {
           "suspicion": "scale",
@@ -259,9 +239,9 @@
       "dominant_type": "height",
       "dominant_ratio": 0.1564,
       "systematic": true,
-      "suspicion_ratio": 0.405,
+      "suspicion_ratio": 0.352,
       "total_labels": 358,
-      "total_findings": 145,
+      "total_findings": 126,
       "correct": true,
       "by_type": [
         {
@@ -273,11 +253,6 @@
           "suspicion": "scale",
           "count": 47,
           "ratio": 0.1313
-        },
-        {
-          "suspicion": "missing",
-          "count": 19,
-          "ratio": 0.0531
         },
         {
           "suspicion": "width",
@@ -309,9 +284,9 @@
       "dominant_type": "scale",
       "dominant_ratio": 0.1704,
       "systematic": true,
-      "suspicion_ratio": 0.4274,
+      "suspicion_ratio": 0.3743,
       "total_labels": 358,
-      "total_findings": 153,
+      "total_findings": 134,
       "correct": true,
       "by_type": [
         {
@@ -323,11 +298,6 @@
           "suspicion": "height",
           "count": 48,
           "ratio": 0.1341
-        },
-        {
-          "suspicion": "missing",
-          "count": 19,
-          "ratio": 0.0531
         },
         {
           "suspicion": "width",
@@ -359,20 +329,15 @@
       "dominant_type": "width",
       "dominant_ratio": 0.2542,
       "systematic": true,
-      "suspicion_ratio": 0.3827,
+      "suspicion_ratio": 0.3352,
       "total_labels": 358,
-      "total_findings": 137,
+      "total_findings": 120,
       "correct": true,
       "by_type": [
         {
           "suspicion": "width",
           "count": 91,
           "ratio": 0.2542
-        },
-        {
-          "suspicion": "missing",
-          "count": 17,
-          "ratio": 0.0475
         },
         {
           "suspicion": "height",
@@ -409,20 +374,15 @@
       "dominant_type": "width",
       "dominant_ratio": 0.243,
       "systematic": true,
-      "suspicion_ratio": 0.3659,
+      "suspicion_ratio": 0.3184,
       "total_labels": 358,
-      "total_findings": 131,
+      "total_findings": 114,
       "correct": true,
       "by_type": [
         {
           "suspicion": "width",
           "count": 87,
           "ratio": 0.243
-        },
-        {
-          "suspicion": "missing",
-          "count": 17,
-          "ratio": 0.0475
         },
         {
           "suspicion": "height",
@@ -459,9 +419,9 @@
       "dominant_type": "height",
       "dominant_ratio": 0.2626,
       "systematic": true,
-      "suspicion_ratio": 0.405,
+      "suspicion_ratio": 0.3603,
       "total_labels": 358,
-      "total_findings": 145,
+      "total_findings": 129,
       "correct": true,
       "by_type": [
         {
@@ -473,11 +433,6 @@
           "suspicion": "width",
           "count": 20,
           "ratio": 0.0559
-        },
-        {
-          "suspicion": "missing",
-          "count": 16,
-          "ratio": 0.0447
         },
         {
           "suspicion": "scale",
@@ -509,9 +464,9 @@
       "dominant_type": "height",
       "dominant_ratio": 0.2374,
       "systematic": true,
-      "suspicion_ratio": 0.3966,
+      "suspicion_ratio": 0.3464,
       "total_labels": 358,
-      "total_findings": 142,
+      "total_findings": 124,
       "correct": true,
       "by_type": [
         {
@@ -523,11 +478,6 @@
           "suspicion": "width",
           "count": 21,
           "ratio": 0.0587
-        },
-        {
-          "suspicion": "missing",
-          "count": 18,
-          "ratio": 0.0503
         },
         {
           "suspicion": "scale",
@@ -559,9 +509,9 @@
       "dominant_type": "height",
       "dominant_ratio": 0.1983,
       "systematic": true,
-      "suspicion_ratio": 0.3939,
+      "suspicion_ratio": 0.338,
       "total_labels": 358,
-      "total_findings": 141,
+      "total_findings": 121,
       "correct": true,
       "by_type": [
         {
@@ -573,11 +523,6 @@
           "suspicion": "scale",
           "count": 25,
           "ratio": 0.0698
-        },
-        {
-          "suspicion": "missing",
-          "count": 20,
-          "ratio": 0.0559
         },
         {
           "suspicion": "width",
@@ -609,9 +554,9 @@
       "dominant_type": "height",
       "dominant_ratio": 0.2542,
       "systematic": true,
-      "suspicion_ratio": 0.4469,
+      "suspicion_ratio": 0.3966,
       "total_labels": 358,
-      "total_findings": 160,
+      "total_findings": 142,
       "correct": true,
       "by_type": [
         {
@@ -623,11 +568,6 @@
           "suspicion": "width",
           "count": 25,
           "ratio": 0.0698
-        },
-        {
-          "suspicion": "missing",
-          "count": 18,
-          "ratio": 0.0503
         },
         {
           "suspicion": "scale",
@@ -659,9 +599,9 @@
       "dominant_type": "translation_x",
       "dominant_ratio": 0.2123,
       "systematic": true,
-      "suspicion_ratio": 0.3939,
+      "suspicion_ratio": 0.3464,
       "total_labels": 358,
-      "total_findings": 141,
+      "total_findings": 124,
       "correct": true,
       "by_type": [
         {
@@ -673,11 +613,6 @@
           "suspicion": "width",
           "count": 23,
           "ratio": 0.0642
-        },
-        {
-          "suspicion": "missing",
-          "count": 17,
-          "ratio": 0.0475
         },
         {
           "suspicion": "height",
@@ -704,9 +639,9 @@
       "dominant_type": "translation_x",
       "dominant_ratio": 0.2486,
       "systematic": true,
-      "suspicion_ratio": 0.4413,
+      "suspicion_ratio": 0.3883,
       "total_labels": 358,
-      "total_findings": 158,
+      "total_findings": 139,
       "correct": true,
       "by_type": [
         {
@@ -718,11 +653,6 @@
           "suspicion": "width",
           "count": 26,
           "ratio": 0.0726
-        },
-        {
-          "suspicion": "missing",
-          "count": 19,
-          "ratio": 0.0531
         },
         {
           "suspicion": "height",
@@ -754,9 +684,9 @@
       "dominant_type": "translation_y",
       "dominant_ratio": 0.2598,
       "systematic": true,
-      "suspicion_ratio": 0.4385,
+      "suspicion_ratio": 0.3855,
       "total_labels": 358,
-      "total_findings": 157,
+      "total_findings": 138,
       "correct": true,
       "by_type": [
         {
@@ -768,11 +698,6 @@
           "suspicion": "width",
           "count": 21,
           "ratio": 0.0587
-        },
-        {
-          "suspicion": "missing",
-          "count": 19,
-          "ratio": 0.0531
         },
         {
           "suspicion": "height",
@@ -799,9 +724,9 @@
       "dominant_type": "translation_y",
       "dominant_ratio": 0.2458,
       "systematic": true,
-      "suspicion_ratio": 0.4358,
+      "suspicion_ratio": 0.3855,
       "total_labels": 358,
-      "total_findings": 156,
+      "total_findings": 138,
       "correct": true,
       "by_type": [
         {
@@ -813,11 +738,6 @@
           "suspicion": "width",
           "count": 23,
           "ratio": 0.0642
-        },
-        {
-          "suspicion": "missing",
-          "count": 18,
-          "ratio": 0.0503
         },
         {
           "suspicion": "height",
@@ -849,9 +769,9 @@
       "dominant_type": "scale",
       "dominant_ratio": 0.1285,
       "systematic": true,
-      "suspicion_ratio": 0.3436,
+      "suspicion_ratio": 0.2961,
       "total_labels": 358,
-      "total_findings": 123,
+      "total_findings": 106,
       "correct": true,
       "by_type": [
         {
@@ -868,11 +788,6 @@
           "suspicion": "height",
           "count": 25,
           "ratio": 0.0698
-        },
-        {
-          "suspicion": "missing",
-          "count": 17,
-          "ratio": 0.0475
         },
         {
           "suspicion": "translation_y",
@@ -899,9 +814,9 @@
       "dominant_type": "scale",
       "dominant_ratio": 0.1704,
       "systematic": true,
-      "suspicion_ratio": 0.3966,
+      "suspicion_ratio": 0.3436,
       "total_labels": 358,
-      "total_findings": 142,
+      "total_findings": 123,
       "correct": true,
       "by_type": [
         {
@@ -918,11 +833,6 @@
           "suspicion": "height",
           "count": 23,
           "ratio": 0.0642
-        },
-        {
-          "suspicion": "missing",
-          "count": 19,
-          "ratio": 0.0531
         },
         {
           "suspicion": "translation_y",
@@ -949,9 +859,9 @@
       "dominant_type": "scale",
       "dominant_ratio": 0.2402,
       "systematic": true,
-      "suspicion_ratio": 0.4106,
+      "suspicion_ratio": 0.3603,
       "total_labels": 358,
-      "total_findings": 147,
+      "total_findings": 129,
       "correct": true,
       "by_type": [
         {
@@ -963,11 +873,6 @@
           "suspicion": "width",
           "count": 21,
           "ratio": 0.0587
-        },
-        {
-          "suspicion": "missing",
-          "count": 19,
-          "ratio": 0.0531
         },
         {
           "suspicion": "height",
@@ -983,6 +888,11 @@
           "suspicion": "translation_y",
           "count": 4,
           "ratio": 0.0112
+        },
+        {
+          "suspicion": "missing",
+          "count": 1,
+          "ratio": 0.0028
         }
       ]
     },
@@ -994,9 +904,9 @@
       "dominant_type": "scale",
       "dominant_ratio": 0.2877,
       "systematic": true,
-      "suspicion_ratio": 0.4637,
+      "suspicion_ratio": 0.405,
       "total_labels": 358,
-      "total_findings": 166,
+      "total_findings": 145,
       "correct": true,
       "by_type": [
         {
@@ -1008,11 +918,6 @@
           "suspicion": "width",
           "count": 22,
           "ratio": 0.0615
-        },
-        {
-          "suspicion": "missing",
-          "count": 21,
-          "ratio": 0.0587
         },
         {
           "suspicion": "height",
@@ -1041,23 +946,23 @@
       "type": "missing",
       "magnitude": 10,
       "expected": "missing",
-      "dominant_type": "missing",
-      "dominant_ratio": 0.1084,
+      "dominant_type": "width",
+      "dominant_ratio": 0.0693,
       "systematic": false,
-      "suspicion_ratio": 0.262,
+      "suspicion_ratio": 0.1988,
       "total_labels": 332,
-      "total_findings": 87,
+      "total_findings": 66,
       "correct": false,
       "by_type": [
-        {
-          "suspicion": "missing",
-          "count": 36,
-          "ratio": 0.1084
-        },
         {
           "suspicion": "width",
           "count": 23,
           "ratio": 0.0693
+        },
+        {
+          "suspicion": "missing",
+          "count": 15,
+          "ratio": 0.0452
         },
         {
           "suspicion": "height",
@@ -1092,17 +997,17 @@
       "magnitude": 20,
       "expected": "missing",
       "dominant_type": "missing",
-      "dominant_ratio": 0.2569,
+      "dominant_ratio": 0.1701,
       "systematic": true,
-      "suspicion_ratio": 0.4028,
+      "suspicion_ratio": 0.316,
       "total_labels": 288,
-      "total_findings": 116,
+      "total_findings": 91,
       "correct": true,
       "by_type": [
         {
           "suspicion": "missing",
-          "count": 74,
-          "ratio": 0.2569
+          "count": 49,
+          "ratio": 0.1701
         },
         {
           "suspicion": "width",
@@ -1137,17 +1042,17 @@
       "magnitude": 30,
       "expected": "missing",
       "dominant_type": "missing",
-      "dominant_ratio": 0.4315,
+      "dominant_ratio": 0.2863,
       "systematic": true,
-      "suspicion_ratio": 0.5927,
+      "suspicion_ratio": 0.4476,
       "total_labels": 248,
-      "total_findings": 147,
+      "total_findings": 111,
       "correct": true,
       "by_type": [
         {
           "suspicion": "missing",
-          "count": 107,
-          "ratio": 0.4315
+          "count": 71,
+          "ratio": 0.2863
         },
         {
           "suspicion": "width",
@@ -1184,9 +1089,9 @@
       "dominant_type": "duplicate",
       "dominant_ratio": 0.0875,
       "systematic": false,
-      "suspicion_ratio": 0.2725,
+      "suspicion_ratio": 0.2375,
       "total_labels": 400,
-      "total_findings": 109,
+      "total_findings": 95,
       "correct": false,
       "by_type": [
         {
@@ -1203,11 +1108,6 @@
           "suspicion": "height",
           "count": 16,
           "ratio": 0.04
-        },
-        {
-          "suspicion": "missing",
-          "count": 14,
-          "ratio": 0.035
         },
         {
           "suspicion": "translation_y",
@@ -1234,9 +1134,9 @@
       "dominant_type": "duplicate",
       "dominant_ratio": 0.1306,
       "systematic": true,
-      "suspicion_ratio": 0.304,
+      "suspicion_ratio": 0.2637,
       "total_labels": 421,
-      "total_findings": 128,
+      "total_findings": 111,
       "correct": true,
       "by_type": [
         {
@@ -1248,11 +1148,6 @@
           "suspicion": "width",
           "count": 24,
           "ratio": 0.057
-        },
-        {
-          "suspicion": "missing",
-          "count": 17,
-          "ratio": 0.0404
         },
         {
           "suspicion": "height",
@@ -1284,9 +1179,9 @@
       "dominant_type": "duplicate",
       "dominant_ratio": 0.197,
       "systematic": true,
-      "suspicion_ratio": 0.3636,
+      "suspicion_ratio": 0.3312,
       "total_labels": 462,
-      "total_findings": 168,
+      "total_findings": 153,
       "correct": true,
       "by_type": [
         {
@@ -1303,11 +1198,6 @@
           "suspicion": "height",
           "count": 17,
           "ratio": 0.0368
-        },
-        {
-          "suspicion": "missing",
-          "count": 15,
-          "ratio": 0.0325
         },
         {
           "suspicion": "translation_x",

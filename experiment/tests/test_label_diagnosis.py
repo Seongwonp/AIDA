@@ -117,6 +117,35 @@ def test_low_confidence_prediction_does_not_raise_missing():
     assert findings == []
 
 
+def test_middling_confidence_prediction_does_not_raise_missing():
+    """0.5~0.7 확신도 구간은 실측상 오탐이 진짜의 2배였다 (570건 표본).
+
+    예전 기준(0.5)에서는 이게 누락으로 잡혀 유형 정밀도를 끌어내렸다.
+    """
+    findings = diagnose_image("a.png", predictions=[PRED], confidences=[0.6], labels=[])
+    assert findings == []
+
+
+def test_prediction_swallowed_by_existing_label_is_not_missing():
+    """라벨된 차 안에 들어앉은 고확신 예측 = 중복 탐지이거나 가려진 객체.
+
+    IoU로는 안 걸린다 — 작은 박스가 큰 박스 안에 있으면 IoU는 낮기 때문이다.
+    """
+    inner = (110.0, 110.0, 140.0, 140.0)
+    big_label = (100.0, 100.0, 300.0, 300.0)
+    findings = diagnose_image("a.png", predictions=[inner], confidences=[0.95],
+                              labels=[big_label])
+    assert [f.suspicion for f in findings] == []
+
+
+def test_confident_prediction_beside_a_label_is_still_missing():
+    """겹치지 않는 자리의 고확신 예측은 필터를 통과해야 한다."""
+    far = (600.0, 600.0, 700.0, 700.0)
+    findings = diagnose_image("a.png", predictions=[far], confidences=[0.95],
+                              labels=[(100.0, 100.0, 300.0, 300.0)])
+    assert [f.suspicion for f in findings] == ["missing"]
+
+
 def test_duplicate_label_detected():
     labels = [PRED, (3.0, 1.0, 103.0, 51.0)]  # 같은 객체에 라벨 2개
     findings = diagnose_image("a.png", [PRED], [0.9], labels)
@@ -175,12 +204,16 @@ def test_scattered_noise_is_not_flagged_systematic():
 # 썼는데, 단위가 서로 달라 확신도 0.9대인 누락 의심이 목록 상단을 점령했다.
 # 정작 누락은 유형별 정밀도가 가장 낮아서(27%) 상위 10% 정밀도가 28.5%로
 # 전체 평균(58.9%)보다 낮아지는 역전이 일어났다. 아래 테스트들이 그 회귀를 막는다.
+#
+# 주의: "누락이 항상 꼴찌"를 테스트로 굳히지 않는다. 누락 판정에 필터를 넣은
+# 뒤 정밀도가 27% → 98.5%로 뒤집혀서, 그런 테스트는 개선을 막는 족쇄가 됐다.
+# 지켜야 할 성질은 유형 순위가 아니라 **심각도가 실측 신뢰도를 따른다**는 것이다.
 
 def test_severity_is_comparable_across_types():
     """신뢰도 낮은 유형은 신호가 최대여도 신뢰도 높은 유형의 최소보다 낮아야 한다."""
-    strongest_missing = severity_for("missing", 1.0)  # 확신도 100%
-    weakest_duplicate = severity_for("duplicate", 0.5)  # 임계값 턱걸이
-    assert strongest_missing < weakest_duplicate
+    low, high = "width", "duplicate"  # 실측 0.20 vs 0.69 (부재 시)
+    assert TYPE_RELIABILITY_NOISE[low] < TYPE_RELIABILITY_NOISE[high]
+    assert severity_for(low, 1.0) < severity_for(high, 0.5)
 
 
 def test_severity_orders_by_type_reliability():
@@ -203,13 +236,16 @@ def test_severity_never_exceeds_type_reliability():
         assert severity_for(suspicion, 999.0, is_present=True) <= reliability + 1e-9
 
 
-def test_missing_findings_rank_below_geometric_in_queue():
-    """실제 대기열 정렬에서 누락 의심이 크기 오류보다 아래로 가야 한다."""
+def test_queue_order_follows_measured_reliability():
+    """실제 대기열 정렬이 유형 신뢰도 순서를 따르는지.
+
+    누락(필터 후 0.88)이 가로 길이 오류(0.20)보다 위에 와야 한다. 예전에는
+    반대로 단언했는데, 그건 필터 전 누락 정밀도가 27%였기 때문이다.
+    """
     findings = diagnose_image("a.png", [PRED], [0.99], [])  # 확신도 높은 누락
-    findings += diagnose_image("b.png", [PRED], [0.9], [apply_scale(PRED, -30)])
+    findings += diagnose_image("b.png", [PRED], [0.9], [apply_width(PRED, -30)])
     ranked = sorted(findings, key=lambda f: -f.severity)
-    assert ranked[0].suspicion == "scale"
-    assert ranked[-1].suspicion == "missing"
+    assert [f.suspicion for f in ranked] == ["missing", "width"]
 
 
 # ── rescore: 데이터셋 전체를 본 뒤 대표 유형의 심각도를 올린다 ────────────────
