@@ -30,7 +30,7 @@ from PIL import Image
 
 import config
 from diagnose_labels import IMAGE_SUFFIXES, load_yolo_labels
-from label_diagnosis import iou, rescore, summarize
+from label_diagnosis import iou, present_types, rescore, severity_for, summarize
 
 # 누락 의심 예측 박스가 "지워진 그 박스"를 가리키는 것으로 인정할 최소 IoU.
 # 위치가 이 정도로 겹치면 같은 객체를 지목했다고 본다.
@@ -175,8 +175,44 @@ def score_condition(condition: config.Condition, limit: int | None) -> dict:
         "f1": round(f1, 4),
         # TP 중에서 유형까지 맞힌 비율 — 박스는 맞게 짚었는데 이유를 틀렸는지 본다
         "type_accuracy": round(type_correct / tp, 4) if tp else 0.0,
+        # 캐시로 순위를 다시 매길 때 필요하다 — 이게 없으면 어떤 유형이
+        # 승격 대상이었는지 복원할 수 없다.
+        "present_types": sorted(present_types(summary)),
         "verdicts_by_rank": verdicts_by_rank,
     }
+
+
+def load_cached_rows(wanted: list[str]) -> list[dict]:
+    """지난 실행의 채점 기록으로 조건별 결과를 복원하고 심각도만 다시 매긴다.
+
+    TP/FP 판정은 심각도와 무관하다 — 어느 박스를 지목했고 그게 맞았는지는
+    이미 정해져 있고, 심각도는 그걸 어떤 순서로 보여줄지만 정한다. 그래서
+    원시 신호와 확신도만 남아 있으면 추론(조건당 수 분)을 건너뛸 수 있다.
+    """
+    if not VERDICT_CACHE.exists():
+        raise SystemExit(f"{VERDICT_CACHE} 없음 — --reuse-cache 전에 한 번은 돌려야 합니다")
+    cached = json.loads(VERDICT_CACHE.read_text(encoding="utf-8"))
+    missing = set(wanted) - set(cached)
+    if missing:
+        raise SystemExit(f"캐시에 없는 조건: {sorted(missing)} — 이 조건들을 먼저 돌리세요")
+
+    rows = []
+    # 정식 실행과 같은 순서로 — 출력이 한 글자도 다르지 않아야 캐시 결과를
+    # 믿고 쓸 수 있다
+    for name in wanted:
+        row = dict(cached[name])
+        present = set(row.get("present_types", []))
+        rescored = []
+        for v in row["verdicts_by_rank"]:
+            correct, suspicion, _old_sev, is_dominant, raw, conf = v[:6]
+            rescored.append((
+                correct, suspicion,
+                severity_for(suspicion, raw, is_present=suspicion in present, confidence=conf),
+                is_dominant, raw, conf,
+            ))
+        row["verdicts_by_rank"] = sorted(rescored, key=lambda x: -x[2])
+        rows.append(row)
+    return rows
 
 
 def precision_at_k(verdicts: list[tuple], k: int) -> float:
@@ -230,6 +266,10 @@ def main():
     parser = argparse.ArgumentParser(description="박스 단위 진단 정확도 평가")
     parser.add_argument("--limit", type=int, default=80, help="조건당 이미지 수")
     parser.add_argument("--conditions", nargs="+", help="특정 조건만")
+    parser.add_argument("--reuse-cache", action="store_true",
+                        help="추론을 다시 돌리지 않고 지난 채점 기록으로 순위만 "
+                             "다시 계산한다 (심각도 공식·신뢰도 상수 조정용). "
+                             "TP/FP 판정은 심각도와 무관하므로 그대로 쓴다.")
     parser.add_argument("--write-profile", metavar="PATH",
                         help="실측한 유형 신뢰도를 프로파일 JSON으로 저장 "
                              "(AIDA_RELIABILITY_PROFILE로 지정해 쓰면 됨)")
@@ -240,10 +280,15 @@ def main():
         by_name = {c.name: c for c in config.CONDITIONS + config.CLASS_SWAP_CONDITIONS}
         conditions = [by_name[n] for n in args.conditions]
 
-    rows = []
-    for i, condition in enumerate(conditions, 1):
-        print(f"[{i}/{len(conditions)}] {condition.name} ...", flush=True)
-        rows.append(score_condition(condition, args.limit))
+    if args.reuse_cache:
+        rows = load_cached_rows([c.name for c in conditions])
+        print(f"캐시에서 {len(rows)}개 조건을 읽어 심각도만 다시 계산합니다 "
+              f"({VERDICT_CACHE.name})")
+    else:
+        rows = []
+        for i, condition in enumerate(conditions, 1):
+            print(f"[{i}/{len(conditions)}] {condition.name} ...", flush=True)
+            rows.append(score_condition(condition, args.limit))
 
     print(f"\n{'조건':<14} {'주입':>5} {'지목':>5} {'TP':>5} {'FP':>5} {'놓침':>5} "
           f"{'정밀도':>7} {'재현율':>7} {'F1':>6} {'유형정확':>8}")
@@ -344,8 +389,12 @@ def main():
         # verdicts_by_rank는 조건당 수백 건이라 JSON에서는 뺀다 (표에 이미 요약됨)
         "per_condition": [{k: v for k, v in r.items() if k != "verdicts_by_rank"} for r in rows],
     }
+    # 캐시에는 순위를 다시 매기는 데 필요한 것을 전부 담는다. verdicts만
+    # 담으면 severity 공식을 바꿔도 is_present를 복원할 수 없어서 재계산이
+    # 불가능하다 — 실제로 그래서 --reuse-cache가 문서에만 있고 없었다.
     VERDICT_CACHE.write_text(json.dumps(
-        {r["condition"]: r["verdicts_by_rank"] for r in rows}, ensure_ascii=False
+        {r["condition"]: {k: v for k, v in r.items()} for r in rows},
+        ensure_ascii=False,
     ), encoding="utf-8")
 
     if args.write_profile:
