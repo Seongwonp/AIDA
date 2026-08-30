@@ -222,17 +222,22 @@ HIGH_PRIORITY_FRACTION = 0.5  # 최대 저하의 절반 이상이면 높음
 MEDIUM_PRIORITY_FRACTION = 0.25
 
 
-def _load_drop_std() -> dict[str, float]:
-    """조건별 저하율 표준편차 (3-seed 집계). 없으면 빈 dict."""
+def _load_aggregated_drops() -> dict[str, tuple[float, float]]:
+    """조건별 (저하율 평균, 표준편차) — 3-seed 집계. 없으면 빈 dict.
+
+    단일 시드 값(metrics.csv)보다 이쪽을 우선한다. 시드 하나짜리 관측은
+    학습 흔들림을 그대로 안고 있어서, 우선순위를 매기는 근거로는 평균이
+    맞다. 집계에 없는 조건은 호출부에서 metrics.csv 값으로 넘어간다.
+    """
     if not AGG_METRICS_CSV_PATH.exists():
         return {}
     df = pd.read_csv(AGG_METRICS_CSV_PATH)
-    if "drop_pct_std" not in df.columns:
+    if "drop_pct_std" not in df.columns or "drop_pct_mean" not in df.columns:
         return {}
     return {
-        row["condition"]: float(row["drop_pct_std"])
+        row["condition"]: (float(row["drop_pct_mean"]), float(row["drop_pct_std"]))
         for _, row in df.iterrows()
-        if pd.notna(row.get("drop_pct_std"))
+        if pd.notna(row.get("drop_pct_std")) and pd.notna(row.get("drop_pct_mean"))
     }
 
 
@@ -284,23 +289,30 @@ def get_diagnosis() -> DiagnosisResult:
     non_baseline = df[df["condition"] != "clean"].copy()
     non_baseline["drop_pct"] = (baseline - non_baseline["map50"]) / baseline * 100
 
-    worst_overall = non_baseline["drop_pct"].max()
-    std_by_condition = _load_drop_std()
+    # 3-seed 집계가 있으면 그 평균 저하율을 쓴다 (단일 시드 관측보다 미더움)
+    agg = _load_aggregated_drops()
+    non_baseline["drop_for_ranking"] = [
+        agg[c][0] if c in agg else d
+        for c, d in zip(non_baseline["condition"], non_baseline["drop_pct"])
+    ]
+
+    worst_overall = non_baseline["drop_for_ranking"].max()
 
     reports: list[ErrorTypeReport] = []
     for error_type, group in non_baseline.groupby("type"):
         # 유형별로 가장 저하가 큰 조건 하나만 대표값으로 뽑아 우선순위를 매김
-        worst = group.loc[group["drop_pct"].idxmax()]
+        worst = group.loc[group["drop_for_ranking"].idxmax()]
+        agg_entry = agg.get(worst["condition"])
         priority, rationale = _review_priority(
-            drop_pct=worst["drop_pct"],
+            drop_pct=worst["drop_for_ranking"],
             worst_overall=worst_overall,
-            drop_std=std_by_condition.get(worst["condition"]),
+            drop_std=agg_entry[1] if agg_entry else None,
         )
         reports.append(
             ErrorTypeReport(
                 error_type=error_type,
                 label=TYPE_LABELS.get(error_type, error_type),
-                max_performance_drop_pct=round(worst["drop_pct"], 1),
+                max_performance_drop_pct=round(worst["drop_for_ranking"], 1),
                 review_priority=priority,
                 priority_rationale=rationale,
             )
