@@ -94,8 +94,9 @@ export function DatasetUpload() {
               disabled={busy}
             >
               {profiles.map((p) => (
-                <option key={p.name} value={p.name}>
+                <option key={p.name} value={p.name} disabled={!p.available}>
                   {p.label}
+                  {p.available ? "" : " — 기준 모델 없음"}
                 </option>
               ))}
             </select>

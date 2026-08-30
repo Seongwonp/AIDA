@@ -61,3 +61,20 @@ def test_profile_carries_its_class_configuration():
 def test_profile_listing_exposes_classes(client):
     rows = client.get("/api/datasets/reliability-profiles").json()
     assert rows[0]["classes"] == ["Car"]
+
+
+def test_unavailable_profile_is_rejected_before_running(monkeypatch):
+    """기준 모델이 없는 프로파일은 서브프로세스 오류가 아니라 400으로 막는다."""
+    from fastapi import HTTPException
+    names = upload._available_profiles()
+    if not names:
+        pytest.skip("보정 프로파일 파일이 이 환경에 없음")
+    monkeypatch.setattr(upload, "_weights_exist", lambda classes: False)
+    with pytest.raises(HTTPException) as e:
+        upload._profile_env(names[0])
+    assert e.value.status_code == 400
+
+
+def test_listing_marks_availability(client):
+    rows = client.get("/api/datasets/reliability-profiles").json()
+    assert all("available" in row for row in rows)

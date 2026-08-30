@@ -159,3 +159,5 @@ class ReliabilityProfileInfo(BaseModel):
     types: list[str]
     # 이 상수를 잰 클래스 구성. 진단도 같은 구성으로 돌아간다.
     classes: list[str] = []
+    # 이 구성의 기준 모델이 서버에 있는가. False면 고를 수는 있어도 진단은 실패한다.
+    available: bool = True

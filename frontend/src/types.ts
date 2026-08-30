@@ -146,4 +146,6 @@ export interface ReliabilityProfile {
   types: string[];
   /** 이 상수를 잰 클래스 구성. 진단도 같은 구성으로 돌아간다. */
   classes: string[];
+  /** 이 구성의 기준 모델이 서버에 있는가. false면 고를 수 없다. */
+  available: boolean;
 }

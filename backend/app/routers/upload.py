@@ -242,6 +242,14 @@ def _profile_env(profile: str | None) -> dict[str, str]:
     if not profile:
         return {}
     path = _resolve_profile(profile)
+    classes_for_check = _profile_classes(path)
+    if not _weights_exist(classes_for_check):
+        raise HTTPException(
+            400,
+            f"'{profile}' 프로파일의 기준 모델이 이 환경에 없습니다 "
+            f"(클래스: {', '.join(classes_for_check) or 'Car'}). "
+            "해당 구성으로 clean 조건을 먼저 학습하세요.",
+        )
     env = {"AIDA_RELIABILITY_PROFILE": str(path)}
     # 상수만 갈아끼우면 반쪽이다 — 그 상수는 특정 클래스 구성에서 잰 값이므로
     # 진단도 같은 구성(같은 기준 모델·같은 클래스 인덱스)으로 돌려야 한다.
@@ -279,11 +287,23 @@ def _available_profiles() -> list[str]:
     )
 
 
+def _weights_exist(classes: list[str]) -> bool:
+    """이 클래스 구성의 기준 모델이 이 환경에 있는가.
+
+    config.py가 클래스 구성마다 경로를 나눠 쓰므로(Car는 runs/, 그 외는
+    runs_mc/) 여기서도 같은 규칙으로 찾는다. 없는 프로파일을 고르면 진단이
+    서브프로세스 오류로 실패하는데, 고르기 전에 알려주는 편이 낫다.
+    """
+    suffix = "" if classes in ([], ["Car"]) else "_mc"
+    return (EXPERIMENT_ROOT / f"runs{suffix}" / "clean" / "weights" / "best.pt").exists()
+
+
 @router.get("/reliability-profiles", response_model=list[ReliabilityProfileInfo])
 def list_reliability_profiles() -> list[ReliabilityProfileInfo]:
     """고를 수 있는 신뢰도 프로파일 목록. 기본값(프로파일 없음)이 항상 첫 항목."""
     profiles = [ReliabilityProfileInfo(
         name="", label="기본 (KITTI Car 단일 클래스 실측)", types=[], classes=["Car"],
+        available=_weights_exist(["Car"]),
     )]
     for name in _available_profiles():
         try:
@@ -296,6 +316,7 @@ def list_reliability_profiles() -> list[ReliabilityProfileInfo]:
             label=PROFILE_LABELS.get(name, name),
             types=sorted(data.get("present", {})),
             classes=list(data.get("classes", [])),
+            available=_weights_exist(list(data.get("classes", []))),
         ))
     return profiles
 
