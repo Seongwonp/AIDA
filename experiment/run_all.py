@@ -84,7 +84,8 @@ def main():
 
     # CLASS_SWAP_CONDITIONS는 CONDITIONS에 없다 — 다중 클래스에서 조건 이름을
     # 못 찾는다. evaluate_box_accuracy.py에서도 같은 자리를 고쳤다.
-    by_name = {c.name: c for c in config.CONDITIONS + config.CLASS_SWAP_CONDITIONS}
+    by_name = {c.name: c for c in config.CONDITIONS + config.CLASS_SWAP_CONDITIONS
+                   + config.REVIEW_SIM_CONDITIONS}
     if args.priority == "1":
         names = config.PRIORITY_1_NAMES
     elif args.priority == "2":
@@ -99,7 +100,9 @@ def main():
         unknown = [n for n in args.conditions if n not in by_name]
         if unknown:
             raise SystemExit(f"알 수 없는 조건: {unknown}")
-        names = [n for n in names if n in set(args.conditions)]
+        # 기본 실행 순서와 교집합을 취하면 안 된다 — 거기 없는 조건(재검수
+        # 시뮬레이션 등)이 오류 없이 조용히 빠진다. 실제로 6개가 사라졌다.
+        names = list(args.conditions)
 
     if args.breadth_first:
         names = _breadth_first(names, by_name)

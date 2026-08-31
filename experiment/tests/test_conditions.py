@@ -41,3 +41,34 @@ def test_multiclass_paths_are_all_separated(monkeypatch):
     p = _paths_for("Car,Van,Pedestrian,Cyclist", monkeypatch)
     single = _paths_for("Car", monkeypatch)
     assert all(p[k] != single[k] for k in p), f"안 나뉜 경로가 있음: {p}"
+
+
+# ── 이미지/라벨 개수 일치 ────────────────────────────────────────────────────
+# data/processed/images/는 클래스 구성·프레임 선택과 무관하게 공유되고
+# data_loader를 돌릴 때마다 쌓인다. 반면 라벨은 구성별로 갈린다. 폴더를 통째로
+# 링크하면 라벨 없는 이미지가 딸려 들어가고 ultralytics는 그걸 "객체 없는
+# 배경"으로 학습한다 — 오류 없이 조용히. cyclist_rich 실험이 실제로 이미지
+# 777장에 라벨 400개로 학습돼 결과가 통째로 무효가 됐다(docs/21 S 정정).
+
+def test_symlink_files_links_only_requested_stems(tmp_path):
+    from error_injector import symlink_files
+
+    src = tmp_path / "src"; src.mkdir()
+    for name in ("a.png", "b.png", "c.png"):
+        (src / name).write_bytes(b"x")
+    dst = tmp_path / "dst"
+    symlink_files(src, dst, only_stems={"a", "b"})
+    assert sorted(p.stem for p in dst.iterdir()) == ["a", "b"]
+
+
+def test_symlink_files_removes_stale_links(tmp_path):
+    """구성이 바뀌어 다시 만들 때, 예전에 잘못 걸린 링크가 남으면 안 된다."""
+    from error_injector import symlink_files
+
+    src = tmp_path / "src"; src.mkdir()
+    for name in ("a.png", "b.png"):
+        (src / name).write_bytes(b"x")
+    dst = tmp_path / "dst"
+    symlink_files(src, dst, only_stems={"a", "b"})
+    symlink_files(src, dst, only_stems={"a"})
+    assert sorted(p.stem for p in dst.iterdir()) == ["a"]

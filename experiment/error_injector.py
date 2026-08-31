@@ -288,7 +288,8 @@ def build_mixed_condition_labels(mixed: config.MixedCondition, image_dir: Path,
 
 def build_mixed_condition(mixed: config.MixedCondition) -> Path:
     root = config.MIXED_CONDITIONS_DIR / mixed.name
-    symlink_files(config.IMAGES_TRAIN_DIR, root / "images" / "train")
+    train_stems = {p.stem for p in config.LABELS_GT_TRAIN_DIR.glob("*.txt")}
+    symlink_files(config.IMAGES_TRAIN_DIR, root / "images" / "train", train_stems)
 
     record = build_mixed_condition_labels(
         mixed,
@@ -306,7 +307,8 @@ def build_mixed_condition(mixed: config.MixedCondition) -> Path:
     return root
 
 
-def symlink_files(src_dir: Path, dst_dir: Path) -> None:
+def symlink_files(src_dir: Path, dst_dir: Path,
+                  only_stems: set[str] | None = None) -> None:
     """dst_dir 자체는 실제 디렉토리로 만들고, 그 안의 파일들만 심볼릭 링크한다.
 
     dst_dir을 통째로 심볼릭 링크하면 ultralytics가 data.yaml 경로를 resolve()할 때
@@ -318,9 +320,23 @@ def symlink_files(src_dir: Path, dst_dir: Path) -> None:
     Windows는 심볼릭 링크 생성에 관리자 권한/개발자 모드가 필요하다
     (`WinError 1314`). 권한이 없으면 하드 링크(`os.link`)로 대체한다 — 같은
     볼륨 안에서는 하드 링크도 디스크 복제 없이 동일한 효과를 낸다.
+
+    **only_stems를 반드시 넘겨야 한다.** 이미지 폴더(data/processed/images/)는
+    클래스 구성·프레임 선택과 무관하게 공유되며 data_loader가 실행될 때마다
+    쌓인다. 반면 라벨은 구성별로 갈린다. 그래서 폴더를 통째로 링크하면 라벨이
+    없는 이미지까지 딸려 들어가고, ultralytics는 그걸 "객체 없는 배경"으로
+    학습한다 — 조용히, 오류 없이. 실제로 cyclist_rich 실험이 이미지 777장에
+    라벨 400개로 학습돼 결과가 통째로 무효가 됐다(docs/21 S 정정).
     """
     dst_dir.mkdir(parents=True, exist_ok=True)
+    if only_stems is not None:
+        # 이전에 잘못 걸린 링크가 남아 있으면 지운다
+        for stale in dst_dir.iterdir():
+            if stale.stem not in only_stems:
+                stale.unlink()
     for src_file in src_dir.iterdir():
+        if only_stems is not None and src_file.stem not in only_stems:
+            continue
         dst_file = dst_dir / src_file.name
         if dst_file.exists() or dst_file.is_symlink():
             continue
@@ -345,9 +361,11 @@ def write_data_yaml(condition_root: Path) -> Path:
 
 def build_condition(condition: Condition) -> Path:
     root = config.CONDITIONS_DIR / condition.name
-    symlink_files(config.IMAGES_TRAIN_DIR, root / "images" / "train")
-    symlink_files(config.IMAGES_VAL_DIR, root / "images" / "val")
-    symlink_files(config.LABELS_GT_VAL_DIR, root / "labels" / "val")
+    train_stems = {p.stem for p in config.LABELS_GT_TRAIN_DIR.glob("*.txt")}
+    val_stems = {p.stem for p in config.LABELS_GT_VAL_DIR.glob("*.txt")}
+    symlink_files(config.IMAGES_TRAIN_DIR, root / "images" / "train", train_stems)
+    symlink_files(config.IMAGES_VAL_DIR, root / "images" / "val", val_stems)
+    symlink_files(config.LABELS_GT_VAL_DIR, root / "labels" / "val", val_stems)
 
     record = build_condition_labels(
         condition,
@@ -438,9 +456,11 @@ def build_obb_condition_labels(condition: config.Condition, image_dir: Path,
 
 def build_obb_condition(condition: config.Condition) -> Path:
     root = config.OBB_CONDITIONS_DIR / condition.name
-    symlink_files(config.IMAGES_TRAIN_DIR, root / "images" / "train")
-    symlink_files(config.IMAGES_VAL_DIR, root / "images" / "val")
-    symlink_files(config.OBB_LABELS_GT_VAL_DIR, root / "labels" / "val")
+    train_stems = {p.stem for p in config.LABELS_GT_TRAIN_DIR.glob("*.txt")}
+    val_stems = {p.stem for p in config.LABELS_GT_VAL_DIR.glob("*.txt")}
+    symlink_files(config.IMAGES_TRAIN_DIR, root / "images" / "train", train_stems)
+    symlink_files(config.IMAGES_VAL_DIR, root / "images" / "val", val_stems)
+    symlink_files(config.OBB_LABELS_GT_VAL_DIR, root / "labels" / "val", val_stems)
 
     build_obb_condition_labels(
         condition,

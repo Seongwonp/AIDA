@@ -208,6 +208,18 @@ MIXED_CONDITIONS_DIR = EXPERIMENT_ROOT / f"conditions_mixed{_esuffix}"
 
 # 클래스 오기입 조건 — 다중 클래스에서만 의미가 있어서 CONDITIONS와 분리했다.
 # 단일 클래스 실행에는 아예 안 들어간다(바꿀 다른 클래스가 없다).
+# 재검수 시뮬레이션이 만든 조건들(docs/21 T). simulate_review.py가 폴더를
+# 만들면 여기서 이름으로 찾아 학습할 수 있게 등록한다.
+REVIEW_SIM_CONDITIONS: list[Condition] = [
+    Condition(f"scale_m30_fix_{order}_{pct}", "review_sim", pct)
+    for order in ("severity", "class_weighted", "random")
+    for pct in (25, 50)
+] + [
+    # 같은 워커 설정으로 학습한 기준선(고치지 않음)과 상한(오류 없음)
+    Condition("scale_m30_asis", "review_sim", 0),
+    Condition("clean_asis", "review_sim", 0),
+]
+
 CLASS_SWAP_CONDITIONS: list[Condition] = [
     Condition("class_swap_10", "class_swap", 10),
     Condition("class_swap_20", "class_swap", 20),
@@ -235,7 +247,8 @@ OBB_CONDITIONS: list[Condition] = [
     Condition("obb_rot_p15", "rotation", 15),
 ]
 
-_BY_NAME = {c.name: c for c in CONDITIONS + CLASS_SWAP_CONDITIONS}
+_BY_NAME = {c.name: c for c in
+             CONDITIONS + CLASS_SWAP_CONDITIONS + REVIEW_SIM_CONDITIONS}
 _OBB_BY_NAME = {c.name: c for c in OBB_CONDITIONS}
 
 
