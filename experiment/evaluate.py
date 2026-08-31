@@ -50,7 +50,10 @@ def append_metrics(row: dict, csv_path=config.METRICS_CSV) -> None:
     df = df[df["condition"] != row["condition"]]  # 재실행 시 같은 조건 갱신(중복 방지)
     df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
 
-    order = {c.name: i for i, c in enumerate(config.CONDITIONS)}
+    # CLASS_SWAP_CONDITIONS는 CONDITIONS에 없다 — 빠뜨리면 그 행들의 정렬 키가
+    # NaN이 되어 순서가 무너진다.
+    order = {c.name: i for i, c in
+             enumerate(config.CONDITIONS + config.CLASS_SWAP_CONDITIONS)}
     df["_order"] = df["condition"].map(order)
     df = df.sort_values("_order").drop(columns="_order")
 
