@@ -175,6 +175,14 @@ def main() -> None:
 
     run_aabb = not args.obb_only
     run_obb = not args.aabb_only
+    if run_obb and config.MULTICLASS:
+        # OBB는 단일 클래스 전용이다 (run_obb.py의 _refuse_multiclass 참고).
+        # 다중 클래스에서는 AABB만 돌리고 조용히 넘어간다 — 여기서 죽으면
+        # AABB 다중 시드까지 못 돌게 된다.
+        if args.obb_only:
+            raise SystemExit("OBB 실험은 단일 클래스 전용입니다 — --obb-only를 쓸 수 없습니다.")
+        print("[알림] 다중 클래스 구성이라 OBB는 건너뜁니다 (단일 클래스 전용 실험)")
+        run_obb = False
 
     print("=== seed=42 결과 마이그레이션 ===")
     migrate_seed42()

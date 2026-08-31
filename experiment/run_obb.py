@@ -17,7 +17,27 @@ from evaluate_obb import append_obb_metrics, evaluate_obb_condition
 from train_obb import train_obb_condition
 
 
+def _refuse_multiclass() -> None:
+    """다중 클래스에서 OBB를 돌리지 못하게 막는다.
+
+    OBB 실험은 회전 오류를 Car 한 클래스에서 보려고 만든 것이고, 다중 클래스
+    OBB 실험은 존재하지 않는다. 그런데 경로가 어중간하게 갈려 있다 —
+    폴더는 _mc가 붙는데(config._esuffix) CSV는 안 붙는다. 그대로 돌리면
+    runs_obb_mc/에 학습해놓고 결과는 Car OBB의 metrics_obb.csv를 덮어쓴다.
+
+    반쪽으로 지원하느니 막는다. 다중 클래스 OBB가 필요해지면 그때 CSV 경로도
+    함께 갈라야 한다.
+    """
+    if config.MULTICLASS:
+        raise SystemExit(
+            f"OBB 실험은 단일 클래스 전용입니다 (현재 AIDA_CLASSES="
+            f"{','.join(config.CLASS_NAMES)}). 지표 CSV 경로가 클래스 구성별로 "
+            "갈려 있지 않아 Car OBB 결과를 덮어씁니다."
+        )
+
+
 def main():
+    _refuse_multiclass()
     parser = argparse.ArgumentParser(description="AIDA OBB 실험 파이프라인")
     parser.add_argument("--skip-preprocess", action="store_true",
                         help="OBB GT 라벨 및 조건 데이터셋 생성 스킵 (이미 완료된 경우)")
