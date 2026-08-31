@@ -24,6 +24,7 @@ def train_condition(condition: config.Condition, epochs: int | None = None) -> N
         data=str(yaml_path),
         epochs=epochs or config.EPOCHS,
         batch=config.BATCH_SIZE,
+        workers=config.WORKERS,
         imgsz=config.IMG_SIZE,
         device=config.resolve_device(),
         seed=config.SEED,

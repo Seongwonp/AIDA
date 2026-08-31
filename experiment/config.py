@@ -84,6 +84,10 @@ RELIABILITY_PROFILE = os.environ.get("AIDA_RELIABILITY_PROFILE", "")
 
 EPOCHS = int(os.environ.get("AIDA_EPOCHS", 50))
 BATCH_SIZE = int(os.environ.get("AIDA_BATCH_SIZE", 16))
+# 데이터로더 워커 수. ultralytics 기본값 8을 그대로 쓰면 워커마다 torch를 얹어
+# 약 840MB씩 잡아, 커밋 여유가 없는 상태에서 WinError 1455(페이징 부족)로
+# 학습이 죽는다. 결과에는 영향이 없음을 실측으로 확인했다(docs/21 S).
+WORKERS = int(os.environ.get("AIDA_WORKERS", 8))
 IMG_SIZE = int(os.environ.get("AIDA_IMG_SIZE", 640))
 DEVICE = os.environ.get("AIDA_DEVICE", "auto")  # auto: resolve_device()가 cuda>mps>cpu 순 자동 감지
 

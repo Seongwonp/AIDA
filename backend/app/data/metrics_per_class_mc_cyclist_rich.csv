@@ -1,0 +1,11 @@
+condition,type,magnitude,map50,map50_Car,map50_Van,map50_Pedestrian,map50_Cyclist
+clean,none,0,0.7459,0.7803,0.7578,0.5953,0.8501
+width_m30,width,-30,0.7117,0.7658,0.6649,0.6254,0.7908
+height_m30,height,-30,0.7323,0.7464,0.7794,0.5924,0.811
+rot_m15,rotation,-15,0.6998,0.7551,0.708,0.5682,0.768
+trans_x_m15,translation_x,-15,0.7469,0.7686,0.7837,0.6217,0.8135
+trans_y_m15,translation_y,-15,0.7407,0.7681,0.7365,0.6403,0.818
+scale_m30,scale,-30,0.7054,0.7458,0.7561,0.5388,0.7807
+missing_30,missing,30,0.7008,0.7516,0.6769,0.5748,0.7997
+duplicate_30,duplicate,30,0.7399,0.7744,0.769,0.6048,0.8114
+class_swap_30,class_swap,30,0.6426,0.7347,0.5573,0.5479,0.7305
