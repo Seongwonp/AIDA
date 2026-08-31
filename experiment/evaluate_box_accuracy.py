@@ -326,7 +326,8 @@ def main():
 
     conditions = [c for c in config.conditions_in_run_order() if c.type != "none"]
     if args.conditions:
-        by_name = {c.name: c for c in config.CONDITIONS + config.CLASS_SWAP_CONDITIONS}
+        by_name = {c.name: c for c in config.CONDITIONS + config.CLASS_SWAP_CONDITIONS
+                   + config.REVIEW_SIM_CONDITIONS}
         conditions = [by_name[n] for n in args.conditions]
 
     if args.reuse_cache:
