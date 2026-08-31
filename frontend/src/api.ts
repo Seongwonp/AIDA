@@ -20,11 +20,21 @@ const client = axios.create({
 export const getSummary = () =>
   client.get<DatasetSummary>("/api/summary").then((res) => res.data);
 
-export const getConditions = () =>
-  client.get<ConditionMetric[]>("/api/conditions").then((res) => res.data);
+// profileClasses는 어느 클래스 구성의 성능 패턴 DB를 볼지 정한다. 비우면
+// 기본(KITTI Car 단일). 같은 라벨 오류라도 클래스 구성에 따라 저하가 크게
+// 다르므로 DB 자체가 갈린다 (docs/21 Q).
+const classParams = (profileClasses: string) =>
+  profileClasses ? { params: { profile_classes: profileClasses } } : undefined;
 
-export const getDiagnosis = () =>
-  client.get<DiagnosisResult>("/api/diagnose").then((res) => res.data);
+export const getConditions = (profileClasses = "") =>
+  client
+    .get<ConditionMetric[]>("/api/conditions", classParams(profileClasses))
+    .then((res) => res.data);
+
+export const getDiagnosis = (profileClasses = "") =>
+  client
+    .get<DiagnosisResult>("/api/diagnose", classParams(profileClasses))
+    .then((res) => res.data);
 
 export const getRoiEstimate = () =>
   client.get<RoiEstimate>("/api/roi-estimate").then((res) => res.data);

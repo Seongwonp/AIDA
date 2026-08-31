@@ -20,6 +20,7 @@ const TYPE_LABELS: Record<string, string> = {
   scale: "스케일 오류",
   missing: "라벨 누락",
   duplicate: "라벨 중복",
+  class_swap: "클래스 오기입",
 };
 
 function label(c: { type: string; magnitude: number }) {

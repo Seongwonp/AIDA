@@ -12,6 +12,7 @@ const TYPE_LABELS: Record<string, string> = {
   scale: "스케일 오류",
   missing: "라벨 누락",
   duplicate: "라벨 중복",
+  class_swap: "클래스 오기입",
 };
 
 // magnitude는 오류 유형에 따라 단위가 다르다: 회전각만 도(°), 나머지는 전부 %

@@ -66,12 +66,24 @@ def get_summary() -> DatasetSummary:
 
 
 @router.get("/conditions", response_model=list[ConditionMetric])
-def get_conditions() -> list[ConditionMetric]:
-    df = _load_metrics()
-    iou_df = _load_iou_table()
-    if not iou_df.empty:
-        df = df.merge(iou_df, on="condition", how="left")
-    baseline = df.loc[df["condition"] == "clean", "map50"].iloc[0]
+def get_conditions(profile_classes: str = "") -> list[ConditionMetric]:
+    classes = [c for c in profile_classes.split(",") if c.strip()]
+    metrics_path = _metrics_path_for(classes)
+    if not metrics_path.exists():
+        raise HTTPException(
+            404, f"{metrics_path.name} 없음 — 이 클래스 구성의 성능 패턴 DB가 아직 없습니다."
+        )
+    df = pd.read_csv(metrics_path)
+    # IoU 표는 Car 단일에서만 쟀다. 다른 구성에 갖다 붙이면 조건 이름만 같고
+    # 실제로는 다른 실험의 숫자를 섞는 셈이라, 그때는 붙이지 않는다.
+    if not classes or classes == ["Car"]:
+        iou_df = _load_iou_table()
+        if not iou_df.empty:
+            df = df.merge(iou_df, on="condition", how="left")
+    baseline_rows = df.loc[df["condition"] == "clean", "map50"]
+    if baseline_rows.empty:
+        raise HTTPException(500, f"{metrics_path.name}에 clean 기준 행이 없습니다.")
+    baseline = baseline_rows.iloc[0]
 
     results: list[ConditionMetric] = []
     for _, row in df.iterrows():
