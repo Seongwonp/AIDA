@@ -18,11 +18,17 @@ docs/21 L에서 **진단** 상수가 클래스 구성을 탄다는 걸 확인했
   python compare_class_configs.py
 """
 import argparse
+import sys
 from pathlib import Path
 
 import pandas as pd
 
 import config
+
+
+# Windows 콘솔 기본 코드페이지(cp949)가 em-dash 같은 문자를 못 찍어서 죽는다.
+# 결과를 못 보는 것보다 글자 하나가 물음표로 나오는 편이 낫다.
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
 def load(path: Path) -> pd.DataFrame | None:
@@ -37,13 +43,21 @@ def load(path: Path) -> pd.DataFrame | None:
     return df
 
 
-def worst_by_type(df: pd.DataFrame) -> dict[str, tuple[str, float]]:
-    """유형별로 저하가 가장 큰 조건. 유형 간 비교의 대표값이다."""
-    out: dict[str, tuple[str, float]] = {}
-    for t, g in df.groupby("type"):
-        row = g.loc[g["drop_pct"].idxmax()]
-        out[t] = (row["condition"], float(row["drop_pct"]))
-    return out
+def by_condition(df: pd.DataFrame) -> dict[str, float]:
+    """조건 이름 → 저하율.
+
+    유형별 최대치로 비교하면 안 된다. 두 가지 이유가 있다.
+
+    1. **양쪽의 조건 구성이 다르면 비교가 아니다.** 다중 클래스 학습이
+       진행 중이라 한쪽엔 _30만 있고 다른 쪽엔 _15/_30이 다 있다. 최대끼리
+       맞대면 조건이 더 많은 쪽이 유리해진다.
+    2. **효과가 0인 유형에서 최대를 고르는 건 노이즈를 고르는 것이다.**
+       중복은 3-seed로 저하가 없다는 게 확인됐는데(docs/21 I), 단일 시드
+       3개 중 최대를 뽑으면 1.14%가 나온다.
+
+    그래서 같은 이름의 조건끼리만 짝지어 비교한다.
+    """
+    return {row["condition"]: float(row["drop_pct"]) for _, row in df.iterrows()}
 
 
 def main() -> None:
@@ -59,30 +73,35 @@ def main() -> None:
     if mc is None:
         raise SystemExit(f"{mc_path} 없음 — 다중 클래스 clean 조건을 먼저 학습하세요")
 
-    a, b = worst_by_type(car), worst_by_type(mc)
+    a, b = by_condition(car), by_condition(mc)
+    types = dict(zip(mc["condition"], mc["type"])) | dict(zip(car["condition"], car["type"]))
+    shared = [c for c in b if c in a]
+
     lines = [
         "양쪽 다 seed=42 단일 시드 (다중 클래스에 3-seed 집계가 없어 맞춤)",
-        f"Car 단일: {len(car)}개 조건 / 다중 클래스: {len(mc)}개 조건"
-        + ("  (다중 클래스 학습 진행 중)" if len(mc) < len(car) else ""),
+        f"Car 단일 {len(a)}개 조건 / 다중 클래스 {len(b)}개 조건 "
+        f"— 같은 조건 {len(shared)}개만 비교"
+        + ("  (다중 클래스 학습 진행 중)" if len(b) < len(a) else ""),
         "",
-        f"{'유형':<16}{'Car 저하':>10}{'다중 저하':>11}{'차이':>10}  대표 조건",
-        "-" * 68,
+        f"{'조건':<16}{'유형':<15}{'Car':>9}{'다중':>9}{'차이':>10}",
+        "-" * 62,
     ]
-    for t in sorted(set(a) | set(b), key=lambda t: -(b.get(t, ("", 0))[1])):
-        ca = a.get(t)
-        cb = b.get(t)
-        car_s = f"{ca[1]:.2f}%" if ca else "-"
-        mc_s = f"{cb[1]:.2f}%" if cb else "미완료"
-        diff = f"{cb[1] - ca[1]:+.2f}%p" if (ca and cb) else "-"
-        cond = cb[0] if cb else (ca[0] if ca else "")
-        lines.append(f"{t:<16}{car_s:>10}{mc_s:>11}{diff:>10}  {cond}")
+    for c in sorted(shared, key=lambda c: -(b[c] - a[c])):
+        lines.append(f"{c:<16}{types.get(c, ''):<15}{a[c]:>8.2f}%{b[c]:>8.2f}%"
+                     f"{b[c] - a[c]:>+9.2f}%p")
+
+    if shared:
+        diffs = [b[c] - a[c] for c in shared]
+        lines += ["", f"평균 차이 {sum(diffs) / len(diffs):+.2f}%p "
+                      f"(범위 {min(diffs):+.2f} ~ {max(diffs):+.2f}%p)"]
 
     only_mc = sorted(set(b) - set(a))
     if only_mc:
-        lines += ["", f"다중 클래스에만 있는 유형: {', '.join(only_mc)}"]
-    missing = sorted(set(a) - set(b))
-    if missing:
-        lines += [f"아직 학습 안 끝난 유형: {', '.join(missing)}"]
+        lines += ["", "다중 클래스에만 있는 조건 (Car에는 대응이 없어 비교 불가):"]
+        lines += [f"  {c:<16}{types.get(c, ''):<15}{b[c]:>8.2f}%" for c in only_mc]
+    pending = sorted(set(a) - set(b))
+    if pending:
+        lines += ["", f"아직 학습 안 끝난 조건 {len(pending)}개: {', '.join(pending)}"]
 
     text = "\n".join(lines)
     print(text)
