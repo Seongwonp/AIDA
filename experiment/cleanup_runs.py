@@ -38,8 +38,14 @@ DISPOSABLE_GLOBS = ["weights/last.pt", "train_batch*.jpg", "val_batch*.jpg"]
 
 
 def run_dirs() -> list[Path]:
-    roots = [config.EXPERIMENT_ROOT / n for n in ("runs", "runs_mc", "runs_obb")]
-    return [d for r in roots if r.is_dir() for d in sorted(r.iterdir()) if d.is_dir()]
+    """모든 학습 결과 폴더. 이름을 나열하지 않고 glob으로 찾는다.
+
+    시드(_e123)·클래스 구성(_mc)·프레임 선택(_cyclist_rich)이 조합되면서
+    runs 계열 폴더가 계속 늘어난다. 목록을 손으로 적어두면 새 조합이 생길
+    때마다 조용히 빠지고, 정리했다고 생각한 용량이 그대로 남는다.
+    """
+    return [d for r in sorted(config.EXPERIMENT_ROOT.glob("runs*")) if r.is_dir()
+            for d in sorted(r.iterdir()) if d.is_dir()]
 
 
 def main() -> None:
