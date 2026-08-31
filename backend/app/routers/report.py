@@ -251,36 +251,60 @@ def _load_aggregated_drops() -> dict[str, tuple[float, float]]:
     }
 
 
+# 경계 근처의 "같은 값"을 다른 등급으로 가르지 않기 위한 여유.
+# 최대 저하 대비 비율이라 DB가 바뀌면 같이 움직인다.
+#
+# 다중 클래스 표에서 클래스 오기입 31.2%가 기준이 되자 나머지가 전부
+# 압축됐는데, 그 결과 라벨 중복 7.7%와 중심점 가로 7.8%가 사실상 같은 값인데
+# 25% 경계를 사이에 두고 낮음/중간으로 갈렸다(docs/21 Q 한계 3번).
+# 0.1%p 차이로 등급이 갈리면 고객은 등급 전체를 의심하게 된다.
+#
+# 2%로 잡은 근거: 이 값이면 다중 클래스에서 7.7/7.5%가 7.8%와 같은 등급이
+# 되면서(여유 0.62%p), Car에서는 중심점 세로 2.5%가 라벨 누락 3.8%로
+# 승격되지 않는다(여유 0.12%p). 두 DB에서 동시에 말이 되는 폭이다.
+TIE_TOLERANCE_FRACTION = 0.02
+
+
 def _review_priority(drop_pct: float, worst_overall: float,
-                     drop_std: float | None) -> tuple[str, str]:
-    """(우선순위, 근거 문구). 근거를 함께 돌려주는 이유는, 등급만 보여주면
-    고객이 "왜 이게 높음인가"를 확인할 방법이 없기 때문이다."""
+                     drop_std: float | None) -> tuple[str, str, bool]:
+    """(우선순위, 근거 문구, 노이즈로 강등됐는가).
+
+    근거를 함께 돌려주는 이유는, 등급만 보여주면 고객이 "왜 이게 높음인가"를
+    확인할 방법이 없기 때문이다. 세 번째 값은 경계 보정이 이 유형을 건드리면
+    안 된다는 표시다 — 유의성 미달은 크기와 무관한 더 강한 이유라서,
+    "옆 유형과 값이 비슷하다"는 이유로 올려서는 안 된다.
+    """
     if drop_std is not None and drop_std > 0:
         sigma = drop_pct / drop_std
         if sigma < MIN_SIGNIFICANT_SIGMA:
             return "낮음", (
                 f"저하 {drop_pct:.1f}%가 시드 간 편차({drop_std:.1f}%p)의 "
                 f"{sigma:.1f}배에 불과해 학습 흔들림과 구분되지 않습니다"
-            )
+            ), True
 
     if worst_overall <= 0:
-        return "낮음", "성능 저하가 관측되지 않았습니다"
+        return "낮음", "성능 저하가 관측되지 않았습니다", False
 
-    share = drop_pct / worst_overall
-    if share >= HIGH_PRIORITY_FRACTION:
+    tolerance = worst_overall * TIE_TOLERANCE_FRACTION
+    # 경계에 여유를 준다. 인접한 것끼리 비교해 밀어올리면 작은 차이가 사슬처럼
+    # 이어져 멀리 있는 유형까지 올라갈 수 있어서, 경계 자체를 낮춘다.
+    if drop_pct >= worst_overall * HIGH_PRIORITY_FRACTION - tolerance:
+        share = drop_pct / worst_overall
         return "높음", (
             f"저하 {drop_pct:.1f}%로, 관측된 최대 저하({worst_overall:.1f}%)의 "
             f"{share * 100:.0f}% 수준입니다"
-        )
-    if share >= MEDIUM_PRIORITY_FRACTION:
+        ), False
+    if drop_pct >= worst_overall * MEDIUM_PRIORITY_FRACTION - tolerance:
+        share = drop_pct / worst_overall
         return "중간", (
             f"저하 {drop_pct:.1f}%로 중간 수준입니다 "
             f"(최대 저하 대비 {share * 100:.0f}%)"
-        )
+        ), False
+    share = drop_pct / worst_overall
     return "낮음", (
         f"저하 {drop_pct:.1f}%로, 관측된 최대 저하({worst_overall:.1f}%) 대비 "
         f"{share * 100:.0f}%에 그칩니다"
-    )
+    ), False
 
 
 # 클래스 구성별 성능 패턴 DB. 신뢰도 프로파일과 같은 규칙으로 경로를 나눈다
@@ -335,7 +359,7 @@ def get_diagnosis(profile_classes: str = "") -> DiagnosisResult:
         # 유형별로 가장 저하가 큰 조건 하나만 대표값으로 뽑아 우선순위를 매김
         worst = group.loc[group["drop_for_ranking"].idxmax()]
         agg_entry = agg.get(worst["condition"])
-        priority, rationale = _review_priority(
+        priority, rationale, _is_noise = _review_priority(
             drop_pct=worst["drop_for_ranking"],
             worst_overall=worst_overall,
             drop_std=agg_entry[1] if agg_entry else None,
