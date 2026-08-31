@@ -18,7 +18,10 @@ from error_injector import (  # noqa: E402
     apply_width,
 )
 from label_diagnosis import (  # noqa: E402
+    BoxFinding,
+    CLASS_VULNERABILITY,
     CONFIDENCE_WEIGHTED_TYPES,
+    review_value,
     TYPE_RELIABILITY_NOISE,
     TYPE_RELIABILITY_PRESENT,
     classify_geometry,
@@ -416,3 +419,45 @@ def test_unsure_class_prediction_stays_silent():
                               pred_classes=[0], label_classes=[1],
                               class_names=["Car", "Van"])
     assert findings == []
+
+
+# ── 클래스별 재검수 가치 ──────────────────────────────────────────────────────
+# 같은 유형의 오류라도 클래스마다 성능 피해가 다르다 — 실측에서 오류 조건
+# 평균 저하가 Car 3.4%, Cyclist 27.4%로 8배였다(docs/21 Q). severity는
+# "진짜 오류일 확률"이라 그 차이를 담지 않으므로 따로 곱한다.
+
+def test_review_value_is_severity_when_no_vulnerability_known():
+    """단일 클래스에서는 구분이 없으므로 severity 그대로여야 한다."""
+    f = BoxFinding("a.png", 0, "width", 0.5, "", PRED, 0.3, 0.9, None)
+    assert review_value(f) == f.severity
+
+
+def test_review_value_scales_by_class(monkeypatch):
+    monkeypatch.setitem(CLASS_VULNERABILITY, 0, 0.124)   # Car
+    monkeypatch.setitem(CLASS_VULNERABILITY, 3, 1.0)     # Cyclist
+    car = BoxFinding("a.png", 0, "width", 0.5, "", PRED, 0.3, 0.9, 0)
+    cyclist = BoxFinding("a.png", 1, "width", 0.5, "", PRED, 0.3, 0.9, 3)
+    assert review_value(cyclist) > review_value(car)
+
+
+def test_review_value_leaves_severity_untouched(monkeypatch):
+    """두 양을 한 숫자에 뭉개면 어느 쪽으로 정렬되는지 알 수 없게 된다."""
+    monkeypatch.setitem(CLASS_VULNERABILITY, 0, 0.124)
+    f = BoxFinding("a.png", 0, "width", 0.5, "", PRED, 0.3, 0.9, 0)
+    review_value(f)
+    assert f.severity == 0.5
+
+
+def test_findings_carry_the_label_class():
+    findings = diagnose_image("a.png", [PRED], [0.9], [apply_width(PRED, -30)],
+                              pred_classes=[2], label_classes=[2],
+                              class_names=["Car", "Van", "Pedestrian"])
+    assert findings[0].class_id == 2
+
+
+def test_missing_takes_the_prediction_class():
+    """누락은 라벨이 없으니 예측 쪽 클래스를 써야 한다."""
+    findings = diagnose_image("a.png", [PRED], [0.95], [],
+                              pred_classes=[3], label_classes=[],
+                              class_names=["Car", "Van", "Pedestrian", "Cyclist"])
+    assert [f.class_id for f in findings] == [3]

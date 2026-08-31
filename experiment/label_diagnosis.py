@@ -165,6 +165,29 @@ CONFIDENCE_FLOOR = 0.5
 # 안 해서 넣지 않았다 — 이미 정밀도 90%로 약한 고리가 아니다.
 CONFIDENCE_WEIGHTED_TYPES = {"width", "height", "scale", "translation_x", "translation_y"}
 
+# 클래스별 취약도 — "이 클래스 라벨이 망가지면 성능이 얼마나 상하는가"를
+# 0~1로 정규화한 값. 프로파일이 있으면 거기서 읽고, 없으면 비어 있다.
+#
+# severity와 **일부러 분리**했다. severity는 "이게 진짜 오류일 확률"이고,
+# 취약도를 곱한 값은 "이걸 고쳤을 때 되찾는 성능"이라 뜻이 다른 양이다.
+# 둘을 한 숫자에 뭉개면 어느 쪽으로 정렬되고 있는지 알 수 없게 된다.
+CLASS_VULNERABILITY: dict[int, float] = {}
+
+
+def review_value(finding: "BoxFinding") -> float:
+    """재검수 가치 = 진짜 오류일 확률 × 그 클래스가 입는 피해.
+
+    severity로 정렬하면 목록의 정밀도가 최대가 되고, 이 값으로 정렬하면
+    **되찾는 성능**이 최대가 된다. 목적이 다르므로 지표도 따로 잰다
+    (evaluate_box_accuracy.py의 recovered@k).
+
+    취약도 정보가 없으면 severity 그대로 — 단일 클래스에서는 구분이 없다.
+    """
+    if not CLASS_VULNERABILITY or finding.class_id is None:
+        return finding.severity
+    return finding.severity * CLASS_VULNERABILITY.get(finding.class_id, 1.0)
+
+
 def _load_reliability_profile() -> None:
     """도메인별로 재보정한 신뢰도를 기본 상수 위에 덮어쓴다.
 
@@ -185,6 +208,13 @@ def _load_reliability_profile() -> None:
                        ("noise", TYPE_RELIABILITY_NOISE)):
         for suspicion, value in data.get(key, {}).items():
             table[suspicion] = float(value)
+
+    # 클래스 취약도는 이름으로 적히지만 진단은 인덱스로 다룬다. 프로파일의
+    # classes 순서가 곧 인덱스이므로 그걸로 되짚는다 — 이름이 없으면 못 쓴다.
+    classes = list(data.get("classes", []))
+    for name, value in data.get("class_vulnerability", {}).items():
+        if name in classes:
+            CLASS_VULNERABILITY[classes.index(name)] = float(value)
 
 
 _load_reliability_profile()
@@ -248,6 +278,11 @@ class BoxFinding:
     # 이 의심을 만든 예측 박스의 확신도. rescore가 심각도를 다시 매길 때
     # 원시 신호와 함께 필요하다. 기본 1.0은 "확신도 정보 없음 = 감점 없음"이다.
     confidence: float = 1.0
+    # 이 의심이 걸린 객체의 클래스 인덱스. 다중 클래스에서만 채워진다.
+    # 같은 유형의 오류라도 클래스마다 성능 피해가 크게 다르다 — 실측에서
+    # width 오류가 Car에는 1.9%, Pedestrian에는 24.4%였다(docs/21 Q).
+    # 그 차이를 우선순위에 반영하려면 박스마다 클래스를 알아야 한다.
+    class_id: int | None = None
 
 
 def present_types(summary: dict) -> set[str]:
@@ -421,6 +456,11 @@ def diagnose_image(
         predictions, labels, pred_classes=pred_classes, label_classes=label_classes)
     findings: list[BoxFinding] = []
 
+    def _class_at(classes: list[int] | None, i: int) -> int | None:
+        if classes is None or i is None or i >= len(classes):
+            return None
+        return classes[i]
+
     def cname(i: int) -> str:
         if class_names and 0 <= i < len(class_names):
             return class_names[i]
@@ -435,7 +475,8 @@ def diagnose_image(
             findings.append(BoxFinding(
                 image, li, suspicion,
                 severity_for(suspicion, raw, confidence=conf), detail,
-                labels[li], raw, conf,
+                box=labels[li], raw_signal=raw, confidence=conf,
+                class_id=_class_at(label_classes, li),
             ))
 
     # 2) 짝 없는 라벨: 먼저 "클래스만 다른 예측"이 같은 자리에 있는지 본다.
@@ -471,7 +512,8 @@ def diagnose_image(
                 severity_for("class_mismatch", best),
                 f"모델은 {cname(pred_classes[best_pi])}로 보는데 "
                 f"라벨은 {cname(label_classes[li])} (겹침 {best:.2f})",
-                labels[li], best, conf,
+                box=labels[li], raw_signal=best, confidence=conf,
+                class_id=_class_at(label_classes, li),
             ))
         # 클래스 불일치로 쓰인 예측은 "라벨 없는 자리"가 아니므로 누락에서 뺀다
         unmatched_preds = [pi for pi in unmatched_preds if pi not in matched_preds]
@@ -494,7 +536,8 @@ def diagnose_image(
             findings.append(BoxFinding(
                 image, li, "duplicate", severity_for("duplicate", best_iou),
                 f"다른 라벨과 같은 객체를 가리킴 (겹침 {best_iou:.2f})",
-                labels[li], best_iou, dup_conf,
+                box=labels[li], raw_signal=best_iou, confidence=dup_conf,
+                class_id=_class_at(label_classes, li),
             ))
 
     # 4) 짝 없는 예측: 모델이 확신하는데 라벨이 없으면 누락 의심.
@@ -509,7 +552,12 @@ def diagnose_image(
         findings.append(BoxFinding(
             image, None, "missing", severity_for("missing", conf),
             f"모델이 확신({conf:.2f})하는 위치에 라벨 없음",
-            predictions[pi], conf,
+            box=predictions[pi],
+            # 누락은 확신도가 곧 원시 신호다
+            raw_signal=conf, confidence=conf,
+            # 라벨이 없으니 예측의 클래스를 쓴다 — "이 클래스 라벨이 하나
+            # 빠졌다"는 뜻이므로 피해를 보는 것도 그 클래스다.
+            class_id=_class_at(pred_classes, pi),
         ))
 
     return findings

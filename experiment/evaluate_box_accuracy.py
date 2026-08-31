@@ -30,7 +30,8 @@ from PIL import Image
 
 import config
 from diagnose_labels import IMAGE_SUFFIXES, load_yolo_labels
-from label_diagnosis import iou, present_types, rescore, severity_for, summarize
+from label_diagnosis import (CLASS_VULNERABILITY, iou, present_types, rescore,
+                             severity_for, summarize)
 
 # 누락 의심 예측 박스가 "지워진 그 박스"를 가리키는 것으로 인정할 최소 IoU.
 # 위치가 이 정도로 겹치면 같은 객체를 지목했다고 본다.
@@ -54,7 +55,7 @@ def _verdict(correct: bool, finding, predicted_dominant: str | None) -> tuple:
     """
     return (correct, finding.suspicion, finding.severity,
             finding.suspicion == predicted_dominant, finding.raw_signal,
-            finding.confidence)
+            finding.confidence, finding.class_id)
 
 
 def load_injection_record(condition_name: str) -> dict:
@@ -99,7 +100,7 @@ def score_condition(condition: config.Condition, limit: int | None) -> dict:
     # (정답여부, 의심유형, 심각도, 예측대표유형과일치, 원시신호)
     verdicts_by_rank: list[tuple] = []
 
-    findings = sorted(findings, key=lambda f: -f.severity)
+    findings = sorted(findings, key=_sort_key)
     for f in findings:
         stem = Path(f.image).stem
         entry = record.get(stem, {"errored": [], "dropped": []})
@@ -205,14 +206,52 @@ def load_cached_rows(wanted: list[str]) -> list[dict]:
         rescored = []
         for v in row["verdicts_by_rank"]:
             correct, suspicion, _old_sev, is_dominant, raw, conf = v[:6]
-            rescored.append((
-                correct, suspicion,
-                severity_for(suspicion, raw, is_present=suspicion in present, confidence=conf),
-                is_dominant, raw, conf,
-            ))
-        row["verdicts_by_rank"] = sorted(rescored, key=lambda x: -x[2])
+            cid = v[6] if len(v) > 6 else None   # 옛 캐시에는 클래스가 없다
+            sev = severity_for(suspicion, raw, is_present=suspicion in present,
+                               confidence=conf)
+            rescored.append((correct, suspicion, sev, is_dominant, raw, conf, cid))
+
+        def order(x):
+            if CLASS_WEIGHTED and CLASS_VULNERABILITY and x[6] is not None:
+                return -(x[2] * CLASS_VULNERABILITY.get(x[6], 1.0))
+            return -x[2]
+
+        row["verdicts_by_rank"] = sorted(rescored, key=order)
         rows.append(row)
     return rows
+
+
+# 클래스 가중 정렬을 켤지. main()이 인자를 보고 정한다.
+CLASS_WEIGHTED = False
+
+
+def _sort_key(f):
+    from label_diagnosis import review_value
+    return -(review_value(f) if CLASS_WEIGHTED else f.severity)
+
+
+def recovered_at_k(verdicts: list[tuple], k: int) -> float:
+    """상위 k건을 고쳤을 때 되찾는 피해의 비율.
+
+    precision@k는 "지목한 것 중 몇 개가 맞았나"만 본다. 그런데 실측상 같은
+    오류라도 클래스마다 성능 피해가 20배 가까이 다르다(Car 3.4% vs Cyclist
+    27.4%, docs/21 Q). 맞은 개수가 같아도 어느 클래스를 맞혔느냐에 따라
+    검수의 값어치가 달라진다는 뜻이다.
+
+    그래서 TP를 그 클래스의 취약도로 가중해, **전체 고칠 수 있는 피해 중
+    상위 k에서 얼마나 건지는가**를 잰다. 취약도 정보가 없으면 모든 클래스가
+    1.0이라 precision@k의 재현율 버전이 된다.
+    """
+    def weight(v: tuple) -> float:
+        cid = v[6] if len(v) > 6 else None
+        if not CLASS_VULNERABILITY or cid is None:
+            return 1.0
+        return CLASS_VULNERABILITY.get(cid, 1.0)
+
+    total = sum(weight(v) for v in verdicts if v[0])
+    if total <= 0:
+        return 0.0
+    return sum(weight(v) for v in verdicts[:k] if v[0]) / total
 
 
 def precision_at_k(verdicts: list[tuple], k: int) -> float:
@@ -266,6 +305,10 @@ def main():
     parser = argparse.ArgumentParser(description="박스 단위 진단 정확도 평가")
     parser.add_argument("--limit", type=int, default=80, help="조건당 이미지 수")
     parser.add_argument("--conditions", nargs="+", help="특정 조건만")
+    parser.add_argument("--class-weighted", action="store_true",
+                        help="심각도에 클래스 취약도를 곱해 정렬한다. 목록의 "
+                             "정밀도 대신 '되찾는 성능'을 최대화하는 정렬이라 "
+                             "지표가 서로 반대로 움직일 수 있다.")
     parser.add_argument("--reuse-cache", action="store_true",
                         help="추론을 다시 돌리지 않고 지난 채점 기록으로 순위만 "
                              "다시 계산한다 (심각도 공식·신뢰도 상수 조정용). "
@@ -274,6 +317,12 @@ def main():
                         help="실측한 유형 신뢰도를 프로파일 JSON으로 저장 "
                              "(AIDA_RELIABILITY_PROFILE로 지정해 쓰면 됨)")
     args = parser.parse_args()
+
+    global CLASS_WEIGHTED
+    CLASS_WEIGHTED = args.class_weighted
+    if CLASS_WEIGHTED and not CLASS_VULNERABILITY:
+        raise SystemExit("클래스 취약도가 없습니다 — build_class_vulnerability.py로 "
+                         "프로파일에 넣고 AIDA_RELIABILITY_PROFILE로 지정하세요")
 
     conditions = [c for c in config.conditions_in_run_order() if c.type != "none"]
     if args.conditions:
@@ -322,7 +371,13 @@ def main():
             vals.append(precision_at_k(verdicts, k))
         avg = sum(vals) / len(vals) if vals else 0.0
         pak[f"top_{int(frac * 100)}pct"] = round(avg, 4)
-        print(f"  상위 {int(frac * 100):>3}%: {avg * 100:.1f}%")
+        rec = [recovered_at_k(r["verdicts_by_rank"],
+                              max(1, int(len(r["verdicts_by_rank"]) * frac)))
+               for r in rows]
+        rec_avg = sum(rec) / len(rec) if rec else 0.0
+        pak[f"recovered_top_{int(frac * 100)}pct"] = round(rec_avg, 4)
+        print(f"  상위 {int(frac * 100):>3}%: 정밀도 {avg * 100:5.1f}%   "
+              f"피해 회수 {rec_avg * 100:5.1f}%")
 
     # 유형별 신뢰도 — 상위권 정밀도가 낮다면 "심각도 높은 유형이 실은 덜
     # 미덥다"는 뜻이므로, 유형별로 정밀도와 심각도 분포를 같이 본다.
