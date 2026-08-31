@@ -18,8 +18,12 @@ Car 단일(0.876)보다 훨씬 약한데, 같은 라벨 오류에서 저하율�
 """
 import argparse
 import csv
+import sys
 
 import config
+
+# Windows 콘솔(cp949)이 일부 문자를 못 찍어서 죽는 걸 막는다
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 OUT_CSV = config.EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / \
     f"metrics_per_class{config._csuffix}.csv"
@@ -73,6 +77,37 @@ def main() -> None:
         w.writeheader()
         w.writerows(rows)
     print(f"\n{len(rows)}개 조건 → {OUT_CSV}")
+    report(rows)
+
+
+def report(rows: list[dict]) -> None:
+    """clean 대비 클래스별 저하율 — 저하가 어느 클래스에서 오는지 바로 보이게.
+
+    오류는 클래스를 가리지 않고 주입하므로, 특정 클래스만 크게 떨어진다면
+    그건 주입량이 아니라 그 클래스가 라벨 노이즈에 약하다는 뜻이다.
+    """
+    clean = next((r for r in rows if r["condition"] == "clean"), None)
+    if clean is None:
+        print("clean 조건이 없어 저하율은 못 냅니다 (절대값은 CSV 참고)")
+        return
+
+    cols = [f"map50_{n}" for n in config.CLASS_NAMES]
+    header = f"{'조건':<16}{'전체':>8}" + "".join(f"{n:>13}" for n in config.CLASS_NAMES)
+    print("\nclean 대비 저하율 (%) — 오류는 클래스 구분 없이 주입했다")
+    print(f"{'clean 절대값':<16}{clean['map50']:>8.3f}"
+          + "".join(f"{clean.get(c, 0):>13.3f}" for c in cols))
+    print(header)
+    print("-" * len(header))
+    for r in rows:
+        if r["condition"] == "clean":
+            continue
+        cells = []
+        for c in cols:
+            base, cur = clean.get(c), r.get(c)
+            cells.append(f"{(base - cur) / base * 100:>12.1f}%"
+                         if base and cur is not None else f"{'-':>13}")
+        overall = (clean["map50"] - r["map50"]) / clean["map50"] * 100
+        print(f"{r['condition']:<16}{overall:>7.1f}%" + "".join(cells))
 
 
 if __name__ == "__main__":
