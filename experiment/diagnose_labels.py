@@ -18,7 +18,8 @@ from PIL import Image
 from ultralytics import YOLO
 
 import config
-from label_diagnosis import Box, BoxFinding, diagnose_image, rescore, summarize
+from label_diagnosis import (Box, BoxFinding, diagnose_image, rescore,
+                             review_value, summarize)
 
 UPLOADS_DIR = config.EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "uploads"
 CLEAN_WEIGHTS = config.RUNS_DIR / "clean" / "weights" / "best.pt"
@@ -138,8 +139,18 @@ def build_result(name: str, findings: list[BoxFinding], total_labels: int, top_n
     summary = summarize(findings, total_labels)
     findings = rescore(findings, summary)
 
-    # 심각도 높은 순 = 재검수 우선순위. 이게 AIDA가 원래 약속한 산출물이다.
-    ranked = sorted(findings, key=lambda f: -f.severity)
+    # 재검수 우선순위. 이게 AIDA가 원래 약속한 산출물이다.
+    #
+    # 심각도(진짜 오류일 확률)가 아니라 재검수 가치(확률 × 그 클래스가 입는
+    # 피해)로 정렬한다. 클래스 취약도를 모르면 두 값이 같으므로 단일 클래스
+    # 동작은 그대로다.
+    #
+    # 실측 트레이드오프(다중 클래스 29개 조건): 상위 10%의 정밀도는
+    # 97.2% → 89.1%로 내려가지만, 그 10%를 고쳤을 때 되찾는 피해가
+    # 17.3% → 43.1%로 2.5배가 된다. 목록에 담기는 건수와 전체 정밀도·재현율은
+    # 완전히 동일하고 순서만 바뀐다. "먼저 고칠 것을 고른다"는 게 이 목록의
+    # 목적이므로, 헛걸음 9건 중 1건을 감수하고 회수량을 택했다.
+    ranked = sorted(findings, key=lambda f: -review_value(f))
     return {
         "dataset": name,
         "generated_at": datetime.now(timezone.utc).isoformat(),

@@ -24,5 +24,11 @@
     "class_mismatch": 0.99,
     "duplicate": 0.7403,
     "missing": 0.2222
+  },
+  "class_vulnerability": {
+    "Car": 0.1066,
+    "Van": 0.6137,
+    "Pedestrian": 0.5786,
+    "Cyclist": 1.0
   }
 }
