@@ -1,2 +1,11 @@
 condition,type,magnitude,map50,map50_95,precision,recall
 clean,none,0,0.599,0.36,0.741,0.51
+width_m30,width,-30,0.541,0.308,0.622,0.478
+height_m30,height,-30,0.554,0.306,0.625,0.555
+rot_m15,rotation,-15,0.499,0.285,0.59,0.396
+trans_x_m15,translation_x,-15,0.552,0.337,0.67,0.464
+trans_y_m15,translation_y,-15,0.538,0.305,0.542,0.5
+scale_m30,scale,-30,0.496,0.282,0.589,0.454
+missing_30,missing,30,0.488,0.292,0.539,0.496
+duplicate_30,duplicate,30,0.553,0.331,0.594,0.517
+class_swap_30,class_swap,30,0.412,0.261,0.482,0.456
