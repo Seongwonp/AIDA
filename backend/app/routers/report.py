@@ -43,10 +43,6 @@ TYPE_LABELS = {
 }
 
 
-def _load_metrics() -> pd.DataFrame:
-    return pd.read_csv(DATA_PATH)
-
-
 def _load_iou_table() -> pd.DataFrame:
     if not IOU_TABLE_CSV_PATH.exists():
         return pd.DataFrame(columns=["condition", "mean_iou", "mean_iou_drop_pct"])

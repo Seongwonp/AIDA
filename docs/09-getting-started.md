@@ -66,13 +66,57 @@ uvicorn app.main:app --reload --port 8000
 # 프론트엔드 (새 터미널)
 cd frontend && npm run dev
 
-# 실험 파이프라인 (21개 조건 전부, 동일 epoch — 이미 완료됨, 재실행 시에만 사용)
+# 실험 파이프라인 (27개 조건 전부 — 이미 완료됨, 재실행 시에만 사용)
 cd experiment && source venv/bin/activate
 python run_all.py --priority all
 
 # 테스트
 cd backend && source venv/bin/activate && python -m pytest tests/ -v
 cd experiment && source venv/bin/activate && python -m pytest tests/ -v
+```
+
+### 다중 클래스 실험 (docs/21 L·Q)
+
+클래스 구성이 바뀌면 라벨·가중치·지표 경로가 전부 분리된다(`_mc` 접미사).
+Car 단일 결과를 덮어쓰지 않으므로 그냥 돌리면 된다.
+
+```bash
+cd experiment && source venv/bin/activate
+export AIDA_CLASSES="Car,Van,Pedestrian,Cyclist"
+
+python data_loader.py && python error_injector.py
+# 유형마다 하나씩 먼저 끝내고, 중간에 끊기면 같은 명령으로 이어서 돈다
+python run_all.py --skip-download --skip-preprocess --breadth-first --skip-done
+```
+
+### 진단 품질 측정
+
+```bash
+cd experiment && source venv/bin/activate
+
+# 박스 단위 정확도 (조건당 수 분)
+python evaluate_box_accuracy.py --limit 80
+# 심각도 공식만 바꿨다면 추론을 건너뛴다 (20분 → 2초)
+python evaluate_box_accuracy.py --limit 80 --reuse-cache
+
+# 유형 신뢰도를 이 도메인에서 다시 재 프로파일로 저장
+python evaluate_box_accuracy.py --limit 80 --write-profile reliability_profile_mc.json
+export AIDA_RELIABILITY_PROFILE=$PWD/reliability_profile_mc.json
+
+# 클래스별 mAP → 클래스 취약도
+python evaluate_per_class.py
+python build_class_vulnerability.py --profile reliability_profile_mc.json
+
+# 클래스 구성 간 성능 저하 비교
+python compare_class_configs.py
+```
+
+### 정리
+
+```bash
+# 안 쓰는 학습 산출물(last.pt·배치 이미지) 회수. 기본은 보고만 한다
+cd experiment && python cleanup_runs.py
+python cleanup_runs.py --delete
 ```
 
 ## 이 프로젝트를 처음 보는 AI 어시스턴트에게
