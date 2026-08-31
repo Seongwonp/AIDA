@@ -14,10 +14,19 @@
 가로/세로 크기나 회전각 오류가 섞여 있으면 모델 성능이 떨어지는데, 지금까지는
 "모델이 나쁜 건지 라벨이 나쁜 건지"를 객관적으로 구분할 방법이 없었다. AIDA는
 국방과학연구소 특허(「가상 이미지 데이터 기반의 학습 데이터 검증 장치 및 방법」,
-등록번호 10-2664201)의 방법론을 민간 데이터 품질검증에 적용해, **오류 유형별
-성능 저하 패턴을 미리 구축해두고 실제 고객 데이터의 성능을 그 패턴과 비교**함으로써
-어떤 유형의 라벨 오류가 있을 가능성이 높은지 역으로 진단한다. 자세한 원리는
-[docs/01-technology.md](docs/01-technology.md).
+등록번호 10-2664201)의 방법론을 민간 데이터 품질검증에 적용한다.
+
+산출물은 두 층이다.
+
+- **데이터셋 단위 진단** — 오류 유형별 성능 저하 패턴을 미리 구축해두고 고객
+  데이터의 성능을 그 패턴과 비교해, 어떤 유형의 라벨 오류가 있을 가능성이
+  높은지 역으로 진단한다. 27개 조건 실측 기준 유형 판별 정확도 92.6%.
+- **박스 단위 재검수 목록** — 기준 모델의 예측과 고객 라벨을 1:1로 대조해
+  "몇 번 이미지의 몇 번 박스를 왜 다시 봐야 하는지"까지 내려간다. 이쪽이
+  실제로 검수자가 쓰는 산출물이다. KITTI Car 기준 상위 10% 정밀도 99.7%.
+
+자세한 원리는 [docs/01-technology.md](docs/01-technology.md), 개선 이력과
+실측 근거는 [docs/21-next-plan.md](docs/21-next-plan.md).
 
 ## 시스템 구성
 
@@ -77,39 +86,51 @@ sequenceDiagram
     FE-->>U: 품질 점수 카드 · 성능 저하 그래프 · 재검수 우선순위 표
 ```
 
-### 오류 조건 매트릭스 (13개)
+### 오류 조건 매트릭스 (27개)
 
-`error_injector.py`가 참값(GT) 바운딩박스에 아래 13가지 조건 중 하나를 각각
-적용해 조건별 학습 데이터를 만든다. 라벨 전체 중 30%에만 오류를 주입하고 나머지는
-원본을 유지한다 (`config.ERROR_RATIO`). 자세한 배경은
+`error_injector.py`가 참값(GT) 바운딩박스에 아래 조건 중 하나를 각각 적용해
+조건별 학습 데이터를 만든다. 기하 오류는 라벨의 30%에만 주입하고 나머지는
+원본을 유지한다(`config.ERROR_RATIO`). 자세한 배경은
 [docs/03-experiment-design.md](docs/03-experiment-design.md).
 
-```mermaid
-flowchart TD
-    GT["참값 GT 바운딩박스<br/>(cx, cy, w, h)"]
-    GT --> W["가로 길이 오류<br/>w *= (1 + m)"]
-    GT --> H["세로 길이 오류<br/>h *= (1 + m)"]
-    GT --> R["회전각 오류<br/>꼭짓점 회전 → 축정렬 재계산"]
+| 유형 | 강도 | 개수 |
+|---|---|---|
+| 가로 길이 (width) | ±15%, ±30% | 4 |
+| 세로 길이 (height) | ±15%, ±30% | 4 |
+| 회전각 (rotation) | ±7.5°, ±15° | 4 |
+| 스케일 (scale) | ±15%, ±30% | 4 |
+| 중심점 이동 (translation_x/y) | ±15% | 4 |
+| 라벨 누락 (missing) | 10/20/30% | 3 |
+| 라벨 중복 (duplicate) | 10/20/30% | 3 |
+| 기준선 (clean) | — | 1 |
 
-    W --> W1["-30%"] & W2["-15%"] & W3["+15%"] & W4["+30%"]
-    H --> H1["-30%"] & H2["-15%"] & H3["+15%"] & H4["+30%"]
-    R --> R1["-15°"] & R2["-7.5°"] & R3["+7.5°"] & R4["+15°"]
+여기에 혼합 오류 7개(`MIXED_CONDITIONS`)와, 다중 클래스에서만 의미가 있는
+**클래스 오기입**(`class_swap`, 10/20/30%) 3개가 더 있다. 클래스 오기입은
+실측 저하 31.2%로 전 유형 중 가장 파괴적이다.
 
-    GT -.->|"오류 없음 (기준선)"| CLEAN["clean"]
-```
+실행 순서는 시간 리스크 관리를 위해 핵심 조건을 먼저 돌린다. 장시간 실행이
+중간에 끊겨도 쓸 수 있게 `--breadth-first`(유형마다 하나씩 먼저)와
+`--skip-done`(이어서 돌리기)을 제공한다.
 
-실행 순서는 시간 리스크 관리를 위해 **핵심 7개(clean, width±30, height±30,
-rot±15) 우선 → 세분화 6개(width±15, height±15, rot±7.5) 이어서**로 고정되어 있다
-(`config.PRIORITY_1_NAMES` / `PRIORITY_2_NAMES`).
+### 클래스 구성
+
+기본은 KITTI **Car 단일 클래스**다. `AIDA_CLASSES`로 다중 클래스
+(예: `Car,Van,Pedestrian,Cyclist`)를 지정하면 라벨·가중치·지표 경로가 전부
+분리되어 기존 결과를 덮지 않는다.
+
+**유형 신뢰도 상수는 도메인을 탄다.** 다중 클래스로 검증해보니 "그 유형이
+없을 때"의 신뢰도가 크게 흔들렸다(누락 88% → 22%). 그래서 도메인별로 다시 재서
+프로파일로 갈아끼울 수 있게 해뒀다(`--write-profile` /
+`AIDA_RELIABILITY_PROFILE`). 근거는 docs/21의 L·S 절.
 
 ## 기술 스택
 
 | 계층 | 기술 |
 |---|---|
-| 실험 파이프라인 | Python 3.14, Ultralytics YOLOv8n, PyTorch(MPS), OpenCV, NumPy, Pandas |
+| 실험 파이프라인 | Python 3.14, Ultralytics YOLOv8n, PyTorch(CUDA/MPS/CPU 자동 감지), OpenCV, NumPy, Pandas |
 | 백엔드 | FastAPI, Pandas, python-dotenv |
 | 프론트엔드 | React + TypeScript (Vite), recharts, axios |
-| 데이터 | KITTI Object Detection 2D (Car 클래스) |
+| 데이터 | KITTI Object Detection 2D (기본 Car 단일, `AIDA_CLASSES`로 다중 클래스) |
 | 환경 관리 | venv + requirements.txt, `.env`/`.env.example` (서브프로젝트별) |
 
 ## 실행 방법
@@ -141,13 +162,28 @@ http://localhost:5173 에서 대시보드 확인.
 cd experiment
 cp .env.example .env         # 최초 1회만
 source venv/bin/activate     # 이미 venv 생성·설치되어 있음
-python run_all.py --priority 1     # 핵심 7개 조건 (clean, width±30, height±30, rot±15)
-python run_all.py --priority 2     # 시간 남으면 세분화 6개 이어서
+python run_all.py --priority all   # 27개 조건 전부 (조건당 약 7분)
 ```
 
 완료되면 `backend/app/data/metrics.csv`가 실제 결과로 자동 갱신된다(수동 교체 불필요).
 개별 단계만 실행하려면 `download_kitti.py` → `data_loader.py` → `error_injector.py` →
 `train.py` → `evaluate.py` 순서로 각각 실행하면 된다.
+
+장시간 실행이 끊겼다면 같은 명령에 `--skip-done`을 붙여 이어서 돌린다. 유형별
+비교가 목적이면 `--breadth-first`로 유형마다 하나씩 먼저 끝낼 수 있다.
+
+### 4. 진단 품질 측정 (선택)
+
+```bash
+cd experiment && source venv/bin/activate
+
+python evaluate_box_accuracy.py --limit 80                # 박스 단위 정밀도·재현율
+python evaluate_box_accuracy.py --limit 80 --reuse-cache  # 심각도 공식만 바꿨을 때 (20분 → 2초)
+python evaluate_label_diagnosis.py --limit 80             # 데이터셋 단위 유형 판별 정확도
+python cleanup_runs.py                                    # 안 쓰는 학습 산출물 확인 (--delete로 삭제)
+```
+
+명령어 전체 목록은 [docs/09-getting-started.md](docs/09-getting-started.md).
 
 ## 테스트
 
