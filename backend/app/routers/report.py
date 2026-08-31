@@ -8,7 +8,7 @@ backend/app/data/metrics.csv에 쓰고, 이 파일이 그 CSV를 그대로 읽�
 from datetime import datetime, timezone
 
 import pandas as pd
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from app.config import (
     AGG_METRICS_CSV_PATH,
@@ -38,6 +38,8 @@ TYPE_LABELS = {
     "scale": "스케일 오류",
     "missing": "라벨 누락",
     "duplicate": "라벨 중복",
+    # 다중 클래스에서만 나온다 (experiment/config.py CLASS_SWAP_CONDITIONS)
+    "class_swap": "클래스 오기입",
 }
 
 
@@ -273,8 +275,19 @@ def _review_priority(drop_pct: float, worst_overall: float,
     )
 
 
+# 클래스 구성별 성능 패턴 DB. 신뢰도 프로파일과 같은 규칙으로 경로를 나눈다
+# (experiment/config.py의 _csuffix).
+def _metrics_path_for(profile_classes: list[str]):
+    suffix = "" if profile_classes in ([], ["Car"]) else "_mc"
+    return DATA_PATH.with_name(f"metrics{suffix}.csv")
+
+
+def _required_types(df) -> set[str]:
+    return set(df.loc[df["condition"] != "clean", "type"])
+
+
 @router.get("/diagnose", response_model=DiagnosisResult)
-def get_diagnosis() -> DiagnosisResult:
+def get_diagnosis(profile_classes: str = "") -> DiagnosisResult:
     """오류 유형별 재검수 우선순위 리포트.
 
     지금은 "성능 패턴 DB(metrics.csv) 자체"를 진단 예시로 그대로 보여주는
@@ -284,13 +297,24 @@ def get_diagnosis() -> DiagnosisResult:
     패턴과 비교해야 하는데, 그 업로드→비교 로직은 아직 구현 전이다
     (docs/09-getting-started.md "아직 안 된 것" 참고).
     """
-    df = _load_metrics()
-    baseline = df.loc[df["condition"] == "clean", "map50"].iloc[0]
+    classes = [c for c in profile_classes.split(",") if c.strip()]
+    metrics_path = _metrics_path_for(classes)
+    if not metrics_path.exists():
+        raise HTTPException(
+            404, f"{metrics_path.name} 없음 — 이 클래스 구성의 성능 패턴 DB가 아직 없습니다."
+        )
+    df = pd.read_csv(metrics_path)
+    baseline_rows = df.loc[df["condition"] == "clean", "map50"]
+    if baseline_rows.empty:
+        raise HTTPException(500, f"{metrics_path.name}에 clean 기준 행이 없습니다.")
+    baseline = baseline_rows.iloc[0]
     non_baseline = df[df["condition"] != "clean"].copy()
     non_baseline["drop_pct"] = (baseline - non_baseline["map50"]) / baseline * 100
 
-    # 3-seed 집계가 있으면 그 평균 저하율을 쓴다 (단일 시드 관측보다 미더움)
-    agg = _load_aggregated_drops()
+    # 3-seed 집계가 있으면 그 평균 저하율을 쓴다 (단일 시드 관측보다 미더움).
+    # 집계는 Car 단일 구성에서만 돌렸으므로 다른 구성에서는 비어 있고, 그러면
+    # 유의성 검사 없이 크기만으로 판정하게 된다 — rationale에 그렇게 적힌다.
+    agg = _load_aggregated_drops() if not classes or classes == ["Car"] else {}
     non_baseline["drop_for_ranking"] = [
         agg[c][0] if c in agg else d
         for c, d in zip(non_baseline["condition"], non_baseline["drop_pct"])
