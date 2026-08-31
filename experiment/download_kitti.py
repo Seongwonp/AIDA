@@ -118,12 +118,44 @@ def download_images(frame_ids: list[str], dest_dir: Path) -> None:
     print(f"이미지 {len(missing)}장 다운로드 완료 → {dest_dir}")
 
 
+def select_cyclist_rich(label_dir, car_frames: list[str], n_total: int) -> list[str]:
+    """Cyclist 인스턴스가 많은 프레임부터 고른다.
+
+    클래스 취약도가 **희소성 때문인지 클래스 자체의 난이도 때문인지** 가르는
+    실험용이다. 기존 400장에서 Cyclist는 72개뿐인데 Car는 1851개라, 이 상태로는
+    "Cyclist가 취약한 건 드물어서"와 "원래 어려워서"를 구분할 수 없다.
+
+    이미지 장수는 그대로 두고 Cyclist 인스턴스만 늘리므로, 클래스 정체성과
+    데이터셋 크기를 고정한 채 개수만 바뀐다. Car 프레임으로 한정하는 건 기존
+    선택과 조건을 맞추기 위해서다 — 모든 프레임에 Car가 있어야 Car를 변하지
+    않는 기준선으로 쓸 수 있다.
+    """
+    counted = []
+    for stem in car_frames:
+        n = sum(1 for line in (label_dir / f"{stem}.txt").read_text().splitlines()
+                if line.startswith("Cyclist "))
+        counted.append((n, stem))
+    # Cyclist 많은 순, 같으면 이름 순 — 시드 없이도 재현되게
+    counted.sort(key=lambda x: (-x[0], x[1]))
+    chosen = counted[:n_total]
+    picked = sum(n for n, _ in chosen)
+    expected = sum(n for n, _ in counted) * n_total // len(counted)
+    print(f"Cyclist 우선 선택: {n_total}장에 Cyclist {picked}개 "
+          f"(무작위였다면 약 {expected}개)")
+    return sorted(stem for _n, stem in chosen)
+
+
 def main(argv: list[str] | None = None):
     parser = argparse.ArgumentParser(description="KITTI 데이터 다운로드 (라벨 전체 + 이미지 부분)")
     parser.add_argument("--n-total", type=int, default=config.N_TRAIN + config.N_VAL,
                          help="다운로드할 총 이미지 수 (기본: config.N_TRAIN + config.N_VAL)")
     parser.add_argument("--seed", type=int, default=config.SEED)
+    parser.add_argument("--select", choices=["random", "cyclist_rich"], default=None,
+                        help="프레임 선택 전략 (기본: AIDA_FRAME_SELECT, 없으면 random). "
+                             "cyclist_rich는 Cyclist가 많은 프레임을 골라 그 클래스의 "
+                             "인스턴스 수만 늘린다 — 취약도가 희소성 때문인지 보는 실험용")
     args = parser.parse_args(argv)
+    strategy = args.select or config.FRAME_SELECT
 
     config.RAW_DIR.mkdir(parents=True, exist_ok=True)
     label_dir = download_labels(config.RAW_DIR)
@@ -133,12 +165,16 @@ def main(argv: list[str] | None = None):
     if len(car_frames) < args.n_total:
         raise RuntimeError(f"Car 프레임이 {len(car_frames)}개뿐, 요청한 {args.n_total}개보다 적습니다")
 
-    rng = random.Random(args.seed)
-    selected = sorted(rng.sample(car_frames, args.n_total))
+    if strategy == "cyclist_rich":
+        selected = select_cyclist_rich(label_dir, car_frames, args.n_total)
+    else:
+        rng = random.Random(args.seed)
+        selected = sorted(rng.sample(car_frames, args.n_total))
 
-    selection_file = config.RAW_DIR / "selected_frames.txt"
+    selection_file = (config.RAW_DIR / ("selected_frames.txt" if strategy == "random"
+                                        else f"selected_frames_{strategy}.txt"))
     selection_file.write_text("\n".join(selected) + "\n")
-    print(f"{len(selected)}개 프레임 선택 (시드={args.seed}) → {selection_file}")
+    print(f"{len(selected)}개 프레임 선택 (전략={strategy}) → {selection_file}")
 
     image_dir = config.RAW_DIR / "training" / "image_2"
     download_images(selected, image_dir)

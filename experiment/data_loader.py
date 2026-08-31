@@ -114,9 +114,9 @@ def build_obb_split(frame_ids: list[str], image_src_dir: Path, label_src_dir: Pa
 
 
 def main():
-    selection_file = config.RAW_DIR / "selected_frames.txt"
+    selection_file = config.SELECTED_FRAMES_FILE
     if not selection_file.exists():
-        raise RuntimeError("download_kitti.py를 먼저 실행하세요 (selected_frames.txt 없음)")
+        raise RuntimeError(f"download_kitti.py를 먼저 실행하세요 ({selection_file.name} 없음)")
     frame_ids = selection_file.read_text().split()
 
     train_ids, val_ids = split_frames(frame_ids)

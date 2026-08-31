@@ -36,7 +36,19 @@ ERROR_SEED = int(os.environ.get("AIDA_ERROR_SEED", SEED))
 _esuffix = f"_e{ERROR_SEED}" if ERROR_SEED != 42 else ""
 # 클래스 구성이 바뀌면 라벨·가중치·지표가 전부 달라진다. Car 단일 클래스로
 # 쌓아온 결과(docs/21 A~K)를 덮어쓰지 않도록 경로를 통째로 분리한다.
+# 프레임 선택 전략. 기본은 무작위 표집이고, cyclist_rich는 Cyclist가 많은
+# 프레임을 골라 그 클래스의 인스턴스 수만 크게 늘린다 — 클래스 취약도가
+# 희소성 때문인지 클래스 자체의 난이도 때문인지 가르는 실험용(docs/21 S).
+FRAME_SELECT = os.environ.get("AIDA_FRAME_SELECT", "random")
+SELECTED_FRAMES_FILE = (
+    RAW_DIR / ("selected_frames.txt" if FRAME_SELECT == "random"
+               else f"selected_frames_{FRAME_SELECT}.txt")
+)
+
 _csuffix = "" if CLASS_NAMES == ["Car"] else "_mc"
+if FRAME_SELECT != "random":
+    # 프레임 구성이 다르면 라벨도 가중치도 지표도 다른 실험이다
+    _csuffix += f"_{FRAME_SELECT}"
 _esuffix = _csuffix + _esuffix
 
 LABELS_GT_TRAIN_DIR = PROCESSED_DIR / f"labels_gt{_csuffix}" / "train"
