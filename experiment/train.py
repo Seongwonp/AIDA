@@ -27,14 +27,15 @@ def train_condition(condition: config.Condition, epochs: int | None = None) -> N
         workers=config.WORKERS,
         imgsz=config.IMG_SIZE,
         device=config.resolve_device(),
-        seed=config.SEED,
+        seed=config.TRAIN_SEED,
         project=str(config.RUNS_DIR),
-        name=condition.name,
+        name=condition.name + config.RUN_SUFFIX,
         exist_ok=True,
         verbose=False,
     )
-    weights = config.RUNS_DIR / condition.name / "weights" / "best.pt"
-    print(f"[{condition.name}] 학습 완료 → {weights}")
+    weights = (config.RUNS_DIR / (condition.name + config.RUN_SUFFIX)
+               / "weights" / "best.pt")
+    print(f"[{condition.name}{config.RUN_SUFFIX}] 학습 완료 → {weights}")
 
 
 def main():

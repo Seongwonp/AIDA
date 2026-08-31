@@ -88,6 +88,12 @@ BATCH_SIZE = int(os.environ.get("AIDA_BATCH_SIZE", 16))
 # 약 840MB씩 잡아, 커밋 여유가 없는 상태에서 WinError 1455(페이징 부족)로
 # 학습이 죽는다. 결과에는 영향이 없음을 실측으로 확인했다(docs/21 S).
 WORKERS = int(os.environ.get("AIDA_WORKERS", 8))
+# 학습 시드. SEED와 분리해 둔 이유는, SEED를 바꾸면 train/val 분할까지 바뀌어
+# 아예 다른 데이터셋이 되기 때문이다. 같은 데이터셋을 여러 번 학습해 실행 간
+# 산포를 재려면 분할은 고정하고 학습 시드만 움직여야 한다(docs/21 T).
+TRAIN_SEED = int(os.environ.get("AIDA_TRAIN_SEED", SEED))
+# 반복 학습이 서로를 덮어쓰지 않게 실행 폴더·지표 행 이름에 붙이는 꼬리표.
+RUN_SUFFIX = os.environ.get("AIDA_RUN_SUFFIX", "")
 IMG_SIZE = int(os.environ.get("AIDA_IMG_SIZE", 640))
 DEVICE = os.environ.get("AIDA_DEVICE", "auto")  # auto: resolve_device()가 cuda>mps>cpu 순 자동 감지
 

@@ -15,9 +15,10 @@ METRICS_COLUMNS = ["condition", "type", "magnitude", "map50", "map50_95", "preci
 
 def evaluate_condition(condition: config.Condition) -> dict:
     yaml_path = config.DATA_YAML_DIR / f"{condition.name}.yaml"
-    weights = config.RUNS_DIR / condition.name / "weights" / "best.pt"
+    run_name = condition.name + config.RUN_SUFFIX
+    weights = config.RUNS_DIR / run_name / "weights" / "best.pt"
     if not weights.exists():
-        raise RuntimeError(f"{weights} 없음 — 먼저 train.py로 '{condition.name}' 조건을 학습하세요")
+        raise RuntimeError(f"{weights} 없음 — 먼저 train.py로 '{run_name}' 조건을 학습하세요")
 
     model = YOLO(str(weights))
     metrics = model.val(
@@ -27,11 +28,12 @@ def evaluate_condition(condition: config.Condition) -> dict:
         split="val",
         verbose=False,
         project=str(config.RUNS_DIR),
-        name=f"{condition.name}_val",
+        name=f"{run_name}_val",
         exist_ok=True,
     )
     return {
-        "condition": condition.name,
+        # 반복 학습이 서로의 행을 덮지 않게 꼬리표를 붙인다
+        "condition": run_name,
         "type": condition.type,
         "magnitude": condition.magnitude,
         "map50": round(float(metrics.box.map50), 3),
@@ -54,7 +56,9 @@ def append_metrics(row: dict, csv_path=config.METRICS_CSV) -> None:
     # NaN이 되어 순서가 무너진다.
     order = {c.name: i for i, c in
              enumerate(config.CONDITIONS + config.CLASS_SWAP_CONDITIONS)}
-    df["_order"] = df["condition"].map(order)
+    # 꼬리표(_s43 등)가 붙은 반복 행은 원본 조건 옆에 오게 한다
+    df["_order"] = df["condition"].map(
+        lambda c: next((i for n, i in order.items() if c.startswith(n)), len(order)))
     df = df.sort_values("_order").drop(columns="_order")
 
     csv_path.parent.mkdir(parents=True, exist_ok=True)
