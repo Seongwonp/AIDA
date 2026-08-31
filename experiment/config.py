@@ -48,10 +48,15 @@ RUNS_DIR = EXPERIMENT_ROOT / f"runs{_esuffix}"
 METRICS_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / f"metrics{_csuffix}.csv"
 
 # 다중 seed 실험용 누적 CSV (모든 seed 결과 포함, error_seed 컬럼 추가)
-MULTI_SEED_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metrics_multi_seed.csv"
+# 클래스 구성이 다르면 다른 실험이다. 접미사가 없으면 다중 클래스로 3-seed를
+# 돌렸을 때 조건 이름이 같아서(width_m30 등) Car의 3-seed 결과를 덮어쓴다 —
+# (error_seed, condition)으로 병합하기 때문에 조용히 사라진다.
+MULTI_SEED_CSV = (EXPERIMENT_ROOT.parent / "backend" / "app" / "data"
+                  / f"metrics{_csuffix}_multi_seed.csv")
 OBB_MULTI_SEED_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metrics_obb_multi_seed.csv"
 # 집계 CSV: aggregate_seeds.py가 mean/std를 계산해 여기 저장
-AGG_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metrics_agg.csv"
+AGG_CSV = (EXPERIMENT_ROOT.parent / "backend" / "app" / "data"
+           / f"metrics{_csuffix}_agg.csv")
 OBB_AGG_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metrics_obb_agg.csv"
 
 # 스모크 테스트 시 AIDA_N_TRAIN=20 AIDA_N_VAL=10 AIDA_EPOCHS=1 처럼 .env나 환경변수로 오버라이드
