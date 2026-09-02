@@ -230,6 +230,7 @@ REFINED_CONDITIONS: list[Condition] = [
     # 데이터 크기와 라벨 품질을 분리하는 대조군: refined50과 같은 200장에
     # 깨끗한 라벨을 붙인 것. 손해가 크기 탓인지 오류 탓인지 가른다.
     Condition("clean_sub200", "refined", 0),
+    Condition("clean_sub400", "refined", 0),
 ]
 
 # 재검수 시뮬레이션이 만든 조건들(docs/21 T). simulate_review.py가 폴더를
