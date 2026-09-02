@@ -22,6 +22,11 @@ from label_diagnosis import (Box, BoxFinding, diagnose_image, rescore,
                              review_value, summarize)
 
 UPLOADS_DIR = config.EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "uploads"
+# 진단이 "자"로 쓰는 모델. 기본은 오류 없는 라벨로 학습한 clean 모델이다.
+#
+# **이게 제품의 가장 큰 구조적 전제다.** 고객에게는 clean 모델이 없다 — 라벨에
+# 오류가 있으니까 우리를 부르는 것이고, 오류 없는 라벨이 있었다면 진단이
+# 필요 없다. 그래서 자를 갈아끼울 수 있어야 한다(docs/21 V).
 CLEAN_WEIGHTS = config.RUNS_DIR / "clean" / "weights" / "best.pt"
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg"}
 # 이 아래 확신도의 예측은 아예 무시한다 — 모델 오탐이 진단 노이즈로 들어오는 걸
@@ -79,9 +84,12 @@ def resolve_dataset(args) -> tuple[Path, Path, str]:
     return images, root / "labels", root.name
 
 
-def run(images_dir: Path, labels_dir: Path, limit: int | None = None) -> tuple[list[BoxFinding], int]:
-    if not CLEAN_WEIGHTS.exists():
-        raise RuntimeError(f"{CLEAN_WEIGHTS} 없음 — clean 조건을 먼저 학습하세요")
+def run(images_dir: Path, labels_dir: Path, limit: int | None = None,
+        weights: Path | None = None) -> tuple[list[BoxFinding], int]:
+    """weights를 주면 그 모델을 자로 쓴다. 안 주면 clean 모델."""
+    weights = weights or CLEAN_WEIGHTS
+    if not weights.exists():
+        raise RuntimeError(f"{weights} 없음 — 해당 조건을 먼저 학습하세요")
     if not images_dir.is_dir():
         raise RuntimeError(f"{images_dir} 없음")
 
@@ -91,7 +99,7 @@ def run(images_dir: Path, labels_dir: Path, limit: int | None = None) -> tuple[l
     if not image_paths:
         raise RuntimeError(f"{images_dir}에 이미지가 없습니다")
 
-    model = YOLO(str(CLEAN_WEIGHTS))
+    model = YOLO(str(weights))
     findings: list[BoxFinding] = []
     total_labels = 0
 

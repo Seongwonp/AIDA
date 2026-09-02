@@ -45,7 +45,17 @@ MIN_PROFILE_SAMPLES = 30
 MAX_PROFILE_RELIABILITY = 0.99
 
 
-VERDICT_CACHE = config.EXPERIMENT_ROOT / f"box_accuracy_verdicts{config._csuffix}.json"
+def _tag() -> str:
+    """결과 파일 이름에 붙일 꼬리표. 클래스 구성 + 자로 쓴 모델.
+
+    자를 바꾸면 완전히 다른 측정이다. 꼬리표를 안 붙이면 self 실행이
+    clean 결과를 덮어쓴다 — 오늘만 세 번 겪은 종류의 사고다.
+    """
+    return config._csuffix + ("" if RULER == "clean" else f"_ruler_{RULER}")
+
+
+def verdict_cache() -> Path:
+    return config.EXPERIMENT_ROOT / f"box_accuracy_verdicts{_tag()}.json"
 
 
 def _verdict(correct: bool, finding, predicted_dominant: str | None) -> tuple:
@@ -67,13 +77,27 @@ def load_injection_record(condition_name: str) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+# 진단이 자로 쓸 모델을 무엇으로 할지. main()이 인자를 보고 정한다.
+#   clean  오류 없는 라벨로 학습한 모델 (지금까지의 모든 측정이 이 전제)
+#   self   그 조건 자신의 라벨로 학습한 모델 = 고객이 자기 오류 데이터로
+#          학습한 모델. 깨끗한 기준이 없는 현실을 흉내 낸다.
+RULER = "clean"
+
+
+def ruler_for(condition: config.Condition):
+    """이 조건을 진단할 때 자로 쓸 가중치 경로."""
+    if RULER == "self":
+        return config.RUNS_DIR / condition.name / "weights" / "best.pt"
+    return None  # diagnose_labels가 CLEAN_WEIGHTS로 넘어간다
+
+
 def score_condition(condition: config.Condition, limit: int | None) -> dict:
     """조건 하나에 대해 박스 단위 TP/FP/FN을 센다."""
     from diagnose_labels import run  # 지연 import — GPU 없는 환경에서도 모듈 로드는 되게
 
     root = config.CONDITIONS_DIR / condition.name
     images_dir, labels_dir = root / "images" / "train", root / "labels" / "train"
-    findings, total_labels = run(images_dir, labels_dir, limit)
+    findings, total_labels = run(images_dir, labels_dir, limit, weights=ruler_for(condition))
     record = load_injection_record(condition.name)
 
     # 진단이 스스로 예측한 대표 유형 — 신뢰도 보정 기준은 정답(주입 유형)이
@@ -190,9 +214,10 @@ def load_cached_rows(wanted: list[str]) -> list[dict]:
     이미 정해져 있고, 심각도는 그걸 어떤 순서로 보여줄지만 정한다. 그래서
     원시 신호와 확신도만 남아 있으면 추론(조건당 수 분)을 건너뛸 수 있다.
     """
-    if not VERDICT_CACHE.exists():
-        raise SystemExit(f"{VERDICT_CACHE} 없음 — --reuse-cache 전에 한 번은 돌려야 합니다")
-    cached = json.loads(VERDICT_CACHE.read_text(encoding="utf-8"))
+    cache = verdict_cache()
+    if not cache.exists():
+        raise SystemExit(f"{cache} 없음 — --reuse-cache 전에 한 번은 돌려야 합니다")
+    cached = json.loads(cache.read_text(encoding="utf-8"))
     missing = set(wanted) - set(cached)
     if missing:
         raise SystemExit(f"캐시에 없는 조건: {sorted(missing)} — 이 조건들을 먼저 돌리세요")
@@ -305,6 +330,10 @@ def main():
     parser = argparse.ArgumentParser(description="박스 단위 진단 정확도 평가")
     parser.add_argument("--limit", type=int, default=80, help="조건당 이미지 수")
     parser.add_argument("--conditions", nargs="+", help="특정 조건만")
+    parser.add_argument("--ruler", choices=["clean", "self"], default="clean",
+                        help="진단이 자로 쓸 모델. self는 그 조건 자신의 라벨로 "
+                             "학습한 모델을 쓴다 — 깨끗한 기준 모델이 없는 "
+                             "고객 상황을 흉내 낸다")
     parser.add_argument("--class-weighted", action="store_true",
                         help="심각도에 클래스 취약도를 곱해 정렬한다. 목록의 "
                              "정밀도 대신 '되찾는 성능'을 최대화하는 정렬이라 "
@@ -318,8 +347,9 @@ def main():
                              "(AIDA_RELIABILITY_PROFILE로 지정해 쓰면 됨)")
     args = parser.parse_args()
 
-    global CLASS_WEIGHTED
+    global CLASS_WEIGHTED, RULER
     CLASS_WEIGHTED = args.class_weighted
+    RULER = args.ruler
     if CLASS_WEIGHTED and not CLASS_VULNERABILITY:
         raise SystemExit("클래스 취약도가 없습니다 — build_class_vulnerability.py로 "
                          "프로파일에 넣고 AIDA_RELIABILITY_PROFILE로 지정하세요")
@@ -333,7 +363,7 @@ def main():
     if args.reuse_cache:
         rows = load_cached_rows([c.name for c in conditions])
         print(f"캐시에서 {len(rows)}개 조건을 읽어 심각도만 다시 계산합니다 "
-              f"({VERDICT_CACHE.name})")
+              f"({verdict_cache().name})")
     else:
         rows = []
         for i, condition in enumerate(conditions, 1):
@@ -448,7 +478,7 @@ def main():
     # 캐시에는 순위를 다시 매기는 데 필요한 것을 전부 담는다. verdicts만
     # 담으면 severity 공식을 바꿔도 is_present를 복원할 수 없어서 재계산이
     # 불가능하다 — 실제로 그래서 --reuse-cache가 문서에만 있고 없었다.
-    VERDICT_CACHE.write_text(json.dumps(
+    verdict_cache().write_text(json.dumps(
         {r["condition"]: {k: v for k, v in r.items()} for r in rows},
         ensure_ascii=False,
     ), encoding="utf-8")
@@ -480,11 +510,11 @@ def main():
             print(f"  표본 {MIN_PROFILE_SAMPLES}건 미만이라 기본값을 유지한 유형: {', '.join(skipped)}")
 
     # 클래스 구성이 다르면 결과도 다른 실험이다 — Car 단일 결과를 덮지 않게 분리
-    json_path = config.EXPERIMENT_ROOT / f"box_accuracy_eval{config._csuffix}.json"
+    json_path = config.EXPERIMENT_ROOT / f"box_accuracy_eval{_tag()}.json"
     json_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
 
     csv_path = (config.EXPERIMENT_ROOT.parent / "backend" / "app" / "data"
-                / f"box_accuracy_eval{config._csuffix}.csv")
+                / f"box_accuracy_eval{_tag()}.csv")
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     fields = ["condition", "type", "magnitude", "injected", "flagged", "tp", "fp",
               "caught", "fn", "precision", "recall", "f1", "type_accuracy"]
