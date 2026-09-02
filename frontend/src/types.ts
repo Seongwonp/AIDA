@@ -112,7 +112,21 @@ export interface LabelDiagnosisResult {
   systematic: boolean;
   by_type: SuspicionTypeCount[];
   review_queue: ReviewQueueItem[];
+  robustness: TypeRobustness[];
   caveat: string;
+}
+
+/**
+ * 이 오류 유형이 기준 모델의 상태에 얼마나 좌우되는가 (docs/21 V·Y 실측).
+ * 진단은 기준 모델의 예측을 자로 삼는데, 판정에 따라 그 자를 쓰는 방식이
+ * 달라서 도메인이 어긋났을 때 유형마다 다르게 무너진다.
+ */
+export interface TypeRobustness {
+  suspicion: string;
+  label: string;
+  matched_domain: number;
+  shifted_domain: number;
+  robust: boolean;
 }
 
 export interface RoiAssumptions {

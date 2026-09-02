@@ -120,6 +120,23 @@ class ReviewQueueItem(BaseModel):
     detail: str
 
 
+class TypeRobustness(BaseModel):
+    """이 오류 유형이 기준 모델의 상태에 얼마나 좌우되는가 (docs/21 V·Y 실측).
+
+    진단은 기준 모델의 예측을 자로 삼아 라벨을 잰다. 그 자가 고객 데이터와
+    안 맞으면 유형마다 다르게 무너진다 — 어떤 판정은 예측을 정밀한 자로
+    쓰고, 어떤 판정은 위치만 아는 닻으로 쓰기 때문이다.
+    """
+    suspicion: str
+    label: str
+    # 도메인이 맞는 깨끗한 기준 모델이 있을 때의 실측 정밀도
+    matched_domain: float
+    # 다른 도메인의 기준 모델을 댔을 때 (지금 업로드 경로가 하는 일)
+    shifted_domain: float
+    # 도메인이 어긋나도 쓸 만한가
+    robust: bool
+
+
 class LabelDiagnosisResult(BaseModel):
     dataset_id: str
     generated_at: str
@@ -132,6 +149,8 @@ class LabelDiagnosisResult(BaseModel):
     systematic: bool
     by_type: list[SuspicionTypeCount]
     review_queue: list[ReviewQueueItem]
+    # 이 데이터셋에서 실제로 나온 유형들에 대해서만 채운다
+    robustness: list[TypeRobustness] = []
     caveat: str
 
 

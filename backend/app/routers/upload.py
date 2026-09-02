@@ -24,6 +24,7 @@ from app.models import (
     LabelDiagnosisResult,
     PerformanceVector,
     ReliabilityProfileInfo,
+    TypeRobustness as ReliabilityRow,
     ReviewQueueItem,
     SuspicionTypeCount,
     UploadDiagnosisResult,
@@ -54,6 +55,48 @@ SUSPICION_LABELS = {
     # — report.py의 TYPE_LABELS, 프론트의 사본 두 개와 같이 맞춰야 한다.
     "class_mismatch": "클래스 오기입 의심",
 }
+
+
+# 유형별 도메인 강건성 — docs/21 Y의 실측치.
+# 같은 데이터를 자기 도메인 자와 다른 도메인 자로 각각 진단해 얻었다.
+#
+# 왜 유형마다 다른가: 진단은 기준 모델의 예측을 자로 삼는데, 판정에 따라
+# 그 자를 쓰는 방식이 다르다. 기하 오류는 예측 박스를 정밀한 자로 쓰므로
+# 자가 흔들리면 잰 값이 무의미해진다. 중복은 "이 두 라벨이 같은 것을
+# 가리킨다"는 판정이라 예측을 위치만 아는 닻으로 쓴다 — 박스가 정확할
+# 필요도, 클래스가 맞을 필요도 없어서 도메인이 어긋나도 버틴다.
+DOMAIN_ROBUSTNESS = {
+    # suspicion: (도메인 맞을 때, 어긋났을 때)
+    "duplicate": (0.631, 0.665),
+    "class_mismatch": (0.991, 0.620),
+    "missing": (0.839, 0.439),
+    "scale": (0.777, 0.624),
+    "translation_y": (0.798, 0.647),
+    "height": (0.658, 0.504),
+    "width": (0.422, 0.291),
+    "translation_x": (0.404, 0.402),
+}
+# 어긋난 도메인에서 이 정밀도를 넘으면 "그래도 볼 만하다"로 본다. 중복(66.5%)은
+# 넘고 나머지는 못 넘는다 — 경계가 아니라 실제로 갈리는 지점이다.
+ROBUST_THRESHOLD = 0.65
+
+
+def _robustness(by_type: list) -> list[ReliabilityRow]:
+    """이 데이터셋에서 실제로 나온 유형에 대해서만 강건성을 붙인다."""
+    rows = []
+    for entry in by_type:
+        t = entry["suspicion"]
+        if t not in DOMAIN_ROBUSTNESS:
+            continue
+        matched, shifted = DOMAIN_ROBUSTNESS[t]
+        rows.append(ReliabilityRow(
+            suspicion=t,
+            label=SUSPICION_LABELS.get(t, t),
+            matched_domain=matched,
+            shifted_domain=shifted,
+            robust=shifted >= ROBUST_THRESHOLD,
+        ))
+    return rows
 
 
 def _validate_dataset_dir(dataset_dir: Path) -> tuple[int, int]:
@@ -405,7 +448,12 @@ def _load_label_diagnosis_json(dataset_id: str) -> LabelDiagnosisResult:
             )
             for item in data["review_queue"]
         ],
-        caveat=data["caveat"],
+        robustness=_robustness(summary["by_type"]),
+        caveat=data["caveat"] + (
+            " 이 수치는 기준 모델이 이 데이터와 같은 도메인일 때의 것입니다. "
+            "도메인이 어긋나면 유형마다 다르게 무너지며, 아래 유형별 신뢰도를 "
+            "참고하세요 (docs/21 Y 실측)."
+        ),
     )
 
 

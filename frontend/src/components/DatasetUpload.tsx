@@ -260,6 +260,43 @@ export function DatasetUpload() {
             </table>
           </div>
 
+          {labelResult.robustness.length > 0 && (
+            <>
+              <h3 className="subsection-heading">유형별 신뢰도 — 기준 모델이 맞지 않으면</h3>
+              <p className="report-caveat">
+                진단은 기준 모델의 예측을 자로 삼아 라벨을 잽니다. 그 모델이 이
+                데이터와 다른 도메인에서 학습됐다면 유형마다 다르게 무너집니다.
+                아래는 같은 데이터를 두 모델로 진단해 실측한 값입니다.
+              </p>
+              <div className="table-scroll">
+                <table className="report-table">
+                  <thead>
+                    <tr>
+                      <th>오류 유형</th>
+                      <th>도메인 맞을 때</th>
+                      <th>도메인 어긋날 때</th>
+                      <th>판단</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...labelResult.robustness]
+                      .sort((a, b) => b.shifted_domain - a.shifted_domain)
+                      .map((r) => (
+                        <tr key={r.suspicion}>
+                          <td>{r.label}</td>
+                          <td>{(r.matched_domain * 100).toFixed(1)}%</td>
+                          <td>{(r.shifted_domain * 100).toFixed(1)}%</td>
+                          <td className={r.robust ? "priority priority-높음" : "priority-rationale"}>
+                            {r.robust ? "도메인 무관하게 신뢰" : "기준 모델에 의존"}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
           <p className="report-caveat">{labelResult.caveat}</p>
         </div>
       )}
