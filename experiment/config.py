@@ -45,10 +45,18 @@ SELECTED_FRAMES_FILE = (
                else f"selected_frames_{FRAME_SELECT}.txt")
 )
 
+_DEFAULT_N_TRAIN = 400
+N_TRAIN = int(os.environ.get("AIDA_N_TRAIN", _DEFAULT_N_TRAIN))  # 300~500장 범위 중간값
+N_VAL = int(os.environ.get("AIDA_N_VAL", 120))  # 100~150장 범위 중간값
+
 _csuffix = "" if CLASS_NAMES == ["Car"] else "_mc"
 if FRAME_SELECT != "random":
     # 프레임 구성이 다르면 라벨도 가중치도 지표도 다른 실험이다
     _csuffix += f"_{FRAME_SELECT}"
+if N_TRAIN != _DEFAULT_N_TRAIN:
+    # 학습 규모가 다르면 모델도 지표도 달라진다. 접미사가 없으면 800장 실험이
+    # 400장 결과를 덮는다 — check_consistency.py가 잡는 바로 그 유형이다.
+    _csuffix += f"_n{N_TRAIN}"
 _esuffix = _csuffix + _esuffix
 
 LABELS_GT_TRAIN_DIR = PROCESSED_DIR / f"labels_gt{_csuffix}" / "train"
@@ -72,8 +80,6 @@ AGG_CSV = (EXPERIMENT_ROOT.parent / "backend" / "app" / "data"
 OBB_AGG_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metrics_obb_agg.csv"
 
 # 스모크 테스트 시 AIDA_N_TRAIN=20 AIDA_N_VAL=10 AIDA_EPOCHS=1 처럼 .env나 환경변수로 오버라이드
-N_TRAIN = int(os.environ.get("AIDA_N_TRAIN", 400))  # 300~500장 범위 중간값
-N_VAL = int(os.environ.get("AIDA_N_VAL", 120))  # 100~150장 범위 중간값
 
 ERROR_RATIO = float(os.environ.get("AIDA_ERROR_RATIO", 0.3))  # 라벨 중 오류를 주입할 비율
 
