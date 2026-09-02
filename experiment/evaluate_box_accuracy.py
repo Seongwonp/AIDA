@@ -51,6 +51,9 @@ def _tag() -> str:
     자를 바꾸면 완전히 다른 측정이다. 꼬리표를 안 붙이면 self 실행이
     clean 결과를 덮어쓴다 — 오늘만 세 번 겪은 종류의 사고다.
     """
+    if RULER_PATH is not None:
+        # 어느 구성의 자인지가 이름에 남아야 결과를 되짚을 수 있다
+        return config._csuffix + f"_ruler_{RULER_PATH.parent.parent.parent.name}"
     return config._csuffix + ("" if RULER == "clean" else f"_ruler_{RULER}")
 
 
@@ -84,12 +87,20 @@ def load_injection_record(condition_name: str) -> dict:
 RULER = "clean"
 
 
+# 다른 구성에서 학습한 자를 쓰고 싶을 때 그 경로. --ruler-path로 준다.
+# 제품이 실제로 하는 일이 이것이다 — KITTI로 학습한 자를 고객 데이터에 댄다.
+RULER_PATH: Path | None = None
+
+
 def ruler_for(condition: config.Condition):
     """이 조건을 진단할 때 자로 쓸 가중치 경로.
 
-    clean 외의 값은 조건 이름에 붙일 접미사로 읽는다 — self는 빈 접미사,
-    refined50은 `<조건>_refined50`. 자기 정제한 자를 쓰려고 열어뒀다.
+    RULER_PATH가 있으면 조건과 무관하게 그걸 쓴다(도메인 이동 측정용).
+    없으면 RULER가 정한다 — clean은 이 구성의 clean, self는 조건 자신,
+    그 외에는 조건 이름에 붙일 접미사로 읽는다(refined50 등).
     """
+    if RULER_PATH is not None:
+        return RULER_PATH
     if RULER == "clean":
         return None  # diagnose_labels가 CLEAN_WEIGHTS로 넘어간다
     suffix = "" if RULER == "self" else f"_{RULER}"
@@ -335,6 +346,10 @@ def main():
     parser = argparse.ArgumentParser(description="박스 단위 진단 정확도 평가")
     parser.add_argument("--limit", type=int, default=80, help="조건당 이미지 수")
     parser.add_argument("--conditions", nargs="+", help="특정 조건만")
+    parser.add_argument("--ruler-path", type=Path, default=None,
+                        help="다른 구성에서 학습한 가중치를 자로 쓴다 "
+                             "(예: runs_mc/clean/weights/best.pt). 도메인이 "
+                             "어긋났을 때 진단이 어떻게 되는지 재려고 열어뒀다")
     parser.add_argument("--ruler", default="clean",
                         help="진단이 자로 쓸 모델. self는 그 조건 자신의 라벨로 "
                              "학습한 모델을, refined50 등은 `<조건>_refined50`을 "
@@ -352,9 +367,12 @@ def main():
                              "(AIDA_RELIABILITY_PROFILE로 지정해 쓰면 됨)")
     args = parser.parse_args()
 
-    global CLASS_WEIGHTED, RULER
+    global CLASS_WEIGHTED, RULER, RULER_PATH
     CLASS_WEIGHTED = args.class_weighted
     RULER = args.ruler
+    RULER_PATH = args.ruler_path
+    if RULER_PATH is not None and not RULER_PATH.exists():
+        raise SystemExit(f"{RULER_PATH} 없음")
     if CLASS_WEIGHTED and not CLASS_VULNERABILITY:
         raise SystemExit("클래스 취약도가 없습니다 — build_class_vulnerability.py로 "
                          "프로파일에 넣고 AIDA_RELIABILITY_PROFILE로 지정하세요")
