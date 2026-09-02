@@ -214,6 +214,18 @@ MIXED_CONDITIONS_DIR = EXPERIMENT_ROOT / f"conditions_mixed{_esuffix}"
 
 # 클래스 오기입 조건 — 다중 클래스에서만 의미가 있어서 CONDITIONS와 분리했다.
 # 단일 클래스 실행에는 아예 안 들어간다(바꿀 다른 클래스가 없다).
+# 자기 정제 실험이 만든 부분집합 조건들(docs/21 W). refine_ruler.py가 폴더를
+# 만들면 여기서 이름으로 찾아 학습할 수 있게 등록한다.
+REFINED_CONDITIONS: list[Condition] = [
+    Condition(f"{c}_refined{pct}", "refined", pct)
+    for c in ("scale_m30", "missing_30", "width_m30")
+    for pct in (30, 50, 70)
+] + [
+    # 데이터 크기와 라벨 품질을 분리하는 대조군: refined50과 같은 200장에
+    # 깨끗한 라벨을 붙인 것. 손해가 크기 탓인지 오류 탓인지 가른다.
+    Condition("clean_sub200", "refined", 0),
+]
+
 # 재검수 시뮬레이션이 만든 조건들(docs/21 T). simulate_review.py가 폴더를
 # 만들면 여기서 이름으로 찾아 학습할 수 있게 등록한다.
 REVIEW_SIM_CONDITIONS: list[Condition] = [
@@ -254,7 +266,8 @@ OBB_CONDITIONS: list[Condition] = [
 ]
 
 _BY_NAME = {c.name: c for c in
-             CONDITIONS + CLASS_SWAP_CONDITIONS + REVIEW_SIM_CONDITIONS}
+             CONDITIONS + CLASS_SWAP_CONDITIONS + REVIEW_SIM_CONDITIONS
+             + REFINED_CONDITIONS}
 _OBB_BY_NAME = {c.name: c for c in OBB_CONDITIONS}
 
 

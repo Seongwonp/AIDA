@@ -85,10 +85,15 @@ RULER = "clean"
 
 
 def ruler_for(condition: config.Condition):
-    """이 조건을 진단할 때 자로 쓸 가중치 경로."""
-    if RULER == "self":
-        return config.RUNS_DIR / condition.name / "weights" / "best.pt"
-    return None  # diagnose_labels가 CLEAN_WEIGHTS로 넘어간다
+    """이 조건을 진단할 때 자로 쓸 가중치 경로.
+
+    clean 외의 값은 조건 이름에 붙일 접미사로 읽는다 — self는 빈 접미사,
+    refined50은 `<조건>_refined50`. 자기 정제한 자를 쓰려고 열어뒀다.
+    """
+    if RULER == "clean":
+        return None  # diagnose_labels가 CLEAN_WEIGHTS로 넘어간다
+    suffix = "" if RULER == "self" else f"_{RULER}"
+    return config.RUNS_DIR / (condition.name + suffix) / "weights" / "best.pt"
 
 
 def score_condition(condition: config.Condition, limit: int | None) -> dict:
@@ -330,10 +335,10 @@ def main():
     parser = argparse.ArgumentParser(description="박스 단위 진단 정확도 평가")
     parser.add_argument("--limit", type=int, default=80, help="조건당 이미지 수")
     parser.add_argument("--conditions", nargs="+", help="특정 조건만")
-    parser.add_argument("--ruler", choices=["clean", "self"], default="clean",
+    parser.add_argument("--ruler", default="clean",
                         help="진단이 자로 쓸 모델. self는 그 조건 자신의 라벨로 "
-                             "학습한 모델을 쓴다 — 깨끗한 기준 모델이 없는 "
-                             "고객 상황을 흉내 낸다")
+                             "학습한 모델을, refined50 등은 `<조건>_refined50`을 "
+                             "쓴다 — 깨끗한 기준 모델이 없는 고객 상황용")
     parser.add_argument("--class-weighted", action="store_true",
                         help="심각도에 클래스 취약도를 곱해 정렬한다. 목록의 "
                              "정밀도 대신 '되찾는 성능'을 최대화하는 정렬이라 "
@@ -357,7 +362,7 @@ def main():
     conditions = [c for c in config.conditions_in_run_order() if c.type != "none"]
     if args.conditions:
         by_name = {c.name: c for c in config.CONDITIONS + config.CLASS_SWAP_CONDITIONS
-                   + config.REVIEW_SIM_CONDITIONS}
+                   + config.REVIEW_SIM_CONDITIONS + config.REFINED_CONDITIONS}
         conditions = [by_name[n] for n in args.conditions]
 
     if args.reuse_cache:

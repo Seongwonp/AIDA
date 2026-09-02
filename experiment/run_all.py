@@ -85,7 +85,7 @@ def main():
     # CLASS_SWAP_CONDITIONS는 CONDITIONS에 없다 — 다중 클래스에서 조건 이름을
     # 못 찾는다. evaluate_box_accuracy.py에서도 같은 자리를 고쳤다.
     by_name = {c.name: c for c in config.CONDITIONS + config.CLASS_SWAP_CONDITIONS
-                   + config.REVIEW_SIM_CONDITIONS}
+                   + config.REVIEW_SIM_CONDITIONS + config.REFINED_CONDITIONS}
     if args.priority == "1":
         names = config.PRIORITY_1_NAMES
     elif args.priority == "2":
