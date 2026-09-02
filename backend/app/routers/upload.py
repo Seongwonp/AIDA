@@ -50,6 +50,9 @@ SUSPICION_LABELS = {
     "translation_y": "중심점 세로 이동",
     "missing": "라벨 누락 의심",
     "duplicate": "라벨 중복 의심",
+    # 다중 클래스에서만 나온다. 빠뜨리면 화면에 class_mismatch가 그대로 뜬다
+    # — report.py의 TYPE_LABELS, 프론트의 사본 두 개와 같이 맞춰야 한다.
+    "class_mismatch": "클래스 오기입 의심",
 }
 
 
