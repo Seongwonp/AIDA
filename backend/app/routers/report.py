@@ -232,16 +232,22 @@ HIGH_PRIORITY_FRACTION = 0.5  # 최대 저하의 절반 이상이면 높음
 MEDIUM_PRIORITY_FRACTION = 0.25
 
 
-def _load_aggregated_drops() -> dict[str, tuple[float, float]]:
+def _load_aggregated_drops(profile_classes: list[str] | None = None
+                          ) -> dict[str, tuple[float, float]]:
     """조건별 (저하율 평균, 표준편차) — 3-seed 집계. 없으면 빈 dict.
 
     단일 시드 값(metrics.csv)보다 이쪽을 우선한다. 시드 하나짜리 관측은
     학습 흔들림을 그대로 안고 있어서, 우선순위를 매기는 근거로는 평균이
     맞다. 집계에 없는 조건은 호출부에서 metrics.csv 값으로 넘어간다.
+
+    클래스 구성마다 집계가 따로 있다. 다중 클래스는 시드 간 산포가 특히
+    커서(±6~10%p) 유의성 검사가 더 중요하다 — 단일 관측만 보면 없는 저하를
+    있다고 말하게 된다(docs/21 AB).
     """
-    if not AGG_METRICS_CSV_PATH.exists():
+    path = _agg_path_for(profile_classes or [])
+    if not path.exists():
         return {}
-    df = pd.read_csv(AGG_METRICS_CSV_PATH)
+    df = pd.read_csv(path)
     if "drop_pct_std" not in df.columns or "drop_pct_mean" not in df.columns:
         return {}
     return {
@@ -310,8 +316,16 @@ def _review_priority(drop_pct: float, worst_overall: float,
 # 클래스 구성별 성능 패턴 DB. 신뢰도 프로파일과 같은 규칙으로 경로를 나눈다
 # (experiment/config.py의 _csuffix).
 def _metrics_path_for(profile_classes: list[str]):
-    suffix = "" if profile_classes in ([], ["Car"]) else "_mc"
-    return DATA_PATH.with_name(f"metrics{suffix}.csv")
+    return DATA_PATH.with_name(f"metrics{_config_suffix(profile_classes)}.csv")
+
+
+def _config_suffix(profile_classes: list[str]) -> str:
+    return "" if profile_classes in ([], ["Car"]) else "_mc"
+
+
+def _agg_path_for(profile_classes: list[str]):
+    return AGG_METRICS_CSV_PATH.with_name(
+        f"metrics{_config_suffix(profile_classes)}_agg.csv")
 
 
 def _required_types(df) -> set[str]:
@@ -340,13 +354,23 @@ def get_diagnosis(profile_classes: str = "") -> DiagnosisResult:
     if baseline_rows.empty:
         raise HTTPException(500, f"{metrics_path.name}에 clean 기준 행이 없습니다.")
     baseline = baseline_rows.iloc[0]
-    non_baseline = df[df["condition"] != "clean"].copy()
+    # 오류 유형으로 아는 것만 남긴다. metrics CSV에는 실험용 조건도 쌓인다 —
+    # 재검수 시뮬레이션(review_sim)이나 정제 부분집합(refined)처럼 "오류를
+    # 주입한 조건"이 아닌 것들이다. 걸러내지 않으면 고객 리포트에 오류
+    # 유형으로 올라오고, 저하가 크면(정제 부분집합은 학습 데이터를 반으로
+    # 줄인 것이라 53%까지 나온다) 최대 저하 자리를 차지해 나머지 등급을
+    # 통째로 눌러버린다.
+    non_baseline = df[(df["condition"] != "clean")
+                      & (df["type"].isin(TYPE_LABELS))].copy()
+    if non_baseline.empty:
+        raise HTTPException(
+            500, f"{metrics_path.name}에 알려진 오류 유형의 조건이 없습니다.")
     non_baseline["drop_pct"] = (baseline - non_baseline["map50"]) / baseline * 100
 
     # 3-seed 집계가 있으면 그 평균 저하율을 쓴다 (단일 시드 관측보다 미더움).
-    # 집계는 Car 단일 구성에서만 돌렸으므로 다른 구성에서는 비어 있고, 그러면
-    # 유의성 검사 없이 크기만으로 판정하게 된다 — rationale에 그렇게 적힌다.
-    agg = _load_aggregated_drops() if not classes or classes == ["Car"] else {}
+    # 이제 클래스 구성마다 집계가 있다. 없는 구성은 여전히 비어 있고, 그러면
+    # 유의성 검사 없이 크기만으로 판정한다 — rationale에 그렇게 적힌다.
+    agg = _load_aggregated_drops(classes)
     non_baseline["drop_for_ranking"] = [
         agg[c][0] if c in agg else d
         for c, d in zip(non_baseline["condition"], non_baseline["drop_pct"])
