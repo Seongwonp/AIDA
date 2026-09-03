@@ -95,9 +95,16 @@ def run_seed(seed: int, epochs: int | None, aabb: bool, obb: bool,
             [sys.executable, "run_all.py", "--skip-download", "--skip-preprocess"] + extra,
             env=env, check=True,
         )
-        # run_all.py가 metrics.csv에 쓴 결과를 multi_seed_csv로 복사
+        # run_all.py가 metrics.csv에 쓴 결과를 multi_seed_csv로 복사.
+        #
+        # **이번에 실제로 돌린 조건만** 옮긴다. metrics.csv에는 이 실행과
+        # 무관한 조건들도 쌓여 있다 — 재검수 시뮬레이션이나 정제 부분집합처럼
+        # 한 번만 학습한 것들이다. 통째로 복사하면 그 seed=42 값이 새 시드의
+        # 측정값인 척 기록되고, 집계에서 "시드 3개인데 편차 0"이 되어 오히려
+        # 확실해 보인다. 실제로 26개가 그렇게 들어갔다.
+        ran = conditions or [c.name for c in config.conditions_in_run_order()]
         _copy_to_multi_seed(config.MULTI_SEED_CSV, seed, is_obb=False, env=env,
-                            only=conditions)
+                            only=ran)
         _restore_canonical(config.METRICS_CSV, config.MULTI_SEED_CSV, seed)
 
     if obb:
