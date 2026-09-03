@@ -12,6 +12,10 @@
    정리 대상에서 통째로 누락된다(cleanup_runs, 880MB).
 3. **접미사 없는 경로** — 클래스 구성·시드·자가 달라도 같은 파일에 쓰면
    앞 결과를 덮는다. metrics_multi_seed.csv가 그럴 뻔했다.
+4. **링크 아닌 이미지** — git이 심볼릭 링크를 경로 문자열이 담긴 74바이트
+   텍스트로 복원한 적이 있다(Windows, core.symlinks 꺼짐). ultralytics는
+   이걸 "corrupt image"로 조용히 건너뛰므로, 학습이 거의 빈 데이터셋으로
+   돌아가면서도 끝까지 성공한다.
 
 사용법:
   python check_consistency.py
@@ -58,6 +62,28 @@ def check_image_label_counts() -> None:
                         f"이미지 없는 라벨: {root.name}/{cond.name}/{split} "
                         f"{len(lstems - istems)}개 — 무시되므로 무해")
     notes.append(f"조건 폴더 {checked}개 분할의 이미지/라벨 개수 확인")
+
+
+def check_images_readable() -> None:
+    """조건 폴더의 이미지가 진짜 이미지인가.
+
+    git이 심볼릭 링크를 텍스트 파일로 복원해버리면 크기가 100바이트 미만이
+    된다. 진짜 PNG는 KITTI 기준 수백 KB다. 매직 바이트까지 보면 확실하지만
+    15만 장을 여는 건 느리므로 크기로 먼저 거른다.
+    """
+    checked = 0
+    by_root: dict[str, int] = {}
+    for root in config.EXPERIMENT_ROOT.glob("conditions*"):
+        if not root.is_dir():
+            continue
+        for img in root.rglob("images/*/*.png"):
+            checked += 1
+            if img.stat().st_size < 1000:
+                by_root[root.name] = by_root.get(root.name, 0) + 1
+    for name, n in sorted(by_root.items()):
+        problems.append(f"이미지가 아닌 파일: {name} {n}장 — 학습에서 조용히 "
+                        f"빠진다. error_injector.build_condition으로 다시 링크할 것")
+    notes.append(f"조건 폴더 이미지 {checked}장이 전부 실제 파일")
 
 
 def check_condition_lookups() -> None:
@@ -135,8 +161,9 @@ def check_weights_present() -> None:
 def main() -> None:
     print(f"클래스 구성: {','.join(config.CLASS_NAMES)}"
           f"{' / 프레임 선택: ' + config.FRAME_SELECT if config.FRAME_SELECT != 'random' else ''}\n")
-    for fn in (check_image_label_counts, check_condition_lookups,
-               check_path_namespacing, check_weights_present):
+    for fn in (check_image_label_counts, check_images_readable,
+               check_condition_lookups, check_path_namespacing,
+               check_weights_present):
         try:
             fn()
         except Exception as e:                      # 검사기가 죽어서 침묵하면 안 된다

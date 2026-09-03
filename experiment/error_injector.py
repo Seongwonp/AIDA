@@ -337,6 +337,14 @@ def symlink_files(src_dir: Path, dst_dir: Path,
     for src_file in src_dir.iterdir():
         if only_stems is not None and src_file.stem not in only_stems:
             continue
+        # 이미 있는 파일이 원본과 크기가 다르면 링크가 아니라 딴 것이다.
+        # git이 심볼릭 링크를 "경로가 적힌 74바이트 텍스트 파일"로 복원해버린
+        # 적이 있다 — Windows에서 core.symlinks가 꺼져 있으면 그렇게 된다.
+        # 그대로 두면 ultralytics가 "corrupt image"로 건너뛰어, 학습이
+        # 조용히 빈 데이터셋으로 돌아간다.
+        dst_probe = dst_dir / src_file.name
+        if dst_probe.exists() and dst_probe.stat().st_size != src_file.stat().st_size:
+            dst_probe.unlink()
         dst_file = dst_dir / src_file.name
         if dst_file.exists() or dst_file.is_symlink():
             continue
