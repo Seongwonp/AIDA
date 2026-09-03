@@ -100,6 +100,22 @@ def run(images_dir: Path, labels_dir: Path, limit: int | None = None,
         raise RuntimeError(f"{images_dir}에 이미지가 없습니다")
 
     model = YOLO(str(weights))
+    # 기준 모델이 이 데이터와 같은 클래스 집합을 아는가.
+    #
+    # 모르면 클래스 대조를 꺼야 한다. 예를 들어 Car 한 클래스만 아는 모델로
+    # 4클래스 데이터를 진단하면, 그 모델은 늘 클래스 0만 예측하므로 Van·
+    # Pedestrian·Cyclist 라벨이 전부 "클래스 오기입"으로 잡힌다 — 라벨이
+    # 멀쩡한데도. 그건 진단이 아니라 매칭 로직이 깨진 것이다.
+    #
+    # 클래스를 안 넘기면 위치만으로 짝을 짓고 class_mismatch 판정도 나오지
+    # 않는다. 아는 것만 말하는 쪽이 맞다.
+    ruler_classes = len(getattr(model, "names", {}) or {})
+    class_aware = config.MULTICLASS and ruler_classes == len(config.CLASS_NAMES)
+    if config.MULTICLASS and not class_aware:
+        print(f"[알림] 기준 모델이 {ruler_classes}개 클래스만 압니다 "
+              f"(데이터는 {len(config.CLASS_NAMES)}개) — 클래스 대조를 끄고 "
+              f"위치만으로 진단합니다. 클래스 오기입은 탐지되지 않습니다.")
+
     findings: list[BoxFinding] = []
     total_labels = 0
 
@@ -131,9 +147,9 @@ def run(images_dir: Path, labels_dir: Path, limit: int | None = None,
             # 않는다 — 예전 동작(Car 단일 결과 A~K)을 그대로 재현하기 위함이다.
             findings.extend(diagnose_image(
                 path.name, predictions, confs, labels,
-                pred_classes=pred_classes if config.MULTICLASS else None,
-                label_classes=label_classes if config.MULTICLASS else None,
-                class_names=config.CLASS_NAMES if config.MULTICLASS else None,
+                pred_classes=pred_classes if class_aware else None,
+                label_classes=label_classes if class_aware else None,
+                class_names=config.CLASS_NAMES if class_aware else None,
             ))
 
     return findings, total_labels
