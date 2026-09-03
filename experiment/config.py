@@ -39,6 +39,11 @@ _esuffix = f"_e{ERROR_SEED}" if ERROR_SEED != 42 else ""
 # 프레임 선택 전략. 기본은 무작위 표집이고, cyclist_rich는 Cyclist가 많은
 # 프레임을 골라 그 클래스의 인스턴스 수만 크게 늘린다 — 클래스 취약도가
 # 희소성 때문인지 클래스 자체의 난이도 때문인지 가르는 실험용(docs/21 S).
+# random       무작위 표집 (기본)
+# cyclist_rich Cyclist가 많은 프레임 — 희소성 실험용(docs/21 S)
+# all_local    로컬에 받아둔 전부 — 규모 실험용(docs/21 X)
+# broad        cyclist_rich 평가셋을 제외한 1000장 — "넓고 강한 자" 실험용
+#              (docs/21 Z의 빠진 사분면). 유출을 막으려고 평가 프레임을 뺐다.
 FRAME_SELECT = os.environ.get("AIDA_FRAME_SELECT", "random")
 SELECTED_FRAMES_FILE = (
     RAW_DIR / ("selected_frames.txt" if FRAME_SELECT == "random"

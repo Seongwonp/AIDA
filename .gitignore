@@ -38,6 +38,12 @@ experiment/data_yaml_mc/
 experiment/data_yaml_mc_e*/
 experiment/runs_mc/
 experiment/runs_mc_e*/
+# 클래스 구성·프레임 선택·데이터 크기 조합이 계속 늘어난다. 이름을 하나씩
+# 적으면 새 조합이 생길 때마다 빠지고, git add -A 한 번에 96,065개가 들어간다
+# (실제로 그랬다). 접두사로 통째로 막는다.
+experiment/conditions_*/
+experiment/data_yaml_*/
+experiment/runs_*/
 experiment/*.pt
 experiment/*.log
 # 박스 단위 채점 원시 판정 캐시 — 재생성 가능한 중간 산출물

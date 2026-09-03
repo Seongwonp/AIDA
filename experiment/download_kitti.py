@@ -153,7 +153,9 @@ def main(argv: list[str] | None = None):
     parser.add_argument("--select", choices=["random", "cyclist_rich"], default=None,
                         help="프레임 선택 전략 (기본: AIDA_FRAME_SELECT, 없으면 random). "
                              "cyclist_rich는 Cyclist가 많은 프레임을 골라 그 클래스의 "
-                             "인스턴스 수만 늘린다 — 취약도가 희소성 때문인지 보는 실험용")
+                             "인스턴스 수만 늘린다 — 취약도가 희소성 때문인지 보는 실험용. "
+                             "broad(docs/21 AA)는 평가셋 제외 조건이 붙어 별도 스크립트가 "
+                             "selected_frames_broad.txt를 만든다")
     args = parser.parse_args(argv)
     strategy = args.select or config.FRAME_SELECT
 
