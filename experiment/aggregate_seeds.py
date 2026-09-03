@@ -35,7 +35,12 @@ def aggregate(multi_csv, agg_csv, label: str, min_seeds: int) -> None:
         row: dict = {"condition": cond, "type": ctype, "magnitude": mag, "n_seeds": len(grp)}
         for m in METRICS:
             row[f"{m}_mean"] = round(grp[m].mean(), 4)
-            row[f"{m}_std"] = round(grp[m].std(ddof=1), 4) if len(grp) > 1 else 0.0
+            # 관측이 하나뿐이면 표준편차는 **모른다**. 0.0으로 적으면 "변동이
+            # 없다"로 읽히고, report.py의 유의성 검사가 std>0 조건에서 조용히
+            # 넘어가 크기만으로 등급을 매기게 된다. 빈 값으로 두면 하위 코드가
+            # "집계 없음"으로 보고 같은 판단을 하되 근거를 오해하지 않는다.
+            row[f"{m}_std"] = (round(grp[m].std(ddof=1), 4) if len(grp) > 1
+                               else float("nan"))
         # performance_drop_pct 기준값: clean(또는 obb_clean)의 map50_mean
         agg_rows.append(row)
 
@@ -53,7 +58,13 @@ def aggregate(multi_csv, agg_csv, label: str, min_seeds: int) -> None:
     agg_csv.parent.mkdir(parents=True, exist_ok=True)
     agg_df.to_csv(agg_csv, index=False)
     print(f"[{label}] 집계 완료 → {agg_csv}")
-    print(agg_df[["condition", "map50_mean", "map50_std", "drop_pct_mean"]].to_string(index=False))
+    thin = agg_df[agg_df["n_seeds"] < min_seeds]["condition"].tolist()
+    if thin:
+        print(f"[{label}] seed가 {min_seeds}개 미만인 조건 {len(thin)}개는 표준편차가 "
+              f"비어 있습니다: {', '.join(thin[:5])}"
+              + (" ..." if len(thin) > 5 else ""))
+    print(agg_df[["condition", "n_seeds", "map50_mean", "map50_std",
+                  "drop_pct_mean"]].to_string(index=False))
     print()
 
 
@@ -64,7 +75,13 @@ def main() -> None:
     args = parser.parse_args()
 
     aggregate(config.MULTI_SEED_CSV, config.AGG_CSV, "AABB", args.min_seeds)
-    aggregate(config.OBB_MULTI_SEED_CSV, config.OBB_AGG_CSV, "OBB", args.min_seeds)
+    if config.MULTICLASS:
+        # OBB 지표는 클래스 구성별로 갈려 있지 않다(run_obb.py의
+        # _refuse_multiclass 참고). 여기서 집계하면 Car 것을 다시 만지면서
+        # 뭔가 한 것처럼 보인다.
+        print("다중 클래스 구성이라 OBB 집계는 건너뜁니다 (단일 클래스 전용)")
+    else:
+        aggregate(config.OBB_MULTI_SEED_CSV, config.OBB_AGG_CSV, "OBB", args.min_seeds)
 
 
 if __name__ == "__main__":

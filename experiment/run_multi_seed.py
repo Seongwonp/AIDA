@@ -39,8 +39,12 @@ def migrate_seed42() -> None:
     else:
         print(f"[경고] {config.METRICS_CSV} 없음 — AABB seed=42 마이그레이션 건너뜀")
 
-    # OBB
-    if config.OBB_METRICS_CSV.exists():
+    # OBB — 다중 클래스에서는 건너뛴다. OBB 지표 CSV는 클래스 구성별로 갈려
+    # 있지 않아(run_obb.py의 _refuse_multiclass 참고) 같은 파일을 다시 만지게
+    # 되고, 로그만 보면 뭔가 한 것처럼 보여 혼란스럽다.
+    if config.MULTICLASS:
+        print("다중 클래스 구성이라 OBB 마이그레이션은 건너뜁니다 (단일 클래스 전용)")
+    elif config.OBB_METRICS_CSV.exists():
         df = pd.read_csv(config.OBB_METRICS_CSV)
         if "error_seed" not in df.columns:
             df.insert(0, "error_seed", 42)
