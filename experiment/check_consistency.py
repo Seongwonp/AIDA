@@ -65,7 +65,7 @@ def check_image_label_counts() -> None:
 
 
 def check_images_readable() -> None:
-    """조건 폴더의 이미지가 진짜 이미지인가.
+    """조건 폴더의 이미지·라벨이 진짜 이미지·라벨인가.
 
     git이 심볼릭 링크를 텍스트 파일로 복원해버리면 크기가 100바이트 미만이
     된다. 진짜 PNG는 KITTI 기준 수백 KB다. 매직 바이트까지 보면 확실하지만
@@ -80,10 +80,30 @@ def check_images_readable() -> None:
             checked += 1
             if img.stat().st_size < 1000:
                 by_root[root.name] = by_root.get(root.name, 0) + 1
+    # 라벨도 같은 사고를 당한다. 이쪽은 크기로 못 거른다 — 깨진 링크가 담은
+    # 경로 문자열이 진짜 한 줄짜리 라벨과 길이가 비슷하기 때문이다. 첫 줄이
+    # 숫자로 파싱되는지 본다. 평가셋 라벨만 링크라, train만 확인하면 놓친다.
+    bad_labels: dict[str, int] = {}
+    for root in config.EXPERIMENT_ROOT.glob("conditions*"):
+        if not root.is_dir():
+            continue
+        for lbl in root.rglob("labels/*/*.txt"):
+            checked += 1
+            text = lbl.read_text(encoding="utf-8", errors="replace").strip()
+            if not text:
+                continue                    # 객체 없는 프레임은 빈 파일이 정상
+            try:
+                [float(x) for x in text.splitlines()[0].split()]
+            except ValueError:
+                bad_labels[root.name] = bad_labels.get(root.name, 0) + 1
+
     for name, n in sorted(by_root.items()):
         problems.append(f"이미지가 아닌 파일: {name} {n}장 — 학습에서 조용히 "
                         f"빠진다. error_injector.build_condition으로 다시 링크할 것")
-    notes.append(f"조건 폴더 이미지 {checked}장이 전부 실제 파일")
+    for name, n in sorted(bad_labels.items()):
+        problems.append(f"라벨이 아닌 파일: {name} {n}개 — 해당 이미지가 통째로 "
+                        f"버려진다. 파일 안에 원래 대상 경로가 들어 있으니 그걸로 복구할 것")
+    notes.append(f"조건 폴더 파일 {checked}개가 전부 실제 이미지/라벨")
 
 
 def check_condition_lookups() -> None:

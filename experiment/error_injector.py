@@ -307,6 +307,22 @@ def build_mixed_condition(mixed: config.MixedCondition) -> Path:
     return root
 
 
+def _same_content(dst: Path, src: Path) -> bool:
+    """dst가 정말 src를 가리키고 있는가.
+
+    라벨(.txt)은 작으니 내용을 통째로 비교한다. 크기만 보면, 깨진 링크의
+    경로 문자열이 우연히 진짜 라벨과 같은 길이일 때 통과해버린다 — 평가셋
+    라벨이 딱 그 위험군이다(한 줄짜리가 많다). 이미지는 수백 KB라 전부
+    읽으면 느리므로 크기로만 본다. 깨진 이미지는 74바이트 남짓이라 크기만으로
+    확실히 갈린다.
+    """
+    if dst.stat().st_size != src.stat().st_size:
+        return False
+    if src.suffix.lower() == ".txt":
+        return dst.read_bytes() == src.read_bytes()
+    return True
+
+
 def symlink_files(src_dir: Path, dst_dir: Path,
                   only_stems: set[str] | None = None) -> None:
     """dst_dir 자체는 실제 디렉토리로 만들고, 그 안의 파일들만 심볼릭 링크한다.
@@ -343,7 +359,7 @@ def symlink_files(src_dir: Path, dst_dir: Path,
         # 그대로 두면 ultralytics가 "corrupt image"로 건너뛰어, 학습이
         # 조용히 빈 데이터셋으로 돌아간다.
         dst_probe = dst_dir / src_file.name
-        if dst_probe.exists() and dst_probe.stat().st_size != src_file.stat().st_size:
+        if dst_probe.exists() and not _same_content(dst_probe, src_file):
             dst_probe.unlink()
         dst_file = dst_dir / src_file.name
         if dst_file.exists() or dst_file.is_symlink():
