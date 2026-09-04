@@ -142,6 +142,10 @@ class TypeRobustness(BaseModel):
     shifted_domain: float
     # 도메인이 어긋나도 쓸 만한가
     robust: bool
+    # 아예 다른 데이터셋에서 잰 값 (docs/21 AI). shifted_domain은 같은 KITTI
+    # 안에서 프레임 구성만 바꿔 잰 것이라 낙관적이다 — 진짜 도메인 이동은
+    # 이쪽이다. 안 잰 유형은 None.
+    cross_dataset: float | None = None
 
 
 class RulerInfo(BaseModel):

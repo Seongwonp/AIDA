@@ -163,7 +163,7 @@ def build_condition_labels(condition: Condition, image_dir: Path, gt_label_dir: 
             (out_label_dir / gt_path.name).write_text("")
             continue
 
-        img = Image.open(image_dir / f"{gt_path.stem}.png")
+        img = Image.open(find_image(image_dir, gt_path.stem))
         out_lines = []
         errored: list[int] = []
         dropped: list[list[float]] = []
@@ -242,7 +242,7 @@ def build_mixed_condition_labels(mixed: config.MixedCondition, image_dir: Path,
             (out_label_dir / gt_path.name).write_text("")
             continue
 
-        img = Image.open(image_dir / f"{gt_path.stem}.png")
+        img = Image.open(find_image(image_dir, gt_path.stem))
         out_lines: list[str] = []
         errored: list[int] = []
         errored_types: list[str] = []
@@ -321,6 +321,19 @@ def _same_content(dst: Path, src: Path) -> bool:
     if src.suffix.lower() == ".txt":
         return dst.read_bytes() == src.read_bytes()
     return True
+
+
+IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg")
+
+
+def find_image(image_dir: Path, stem: str) -> Path:
+    """stem에 해당하는 이미지. 확장자는 데이터셋마다 다르다(KITTI .png, COCO .jpg)."""
+    for suffix in IMAGE_SUFFIXES:
+        p = image_dir / f"{stem}{suffix}"
+        if p.exists():
+            return p
+    raise FileNotFoundError(f"{image_dir}에 {stem} 이미지가 없다 "
+                            f"(찾아본 확장자: {', '.join(IMAGE_SUFFIXES)})")
 
 
 def symlink_files(src_dir: Path, dst_dir: Path,
@@ -455,7 +468,7 @@ def build_obb_condition_labels(condition: config.Condition, image_dir: Path,
             (out_label_dir / gt_path.name).write_text("")
             continue
 
-        img = Image.open(image_dir / f"{gt_path.stem}.png")
+        img = Image.open(find_image(image_dir, gt_path.stem))
         out_lines = []
         for line in lines:
             poly = yolo_obb_to_pixel(line, img.width, img.height)

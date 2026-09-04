@@ -45,6 +45,12 @@ RULERS = {
     "shifted": ("약한 이동", "runs_mc"),
     "far": ("먼 이동(1C)", "runs"),
     "broad": ("넓은 자(800)", "runs_mc_broad_n800"),
+    # 진짜 도메인 이동용. 위 넷은 전부 KITTI 안에서 만든 자라, "도메인이
+    # 어긋나면"의 어긋남이 같은 데이터셋 안의 프레임 선택 차이였다.
+    # coco_self는 COCO로 학습한 자, kitti_on_coco는 KITTI 자를 COCO 데이터에
+    # 대는 것이다. 둘 다 --conditions-dataset coco 로 COCO 조건을 진단한다.
+    "coco_self": ("COCO 자기(1C)", "runs_coco"),
+    "kitti_on_coco": ("KITTI→COCO(1C)", "runs"),
 }
 
 
@@ -152,7 +158,12 @@ def main() -> None:
 
     SEEDS = args.seeds
     if args.all_conditions:
-        CONDITIONS = [c.name for c in config.CONDITIONS + config.CLASS_SWAP_CONDITIONS]
+        # class_swap은 클래스가 둘 이상일 때만 존재한다. 단일 클래스 구성에서
+        # 넣으면 만들어진 적 없는 폴더를 열려다 죽는다 — 조건 목록이 클래스
+        # 구성을 안 따라가는, 이 프로젝트에서 반복된 사고 유형이다.
+        CONDITIONS = [c.name for c in config.CONDITIONS]
+        if config.MULTICLASS:
+            CONDITIONS += [c.name for c in config.CLASS_SWAP_CONDITIONS]
     dropped = list(args.exclude)
     if not args.keep_clean and "clean" in CONDITIONS:
         dropped.append("clean")

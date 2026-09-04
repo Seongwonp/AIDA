@@ -81,6 +81,26 @@ DOMAIN_ROBUSTNESS = {
 # 넘고 나머지는 못 넘는다 — 경계가 아니라 실제로 갈리는 지점이다.
 ROBUST_THRESHOLD = 0.65
 
+# 위 DOMAIN_ROBUSTNESS는 **같은 KITTI 안에서 프레임 구성만 바꿔** 잰 값이라
+# 낙관적이다. 진짜 다른 데이터셋(COCO)으로 재보니 훨씬 심했다(docs/21 AI,
+# 상위 10% 기준):
+#
+#   누락      94.9% → 76.7%  (81% 유지 — 유일하게 확실히 살아남는다)
+#   중복      82.6% → 40.8%  (절반. KITTI 안에서는 견뎠는데 여기선 아니다)
+#   기하 오류 74~90% → 7~29% (전멸)
+#
+# 그래서 화면에는 이 값도 같이 말해야 한다. "기준 모델에 의존" 정도로는
+# 고객이 위험을 못 읽는다.
+CROSS_DATASET_ROBUSTNESS = {
+    "missing": 0.767,
+    "duplicate": 0.408,
+    "width": 0.294,
+    "height": 0.202,
+    "scale": 0.099,
+    "translation_x": 0.090,
+    "translation_y": 0.075,
+}
+
 
 def _robustness(by_type: list) -> list[ReliabilityRow]:
     """이 데이터셋에서 실제로 나온 유형에 대해서만 강건성을 붙인다."""
@@ -96,6 +116,7 @@ def _robustness(by_type: list) -> list[ReliabilityRow]:
             matched_domain=matched,
             shifted_domain=shifted,
             robust=shifted >= ROBUST_THRESHOLD,
+            cross_dataset=CROSS_DATASET_ROBUSTNESS.get(t),
         ))
     return rows
 

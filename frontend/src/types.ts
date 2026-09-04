@@ -151,6 +151,11 @@ export interface TypeRobustness {
   matched_domain: number;
   shifted_domain: number;
   robust: boolean;
+  /**
+   * 아예 다른 데이터셋에서 잰 값 (docs/21 AI). shifted_domain은 같은 KITTI
+   * 안에서 프레임 구성만 바꿔 잰 것이라 낙관적이다.
+   */
+  cross_dataset: number | null;
 }
 
 export interface RoiAssumptions {

@@ -331,7 +331,10 @@ export function DatasetUpload() {
               <p className="report-caveat">
                 진단은 기준 모델의 예측을 자로 삼아 라벨을 잽니다. 그 모델이 이
                 데이터와 다른 도메인에서 학습됐다면 유형마다 다르게 무너집니다.
-                아래는 같은 데이터를 두 모델로 진단해 실측한 값입니다.
+                가운데 열은 <b>같은 데이터셋 안에서 프레임 구성만 바꿨을 때</b>,
+                오른쪽 열은 <b>아예 다른 데이터셋(KITTI 자로 COCO를 진단)</b>일
+                때의 실측값입니다 — 후자가 실제 고객 상황에 가깝고 훨씬 가혹합니다.
+                기하 오류는 거의 전멸하고 라벨 누락만 살아남았습니다 (docs/21 AI).
               </p>
               <div className="table-scroll">
                 <table className="report-table">
@@ -339,7 +342,8 @@ export function DatasetUpload() {
                     <tr>
                       <th>오류 유형</th>
                       <th>도메인 맞을 때</th>
-                      <th>도메인 어긋날 때</th>
+                      <th>프레임 구성만 다를 때</th>
+                      <th>아예 다른 데이터셋</th>
                       <th>판단</th>
                     </tr>
                   </thead>
@@ -351,8 +355,20 @@ export function DatasetUpload() {
                           <td>{r.label}</td>
                           <td>{(r.matched_domain * 100).toFixed(1)}%</td>
                           <td>{(r.shifted_domain * 100).toFixed(1)}%</td>
-                          <td className={r.robust ? "priority priority-높음" : "priority-rationale"}>
-                            {r.robust ? "도메인 무관하게 신뢰" : "기준 모델에 의존"}
+                          <td>
+                            {r.cross_dataset === null
+                              ? "—"
+                              : `${(r.cross_dataset * 100).toFixed(1)}%`}
+                          </td>
+                          <td className={
+                            r.cross_dataset !== null && r.cross_dataset >= 0.65
+                              ? "priority priority-높음"
+                              : "priority-rationale"}>
+                            {r.cross_dataset === null
+                              ? (r.robust ? "도메인 무관하게 신뢰" : "기준 모델에 의존")
+                              : r.cross_dataset >= 0.65
+                                ? "데이터가 달라도 신뢰"
+                                : "기준 모델에 크게 의존"}
                           </td>
                         </tr>
                       ))}
