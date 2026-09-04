@@ -54,6 +54,16 @@ def to_yolo_line(box: dict, img_w: int, img_h: int) -> str:
 
 
 def split_frames(frame_ids: list[str]) -> tuple[list[str], list[str]]:
+    if config.VAL_HOLDOUT:
+        # 규모 비교용. 목록은 이미 무작위 순열이므로 다시 섞지 않는다 —
+        # 섞으면 규모마다 다른 학습셋이 나와 중첩이 깨진다. 평가셋은 끝에서
+        # 가져와 N_TRAIN과 무관하게 고정한다.
+        val = sorted(frame_ids[-config.N_VAL:])
+        pool = frame_ids[: -config.N_VAL]
+        if config.N_TRAIN > len(pool):
+            raise SystemExit(f"프레임이 {len(pool)}개뿐인데 학습 {config.N_TRAIN}장이 필요하다")
+        return sorted(pool[: config.N_TRAIN]), val
+
     rng = random.Random(config.SEED)
     shuffled = frame_ids.copy()
     rng.shuffle(shuffled)

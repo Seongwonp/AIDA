@@ -150,7 +150,7 @@ def main(argv: list[str] | None = None):
     parser.add_argument("--n-total", type=int, default=config.N_TRAIN + config.N_VAL,
                          help="다운로드할 총 이미지 수 (기본: config.N_TRAIN + config.N_VAL)")
     parser.add_argument("--seed", type=int, default=config.SEED)
-    parser.add_argument("--select", choices=["random", "cyclist_rich"], default=None,
+    parser.add_argument("--select", choices=["random", "cyclist_rich", "nested"], default=None,
                         help="프레임 선택 전략 (기본: AIDA_FRAME_SELECT, 없으면 random). "
                              "cyclist_rich는 Cyclist가 많은 프레임을 골라 그 클래스의 "
                              "인스턴스 수만 늘린다 — 취약도가 희소성 때문인지 보는 실험용. "
@@ -169,6 +169,13 @@ def main(argv: list[str] | None = None):
 
     if strategy == "cyclist_rich":
         selected = select_cyclist_rich(label_dir, car_frames, args.n_total)
+    elif strategy == "nested":
+        # 정렬하지 않는다. 순열 순서를 그대로 남겨야 앞에서부터 잘랐을 때
+        # 작은 규모가 큰 규모의 부분집합이 된다(docs/21 X의 교란 제거).
+        # 정렬하면 앞부분이 프레임 번호가 작은 것만 모여 무작위가 아니게 된다.
+        rng = random.Random(args.seed)
+        selected = rng.sample(car_frames, args.n_total)
+        print(f"중첩용 순열 {len(selected)}개 — 앞에서부터 자르면 부분집합이 된다")
     else:
         rng = random.Random(args.seed)
         selected = sorted(rng.sample(car_frames, args.n_total))

@@ -64,6 +64,11 @@ _DEFAULT_N_TRAIN = 400
 N_TRAIN = int(os.environ.get("AIDA_N_TRAIN", _DEFAULT_N_TRAIN))  # 300~500장 범위 중간값
 N_VAL = int(os.environ.get("AIDA_N_VAL", 120))  # 100~150장 범위 중간값
 
+# 평가셋을 프레임 목록의 끝에서 가져온다. 규모(N_TRAIN)를 바꿔가며 비교할 때
+# 켠다 — 기본 동작은 학습셋 바로 뒤를 평가셋으로 쓰므로, N_TRAIN이 커지면
+# 평가셋도 같이 밀려서 서로 다른 데이터로 잰 mAP를 비교하게 된다.
+VAL_HOLDOUT = os.environ.get("AIDA_VAL_HOLDOUT", "0") == "1"
+
 _csuffix = "" if CLASS_NAMES == ["Car"] else "_mc"
 if DATASET != "kitti":
     # 데이터셋이 다르면 라벨도 가중치도 지표도 전부 다른 실험이다.
