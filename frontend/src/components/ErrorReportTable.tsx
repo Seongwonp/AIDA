@@ -12,10 +12,10 @@ export function ErrorReportTable({ reports }: { reports: ErrorTypeReport[] }) {
       <table className="report-table">
         <thead>
           <tr>
-            <th>오류 유형</th>
-            <th>최대 성능 저하</th>
-            <th>재검수 우선순위</th>
-            <th>판단 근거</th>
+            <th scope="col">오류 유형</th>
+            <th scope="col">최대 성능 저하</th>
+            <th scope="col">재검수 우선순위</th>
+            <th scope="col">판단 근거</th>
           </tr>
         </thead>
         <tbody>

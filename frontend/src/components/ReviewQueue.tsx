@@ -136,12 +136,12 @@ export function ReviewQueue({ items, datasetId }:
           <table className="report-table">
             <thead>
               <tr>
-                <th aria-label="검토함" />
-                <th>#</th>
-                <th>이미지</th>
-                <th>라벨</th>
-                <th>의심 유형</th>
-                <th>근거</th>
+                <th scope="col" aria-label="검토함" />
+                <th scope="col">#</th>
+                <th scope="col">이미지</th>
+                <th scope="col">라벨</th>
+                <th scope="col">의심 유형</th>
+                <th scope="col">근거</th>
               </tr>
             </thead>
             <tbody>

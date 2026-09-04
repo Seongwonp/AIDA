@@ -81,16 +81,16 @@ export function ConditionsTable({ conditions }: { conditions: ConditionMetric[] 
         <table className="report-table metrics-table">
           <thead>
             <tr>
-              <th>조건</th>
-              <th>유형</th>
-              <th>강도</th>
-              <th>mAP@0.5</th>
-              <th>mAP@0.5:0.95</th>
-              <th>Precision</th>
-              <th>Recall</th>
-              <th>평균 IoU</th>
-              <th>IoU 감소율</th>
-              <th>성능 변화</th>
+              <th scope="col">조건</th>
+              <th scope="col">유형</th>
+              <th scope="col">강도</th>
+              <th scope="col">mAP@0.5</th>
+              <th scope="col">mAP@0.5:0.95</th>
+              <th scope="col">Precision</th>
+              <th scope="col">Recall</th>
+              <th scope="col">평균 IoU</th>
+              <th scope="col">IoU 감소율</th>
+              <th scope="col">성능 변화</th>
             </tr>
           </thead>
           <tbody>

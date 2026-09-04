@@ -214,9 +214,9 @@ export function DatasetUpload() {
             <table className="report-table">
               <thead>
                 <tr>
-                  <th>의심 오류 유형</th>
-                  <th>가장 가까운 조건</th>
-                  <th>거리(가까울수록 유력)</th>
+                  <th scope="col">의심 오류 유형</th>
+                  <th scope="col">가장 가까운 조건</th>
+                  <th scope="col">거리(가까울수록 유력)</th>
                 </tr>
               </thead>
               <tbody>
@@ -265,9 +265,9 @@ export function DatasetUpload() {
             <table className="report-table">
               <thead>
                 <tr>
-                  <th>의심 유형</th>
-                  <th>건수</th>
-                  <th>라벨 대비 비율</th>
+                  <th scope="col">의심 유형</th>
+                  <th scope="col">건수</th>
+                  <th scope="col">라벨 대비 비율</th>
                 </tr>
               </thead>
               <tbody>
@@ -350,11 +350,11 @@ export function DatasetUpload() {
                 <table className="report-table">
                   <thead>
                     <tr>
-                      <th>오류 유형</th>
-                      <th>도메인 맞을 때</th>
-                      <th>프레임 구성만 다를 때</th>
-                      <th>아예 다른 데이터셋</th>
-                      <th>판단</th>
+                      <th scope="col">오류 유형</th>
+                      <th scope="col">도메인 맞을 때</th>
+                      <th scope="col">프레임 구성만 다를 때</th>
+                      <th scope="col">아예 다른 데이터셋</th>
+                      <th scope="col">판단</th>
                     </tr>
                   </thead>
                   <tbody>
