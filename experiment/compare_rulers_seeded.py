@@ -21,6 +21,7 @@ seed를 직접 읽어 이걸 막는다.
 사용법:
   AIDA_CLASSES=... AIDA_FRAME_SELECT=cyclist_rich python compare_rulers_seeded.py
 """
+import json
 import statistics
 import sys
 from pathlib import Path
@@ -114,10 +115,14 @@ def measure(kind: str, seed: int, limit: int) -> dict | None:
             "top10": statistics.mean(p10) if p10 else 0.0,
             "top10_noswap": statistics.mean(swapless) if swapless else 0.0,
             "n_conditions": len(p10),
+            # 조건별 점수를 버리지 않는다. 이게 있어야 나중에 유형별 산포를
+            # GPU 재실행 없이 뽑을 수 있다 — AD 때 없어서 다시 돌려야 했다.
+            "per_condition": per_condition,
             "silent": silent}
 
 
 def main() -> None:
+    global CONDITIONS, SEEDS
     import argparse
     ap = argparse.ArgumentParser(description="시드별 자 비교")
     ap.add_argument("--limit", type=int, default=80)
@@ -133,9 +138,14 @@ def main() -> None:
     # 검증하려면 같은 조건 집합으로 재야 한다.
     ap.add_argument("--all-conditions", action="store_true",
                     help="대표 9개 대신 조건 전체를 쓴다 (Z·AA와 같은 집합)")
+    ap.add_argument("--seeds", type=int, nargs="+", default=SEEDS,
+                    help="학습 시드 목록 (기본: 42 123 2024). n=3에서는 표준편차 "
+                         "추정 자체가 흔들리므로 늘려 확인할 때 쓴다")
+    ap.add_argument("--out", type=Path, default=None,
+                    help="조건별 점수까지 담은 JSON 저장 경로")
     args = ap.parse_args()
 
-    global CONDITIONS
+    SEEDS = args.seeds
     if args.all_conditions:
         CONDITIONS = [c.name for c in config.CONDITIONS + config.CLASS_SWAP_CONDITIONS]
     if args.exclude:
@@ -197,6 +207,15 @@ def main() -> None:
                 line += (f"  = {n_sigma:.1f}σ → "
                          f"{'산포를 넘는다' if n_sigma >= 2 else '산포에 묻힌다'}")
             print(line)
+
+    if args.out:
+        args.out.write_text(json.dumps({
+            "conditions": CONDITIONS,
+            "seeds": SEEDS,
+            "limit": args.limit,
+            "rulers": {label: rows for label, rows in out.items()},
+        }, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"\n조건별 점수 저장 → {args.out}")
 
 
 if __name__ == "__main__":
