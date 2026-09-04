@@ -25,6 +25,8 @@ export function DatasetUpload() {
   // 값이 크게 흔들렸다(docs/21 L). 그래서 보정 프로파일을 고를 수 있게 한다.
   const [profiles, setProfiles] = useState<ReliabilityProfile[]>([]);
   const [profile, setProfile] = useState("");
+  // 추천에 따라 자동으로 바꿔 쓴 경우의 사유. 빈 문자열이면 안 바꿨다.
+  const [autoProfile, setAutoProfile] = useState("");
 
   useEffect(() => {
     // 프로파일을 못 불러와도 진단 자체는 기본값으로 돌아가야 하므로 조용히 넘긴다
@@ -42,11 +44,17 @@ export function DatasetUpload() {
     try {
       const info = await uploadDataset(file);
       setDataset(info);
+      // 자가 모르는 클래스는 오탐도 아니고 아예 검사되지 않는다 — 화면에
+      // 흔적이 없어 "문제 없음"과 구별이 안 된다. 사용자가 직접 고르지 않은
+      // 경우에만 추천을 따르고, 무엇을 왜 바꿨는지 표시한다. 명시적으로 고른
+      // 프로파일은 건드리지 않는다.
+      const used = profile || info.suggested_profile || "";
+      setAutoProfile(!profile && info.suggested_profile ? info.suggestion_reason : "");
       setStatus("diagnosing");
       // 박스 단위 진단이 실제 재검수 목록을 만드는 핵심이고, 데이터셋 단위
       // 진단은 성능 패턴 DB와의 비교 근거를 함께 보여주기 위해 같이 돌린다.
       const [labels, diagnosis] = await Promise.all([
-        diagnoseDatasetLabels(info.dataset_id, profile),
+        diagnoseDatasetLabels(info.dataset_id, used),
         diagnoseDataset(info.dataset_id),
       ]);
       setLabelResult(labels);
@@ -108,12 +116,20 @@ export function DatasetUpload() {
         </button>
       </div>
 
-      {selectedProfile && selectedProfile.classes.length > 0 && (
+      {/* 자동 전환이 일어났으면 이 줄은 거짓이 된다 — 고른 것과 실제로
+          쓴 것이 다르기 때문이다. 그때는 아래 전환 안내가 대신한다. */}
+      {!autoProfile && selectedProfile && selectedProfile.classes.length > 0 && (
         <p className="upload-meta">
           진단 클래스: {selectedProfile.classes.join(", ")}
           {selectedProfile.name
             ? " — 이 구성에서 실측한 유형 신뢰도를 적용합니다."
             : " — 기본 기준 모델입니다."}
+        </p>
+      )}
+
+      {autoProfile && (
+        <p className="upload-meta">
+          기준 모델을 자동으로 바꿔 진단했습니다 — {autoProfile}
         </p>
       )}
 

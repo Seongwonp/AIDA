@@ -97,3 +97,42 @@ def test_sidecar_is_json_the_frontend_can_read(dataset):
     upload._save_ruler_sidecar("ds1", upload._ruler_info(None, dataset))
     data = json.loads((dataset / upload.RULER_SIDECAR).read_text(encoding="utf-8"))
     assert set(RulerInfo.model_fields) <= set(data)
+
+
+# --- 기준 모델 추천 -------------------------------------------------------
+#
+# 서버는 고객 분포를 미리 알 수 없다. 다만 "자가 아예 모르는 클래스가 있는가"는
+# 라벨만 보고도 안다 — 그건 품질 문제가 아니라 구멍이다.
+
+def test_no_suggestion_when_default_covers_the_data():
+    """Car 하나뿐이면 기본 기준 모델로 충분하다. 넓힐 이유가 없다."""
+    name, reason = upload._suggest_profile({0})
+    assert name is None
+    assert reason == ""
+
+
+def test_empty_labels_get_no_suggestion():
+    assert upload._suggest_profile(set()) == (None, "")
+
+
+def test_suggests_a_wider_ruler_when_classes_exceed_default():
+    """클래스 3이 있으면 4개를 아는 자가 필요하다."""
+    name, reason = upload._suggest_profile({0, 3})
+    if not upload._weights_exist(["Car", "Van", "Pedestrian", "Cyclist"]):
+        pytest.skip("다중 클래스 기준 모델이 이 환경에 없음")
+    assert name, "더 넓은 자가 있는데 추천하지 않았다"
+    assert "3" in reason
+
+
+def test_suggestion_explains_itself_when_nothing_covers():
+    """덮는 자가 없으면 조용히 넘어가지 말고 왜인지 말해야 한다."""
+    name, reason = upload._suggest_profile({0, 99})
+    assert name is None
+    assert reason, "덮는 자가 없는데 아무 설명이 없다"
+    assert "검사되지 않습니다" in reason
+
+
+def test_suggestion_prefers_the_narrowest_covering_ruler():
+    """Z·AA: 실력이 비슷하면 좁은 쪽이 낫다. 덮기만 하면 넓힐 이유가 없다."""
+    name, _ = upload._suggest_profile({0})
+    assert name is None, "Car만 있는 데이터에 더 넓은 자를 권했다"

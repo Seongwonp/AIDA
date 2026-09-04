@@ -76,6 +76,13 @@ class UploadedDatasetInfo(BaseModel):
     uploaded_at: str
     num_images: int
     num_labels: int
+    # 라벨에 실제로 등장하는 클래스 인덱스. 기준 모델이 이보다 적게 알면
+    # 나머지는 오탐도 아니고 아예 검사되지 않는다 — 화면에 흔적이 없어서
+    # "문제 없음"과 구별이 안 된다(docs/21 AD 반영).
+    label_class_ids: list[int] = []
+    # 이 데이터에 맞는 기준 모델. None이면 기본값으로 충분하다는 뜻.
+    suggested_profile: str | None = None
+    suggestion_reason: str = ""
 
 
 class PerformanceVector(BaseModel):

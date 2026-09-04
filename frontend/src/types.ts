@@ -57,6 +57,11 @@ export interface UploadedDatasetInfo {
   uploaded_at: string;
   num_images: number;
   num_labels: number;
+  /** 라벨에 실제로 등장하는 클래스 인덱스 */
+  label_class_ids: number[];
+  /** 이 데이터에 맞는 기준 모델. null이면 기본값으로 충분하다는 뜻. */
+  suggested_profile: string | null;
+  suggestion_reason: string;
 }
 
 export interface PerformanceVector {

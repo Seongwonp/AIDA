@@ -271,11 +271,16 @@ async def upload_dataset(file: UploadFile) -> UploadedDatasetInfo:
         shutil.rmtree(dataset_dir, ignore_errors=True)
         raise
 
+    class_ids = _label_class_ids(dataset_dir)
+    suggested, reason = _suggest_profile(class_ids)
     return UploadedDatasetInfo(
         dataset_id=dataset_id,
         uploaded_at=datetime.now(timezone.utc).isoformat(),
         num_images=n_images,
         num_labels=n_labels,
+        label_class_ids=sorted(class_ids),
+        suggested_profile=suggested,
+        suggestion_reason=reason,
     )
 
 
@@ -392,6 +397,45 @@ def _label_class_ids(dataset_dir: Path, cap: int = 2000) -> set[int]:
                 except ValueError:
                     pass
     return ids
+
+
+def _suggest_profile(class_ids: set[int]) -> tuple[str | None, str]:
+    """이 데이터에 맞는 기준 모델을 고른다.
+
+    AA와 AD의 결론은 "대상 분포에서의 실력이 전부"인데, 서버가 고객 분포를
+    미리 알 수는 없다. 다만 **자가 아예 모르는 클래스가 있는지**는 라벨만
+    보고도 안다. 그건 품질 문제가 아니라 구멍이다 — 그 클래스는 검사 자체가
+    안 되고 화면에 아무 흔적도 안 남는다.
+
+    그래서 추천은 여기까지만 한다: 데이터의 클래스를 덮는 자 중 가장 좁은
+    것. Z·AA가 "실력이 비슷하면 좁은 쪽이 낫다"고 했으므로, 덮기만 하면
+    넓힐 이유가 없다.
+    """
+    if not class_ids:
+        return None, ""
+    needed = max(class_ids) + 1
+
+    candidates: list[tuple[int, str | None, list[str]]] = []
+    default_classes = ["Car"]
+    if _weights_exist(default_classes):
+        candidates.append((len(default_classes), None, default_classes))
+    for name in _available_profiles():
+        classes = _profile_classes(EXPERIMENT_ROOT / f"reliability_profile_{name}.json")
+        if classes and _weights_exist(classes):
+            candidates.append((len(classes), name, classes))
+
+    covering = sorted(c for c in candidates if c[0] >= needed)
+    if not covering:
+        widest = max((c[0] for c in candidates), default=0)
+        return None, (f"라벨에 클래스 인덱스 {sorted(class_ids)}가 있는데, "
+                      f"이 서버의 기준 모델은 최대 {widest}개까지만 압니다. "
+                      f"모르는 클래스는 검사되지 않습니다.")
+    n_classes, name, classes = covering[0]
+    if name is None:
+        return None, ""                    # 기본값으로 충분하다
+    return name, (f"라벨에 클래스 인덱스 {sorted(class_ids)}가 있어 "
+                  f"{n_classes}개 클래스를 아는 기준 모델이 필요합니다 "
+                  f"({', '.join(classes)}).")
 
 
 def _ruler_info(profile: str | None, dataset_dir: Path) -> RulerInfo:
