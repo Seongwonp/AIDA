@@ -984,3 +984,52 @@
   border: 1px solid var(--hair);
   background: var(--raise);
 }
+
+/* ---- 실행 중 표시 ----
+   추론이 수십 초 걸리는데 버튼 글자만 바뀌면 화면이 죽은 것처럼 보인다.
+   가짜 진행률 막대는 쓰지 않는다 — 남은 시간을 아는 척하게 된다. */
+.run-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1.5px solid var(--black);
+  background: var(--raise);
+}
+
+.run-status strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.run-status-note {
+  font-size: 12px;
+  color: var(--gray);
+  line-height: 1.6;
+}
+
+.run-spinner {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border: 2.5px solid var(--hair);
+  border-top-color: var(--black);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 움직임을 싫어하는 설정에서는 돌리는 대신 네온으로 채워 '동작 중'만 알린다 */
+@media (prefers-reduced-motion: reduce) {
+  .run-spinner {
+    animation: none;
+    border-color: var(--neon);
+    background: var(--neon);
+  }
+}

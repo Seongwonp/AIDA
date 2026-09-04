@@ -134,6 +134,22 @@ export function DatasetUpload() {
         </p>
       )}
 
+      {busy && (
+        <div className="run-status" role="status" aria-live="polite">
+          <span className="run-spinner" aria-hidden="true" />
+          <div>
+            <strong>
+              {status === "uploading" ? "zip을 올리고 여는 중" : "기준 모델로 추론하는 중"}
+            </strong>
+            <span className="run-status-note">
+              {status === "uploading"
+                ? "이미지와 라벨 개수를 확인합니다."
+                : "이미지마다 예측을 내고 라벨과 박스 단위로 대조합니다. 장수에 따라 수십 초 걸릴 수 있습니다."}
+            </span>
+          </div>
+        </div>
+      )}
+
       {status === "error" && (
         <p className="error-banner">
           업로드 또는 진단 중 오류가 발생했습니다. zip 구조(images/, labels/)를
