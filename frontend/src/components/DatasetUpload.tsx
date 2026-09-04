@@ -6,6 +6,7 @@ import {
   getReliabilityProfiles,
   uploadDataset,
 } from "../api";
+import { ReviewQueue } from "./ReviewQueue";
 import type {
   LabelDiagnosisResult,
   ReliabilityProfile,
@@ -250,31 +251,9 @@ export function DatasetUpload() {
             </table>
           </div>
 
-          <h4 className="subsection-heading">우선 재검수 박스 (상위 20개)</h4>
-          <div className="table-scroll">
-            <table className="report-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>이미지</th>
-                  <th>라벨</th>
-                  <th>의심 유형</th>
-                  <th>근거</th>
-                </tr>
-              </thead>
-              <tbody>
-                {labelResult.review_queue.slice(0, 20).map((item) => (
-                  <tr key={`${item.image}-${item.label_index}-${item.rank}`}>
-                    <td>{item.rank}</td>
-                    <td>{item.image}</td>
-                    <td>{item.label_index === null ? "—" : `#${item.label_index}`}</td>
-                    <td>{item.label}</td>
-                    <td>{item.detail}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <h4 className="subsection-heading">우선 재검수 박스</h4>
+          <ReviewQueue items={labelResult.review_queue}
+                       datasetId={labelResult.dataset_id} />
 
           {labelResult.ruler && (
             <>

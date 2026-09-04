@@ -346,3 +346,599 @@
   align-items: center;
   gap: 8px;
 }
+
+/* ---- 탭 ----
+   제품(진단)과 연구 근거를 가른다. 예전에는 한 페이지에 일곱 장이 쌓여 있어
+   실제로 쓰는 기능이 3778px 아래에 있었다. */
+.tab-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 32px;
+  border-bottom: 1.5px solid var(--black);
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--muted);
+  background: transparent;
+  border: 1.5px solid transparent;
+  border-bottom: none;
+  margin-bottom: -1.5px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.tab:hover {
+  color: var(--gray);
+}
+
+.tab-active {
+  color: var(--black);
+  background: var(--white);
+  border-color: var(--black);
+}
+
+/* 선택된 탭이 아래 경계선을 덮어 "앞에 있는 종이"처럼 보이게 한다 */
+.tab-active::after {
+  content: "";
+  display: block;
+  position: relative;
+  top: 12px;
+  height: 1.5px;
+  width: calc(100% + 40px);
+  margin-left: -20px;
+  background: var(--white);
+}
+
+.tab-hint {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0;
+}
+
+.tab-active .tab-hint {
+  color: var(--gray);
+}
+
+.icon-button {
+  font-size: 14px;
+  line-height: 1;
+  padding: 7px 10px;
+  border: 1.5px solid var(--black);
+  background: var(--white);
+  color: var(--black);
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: var(--neon);
+}
+
+/* ============================================================
+   랜딩
+   흑백 + 네온이라는 정체성은 유지하되, 위계를 크게 벌려 "있어 보이게".
+   큰 활자 / 넓은 여백 / 네온은 아껴서 결정적인 곳에만.
+   ============================================================ */
+.landing {
+  display: flex;
+  flex-direction: column;
+  gap: 96px;
+}
+
+.hero {
+  position: relative;
+  padding: 72px 0 8px;
+}
+
+/* 배경 격자. 아주 옅게 깔아 화면이 비어 보이지 않게 한다. */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: -24px -50vw 0;
+  background-image:
+    linear-gradient(var(--hair) 1px, transparent 1px),
+    linear-gradient(90deg, var(--hair) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 80% at 30% 20%, #000 20%, transparent 75%);
+          mask-image: radial-gradient(ellipse 70% 80% at 30% 20%, #000 20%, transparent 75%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.hero-kicker {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--gray);
+  border: 1.5px solid var(--black);
+  padding: 6px 12px;
+  margin-bottom: 28px;
+}
+
+.hero-title {
+  font-size: clamp(44px, 8vw, 88px);
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+  margin-bottom: 24px;
+}
+
+.hero-title em {
+  font-style: normal;
+  /* 네온을 글자 뒤에 깔면 형광펜으로 그은 것처럼 보인다 */
+  background: linear-gradient(transparent 58%, var(--neon) 58%);
+  padding-right: 6px;
+}
+
+.hero-sub {
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--gray);
+  max-width: 620px;
+  margin-bottom: 36px;
+}
+
+.hero-sub strong {
+  color: var(--black);
+}
+
+.hero-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cta {
+  display: inline-block;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 14px 28px;
+  border: 1.5px solid var(--black);
+  background: var(--black);
+  color: var(--white);
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.cta:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 var(--neon);
+}
+
+.cta:active {
+  transform: translate(0, 0);
+  box-shadow: none;
+}
+
+.cta-ghost {
+  background: var(--white);
+  color: var(--black);
+}
+
+/* ---- 흐르는 띠 ---- */
+.marquee {
+  overflow: hidden;
+  border-top: 1.5px solid var(--black);
+  border-bottom: 1.5px solid var(--black);
+  padding: 14px 0;
+  background: var(--neon);
+}
+
+.marquee-track {
+  display: flex;
+  gap: 40px;
+  width: max-content;
+  animation: marquee 28s linear infinite;
+}
+
+.marquee-item {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: #000;   /* 네온 위에서는 항상 검정 */
+}
+
+.marquee-item::after {
+  content: "／";
+  margin-left: 40px;
+  opacity: 0.35;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  /* 목록을 두 번 이어 붙였으므로 절반만 움직이면 이음매가 안 보인다 */
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track { animation: none; }
+  .cta { transition: none; }
+}
+
+/* ---- 숫자 띠 ---- */
+.stat-band {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5px;
+  background: var(--black);
+  border: 1.5px solid var(--black);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 28px 24px;
+  background: var(--white);
+}
+
+.stat-value {
+  font-size: 46px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;   /* 세는 동안 폭이 안 흔들리게 */
+}
+
+.stat-suffix {
+  font-size: 22px;
+  margin-left: 2px;
+  color: var(--gray);
+}
+
+.stat-label {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.stat-note {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ---- 공통 섹션 제목 ---- */
+.section-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--gray);
+  padding-bottom: 12px;
+  border-bottom: 1.5px solid var(--black);
+  margin-bottom: 32px;
+}
+
+/* ---- 3단계 ---- */
+.step-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+.step {
+  border: 1.5px solid var(--black);
+  padding: 28px 24px;
+  background: var(--white);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.step:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: 6px 6px 0 var(--black);
+}
+
+.step-n {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.step h3 {
+  font-size: 19px;
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+
+.step p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--gray);
+  margin: 0;
+}
+
+/* ---- 근거 미리보기 ---- */
+.teaser-lead,
+.teaser-foot {
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--gray);
+  max-width: 680px;
+}
+
+.teaser-lead strong,
+.teaser-foot strong {
+  color: var(--black);
+}
+
+.teaser-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 28px 0;
+}
+
+.teaser-row {
+  display: grid;
+  grid-template-columns: 200px 1fr 64px;
+  align-items: center;
+  gap: 16px;
+}
+
+.teaser-name {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.teaser-bar {
+  height: 26px;
+  border: 1.5px solid var(--black);
+  background: var(--raise);
+}
+
+.teaser-fill {
+  height: 100%;
+  background: var(--neon);
+  /* 화면에 들어올 때 자라나게. 폭은 인라인 스타일이 정한다. */
+  animation: grow 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.teaser-fill-weak {
+  background: repeating-linear-gradient(
+    45deg, var(--hair), var(--hair) 6px, var(--white) 6px, var(--white) 12px
+  );
+}
+
+@keyframes grow {
+  from { transform: scaleX(0); transform-origin: left; }
+  to { transform: scaleX(1); transform-origin: left; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .teaser-fill { animation: none; }
+  .step:hover { transform: none; }
+}
+
+.teaser-num {
+  font-size: 17px;
+  font-weight: 800;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- 마무리 ---- */
+.final-cta {
+  border: 1.5px solid var(--black);
+  padding: 56px 32px;
+  text-align: center;
+  background: var(--raise);
+}
+
+.final-cta h2 {
+  font-size: clamp(22px, 3.5vw, 32px);
+  margin-bottom: 24px;
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 640px) {
+  .teaser-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .teaser-num { text-align: left; }
+  .landing { gap: 64px; }
+}
+
+.brand {
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--white);
+  padding: 16px 0;
+  border-bottom: 1.5px solid var(--black);
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-select {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border: 1.5px solid var(--black);
+  background: var(--white);
+  color: var(--black);
+  cursor: pointer;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.app { max-width: 1080px; }
+
+/* ---- 재검수 대기열 ----
+   읽는 표가 아니라 일하는 목록이다. 진행률·필터·내보내기가 한 줄에 있어야
+   스크롤하지 않고 손이 닿는다. */
+.queue-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--black);
+  background: var(--raise);
+}
+
+.queue-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 220px;
+}
+
+.queue-progress-bar {
+  flex: 1;
+  height: 10px;
+  border: 1.5px solid var(--black);
+  background: var(--white);
+}
+
+.queue-progress-fill {
+  height: 100%;
+  background: var(--neon);
+  transition: width 0.2s ease;
+}
+
+.queue-progress-text {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.queue-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.queue-search {
+  font-size: 12px;
+  padding: 6px 10px;
+  border: 1.5px solid var(--black);
+  background: var(--white);
+  color: var(--black);
+  width: 130px;
+}
+
+.queue-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* 다 본 줄은 뒤로 물러나되 사라지지는 않게 — 되짚어볼 수 있어야 한다 */
+.row-done td {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--hair);
+}
+
+.row-done td:first-child {
+  text-decoration: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .queue-progress-fill { transition: none; }
+}
+
+/* ---- 카드 위계 ----
+   전부 같은 두께의 검정 상자라 무엇이 중요한지 안 보였다. 제목에 배경을
+   깔아 카드의 '머리'를 만들고, 본문과 구분한다. */
+.card {
+  background: var(--white);
+}
+
+.card > h2:first-child,
+.card > .card-heading-row:first-child {
+  margin: -24px -24px 20px;
+  padding: 14px 24px;
+  border-bottom: 1.5px solid var(--black);
+  background: var(--raise);
+}
+
+.card > .card-heading-row:first-child {
+  margin-bottom: 20px;
+}
+
+.subsection-heading {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 32px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--neon);
+}
+
+/* 표를 읽기 편하게 — 줄무늬 대신 hover로 현재 줄만 강조 */
+.report-table tbody tr:hover {
+  background: var(--raise);
+}
+
+.report-table td {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 업로드 영역이 '떨어뜨려 넣는 곳'처럼 보이게 */
+.upload-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  border: 2px dashed var(--hair);
+  background: var(--raise);
+}
+
+.upload-meta {
+  font-size: 12px;
+  color: var(--gray);
+  margin: 12px 0 0;
+  line-height: 1.6;
+}
+
+@media (max-width: 720px) {
+  .app { padding: 24px 16px 64px; }
+  .app-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .tab-bar { overflow-x: auto; }
+  .card > h2:first-child { margin: -24px -24px 20px; }
+}

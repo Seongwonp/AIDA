@@ -4,6 +4,7 @@ import { getAggregatedConditions, getConditions, getDiagnosis, getObbConditions,
 import { ConditionsTable } from "./components/ConditionsTable";
 import { DatasetUpload } from "./components/DatasetUpload";
 import { ErrorReportTable } from "./components/ErrorReportTable";
+import { Landing } from "./components/Landing";
 import { ObbComparisonChart } from "./components/ObbComparisonChart";
 import { PerformanceChart } from "./components/PerformanceChart";
 import { QualityScoreCard } from "./components/QualityScoreCard";
@@ -25,6 +26,31 @@ function App() {
   // 기본 프로파일의 클래스 구성과 같은 값으로 시작한다. 빈 문자열로 두면
   // select는 첫 항목("Car")을 보여주는데 상태는 ""라 화면과 상태가 어긋난다.
   const [classes, setClasses] = useState("Car");
+  // 제품(진단)과 연구 근거를 갈라 놓는다. 기본은 진단 — 이 페이지에 처음
+  // 온 사람이 하려는 일이다.
+  const [tab, setTab] = useState<"diagnose" | "evidence">("diagnose");
+  // 처음 온 사람에게는 랜딩을, 한 번 시작한 뒤에는 바로 도구를 보여준다.
+  const [view, setView] = useState<"landing" | "app">("landing");
+  // 화면을 오래 들여다보는 도구라 어두운 쪽을 원하는 사람이 있다.
+  // 시스템 설정을 기본값으로 삼되, 고르면 그 선택을 기억한다.
+  const [dark, setDark] = useState(() => {
+    try {
+      const saved = localStorage.getItem("aida-theme");
+      if (saved) return saved === "dark";
+    } catch {
+      /* 사생활 보호 모드 등에서 접근이 막힐 수 있다 */
+    }
+    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
+  });
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = dark ? "dark" : "light";
+    try {
+      localStorage.setItem("aida-theme", dark ? "dark" : "light");
+    } catch {
+      /* 저장 못 해도 이번 세션에는 적용된다 */
+    }
+  }, [dark]);
 
   useEffect(() => {
     getReliabilityProfiles()
@@ -63,10 +89,13 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <span className="app-kicker">AI 데이터 품질 인증 플랫폼</span>
-        <h1>AIDA</h1>
+        <button className="brand" onClick={() => setView("landing")}
+                aria-label="처음 화면으로">
+          <span className="app-kicker">AI 데이터 품질 인증 플랫폼</span>
+          <h1>AIDA</h1>
+        </button>
         <div className="header-controls">
-          {profiles.length > 1 && (
+          {view === "app" && profiles.length > 1 && (
             <>
               <label htmlFor="class-config-select" className="sr-only">
                 성능 패턴 DB의 클래스 구성
@@ -86,25 +115,69 @@ function App() {
               </select>
             </>
           )}
-          <button className="refresh-button" onClick={() => load()} disabled={loading}>
-            {loading ? "불러오는 중..." : "새로고침"}
+          <button
+            className="icon-button"
+            onClick={() => setDark((v) => !v)}
+            aria-label={dark ? "밝은 화면으로" : "어두운 화면으로"}
+            title={dark ? "밝은 화면으로" : "어두운 화면으로"}
+          >
+            {dark ? "☀" : "☾"}
           </button>
+          {view === "app" && (
+            <button className="refresh-button" onClick={() => load()} disabled={loading}>
+              {loading ? "불러오는 중..." : "새로고침"}
+            </button>
+          )}
         </div>
       </header>
 
-      {error && <p className="error-banner">{error}</p>}
+      {view === "app" && error && <p className="error-banner">{error}</p>}
 
-      {loading && !summary && <p className="loading-banner">데이터를 불러오는 중입니다...</p>}
+      {view === "app" && loading && !summary && (
+        <p className="loading-banner">데이터를 불러오는 중입니다...</p>
+      )}
 
-      {summary && diagnosis && roiEstimate && (
+      {view === "landing" && <Landing onStart={() => setView("app")} />}
+
+      {view === "app" && (
+      <nav className="tab-bar" role="tablist" aria-label="화면 전환">
+        <button
+          role="tab"
+          aria-selected={tab === "diagnose"}
+          className={`tab ${tab === "diagnose" ? "tab-active" : ""}`}
+          onClick={() => setTab("diagnose")}
+        >
+          진단
+          <span className="tab-hint">내 데이터셋을 올려 재검수 목록을 받는다</span>
+        </button>
+        <button
+          role="tab"
+          aria-selected={tab === "evidence"}
+          className={`tab ${tab === "evidence" ? "tab-active" : ""}`}
+          onClick={() => setTab("evidence")}
+        >
+          근거
+          <span className="tab-hint">그 판단이 무엇에 기반하는지</span>
+        </button>
+      </nav>
+      )}
+
+      {view === "app" && summary && diagnosis && roiEstimate && (
         <main className="app-grid">
-          <QualityScoreCard summary={summary} />
-          <RoiEstimateCard estimate={roiEstimate} />
-          <PerformanceChart conditions={conditions} aggregated={aggregated} />
-          <ConditionsTable conditions={conditions} />
-          <ObbComparisonChart aabbConditions={conditions} obbConditions={obbConditions} />
-          <ErrorReportTable reports={diagnosis.error_reports} />
-          <DatasetUpload />
+          {tab === "diagnose" ? (
+            <>
+              <DatasetUpload />
+              <QualityScoreCard summary={summary} />
+              <RoiEstimateCard estimate={roiEstimate} />
+            </>
+          ) : (
+            <>
+              <PerformanceChart conditions={conditions} aggregated={aggregated} />
+              <ConditionsTable conditions={conditions} />
+              <ObbComparisonChart aabbConditions={conditions} obbConditions={obbConditions} />
+              <ErrorReportTable reports={diagnosis.error_reports} />
+            </>
+          )}
         </main>
       )}
     </div>

@@ -1,15 +1,42 @@
+/* 색은 전부 토큰으로 둔다. 다크 모드에서 토큰만 바꾸면 되고, 어딘가에
+   #000을 직접 박아두면 그 자리만 안 바뀌어 티가 난다. */
 :root {
-  --black: #000000;
-  --white: #ffffff;
-  --neon: #ccff00;
-  --gray: #595959;
-  --muted: #8c8c8c;
-  --hair: #e0e0e0;
+  --black: #000000;   /* 전경 — 글자와 테두리 */
+  --white: #ffffff;   /* 배경 */
+  --neon: #ccff00;    /* 강조. 이 제품의 정체성이라 다크에서도 유지한다 */
+  --gray: #595959;    /* 보조 글자 */
+  --muted: #8c8c8c;   /* 더 약한 글자 */
+  --hair: #e0e0e0;    /* 표 구분선 */
+  --raise: #fafafa;   /* 살짝 떠 보이게 하는 면 */
 
+  color-scheme: light;
   font: 16px/1.5 "Apple SD Gothic Neo", system-ui, sans-serif;
   color: var(--black);
   background: var(--white);
   -webkit-font-smoothing: antialiased;
+}
+
+/* 고르지 않았으면 시스템 설정을 따른다. 고른 뒤에는 data-theme이 이긴다. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --black: #f2f2f2;
+    --white: #121212;
+    --gray: #a6a6a6;
+    --muted: #737373;
+    --hair: #2e2e2e;
+    --raise: #1c1c1c;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --black: #f2f2f2;
+  --white: #121212;
+  --gray: #a6a6a6;
+  --muted: #737373;
+  --hair: #2e2e2e;
+  --raise: #1c1c1c;
+  color-scheme: dark;
 }
 
 * {
@@ -18,10 +45,26 @@
 
 body {
   margin: 0;
+  background: var(--white);
+  color: var(--black);
 }
 
 h1,
 h2 {
   color: var(--black);
   margin: 0;
+}
+
+/* 네온 위에는 항상 검정 글씨여야 읽힌다. 다크 모드에서 --black이 밝아지므로
+   토큰을 그대로 쓰면 네온 위에 흰 글씨가 얹혀 안 보인다. */
+.badge-certified,
+.icon-button:hover,
+.tab-active .tab-badge {
+  color: #000;
+}
+
+/* 키보드로 옮겨 다닐 때 어디 있는지 보여야 한다 */
+:where(button, select, input, a):focus-visible {
+  outline: 2px solid var(--neon);
+  outline-offset: 2px;
 }
