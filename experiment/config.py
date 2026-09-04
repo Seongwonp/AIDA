@@ -251,10 +251,14 @@ REFINED_CONDITIONS: list[Condition] = [
     for c in ("scale_m30", "missing_30", "width_m30")
     for pct in (30, 50, 70)
 ] + [
-    # 데이터 크기와 라벨 품질을 분리하는 대조군: refined50과 같은 200장에
+    # 데이터 크기와 라벨 품질을 분리하는 대조군: refined50과 같은 프레임에
     # 깨끗한 라벨을 붙인 것. 손해가 크기 탓인지 오류 탓인지 가른다.
-    Condition("clean_sub200", "refined", 0),
-    Condition("clean_sub400", "refined", 0),
+    #
+    # 규모마다 절반의 크기가 다르므로(400장→200, 3200장→1600) 현재 N_TRAIN에
+    # 맞는 것을 자동으로 넣는다. 예전 실험이 쓰던 200·400도 남겨둔다 —
+    # compare_refine_scale.py가 이름으로 찾는다.
+    *[Condition(f"clean_sub{n}", "refined", 0)
+      for n in dict.fromkeys([200, 400, N_TRAIN // 2])],
 ]
 
 # 재검수 시뮬레이션이 만든 조건들(docs/21 T). simulate_review.py가 폴더를

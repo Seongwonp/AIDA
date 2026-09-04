@@ -46,7 +46,11 @@ def main():
     parser.add_argument("--evaluate", action="store_true", help="조건마다 학습 직후 평가까지 실행해 metrics.csv 갱신")
     args = parser.parse_args()
 
-    by_name = {c.name: c for c in config.CONDITIONS}
+    # config.CONDITIONS만 보면 정제·재검수 시뮬레이션 조건을 못 찾는다.
+    # _BY_NAME은 조건군 넷을 전부 합친 것이라 이름으로 오는 요청을 다 받는다
+    # — 하드코딩된 조건 목록이 새 조건군을 놓치는 건 이 프로젝트에서
+    # 네 번째로 나온 사고 유형이다(check_consistency.py 참고).
+    by_name = dict(config._BY_NAME)
     if args.condition:
         names = [args.condition]
     elif args.priority == "1":

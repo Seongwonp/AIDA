@@ -10,13 +10,19 @@ HTTP Range 요청을 이용해 실제로 필요한 이미지(Car 클래스가 �
 import argparse
 import io
 import random
+import sys
 import zipfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import requests
 from tqdm import tqdm
 
 import config
+
+# 콘솔 기본 인코딩(cp949)으로는 한글 설명의 일부 기호를 못 찍는다.
+# 다른 실험 스크립트들은 전부 이 줄을 갖고 있는데 여기만 빠져 있었다.
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 LABEL_ZIP_URL = config.KITTI_LABEL_URL
 IMAGE_ZIP_URL = config.KITTI_IMAGE_URL
@@ -101,7 +107,8 @@ def frames_with_car(label_dir: Path) -> list[str]:
     return frames
 
 
-def download_images(frame_ids: list[str], dest_dir: Path) -> None:
+def download_images(frame_ids: list[str], dest_dir: Path,
+                    workers: int = 6) -> None:
     dest_dir.mkdir(parents=True, exist_ok=True)
     missing = [fid for fid in frame_ids if not (dest_dir / f"{fid}.png").exists()]
     if not missing:
@@ -109,12 +116,27 @@ def download_images(frame_ids: list[str], dest_dir: Path) -> None:
         return
 
     print(f"이미지 zip에 Range 요청으로 접속 중 (필요한 {len(missing)}장만 부분 다운로드)...")
-    remote = HTTPRangeFile(IMAGE_ZIP_URL)
-    with zipfile.ZipFile(remote) as zf:
-        for fid in tqdm(missing, desc="이미지 다운로드"):
-            member = f"{IMAGE_ZIP_MEMBER_PREFIX}{fid}.png"
-            data = zf.read(member)
-            (dest_dir / f"{fid}.png").write_bytes(data)
+
+    # 한 장에 2.9초씩 걸린다 — 요청마다 왕복 지연이 붙기 때문이지 대역폭
+    # 문제가 아니다. 4000장이면 3시간이 넘는다. 연결을 여러 개 열어 겹친다.
+    #
+    # HTTPRangeFile은 읽기 위치를 하나만 갖고 있어 스레드 간 공유가 안 된다.
+    # 그래서 작업자마다 자기 연결을 연다. 동시 요청 수는 서버에 부담을 주지
+    # 않을 만큼만 둔다.
+    def fetch(fids: list[str], progress) -> None:
+        with zipfile.ZipFile(HTTPRangeFile(IMAGE_ZIP_URL)) as zf:
+            for fid in fids:
+                out = dest_dir / f"{fid}.png"
+                if not out.exists():
+                    out.write_bytes(zf.read(f"{IMAGE_ZIP_MEMBER_PREFIX}{fid}.png"))
+                progress.update(1)
+
+    chunks = [missing[i::workers] for i in range(workers)]
+    with tqdm(total=len(missing), desc="이미지 다운로드") as progress:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = [pool.submit(fetch, c, progress) for c in chunks if c]
+            for f in futures:
+                f.result()                     # 예외를 삼키지 않는다
     print(f"이미지 {len(missing)}장 다운로드 완료 → {dest_dir}")
 
 
@@ -150,6 +172,8 @@ def main(argv: list[str] | None = None):
     parser.add_argument("--n-total", type=int, default=config.N_TRAIN + config.N_VAL,
                          help="다운로드할 총 이미지 수 (기본: config.N_TRAIN + config.N_VAL)")
     parser.add_argument("--seed", type=int, default=config.SEED)
+    parser.add_argument("--workers", type=int, default=6,
+                        help="동시 다운로드 연결 수")
     parser.add_argument("--select", choices=["random", "cyclist_rich", "nested"], default=None,
                         help="프레임 선택 전략 (기본: AIDA_FRAME_SELECT, 없으면 random). "
                              "cyclist_rich는 Cyclist가 많은 프레임을 골라 그 클래스의 "
@@ -186,7 +210,7 @@ def main(argv: list[str] | None = None):
     print(f"{len(selected)}개 프레임 선택 (전략={strategy}) → {selection_file}")
 
     image_dir = config.RAW_DIR / "training" / "image_2"
-    download_images(selected, image_dir)
+    download_images(selected, image_dir, workers=args.workers)
     print("다운로드 완료.")
 
 
