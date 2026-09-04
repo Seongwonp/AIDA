@@ -307,10 +307,8 @@ export function DatasetUpload() {
                     <tr>
                       <th>학습 시드에 따른 흔들림</th>
                       <td>
-                        ±{labelResult.ruler.seed_spread_pp.toFixed(2)}%p
-                        {labelResult.ruler.seed_spread_pp >= 2
-                          ? " — 같은 설정으로 다시 학습하면 이만큼 달라집니다"
-                          : " — 다시 학습해도 거의 그대로입니다"}
+                        ±{labelResult.ruler.seed_spread_pp.toFixed(2)}%p — 같은 설정으로
+                        다시 학습하기만 해도 이만큼 달라집니다 (시드 7개 실측)
                       </td>
                     </tr>
                   </tbody>
@@ -363,10 +361,12 @@ export function DatasetUpload() {
               </div>
               <p className="report-caveat">
                 이 표의 값은 <b>시드 하나에서 잰 것</b>입니다. 자를 학습 시드만
-                바꿔 다시 만들면 상위 10% 정밀도가
+                바꿔 다시 만들면 자 전체로는
                 {labelResult.ruler ? ` ±${labelResult.ruler.seed_spread_pp.toFixed(2)}%p` : " 수 %p"}
-                {" "}흔들립니다 (docs/21 AD). 유형 사이의 순서는 그보다 큰 차이로
-                갈리지만, 개별 수치를 소수점까지 믿을 근거는 아직 없습니다.
+                {" "}흔들리는데, <b>유형별로는 그보다 훨씬 큽니다</b> — 실측에서
+                세로 길이는 ±1.4%p로 거의 안 움직인 반면 중심점 가로는 ±14%p까지
+                흔들렸습니다 (docs/21 AF, 시드 7개). 개별 수치를 소수점까지 믿을
+                근거는 없고, 유형 사이의 큰 차이만 읽으세요.
               </p>
             </>
           )}
