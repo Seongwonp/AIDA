@@ -45,16 +45,30 @@ _esuffix = f"_e{ERROR_SEED}" if ERROR_SEED != 42 else ""
 # broad        cyclist_rich 평가셋을 제외한 1000장 — "넓고 강한 자" 실험용
 #              (docs/21 Z의 빠진 사분면). 유출을 막으려고 평가 프레임을 뺐다.
 FRAME_SELECT = os.environ.get("AIDA_FRAME_SELECT", "random")
-SELECTED_FRAMES_FILE = (
-    RAW_DIR / ("selected_frames.txt" if FRAME_SELECT == "random"
-               else f"selected_frames_{FRAME_SELECT}.txt")
-)
+
+# 어느 데이터셋인가. kitti가 기본이고, coco는 진짜 도메인 이동 실험용이다
+# (docs/21 다음 할 일 5번). Y~AH의 자 비교는 전부 KITTI 안에서 만든 자들끼리라,
+# "도메인이 어긋나면"의 어긋남이 같은 데이터셋 안에서의 프레임 선택 차이였다.
+DATASET = os.environ.get("AIDA_DATASET", "kitti")
+
+# 프레임 목록 파일도 데이터셋별로 갈라야 한다. 안 그러면 COCO의 random 선택이
+# KITTI의 selected_frames.txt를 덮는다.
+_frames_name = "selected_frames"
+if DATASET != "kitti":
+    _frames_name += f"_{DATASET}"
+if FRAME_SELECT != "random":
+    _frames_name += f"_{FRAME_SELECT}"
+SELECTED_FRAMES_FILE = RAW_DIR / f"{_frames_name}.txt"
 
 _DEFAULT_N_TRAIN = 400
 N_TRAIN = int(os.environ.get("AIDA_N_TRAIN", _DEFAULT_N_TRAIN))  # 300~500장 범위 중간값
 N_VAL = int(os.environ.get("AIDA_N_VAL", 120))  # 100~150장 범위 중간값
 
 _csuffix = "" if CLASS_NAMES == ["Car"] else "_mc"
+if DATASET != "kitti":
+    # 데이터셋이 다르면 라벨도 가중치도 지표도 전부 다른 실험이다.
+    # 클래스 구성보다 앞에 붙여 이름만 보고도 어느 데이터인지 알게 한다.
+    _csuffix += f"_{DATASET}"
 if FRAME_SELECT != "random":
     # 프레임 구성이 다르면 라벨도 가중치도 지표도 다른 실험이다
     _csuffix += f"_{FRAME_SELECT}"

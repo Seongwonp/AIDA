@@ -137,26 +137,41 @@ def check_path_namespacing() -> None:
             "METRICS_CSV": m.METRICS_CSV.name,
             "MULTI_SEED_CSV": m.MULTI_SEED_CSV.name,
             "AGG_CSV": m.AGG_CSV.name,
+            "FRAMES": m.SELECTED_FRAMES_FILE.name,
         }
 
-    original = os.environ.get("AIDA_CLASSES")
+    saved = {k: os.environ.get(k) for k in ("AIDA_CLASSES", "AIDA_DATASET")}
     try:
         os.environ["AIDA_CLASSES"] = "Car"
+        os.environ.pop("AIDA_DATASET", None)
         single = paths()
         os.environ["AIDA_CLASSES"] = "Car,Van"
         multi = paths()
+        # 데이터셋 차원도 같이 본다. COCO 실험이 KITTI 산출물을 덮으면
+        # 두 결과가 섞이는데, 오류 없이 조용히 그렇게 된다.
+        os.environ["AIDA_CLASSES"] = "Car"
+        os.environ["AIDA_DATASET"] = "coco"
+        other_dataset = paths()
     finally:
-        if original is None:
-            os.environ.pop("AIDA_CLASSES", None)
-        else:
-            os.environ["AIDA_CLASSES"] = original
+        for k, v in saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
         importlib.reload(config)
 
-    same = [k for k in single if single[k] == multi[k]]
+    # 프레임 목록은 클래스 구성과 무관하게 같아야 한다 — KITTI Car와 4클래스는
+    # 같은 520장을 쓴다. 데이터셋·프레임 선택 전략에 따라서만 갈리면 된다.
+    class_scoped = [k for k in single if k != "FRAMES"]
+    same = [k for k in class_scoped if single[k] == multi[k]]
     if same:
         problems.append(f"클래스 구성이 달라도 같은 경로를 쓰는 항목: {same} "
                         f"— 한쪽이 다른 쪽 결과를 덮는다")
-    notes.append(f"산출물 경로 {len(single)}종이 클래스 구성별로 분리됨")
+    same_ds = [k for k in single if single[k] == other_dataset[k]]
+    if same_ds:
+        problems.append(f"데이터셋이 달라도 같은 경로를 쓰는 항목: {same_ds} "
+                        f"— COCO 실험이 KITTI 결과를 덮는다")
+    notes.append(f"산출물 경로 {len(single)}종이 클래스 구성·데이터셋별로 분리됨")
 
 
 def check_weights_present() -> None:
