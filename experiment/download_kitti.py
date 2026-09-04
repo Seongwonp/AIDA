@@ -11,6 +11,7 @@ import argparse
 import io
 import random
 import sys
+import time
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -23,6 +24,8 @@ import config
 # 콘솔 기본 인코딩(cp949)으로는 한글 설명의 일부 기호를 못 찍는다.
 # 다른 실험 스크립트들은 전부 이 줄을 갖고 있는데 여기만 빠져 있었다.
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+MAX_RETRIES = 5
 
 LABEL_ZIP_URL = config.KITTI_LABEL_URL
 IMAGE_ZIP_URL = config.KITTI_IMAGE_URL
@@ -123,13 +126,33 @@ def download_images(frame_ids: list[str], dest_dir: Path,
     # HTTPRangeFile은 읽기 위치를 하나만 갖고 있어 스레드 간 공유가 안 된다.
     # 그래서 작업자마다 자기 연결을 연다. 동시 요청 수는 서버에 부담을 주지
     # 않을 만큼만 둔다.
+    # 수천 장을 받는 동안 서버가 연결을 끊는 일이 실제로 있었다
+    # (RemoteDisconnected, 3836/4000에서). 연결을 새로 열고 이어간다 —
+    # 이미 받은 파일은 건너뛰므로 중복 전송도 없다.
     def fetch(fids: list[str], progress) -> None:
-        with zipfile.ZipFile(HTTPRangeFile(IMAGE_ZIP_URL)) as zf:
-            for fid in fids:
-                out = dest_dir / f"{fid}.png"
-                if not out.exists():
-                    out.write_bytes(zf.read(f"{IMAGE_ZIP_MEMBER_PREFIX}{fid}.png"))
-                progress.update(1)
+        remaining = list(fids)
+        attempt = 0
+        while remaining:
+            try:
+                with zipfile.ZipFile(HTTPRangeFile(IMAGE_ZIP_URL)) as zf:
+                    while remaining:
+                        fid = remaining[0]
+                        out = dest_dir / f"{fid}.png"
+                        if not out.exists():
+                            data = zf.read(f"{IMAGE_ZIP_MEMBER_PREFIX}{fid}.png")
+                            out.write_bytes(data)
+                        remaining.pop(0)
+                        progress.update(1)
+                        attempt = 0
+            except (OSError, requests.RequestException) as e:
+                attempt += 1
+                if attempt > MAX_RETRIES:
+                    raise RuntimeError(
+                        f"{len(remaining)}장을 남기고 포기한다 (마지막 오류: {e!r})") from e
+                wait = min(2 ** attempt, 30)
+                progress.write(f"연결이 끊겼다 — {wait}초 뒤 재시도 "
+                               f"({attempt}/{MAX_RETRIES}, {len(remaining)}장 남음)")
+                time.sleep(wait)
 
     chunks = [missing[i::workers] for i in range(workers)]
     with tqdm(total=len(missing), desc="이미지 다운로드") as progress:
