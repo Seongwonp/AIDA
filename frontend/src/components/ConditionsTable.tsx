@@ -1,19 +1,6 @@
+import { typeLabel } from "../labels";
 import type { ConditionMetric } from "../types";
 
-// backend/app/routers/report.py의 TYPE_LABELS, PerformanceChart.tsx와 목록을 맞춰야 함
-// (한 곳에만 새 오류 유형을 추가하면 다른 화면엔 영어 타입명이 그대로 노출됨)
-const TYPE_LABELS: Record<string, string> = {
-  none: "기준선",
-  width: "가로 오류",
-  height: "세로 오류",
-  rotation: "회전각 오류",
-  translation_x: "가로이동 오류",
-  translation_y: "세로이동 오류",
-  scale: "스케일 오류",
-  missing: "라벨 누락",
-  duplicate: "라벨 중복",
-  class_swap: "클래스 오기입",
-};
 
 // magnitude는 오류 유형에 따라 단위가 다르다: 회전각만 도(°), 나머지는 전부 %
 function formatMagnitude(condition: ConditionMetric) {
@@ -110,7 +97,7 @@ export function ConditionsTable({ conditions }: { conditions: ConditionMetric[] 
             {conditions.map((condition) => (
               <tr key={condition.condition}>
                 <td>{condition.condition}</td>
-                <td>{TYPE_LABELS[condition.type] ?? condition.type}</td>
+                <td>{typeLabel(condition.type)}</td>
                 <td>{formatMagnitude(condition)}</td>
                 <td>{condition.map50.toFixed(3)}</td>
                 <td>{condition.map50_95.toFixed(3)}</td>
