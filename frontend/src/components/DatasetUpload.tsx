@@ -28,6 +28,8 @@ export function DatasetUpload() {
   const [profile, setProfile] = useState("");
   // 추천에 따라 자동으로 바꿔 쓴 경우의 사유. 빈 문자열이면 안 바꿨다.
   const [autoProfile, setAutoProfile] = useState("");
+  // 서버가 알려준 실패 사유. 없으면 일반 안내로 돌아간다.
+  const [errorDetail, setErrorDetail] = useState("");
 
   useEffect(() => {
     // 프로파일을 못 불러와도 진단 자체는 기본값으로 돌아가야 하므로 조용히 넘긴다
@@ -40,6 +42,7 @@ export function DatasetUpload() {
   const handleRun = async () => {
     if (!file) return;
     setStatus("uploading");
+    setErrorDetail("");
     setResult(null);
     setLabelResult(null);
     try {
@@ -61,7 +64,12 @@ export function DatasetUpload() {
       setLabelResult(labels);
       setResult(diagnosis);
       setStatus("done");
-    } catch {
+    } catch (e) {
+      // FastAPI는 400/422에 detail을 담아 준다. axios는 그걸 response.data에
+      // 넣어두는데, 지금까지는 통째로 버리고 있었다.
+      const detail = (e as { response?: { data?: { detail?: unknown } } })
+        ?.response?.data?.detail;
+      setErrorDetail(typeof detail === "string" ? detail : "");
       setStatus("error");
     }
   };
@@ -151,10 +159,17 @@ export function DatasetUpload() {
       )}
 
       {status === "error" && (
-        <p className="error-banner">
-          업로드 또는 진단 중 오류가 발생했습니다. zip 구조(images/, labels/)를
-          확인하거나 잠시 후 다시 시도하세요.
-        </p>
+        <div className="error-banner">
+          <strong>업로드 또는 진단에 실패했습니다.</strong>
+          {errorDetail ? (
+            <p className="error-detail">{errorDetail}</p>
+          ) : (
+            <p className="error-detail">
+              zip 구조(images/, labels/)를 확인하거나, 백엔드가 떠 있는지 보고
+              잠시 후 다시 시도하세요.
+            </p>
+          )}
+        </div>
       )}
 
       {dataset && (
