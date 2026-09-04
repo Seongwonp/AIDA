@@ -166,14 +166,15 @@ function App() {
       {view === "app" && summary && diagnosis && roiEstimate && (
         <main className="app-grid">
           {tab === "diagnose" ? (
-            <>
-              <DatasetUpload />
-              <QualityScoreCard summary={summary} />
-              <RoiEstimateCard estimate={roiEstimate} />
-            </>
+            <DatasetUpload />
           ) : (
             <>
               <MethodCard />
+              {/* 이 둘은 **기준 실험 데이터**(KITTI 412장)의 요약이지 사용자가
+                  올린 데이터가 아니다. 진단 탭에 두면 자기 데이터 점수로
+                  읽히므로 근거 쪽에 둔다. */}
+              <QualityScoreCard summary={summary} />
+              <RoiEstimateCard estimate={roiEstimate} />
               <PerformanceChart conditions={conditions} aggregated={aggregated} />
               <ConditionsTable conditions={conditions} />
               <ObbComparisonChart aabbConditions={conditions} obbConditions={obbConditions} />
