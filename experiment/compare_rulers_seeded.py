@@ -132,7 +132,12 @@ def main() -> None:
     # 않으므로 그 조건에서 내는 지목은 정의상 전부 오탐이다 — 못 맞힌 게
     # 아니라 다른 이유로 지목한 것인데, 섞어 재면 그 자에게만 벌점이 된다.
     ap.add_argument("--exclude", nargs="*", default=[],
-                    help="제외할 조건 이름 (예: class_swap_30)")
+                    help="추가로 제외할 조건 이름 (예: class_swap_30)")
+    # clean은 오류를 주입하지 않으므로 지목이 전부 오탐이고, 상위 10% 정밀도가
+    # 구조적으로 항상 0%다. 자의 실력이 아니라 상수인데 평균에 섞이면 절대값을
+    # 2~3%p 끌어내린다(docs/21 AF에서 발견). 기본으로 뺀다.
+    ap.add_argument("--keep-clean", action="store_true",
+                    help="clean 조건도 평균에 넣는다 (과거 수치와 맞출 때만)")
     # Z·AA의 원래 수치는 조건 전체에서 나왔다. 대표 9개로 줄이면 간격 자체가
     # 달라지므로(먼 이동 vs 약한 이동이 +12.2%p → +6.6%p), 그 주장을 정면으로
     # 검증하려면 같은 조건 집합으로 재야 한다.
@@ -148,9 +153,12 @@ def main() -> None:
     SEEDS = args.seeds
     if args.all_conditions:
         CONDITIONS = [c.name for c in config.CONDITIONS + config.CLASS_SWAP_CONDITIONS]
-    if args.exclude:
-        CONDITIONS = [c for c in CONDITIONS if c not in args.exclude]
-        print(f"제외한 조건: {', '.join(args.exclude)}")
+    dropped = list(args.exclude)
+    if not args.keep_clean and "clean" in CONDITIONS:
+        dropped.append("clean")
+    if dropped:
+        CONDITIONS = [c for c in CONDITIONS if c not in dropped]
+        print(f"제외한 조건: {', '.join(dropped)}")
     print(f"조건 {len(CONDITIONS)}개 × 자 {len(args.rulers)}종 × 학습 시드 {SEEDS}")
     verify_seeds_differ(args.rulers)
     print()
