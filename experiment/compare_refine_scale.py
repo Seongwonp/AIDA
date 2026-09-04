@@ -34,11 +34,20 @@ LEGACY_SETUPS = [
 # 중첩 부분집합으로 다시 잰 네 점. 한 순열에서 앞부터 잘라 쓰므로 작은
 # 규모가 큰 규모의 부분집합이고, 평가셋은 목록 끝에서 고정된다. 그래서
 # 네 점이 서로 비교 가능하다.
-NESTED_SETUPS = [
-    (f"{n}장", f"metrics_nested{'' if n == 400 else f'_n{n}'}.csv",
-     f"clean_sub{n // 2}", n, n // 2)
-    for n in (400, 800, 1600, 3200)
-]
+def nested_setups(mc: bool) -> list:
+    """중첩 부분집합 네 점. mc면 다중 클래스 산출물을 읽는다.
+
+    경로 접미사는 config가 정하는 규칙과 같아야 한다 — 클래스 구성이
+    앞(_mc), 프레임 선택이 그다음(_nested), 규모가 마지막(_n800)이다.
+    여기서 어긋나면 없는 파일을 찾거나, 더 나쁘게는 다른 실험의 수치를
+    읽는다.
+    """
+    prefix = "metrics_mc_nested" if mc else "metrics_nested"
+    return [
+        (f"{n}장", f"{prefix}{'' if n == 400 else f'_n{n}'}.csv",
+         f"clean_sub{n // 2}", n, n // 2)
+        for n in (400, 800, 1600, 3200)
+    ]
 
 
 def main() -> None:
@@ -46,10 +55,15 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="자기 정제 손익을 규모별로 분해")
     ap.add_argument("--legacy", action="store_true",
                     help="X가 쓴 두 점(프레임 구성이 다름)을 본다")
+    ap.add_argument("--mc", action="store_true",
+                    help="다중 클래스 규모 실험 결과를 본다 (X와 같은 클래스 구성)")
     args = ap.parse_args()
-    setups = LEGACY_SETUPS if args.legacy else NESTED_SETUPS
-    print("프레임 구성이 다른 두 점 (docs/21 X)" if args.legacy
-          else "중첩 부분집합 · 고정 평가셋")
+    setups = LEGACY_SETUPS if args.legacy else nested_setups(args.mc)
+    if args.legacy:
+        print("프레임 구성이 다른 두 점 (docs/21 X)")
+    else:
+        print(f"중첩 부분집합 · 고정 평가셋 · "
+              f"{'다중 클래스' if args.mc else 'Car 단일 클래스'}")
     print()
 
     rows = []
