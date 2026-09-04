@@ -5,6 +5,7 @@ import { ConditionsTable } from "./components/ConditionsTable";
 import { DatasetUpload } from "./components/DatasetUpload";
 import { ErrorReportTable } from "./components/ErrorReportTable";
 import { Landing } from "./components/Landing";
+import { MethodCard } from "./components/MethodCard";
 import { ObbComparisonChart } from "./components/ObbComparisonChart";
 import { PerformanceChart } from "./components/PerformanceChart";
 import { QualityScoreCard } from "./components/QualityScoreCard";
@@ -172,6 +173,7 @@ function App() {
             </>
           ) : (
             <>
+              <MethodCard />
               <PerformanceChart conditions={conditions} aggregated={aggregated} />
               <ConditionsTable conditions={conditions} />
               <ObbComparisonChart aabbConditions={conditions} obbConditions={obbConditions} />

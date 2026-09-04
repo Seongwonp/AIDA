@@ -942,3 +942,45 @@
   .tab-bar { overflow-x: auto; }
   .card > h2:first-child { margin: -24px -24px 20px; }
 }
+
+/* ---- 방법론 ---- */
+.method-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.method-item {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--hair);
+}
+
+.method-item:last-child {
+  border-bottom: none;
+  padding-bottom: 8px;
+}
+
+.method-item dt {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.method-item dt::before {
+  content: "Q. ";
+  color: var(--muted);
+}
+
+.method-item dd {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--gray);
+}
+
+.method-item code {
+  font-size: 12px;
+  padding: 1px 5px;
+  border: 1px solid var(--hair);
+  background: var(--raise);
+}
