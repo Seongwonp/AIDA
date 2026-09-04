@@ -260,6 +260,57 @@ export function DatasetUpload() {
             </table>
           </div>
 
+          {labelResult.ruler && (
+            <>
+              <h3 className="subsection-heading">무엇으로 쟀는가 — 기준 모델</h3>
+              <p className="report-caveat">
+                진단은 기준 모델의 예측을 자로 삼아 라벨을 잽니다. 그래서 어느
+                자를 썼는지가 결과를 읽는 데 필요합니다. 실측으로는 자의 학습량도
+                클래스 폭도 그 자체로는 진단 품질을 정하지 않았습니다 — 정하는 것은
+                이 데이터 분포에서의 실력입니다 (docs/21 AA·AD).
+              </p>
+              <div className="table-scroll">
+                <table className="report-table">
+                  <tbody>
+                    <tr>
+                      <th>기준 모델</th>
+                      <td>{labelResult.ruler.profile_label}</td>
+                    </tr>
+                    <tr>
+                      <th>아는 클래스</th>
+                      <td>{labelResult.ruler.classes.join(", ")}</td>
+                    </tr>
+                    <tr>
+                      <th>클래스 오기입 판정</th>
+                      <td>
+                        {labelResult.ruler.class_aware
+                          ? "함"
+                          : "하지 않음 — 이 자가 아는 클래스 수가 데이터와 달라 위치만으로 진단합니다"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>학습 시드에 따른 흔들림</th>
+                      <td>
+                        ±{labelResult.ruler.seed_spread_pp.toFixed(2)}%p
+                        {labelResult.ruler.seed_spread_pp >= 2
+                          ? " — 같은 설정으로 다시 학습하면 이만큼 달라집니다"
+                          : " — 다시 학습해도 거의 그대로입니다"}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              {labelResult.ruler.unknown_class_ids.length > 0 && (
+                <p className="error-banner">
+                  업로드한 라벨에 이 기준 모델이 모르는 클래스가 있습니다 (인덱스{" "}
+                  {labelResult.ruler.unknown_class_ids.join(", ")}). 그 클래스의
+                  라벨은 오탐이 아니라 <b>아예 검사되지 않습니다</b> — 화면에
+                  아무 흔적도 남지 않으니, 해당 클래스를 아는 기준 모델을 고르세요.
+                </p>
+              )}
+            </>
+          )}
+
           {labelResult.robustness.length > 0 && (
             <>
               <h3 className="subsection-heading">유형별 신뢰도 — 기준 모델이 맞지 않으면</h3>
@@ -294,6 +345,13 @@ export function DatasetUpload() {
                   </tbody>
                 </table>
               </div>
+              <p className="report-caveat">
+                이 표의 값은 <b>시드 하나에서 잰 것</b>입니다. 자를 학습 시드만
+                바꿔 다시 만들면 상위 10% 정밀도가
+                {labelResult.ruler ? ` ±${labelResult.ruler.seed_spread_pp.toFixed(2)}%p` : " 수 %p"}
+                {" "}흔들립니다 (docs/21 AD). 유형 사이의 순서는 그보다 큰 차이로
+                갈리지만, 개별 수치를 소수점까지 믿을 근거는 아직 없습니다.
+              </p>
             </>
           )}
 

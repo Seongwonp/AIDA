@@ -113,7 +113,26 @@ export interface LabelDiagnosisResult {
   by_type: SuspicionTypeCount[];
   review_queue: ReviewQueueItem[];
   robustness: TypeRobustness[];
+  ruler: RulerInfo | null;
   caveat: string;
+}
+
+/**
+ * 이 진단에 자로 쓴 기준 모델 (docs/21 AA·AD).
+ * AA와 AD가 같은 말을 한다: 대상 분포에서의 실력이 전부다. 학습량도 클래스
+ * 폭도 그 자체로는 진단 품질을 정하지 않는다. 그래서 어느 자를 썼는지가
+ * 결과를 읽는 데 필요한 정보다.
+ */
+export interface RulerInfo {
+  profile: string;
+  profile_label: string;
+  classes: string[];
+  weights: string;
+  class_aware: boolean;
+  /** 학습 시드만 바꿔 같은 자를 만들었을 때 상위 10% 정밀도의 표준편차(%p) */
+  seed_spread_pp: number;
+  /** 업로드된 라벨에 이 자가 모르는 클래스 인덱스 */
+  unknown_class_ids: number[];
 }
 
 /**

@@ -137,6 +137,32 @@ class TypeRobustness(BaseModel):
     robust: bool
 
 
+class RulerInfo(BaseModel):
+    """이 진단에 자로 쓴 기준 모델 (docs/21 AA·AD).
+
+    AA와 AD가 같은 말을 한다: **대상 분포에서의 실력이 전부다.** 학습량도
+    클래스 폭도 그 자체로는 진단 품질을 정하지 않는다. 그래서 어느 자를
+    썼는지가 결과를 읽는 데 필요한 정보인데, 지금까지는 결과에 남지 않아
+    사용자가 알 수 없었다.
+    """
+    # 고른 신뢰도 프로파일. ""이면 기본값(KITTI Car 단일 클래스).
+    profile: str
+    profile_label: str
+    # 이 자가 아는 클래스. 데이터에 이보다 많은 클래스가 있으면 못 보는 게 있다.
+    classes: list[str]
+    # 가중치가 어디서 왔는가 (실행 폴더 이름)
+    weights: str
+    # 클래스 대조를 하는가. 자가 아는 클래스 수가 데이터와 다르면 끈다 —
+    # 안 그러면 멀쩡한 라벨을 전부 클래스 오기입으로 부른다(docs/21 Z).
+    class_aware: bool
+    # 같은 종류의 자를 학습 시드만 바꿔 만들었을 때 상위 10% 정밀도의
+    # 표준편차(%p, docs/21 AD). 평균만 보면 안 보이는 값이다 — 고객마다
+    # 기준 모델을 새로 학습한다면 편차가 작은 쪽이 약속하기 쉽다.
+    seed_spread_pp: float
+    # 업로드된 라벨에 이 자가 모르는 클래스 인덱스가 있는가
+    unknown_class_ids: list[int] = []
+
+
 class LabelDiagnosisResult(BaseModel):
     dataset_id: str
     generated_at: str
@@ -151,6 +177,8 @@ class LabelDiagnosisResult(BaseModel):
     review_queue: list[ReviewQueueItem]
     # 이 데이터셋에서 실제로 나온 유형들에 대해서만 채운다
     robustness: list[TypeRobustness] = []
+    # 어느 자로 쟀는가. 예전 진단 결과에는 없으므로 None을 허용한다.
+    ruler: RulerInfo | None = None
     caveat: str
 
 

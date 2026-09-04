@@ -24,6 +24,7 @@ from app.models import (
     LabelDiagnosisResult,
     PerformanceVector,
     ReliabilityProfileInfo,
+    RulerInfo,
     TypeRobustness as ReliabilityRow,
     ReviewQueueItem,
     SuspicionTypeCount,
@@ -333,15 +334,84 @@ def _available_profiles() -> list[str]:
     )
 
 
+# 학습 시드만 바꿔 같은 자를 세 번 만들었을 때 상위 10% 정밀도의 표준편차
+# (%p, docs/21 AD, 조건 30개). 평균만 보면 안 보이는 값이다.
+#
+# 단일 클래스 자가 다중 클래스 자보다 열 배 안정적이다(±0.46 vs ±4.80).
+# 아는 것만 말하고 나머지는 침묵하는 자는 학습 시드가 바뀌어도 흔들릴
+# 경계가 적기 때문이다. 고객마다 기준 모델을 새로 학습하는 구조에서는
+# 평균보다 이쪽이 중요할 수 있다.
+RULER_SEED_SPREAD_PP = {1: 0.46, 4: 4.80}
+DEFAULT_SEED_SPREAD_PP = 4.80
+
+
+def _ruler_weights(classes: list[str]) -> Path:
+    """이 클래스 구성에서 자로 쓸 가중치 경로.
+
+    config.py가 클래스 구성마다 실행 폴더를 나눠 쓴다(Car는 runs/, 그 외는
+    runs_mc/). 여기서도 같은 규칙을 따라야 진단 서브프로세스가 실제로 여는
+    파일과 일치한다.
+    """
+    suffix = "" if classes in ([], ["Car"]) else "_mc"
+    return EXPERIMENT_ROOT / f"runs{suffix}" / "clean" / "weights" / "best.pt"
+
+
 def _weights_exist(classes: list[str]) -> bool:
     """이 클래스 구성의 기준 모델이 이 환경에 있는가.
 
-    config.py가 클래스 구성마다 경로를 나눠 쓰므로(Car는 runs/, 그 외는
-    runs_mc/) 여기서도 같은 규칙으로 찾는다. 없는 프로파일을 고르면 진단이
-    서브프로세스 오류로 실패하는데, 고르기 전에 알려주는 편이 낫다.
+    없는 프로파일을 고르면 진단이 서브프로세스 오류로 실패하는데, 고르기
+    전에 알려주는 편이 낫다.
     """
-    suffix = "" if classes in ([], ["Car"]) else "_mc"
-    return (EXPERIMENT_ROOT / f"runs{suffix}" / "clean" / "weights" / "best.pt").exists()
+    return _ruler_weights(classes).exists()
+
+
+def _label_class_ids(dataset_dir: Path, cap: int = 2000) -> set[int]:
+    """업로드된 라벨에 실제로 등장하는 클래스 인덱스.
+
+    자가 아는 클래스보다 데이터에 많은 클래스가 있으면, 그 자는 나머지를
+    아예 못 본다 — 오탐이 아니라 침묵이라 화면에 아무 흔적도 안 남는다.
+    그래서 고르기 전에 알려줘야 한다. 파일을 전부 열 필요는 없으므로
+    앞에서 cap장만 본다.
+    """
+    ids: set[int] = set()
+    labels_dir = dataset_dir / "labels"
+    if not labels_dir.is_dir():
+        return ids
+    for i, path in enumerate(sorted(labels_dir.rglob("*.txt"))):
+        if i >= cap:
+            break
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for line in text.splitlines():
+            parts = line.split()
+            if parts:
+                try:
+                    ids.add(int(float(parts[0])))
+                except ValueError:
+                    pass
+    return ids
+
+
+def _ruler_info(profile: str | None, dataset_dir: Path) -> RulerInfo:
+    """이 진단이 어느 자를 쓰는지. 진단 시점에 확정해 사이드카로 남긴다."""
+    name = profile or ""
+    classes = _profile_classes(_resolve_profile(name)) if name else ["Car"]
+    classes = classes or ["Car"]
+    unknown = sorted(i for i in _label_class_ids(dataset_dir) if i >= len(classes))
+    return RulerInfo(
+        profile=name,
+        profile_label=(PROFILE_LABELS.get(name, name) if name
+                       else "기본 (KITTI Car 단일 클래스 실측)"),
+        classes=classes,
+        weights=_ruler_weights(classes).parent.parent.parent.name,
+        # 자가 아는 클래스 수와 데이터의 클래스 수가 맞아야 클래스 대조를 한다
+        # (docs/21 Z). 여기서는 자가 2개 이상 알면 대조하는 것으로 본다.
+        class_aware=len(classes) > 1 and not unknown,
+        seed_spread_pp=RULER_SEED_SPREAD_PP.get(len(classes), DEFAULT_SEED_SPREAD_PP),
+        unknown_class_ids=unknown,
+    )
 
 
 @router.get("/reliability-profiles", response_model=list[ReliabilityProfileInfo])
@@ -408,6 +478,31 @@ def diagnose_dataset(dataset_id: str) -> UploadDiagnosisResult:
     return _load_diagnosis_json(dataset_id)
 
 
+RULER_SIDECAR = "ruler.json"
+
+
+def _save_ruler_sidecar(dataset_id: str, ruler: RulerInfo) -> None:
+    """어느 자로 쟀는지 결과 옆에 남긴다.
+
+    label_diagnosis.json은 실험 스크립트가 쓰는 것이라 프로파일 선택을
+    모른다. 그렇다고 진단 응답에만 담으면, 나중에 GET으로 결과를 다시
+    불러왔을 때 자가 사라진다 — 리포트를 나중에 여는 게 정상 사용이므로
+    파일로 남겨야 한다.
+    """
+    (UPLOADS_DIR / dataset_id / RULER_SIDECAR).write_text(
+        ruler.model_dump_json(indent=2), encoding="utf-8")
+
+
+def _load_ruler_sidecar(dataset_id: str) -> RulerInfo | None:
+    path = UPLOADS_DIR / dataset_id / RULER_SIDECAR
+    if not path.exists():
+        return None                    # 이 기능 전에 만든 결과 — 자를 모른다
+    try:
+        return RulerInfo.model_validate_json(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
 def _load_label_diagnosis_json(dataset_id: str) -> LabelDiagnosisResult:
     result_path = UPLOADS_DIR / dataset_id / "label_diagnosis.json"
     if not result_path.exists():
@@ -449,6 +544,7 @@ def _load_label_diagnosis_json(dataset_id: str) -> LabelDiagnosisResult:
             for item in data["review_queue"]
         ],
         robustness=_robustness(summary["by_type"]),
+        ruler=_load_ruler_sidecar(dataset_id),
         caveat=data["caveat"] + (
             " 이 수치는 기준 모델이 이 데이터와 같은 도메인일 때의 것입니다. "
             "도메인이 어긋나면 유형마다 다르게 무너지며, 아래 유형별 신뢰도를 "
@@ -466,6 +562,12 @@ def diagnose_dataset_labels(dataset_id: str, profile: str | None = None) -> Labe
     27개 조건 실측 기준 진단 정확도 92.6%
     (experiment/label_diagnosis_eval.json).
     """
+    dataset_dir = UPLOADS_DIR / dataset_id
+    if not dataset_dir.is_dir():
+        raise HTTPException(404, "데이터셋을 찾을 수 없습니다.")
+    # 자 정보를 먼저 확정해 남긴다 — 진단이 끝난 뒤에는 어떤 프로파일로
+    # 돌렸는지 알 길이 없다.
+    _save_ruler_sidecar(dataset_id, _ruler_info(profile, dataset_dir))
     _run_experiment_script(dataset_id, "diagnose_labels.py", ["--upload-id", dataset_id],
                            env_extra=_profile_env(profile))
     return _load_label_diagnosis_json(dataset_id)
