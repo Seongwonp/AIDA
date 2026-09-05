@@ -26,8 +26,12 @@ jobs:
       - run: pip install -r requirements.txt
         working-directory: backend
       # conftest가 app을 import하므로 backend 안에서 돌아야 한다.
-      # 학습 가중치가 없는 환경이라 자(기준 모델)를 실제로 필요로 하는 5건은
-      # 건너뛴다 — 숨기는 게 아니라 이유를 적고 넘어간다.
+      #
+      # 학습 가중치가 없어 자(기준 모델)를 실제로 필요로 하는 5건이 건너뛰어진다.
+      # **이건 정당화가 아니라 구멍이다** — 제품의 핵심 경로(자로 실제 진단을
+      # 돌리는 서브프로세스)가 CI에서 한 번도 안 탄다. 닫으려면 아주 작은
+      # fixture 가중치나 가짜 predictor로 그 경로를 한 번은 태워야 한다.
+      # (외부 리뷰 지적, 아직 안 함)
       - run: python -m pytest tests -q
         working-directory: backend
 

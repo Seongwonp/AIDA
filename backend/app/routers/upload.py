@@ -8,6 +8,7 @@ backend에 얹지 않는 것과 같은 구조다.
 import html
 import json
 import os
+import re
 import shutil
 import subprocess
 import uuid
@@ -846,7 +847,13 @@ def delete_dataset(dataset_id: str) -> Response:
     한 번 틀리면 되돌릴 수 없으므로, 한 조각짜리 이름인지 보고 해석한 경로가
     정말 UPLOADS_DIR의 바로 아래인지 다시 확인한다.
     """
-    if dataset_id != Path(dataset_id).name or dataset_id in ("", ".", ".."):
+    # 우리가 만드는 id는 uuid4().hex[:12]다. 형식을 강제해 **지우는 사정거리를
+    # 데이터셋으로 좁힌다** — 경로 검사만으로도 밖으로는 못 나가지만, 그러면
+    # UPLOADS_DIR 바로 아래 아무 폴더나 지울 수 있다. 파괴적인 동작이라
+    # "밖으로 못 나간다"보다 "이것만 지운다"가 맞는 계약이다.
+    if not re.fullmatch(r"[0-9a-f]{12}", dataset_id):
+        raise HTTPException(400, "데이터셋 id 형식이 아닙니다.")
+    if dataset_id != Path(dataset_id).name:
         raise HTTPException(400, "허용되지 않은 경로입니다.")
 
     root = UPLOADS_DIR.resolve()

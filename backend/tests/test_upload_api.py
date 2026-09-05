@@ -132,7 +132,21 @@ def test_delete_removes_the_dataset(client, tmp_path):
 
 
 def test_delete_missing_dataset_is_404(client):
-    assert client.delete("/api/datasets/nope").status_code == 404
+    """형식은 맞지만 없는 id."""
+    assert client.delete("/api/datasets/0123456789ab").status_code == 404
+
+
+@pytest.mark.parametrize("bad", ["nope", "ZZZZZZZZZZZZ", "0123456789", "0123456789abc"])
+def test_delete_rejects_ids_that_are_not_dataset_ids(client, bad):
+    """지우는 사정거리를 데이터셋으로 좁힌다.
+
+    경로 검사만으로도 UPLOADS_DIR 밖으로는 못 나가지만, 그러면 그 아래 아무
+    폴더나 지울 수 있다. 파괴적인 동작이라 "밖으로 못 나간다"보다 "이것만
+    지운다"가 맞는 계약이다. 외부 리뷰가 지적한 것.
+    """
+    res = client.delete(f"/api/datasets/{bad}")
+    assert res.status_code == 400, res.text
+    assert "형식" in res.json()["detail"]
 
 
 @pytest.mark.parametrize("bad", ["..", "%2e%2e", "a%2Fb"])
