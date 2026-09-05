@@ -115,6 +115,20 @@ def score_condition(condition: config.Condition, limit: int | None) -> dict:
     images_dir, labels_dir = root / "images" / "train", root / "labels" / "train"
     findings, total_labels, fit = run(images_dir, labels_dir, limit,
                                       weights=ruler_for(condition))
+    return score_findings(condition, findings, total_labels, limit, fit)
+
+
+def score_findings(condition: config.Condition, findings: list, total_labels: int,
+                   limit: int | None, fit: dict | None = None) -> dict:
+    """이미 얻은 findings를 정답지와 대조해 채점한다.
+
+    score_condition에서 떼어냈다. 자 여러 대의 findings를 합쳐서 채점하는
+    실험(합의, docs/22 계획 1번)이 **같은 채점 규칙**을 써야 하기 때문이다 —
+    규칙이 다르면 합의가 좋아 보이는 게 규칙 때문인지 합의 때문인지 모른다.
+    """
+    root = config.CONDITIONS_DIR / condition.name
+    images_dir = root / "images" / "train"
+    fit = fit or {"matched_labels": 0, "predictions": 0, "confidences": []}
     record = load_injection_record(condition.name)
 
     # 진단이 스스로 예측한 대표 유형 — 신뢰도 보정 기준은 정답(주입 유형)이
