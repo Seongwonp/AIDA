@@ -1040,3 +1040,21 @@
   line-height: 1.6;
   color: var(--gray);
 }
+
+/* ---- 의심 박스 미리보기 ----
+   목록만으로는 "그 이미지의 몇 번째 박스"까지만 알 수 있어, 검수자가 직접
+   이미지를 열고 세어야 했다. 박스 주변만 잘라 보여준다 — 전체를 축소하면
+   작은 상자는 몇 픽셀이 되어 아무것도 안 보인다. */
+.box-preview {
+  display: block;
+  width: 120px;
+  height: 120px;
+  border: 1.5px solid var(--black);
+  background: var(--raise);
+  image-rendering: pixelated;
+}
+
+.preview-missing {
+  font-size: 11px;
+  color: var(--muted);
+}

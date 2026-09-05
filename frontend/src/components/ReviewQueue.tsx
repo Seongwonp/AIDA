@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { BoxPreview } from "./BoxPreview";
 import type { ReviewQueueItem } from "../types";
 
 /**
@@ -51,6 +52,9 @@ export function ReviewQueue({ items, datasetId }:
   const [query, setQuery] = useState("");
   const [done, setDone] = useState<Set<string>>(() => loadDone(datasetId));
   const [onlyOpen, setOnlyOpen] = useState(false);
+  // 미리보기는 이미지를 내려받으므로 기본으로 켜두면 목록이 큰 데이터셋에서
+  // 수십 장을 한꺼번에 받는다. 필요할 때 켜게 한다.
+  const [preview, setPreview] = useState(false);
 
   const types = useMemo(() => {
     const seen = new Map<string, string>();
@@ -122,6 +126,12 @@ export function ReviewQueue({ items, datasetId }:
             안 본 것만
           </label>
 
+          <label className="queue-check">
+            <input type="checkbox" checked={preview}
+                   onChange={(e) => setPreview(e.target.checked)} />
+            미리보기
+          </label>
+
           <button className="refresh-button" onClick={download}
                   disabled={shown.length === 0}>
             CSV 내려받기
@@ -142,6 +152,7 @@ export function ReviewQueue({ items, datasetId }:
                 <th scope="col">라벨</th>
                 <th scope="col">의심 유형</th>
                 <th scope="col">근거</th>
+                {preview && <th scope="col">미리보기</th>}
               </tr>
             </thead>
             <tbody>
@@ -159,6 +170,16 @@ export function ReviewQueue({ items, datasetId }:
                     <td>{item.label_index ?? "—"}</td>
                     <td>{item.label}</td>
                     <td>{item.detail}</td>
+                    {preview && (
+                      <td>
+                        {item.box ? (
+                          <BoxPreview datasetId={datasetId} image={item.image}
+                                      box={item.box} />
+                        ) : (
+                          <span className="preview-missing">좌표 없음</span>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 );
               })}

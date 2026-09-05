@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, UploadFile
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 
 from app.config import EXPERIMENT_PYTHON, EXPERIMENT_ROOT, UPLOADS_DIR
 from app.models import (
@@ -610,6 +610,7 @@ def _load_label_diagnosis_json(dataset_id: str) -> LabelDiagnosisResult:
                 label=SUSPICION_LABELS.get(item["suspicion"], item["suspicion"]),
                 severity=item["severity"],
                 detail=item["detail"],
+                box=item.get("box"),
             )
             for item in data["review_queue"]
         ],
@@ -641,6 +642,43 @@ def diagnose_dataset_labels(dataset_id: str, profile: str | None = None) -> Labe
     _run_experiment_script(dataset_id, "diagnose_labels.py", ["--upload-id", dataset_id],
                            env_extra=_profile_env(profile))
     return _load_label_diagnosis_json(dataset_id)
+
+
+IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".bmp", ".webp"}
+IMAGE_MEDIA_TYPES = {
+    ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+    ".bmp": "image/bmp", ".webp": "image/webp",
+}
+
+
+@router.get("/{dataset_id}/images/{name}")
+def get_dataset_image(dataset_id: str, name: str) -> FileResponse:
+    """업로드된 이미지 한 장. 재검수 목록이 문제 박스를 그려 보여줄 때 쓴다.
+
+    이름은 사용자가 올린 zip에서 온 값이라 그대로 경로에 붙이면 안 된다.
+    Path(name).name으로 디렉터리 부분을 떼고, 해석한 경로가 정말 그 데이터셋
+    폴더 안인지 한 번 더 확인한다.
+    """
+    images_dir = (UPLOADS_DIR / dataset_id / "images").resolve()
+    if not images_dir.is_dir():
+        raise HTTPException(404, "데이터셋을 찾을 수 없습니다.")
+
+    safe = Path(name).name                      # ../ 같은 것을 떼어낸다
+    suffix = Path(safe).suffix.lower()
+    if suffix not in IMAGE_SUFFIXES:
+        raise HTTPException(400, f"이미지 파일이 아닙니다: {safe}")
+
+    # zip 안에서 하위 폴더에 들어 있을 수 있어 재귀로 찾는다
+    matches = [p for p in images_dir.rglob(safe) if p.is_file()]
+    if not matches:
+        raise HTTPException(404, f"이미지가 없습니다: {safe}")
+
+    path = matches[0].resolve()
+    # 심볼릭 링크 등으로 폴더 밖을 가리킬 수 있으니 마지막으로 확인한다
+    if not path.is_relative_to(images_dir):
+        raise HTTPException(400, "허용되지 않은 경로입니다.")
+
+    return FileResponse(path, media_type=IMAGE_MEDIA_TYPES.get(suffix, "image/png"))
 
 
 @router.get("/{dataset_id}/label-diagnosis", response_model=LabelDiagnosisResult)

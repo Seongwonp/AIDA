@@ -103,6 +103,8 @@ export interface ReviewQueueItem {
   label: string;
   severity: number;
   detail: string;
+  /** 픽셀 좌표 [x1, y1, x2, y2]. 이 기능 전 진단 결과에는 없다. */
+  box: number[] | null;
 }
 
 export interface LabelDiagnosisResult {

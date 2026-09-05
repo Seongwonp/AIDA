@@ -189,6 +189,10 @@ def build_result(name: str, findings: list[BoxFinding], total_labels: int, top_n
                 "suspicion": f.suspicion,
                 "severity": f.severity,
                 "detail": f.detail,
+                # 픽셀 좌표 (x1, y1, x2, y2). 화면이 이미지 위에 박스를 그릴 때
+                # 쓴다. 누락 의심은 라벨이 없으므로 "있어야 할 자리"인 예측
+                # 박스가 들어간다 — 그게 그 지목을 가리키는 유일한 수단이다.
+                "box": [round(v, 1) for v in f.box],
             }
             for i, f in enumerate(ranked[:top_n])
         ],

@@ -125,6 +125,9 @@ class ReviewQueueItem(BaseModel):
     label: str
     severity: float
     detail: str
+    # 픽셀 좌표 [x1, y1, x2, y2]. 이 기능 전에 만든 진단 결과에는 없으므로
+    # None을 허용한다 — 그때는 화면이 미리보기를 생략한다.
+    box: list[float] | None = None
 
 
 class TypeRobustness(BaseModel):
