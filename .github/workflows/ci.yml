@@ -27,11 +27,13 @@ jobs:
         working-directory: backend
       # conftest가 app을 import하므로 backend 안에서 돌아야 한다.
       #
-      # 학습 가중치가 없어 자(기준 모델)를 실제로 필요로 하는 5건이 건너뛰어진다.
-      # **이건 정당화가 아니라 구멍이다** — 제품의 핵심 경로(자로 실제 진단을
-      # 돌리는 서브프로세스)가 CI에서 한 번도 안 탄다. 닫으려면 아주 작은
-      # fixture 가중치나 가짜 predictor로 그 경로를 한 번은 태워야 한다.
-      # (외부 리뷰 지적, 아직 안 함)
+      # **건너뛰는 것이 없다.** 예전에는 학습 가중치가 없어 5건이 빠졌고 제품의
+      # 핵심 경로(진단 서브프로세스)가 CI에서 한 번도 안 탔다. 지금은
+      # tests/fake_experiment.py가 자리표시자 자와 torch 없는 가짜 스크립트로
+      # 그 경계를 흉내 내므로, 인자·cwd·환경변수·리턴코드·결과 JSON 모양까지
+      # 실제로 검사된다.
+      #
+      # 여전히 안 보는 것은 **추론 자체**다. GPU가 필요하고 CI에서 못 한다.
       - run: python -m pytest tests -q
         working-directory: backend
 

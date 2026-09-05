@@ -22,3 +22,27 @@ from app.main import app  # noqa: E402
 @pytest.fixture
 def client():
     return TestClient(app)
+
+
+@pytest.fixture
+def fake_experiment(tmp_path, monkeypatch):
+    """자리표시자 자가 놓인 가짜 experiment 루트.
+
+    `_weights_exist`는 파일이 있는지만 보므로, 경로 규칙과 프로파일 해석을
+    검사하는 데는 진짜 가중치가 필요 없다. 이렇게 해야 CI에서도 돌고 **로컬
+    환경에 따라 결과가 달라지지 않는다**.
+
+    돌려주는 것은 (experiment_root, uploads_dir).
+    """
+    from tests import fake_experiment as fake
+    from app.routers import upload
+
+    root = tmp_path / "experiment"
+    uploads = tmp_path / "uploads"
+    uploads.mkdir(parents=True, exist_ok=True)
+    fake.build(root, uploads)
+
+    monkeypatch.setattr(upload, "EXPERIMENT_ROOT", root)
+    monkeypatch.setattr(upload, "EXPERIMENT_PYTHON", fake.python_path())
+    monkeypatch.setattr(upload, "UPLOADS_DIR", uploads)
+    return root, uploads

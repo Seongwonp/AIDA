@@ -104,10 +104,8 @@ def test_sidecar_is_json_the_frontend_can_read(dataset):
 # 서버는 고객 분포를 미리 알 수 없다. 다만 "자가 아예 모르는 클래스가 있는가"는
 # 라벨만 보고도 안다 — 그건 품질 문제가 아니라 구멍이다.
 
-def test_no_suggestion_when_default_covers_the_data():
+def test_no_suggestion_when_default_covers_the_data(fake_experiment):
     """Car 하나뿐이면 기본 기준 모델로 충분하다. 넓힐 이유가 없다."""
-    if not upload._weights_exist(["Car"]):
-        pytest.skip("기본 기준 모델이 이 환경에 학습돼 있지 않음")
     name, reason = upload._suggest_profile({0})
     assert name is None
     assert reason == ""
@@ -131,12 +129,10 @@ def test_empty_labels_get_no_suggestion():
     assert upload._suggest_profile(set()) == (None, "")
 
 
-def test_suggests_a_wider_ruler_when_classes_exceed_default():
+def test_suggests_a_wider_ruler_when_classes_exceed_default(fake_experiment):
     """클래스 3이 있으면 4개를 아는 자가 필요하다."""
     name, reason = upload._suggest_profile({0, 3})
-    if not upload._weights_exist(["Car", "Van", "Pedestrian", "Cyclist"]):
-        pytest.skip("다중 클래스 기준 모델이 이 환경에 없음")
-    assert name, "더 넓은 자가 있는데 추천하지 않았다"
+    assert name == "mc", "더 넓은 자가 있는데 추천하지 않았다"
     assert "3" in reason
 
 

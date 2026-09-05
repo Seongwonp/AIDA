@@ -4,6 +4,8 @@
 없을 때"의 값이 크게 흔들렸다(docs/21 L, 누락 88% → 22%). 그래서 데이터셋마다
 보정 프로파일을 골라 쓸 수 있어야 한다.
 """
+import shutil
+
 import pytest
 
 from app.routers import upload
@@ -36,42 +38,42 @@ def test_no_profile_means_no_env_override():
     assert upload._profile_env("") == {}
 
 
-def _profiles_with_weights() -> list[str]:
-    """프로파일 파일이 있고 **그 자(가중치)까지 있는** 것만.
+def test_known_profile_resolves_under_experiment_root(fake_experiment):
+    """이 검사가 보는 건 자가 진짜인지가 아니라 **배선이 맞는지**다.
 
-    프로파일 JSON은 저장소에 들어 있지만 학습 가중치는 아니다. 자가 없으면
-    _profile_env가 400을 내는 게 맞는 동작이므로, 여기서 그걸 실패로 셀 일이
-    아니다 — 이 검사가 보려는 건 환경변수 배선이다.
+    그래서 자리표시자 자를 놓은 가짜 루트에서 돈다. 원래는 이 기계에 학습된
+    자가 없으면 건너뛰었는데, 그러면 CI에서 통째로 빠지고 "여기서만 통과하는
+    검사"가 된다.
     """
-    out = []
-    for name in upload._available_profiles():
-        path = upload._resolve_profile(name)
-        if upload._weights_exist(upload._profile_classes(path),
-                                 upload._profile_dataset(path)):
-            out.append(name)
-    return out
+    env = upload._profile_env("mc")
+    assert env["AIDA_RELIABILITY_PROFILE"].endswith("reliability_profile_mc.json")
+    root, _ = fake_experiment
+    assert env["AIDA_RELIABILITY_PROFILE"].startswith(str(root))
 
 
-def test_known_profile_resolves_under_experiment_root():
-    names = _profiles_with_weights()
-    if not names:
-        pytest.skip("이 환경에 기준 모델이 학습돼 있는 프로파일이 없음")
-    env = upload._profile_env(names[0])
-    assert env["AIDA_RELIABILITY_PROFILE"].endswith(f"reliability_profile_{names[0]}.json")
-
-
-def test_profile_carries_its_class_configuration():
+def test_profile_carries_its_class_configuration(fake_experiment):
     """상수만 갈아끼우고 클래스 구성이 그대로면 반쪽짜리다.
 
     그 상수는 특정 클래스 구성에서 잰 값이라, 진단도 같은 구성(같은 기준
     모델·같은 클래스 인덱스)으로 돌아가야 한다.
     """
-    names = [n for n in _profiles_with_weights()
-             if upload._profile_classes(upload._resolve_profile(n))]
-    if not names:
-        pytest.skip("클래스 구성이 적혀 있고 기준 모델도 있는 프로파일이 없음")
-    env = upload._profile_env(names[0])
-    assert "AIDA_CLASSES" in env and env["AIDA_CLASSES"]
+    env = upload._profile_env("mc")
+    assert env["AIDA_CLASSES"] == "Car,Van,Pedestrian,Cyclist"
+
+
+def test_profile_without_its_ruler_is_refused(fake_experiment):
+    """프로파일 파일은 있는데 그 자가 없으면 진단을 시작하면 안 된다.
+
+    상수만 바꾸고 엉뚱한 자로 돌면 화면에는 그 프로파일 이름이 찍히는데
+    실제로는 다른 자로 잰 결과가 된다 (docs/21 AI에서 26.0%까지 무너졌다).
+    """
+    from fastapi import HTTPException
+
+    root, _ = fake_experiment
+    shutil.rmtree(root / "runs_mc")            # 자만 치운다
+    with pytest.raises(HTTPException) as e:
+        upload._profile_env("mc")
+    assert e.value.status_code == 400
 
 
 def test_profile_listing_exposes_classes(client):
@@ -79,12 +81,11 @@ def test_profile_listing_exposes_classes(client):
     assert rows[0]["classes"] == ["Car"]
 
 
-def test_unavailable_profile_is_rejected_before_running(monkeypatch):
+def test_unavailable_profile_is_rejected_before_running(fake_experiment, monkeypatch):
     """기준 모델이 없는 프로파일은 서브프로세스 오류가 아니라 400으로 막는다."""
     from fastapi import HTTPException
     names = upload._available_profiles()
-    if not names:
-        pytest.skip("보정 프로파일 파일이 이 환경에 없음")
+    assert names, "가짜 루트에 프로파일이 있어야 한다"
     # _weights_exist는 이제 데이터셋도 받는다 — 프로파일이 어느 데이터셋의
     # 자를 쓰는지 밝히지 않으면 COCO 프로파일이 KITTI 자를 조용히 연다.
     monkeypatch.setattr(upload, "_weights_exist", lambda classes, dataset="kitti": False)
