@@ -11,7 +11,14 @@ vi.stubGlobal("localStorage", {
 });
 
 import type { ReviewQueueItem } from "../types";
-import { keyOf, loadVerdicts, nextCursor, STORE, toCsv } from "./reviewQueueLogic";
+import {
+  clearVerdicts,
+  keyOf,
+  loadVerdicts,
+  nextCursor,
+  STORE,
+  toCsv,
+} from "./reviewQueueLogic";
 
 /**
  * 프론트에 검사가 하나도 없었다. 타입체크와 린트는 "말이 되는가"만 보지
@@ -151,5 +158,24 @@ describe("toCsv — 받는 쪽은 엑셀과 라벨링 도구다", () => {
     const [, first, second] = csv.split("\n");
     expect(first.endsWith("오류 아님")).toBe(true);
     expect(second.endsWith(",")).toBe(true);
+  });
+});
+
+describe("clearVerdicts — 데이터셋을 지우면 판정도 따라간다", () => {
+  beforeEach(() => localStorage.clear());
+
+  test("새 형식과 옛 형식을 둘 다 지운다", () => {
+    // 하나만 지우면 다음에 열 때 옛 형식에서 되살아난다
+    localStorage.setItem(STORE("ds1"), JSON.stringify({ "a#0#width": "hit" }));
+    localStorage.setItem("aida-reviewed-ds1", JSON.stringify(["b#1#height"]));
+    clearVerdicts("ds1");
+    expect(loadVerdicts("ds1")).toEqual({});
+  });
+
+  test("다른 데이터셋은 건드리지 않는다", () => {
+    localStorage.setItem(STORE("ds1"), JSON.stringify({ "a#0#width": "hit" }));
+    localStorage.setItem(STORE("ds2"), JSON.stringify({ "b#1#height": "miss" }));
+    clearVerdicts("ds1");
+    expect(loadVerdicts("ds2")).toEqual({ "b#1#height": "miss" });
   });
 });

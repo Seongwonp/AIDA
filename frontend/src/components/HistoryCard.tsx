@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { deleteDataset, getDatasetHistory } from "../api";
 import type { DatasetHistoryItem } from "../types";
+import { clearVerdicts } from "./reviewQueueLogic";
 
 /**
  * 지난 진단 목록.
@@ -29,6 +30,8 @@ export function HistoryCard({ onOpen }: { onOpen: (datasetId: string) => void })
     setError("");
     try {
       await deleteDataset(datasetId);
+      // 서버에서 지웠으면 브라우저에 남은 판정도 같이 지운다
+      clearVerdicts(datasetId);
       setRows((prev) => prev.filter((r) => r.dataset_id !== datasetId));
     } catch {
       setError("지우지 못했습니다. 서버가 켜져 있는지 확인해 주세요.");

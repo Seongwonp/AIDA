@@ -77,3 +77,21 @@ export function nextCursor(at: number, shownLength: number, onlyOpen: boolean): 
   const next = onlyOpen ? Math.min(at, shownLength - 2) : at + 1;
   return Math.min(Math.max(next, 0), shownLength - 1);
 }
+
+/**
+ * 이 데이터셋의 판정을 브라우저에서 지운다.
+ *
+ * 데이터셋을 지우면 서버에서는 폴더째 사라지는데 판정은 남는다. 사용자가
+ * "지우기"를 누른 이유는 대개 고객 데이터를 치우려는 것이라, 어느 이미지의
+ * 몇 번 박스가 오류였는지가 남아 있으면 기대와 다르다.
+ *
+ * 옛 형식 키도 같이 지운다 — 하나만 지우면 다음에 열 때 되살아난다.
+ */
+export function clearVerdicts(datasetId: string): void {
+  try {
+    localStorage.removeItem(STORE(datasetId));
+    localStorage.removeItem(LEGACY(datasetId));
+  } catch {
+    /* 막혀 있으면 애초에 저장된 것도 없다 */
+  }
+}
