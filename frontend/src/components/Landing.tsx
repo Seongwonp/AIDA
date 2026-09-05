@@ -113,9 +113,13 @@ export function Landing({ onStart }: { onStart: () => void }) {
 
       <div className="marquee" aria-hidden="true">
         <div className="marquee-track">
-          {[...ERROR_TYPES, ...ERROR_TYPES].map((t, i) => (
-            <span key={i} className="marquee-item">{t}</span>
-          ))}
+          {/* 같은 목록을 두 번 이어 붙여 이음매 없이 흐르게 한다. 유형 이름이
+              중복되므로 key에 회차를 함께 넣는다 — 인덱스만 쓰면 목록이
+              바뀔 때 엉뚱한 항목을 재사용한다. */}
+          {[0, 1].flatMap((pass) =>
+            ERROR_TYPES.map((t) => (
+              <span key={`${pass}-${t}`} className="marquee-item">{t}</span>
+            )))}
         </div>
       </div>
 

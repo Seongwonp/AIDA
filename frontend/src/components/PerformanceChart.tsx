@@ -16,9 +16,13 @@ function label(c: { type: string; magnitude: number }) {
   return `${typeLabel(c.type)}${c.magnitude !== 0 ? ` ${c.magnitude > 0 ? "+" : ""}${c.magnitude}` : ""}`;
 }
 
+// 기본값 배열을 인자 자리에 두면 렌더마다 새 배열이 만들어져 참조가 달라진다.
+// 밖에 한 번 만들어 두고 쓴다.
+const NO_AGGREGATE: ConditionMetricAgg[] = [];
+
 export function PerformanceChart({
   conditions,
-  aggregated = [],
+  aggregated = NO_AGGREGATE,
 }: {
   conditions: ConditionMetric[];
   aggregated?: ConditionMetricAgg[];
