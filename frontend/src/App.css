@@ -1240,3 +1240,10 @@
   background: var(--black);
   color: var(--white);
 }
+
+/* 키보드로 잡은 줄. tabIndex=-1이라 마우스로는 절대 안 잡히고, j/k로 옮길
+   때만 들어온다 — 그때는 낭독기가 읽도록 테두리를 분명히 둔다. */
+.report-table tbody tr:focus {
+  outline: 2px solid var(--black);
+  outline-offset: -2px;
+}

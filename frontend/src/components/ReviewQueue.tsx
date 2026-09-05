@@ -117,7 +117,8 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
         setCursor((c) => {
           const next = c < 0 ? (d > 0 ? 0 : shown.length - 1)
                              : Math.min(shown.length - 1, Math.max(0, c + d));
-          rowRefs.current[next]?.scrollIntoView({ block: "nearest" });
+          // 포커스를 옮기면 낭독기가 그 줄을 읽고, 브라우저가 시야로 끌어온다
+          rowRefs.current[next]?.focus({ preventScroll: false });
           return next;
         });
       };
@@ -134,7 +135,7 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
         setVerdict(item, e.key === "f" ? "hit" : "miss");
         const clamped = nextCursor(at, shown.length, onlyOpen);
         setCursor(clamped);
-        rowRefs.current[clamped]?.scrollIntoView({ block: "nearest" });
+        rowRefs.current[clamped]?.focus({ preventScroll: false });
       }
     };
     window.addEventListener("keydown", onKey);
@@ -262,10 +263,14 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
               {shown.map((item, idx) => {
                 const v = verdicts[keyOf(item)];
                 const here = idx === cursor;
+                // tabIndex=-1: Tab으로 서른 줄을 지나가게 할 일은 아니다.
+                // 우리가 j/k로 옮길 때만 포커스가 잡히면 된다.
+
                 return (
                   <tr key={keyOf(item)}
                       ref={(el) => { rowRefs.current[idx] = el; }}
                       onClick={() => setCursor(idx)}
+                      tabIndex={-1}
                       aria-current={here ? "true" : undefined}
                       className={[v ? `row-${v}` : "", here ? "row-cursor" : ""]
                         .filter(Boolean).join(" ")}>
