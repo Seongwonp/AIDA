@@ -299,6 +299,26 @@ def present_types(summary: dict) -> set[str]:
     }
 
 
+def review_order(findings: list[BoxFinding], summary: dict) -> list[BoxFinding]:
+    """재검수 순서: 계통적이라고 판정한 유형을 먼저, 그 안에서 심각도 순.
+
+    심각도만으로 정렬하면 **어긋난 자에서 목록 맨 위가 아래보다 나빠진다.**
+    유형 신뢰도 두 벌(present/noise)이 겹치기 때문이다 — class_mismatch의
+    noise 값 0.990이 width의 present 값 0.820보다 높아서, 진단이 "계통적이지
+    않다"고 판정한 유형이 맨 위에 앉는다.
+
+    그 상수는 맞는 자로 잰 값이라(docs/21 L) 자가 어긋나면 안 맞는다. 실측:
+    어긋난 자 5대에서 @5 정밀도가 평균 +0.42, 맞는 자에서도 +0.01로 손해가
+    없었다 (docs/21 AN).
+
+    **심각도 값은 안 바꾼다.** 화면과 CSV에 나가는 숫자이고, 유형 안에서는
+    여전히 쓸모가 있다.
+    """
+    present = present_types(summary)
+    return sorted(findings,
+                  key=lambda f: (f.suspicion not in present, -f.severity))
+
+
 def rescore(findings: list[BoxFinding], summary: dict) -> list[BoxFinding]:
     """데이터셋 전체를 본 뒤 severity를 다시 매긴다.
 

@@ -19,7 +19,7 @@ from ultralytics import YOLO
 
 import config
 from label_diagnosis import (
-    match_boxes,Box, BoxFinding, diagnose_image, rescore,
+    match_boxes,Box, BoxFinding, diagnose_image, rescore, review_order,
                              review_value, summarize)
 
 UPLOADS_DIR = config.EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "uploads"
@@ -195,7 +195,9 @@ def build_result(name: str, findings: list[BoxFinding], total_labels: int,
     # 반면 클래스 가중은 상위 10% 정밀도를 97.2% → 89.1%로 확실히 깎는다.
     # 확인된 비용은 있고 확인된 이득은 없으므로 되돌린다. review_value는
     # 남겨둔다 — 표본을 늘리면 판단이 달라질 수 있다.
-    ranked = sorted(findings, key=lambda f: -f.severity)
+    # 계통적 유형을 먼저. 심각도만으로 정렬하면 어긋난 자에서 목록 맨 위가
+    # 아래보다 나빠진다 (docs/21 AN, @5 정밀도 +0.42).
+    ranked = review_order(findings, summary)
     if fit:
         import statistics
         confs = fit["confidences"]

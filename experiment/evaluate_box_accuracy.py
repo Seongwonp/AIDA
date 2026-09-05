@@ -30,7 +30,7 @@ from PIL import Image
 
 import config
 from diagnose_labels import IMAGE_SUFFIXES, load_yolo_labels
-from label_diagnosis import (CLASS_VULNERABILITY, iou, present_types, rescore,
+from label_diagnosis import (CLASS_VULNERABILITY, iou, present_types, rescore, review_order,
                              severity_for, summarize)
 
 # 누락 의심 예측 박스가 "지워진 그 박스"를 가리키는 것으로 인정할 최소 IoU.
@@ -155,7 +155,10 @@ def score_findings(condition: config.Condition, findings: list, total_labels: in
     # (정답여부, 의심유형, 심각도, 예측대표유형과일치, 원시신호)
     verdicts_by_rank: list[tuple] = []
 
-    findings = sorted(findings, key=_sort_key)
+    # 제품과 같은 순서로 채점해야 실제로 고객이 보는 목록을 재는 게 된다.
+    # CLASS_WEIGHTED는 R의 실험 잔재라 켤 때만 옛 정렬을 쓴다.
+    findings = (sorted(findings, key=_sort_key) if CLASS_WEIGHTED
+                else review_order(findings, summary))
     for f in findings:
         stem = Path(f.image).stem
         entry = record.get(stem, {"errored": [], "dropped": []})
