@@ -113,8 +113,8 @@ def score_condition(condition: config.Condition, limit: int | None) -> dict:
 
     root = config.CONDITIONS_DIR / condition.name
     images_dir, labels_dir = root / "images" / "train", root / "labels" / "train"
-    findings, total_labels, _fit = run(images_dir, labels_dir, limit,
-                                       weights=ruler_for(condition))
+    findings, total_labels, fit = run(images_dir, labels_dir, limit,
+                                      weights=ruler_for(condition))
     record = load_injection_record(condition.name)
 
     # 진단이 스스로 예측한 대표 유형 — 신뢰도 보정 기준은 정답(주입 유형)이
@@ -221,6 +221,12 @@ def score_condition(condition: config.Condition, limit: int | None) -> dict:
         # 승격 대상이었는지 복원할 수 없다.
         "present_types": sorted(present_types(summary)),
         "verdicts_by_rank": verdicts_by_rank,
+        # 정답 없이 재는 값. 자가 이 데이터를 보고 있는지의 대리 지표다 —
+        # 제품이 화면에 띄우는 것과 같은 수치이고, 여기서 그것이 진단 품질을
+        # 예측하는지 보려고 같이 낸다 (docs/22 계획 1번).
+        "matched_label_ratio": (round(fit["matched_labels"] / total_labels, 4)
+                                if total_labels else None),
+        "total_labels": total_labels,
     }
 
 
