@@ -1,0 +1,1822 @@
+{
+  "source": "seeded_same_classes.json",
+  "conditions": [
+    "width_m30",
+    "width_m15",
+    "width_p15",
+    "width_p30",
+    "height_m30",
+    "height_m15",
+    "height_p15",
+    "height_p30",
+    "rot_m15",
+    "rot_m7_5",
+    "rot_p7_5",
+    "rot_p15",
+    "trans_x_m15",
+    "trans_x_p15",
+    "trans_y_m15",
+    "trans_y_p15",
+    "scale_m15",
+    "scale_p15",
+    "scale_m30",
+    "scale_p30",
+    "missing_10",
+    "missing_20",
+    "missing_30",
+    "duplicate_10",
+    "duplicate_20",
+    "duplicate_30",
+    "class_swap_10",
+    "class_swap_20",
+    "class_swap_30"
+  ],
+  "seeds": [
+    42,
+    123,
+    2024
+  ],
+  "limit": 80,
+  "rows": {
+    "broad 자전거0": {
+      "42": {
+        "width_m30": {
+          "fit": 0.5793,
+          "precision": 0.4444444444444444
+        },
+        "width_m15": {
+          "fit": 0.5889,
+          "precision": 0.35294117647058826
+        },
+        "width_p15": {
+          "fit": 0.5889,
+          "precision": 0.29411764705882354
+        },
+        "width_p30": {
+          "fit": 0.5908,
+          "precision": 0.7777777777777778
+        },
+        "height_m30": {
+          "fit": 0.5851,
+          "precision": 0.5
+        },
+        "height_m15": {
+          "fit": 0.5889,
+          "precision": 0.17647058823529413
+        },
+        "height_p15": {
+          "fit": 0.5927,
+          "precision": 0.47058823529411764
+        },
+        "height_p30": {
+          "fit": 0.5851,
+          "precision": 0.7222222222222222
+        },
+        "rot_m15": {
+          "fit": 0.5832,
+          "precision": 0.10526315789473684
+        },
+        "rot_m7_5": {
+          "fit": 0.5851,
+          "precision": 0.5
+        },
+        "rot_p7_5": {
+          "fit": 0.5889,
+          "precision": 0.631578947368421
+        },
+        "rot_p15": {
+          "fit": 0.5908,
+          "precision": 0.3684210526315789
+        },
+        "trans_x_m15": {
+          "fit": 0.5851,
+          "precision": 0.29411764705882354
+        },
+        "trans_x_p15": {
+          "fit": 0.587,
+          "precision": 0.5555555555555556
+        },
+        "trans_y_m15": {
+          "fit": 0.5889,
+          "precision": 0.35
+        },
+        "trans_y_p15": {
+          "fit": 0.5851,
+          "precision": 0.3888888888888889
+        },
+        "scale_m15": {
+          "fit": 0.5889,
+          "precision": 0.17647058823529413
+        },
+        "scale_p15": {
+          "fit": 0.587,
+          "precision": 0.23529411764705882
+        },
+        "scale_m30": {
+          "fit": 0.5736,
+          "precision": 0.6666666666666666
+        },
+        "scale_p30": {
+          "fit": 0.587,
+          "precision": 0.7894736842105263
+        },
+        "missing_10": {
+          "fit": 0.5846,
+          "precision": 0.6153846153846154
+        },
+        "missing_20": {
+          "fit": 0.5684,
+          "precision": 0.75
+        },
+        "missing_30": {
+          "fit": 0.5892,
+          "precision": 0.875
+        },
+        "duplicate_10": {
+          "fit": 0.5329,
+          "precision": 0.2
+        },
+        "duplicate_20": {
+          "fit": 0.4992,
+          "precision": 0.4117647058823529
+        },
+        "duplicate_30": {
+          "fit": 0.4681,
+          "precision": 0.7272727272727273
+        },
+        "class_swap_10": {
+          "fit": 0.5296,
+          "precision": 0.9333333333333333
+        },
+        "class_swap_20": {
+          "fit": 0.4685,
+          "precision": 0.875
+        },
+        "class_swap_30": {
+          "fit": 0.4245,
+          "precision": 0.8947368421052632
+        }
+      },
+      "123": {
+        "width_m30": {
+          "fit": 0.5889,
+          "precision": 0.4
+        },
+        "width_m15": {
+          "fit": 0.5946,
+          "precision": 0.15789473684210525
+        },
+        "width_p15": {
+          "fit": 0.5927,
+          "precision": 0.15789473684210525
+        },
+        "width_p30": {
+          "fit": 0.5946,
+          "precision": 0.45
+        },
+        "height_m30": {
+          "fit": 0.5946,
+          "precision": 0.21052631578947367
+        },
+        "height_m15": {
+          "fit": 0.5927,
+          "precision": 0.21052631578947367
+        },
+        "height_p15": {
+          "fit": 0.5946,
+          "precision": 0.42105263157894735
+        },
+        "height_p30": {
+          "fit": 0.5927,
+          "precision": 0.5263157894736842
+        },
+        "rot_m15": {
+          "fit": 0.5908,
+          "precision": 0.55
+        },
+        "rot_m7_5": {
+          "fit": 0.5946,
+          "precision": 0.3157894736842105
+        },
+        "rot_p7_5": {
+          "fit": 0.5927,
+          "precision": 0.4
+        },
+        "rot_p15": {
+          "fit": 0.5927,
+          "precision": 0.35
+        },
+        "trans_x_m15": {
+          "fit": 0.5946,
+          "precision": 0.05555555555555555
+        },
+        "trans_x_p15": {
+          "fit": 0.5946,
+          "precision": 0.3157894736842105
+        },
+        "trans_y_m15": {
+          "fit": 0.5946,
+          "precision": 0.14285714285714285
+        },
+        "trans_y_p15": {
+          "fit": 0.5927,
+          "precision": 0.25
+        },
+        "scale_m15": {
+          "fit": 0.5966,
+          "precision": 0.10526315789473684
+        },
+        "scale_p15": {
+          "fit": 0.5927,
+          "precision": 0.2631578947368421
+        },
+        "scale_m30": {
+          "fit": 0.5813,
+          "precision": 0.6111111111111112
+        },
+        "scale_p30": {
+          "fit": 0.587,
+          "precision": 0.7
+        },
+        "missing_10": {
+          "fit": 0.5887,
+          "precision": 0.5333333333333333
+        },
+        "missing_20": {
+          "fit": 0.5731,
+          "precision": 0.5625
+        },
+        "missing_30": {
+          "fit": 0.6027,
+          "precision": 0.8823529411764706
+        },
+        "duplicate_10": {
+          "fit": 0.5398,
+          "precision": 0.058823529411764705
+        },
+        "duplicate_20": {
+          "fit": 0.5008,
+          "precision": 0.15789473684210525
+        },
+        "duplicate_30": {
+          "fit": 0.471,
+          "precision": 0.6666666666666666
+        },
+        "class_swap_10": {
+          "fit": 0.5335,
+          "precision": 0.875
+        },
+        "class_swap_20": {
+          "fit": 0.4742,
+          "precision": 0.8823529411764706
+        },
+        "class_swap_30": {
+          "fit": 0.4207,
+          "precision": 0.8947368421052632
+        }
+      },
+      "2024": {
+        "width_m30": {
+          "fit": 0.6004,
+          "precision": 0.55
+        },
+        "width_m15": {
+          "fit": 0.6004,
+          "precision": 0.2777777777777778
+        },
+        "width_p15": {
+          "fit": 0.6023,
+          "precision": 0.2631578947368421
+        },
+        "width_p30": {
+          "fit": 0.6004,
+          "precision": 0.6842105263157895
+        },
+        "height_m30": {
+          "fit": 0.5985,
+          "precision": 0.5789473684210527
+        },
+        "height_m15": {
+          "fit": 0.6023,
+          "precision": 0.2631578947368421
+        },
+        "height_p15": {
+          "fit": 0.6004,
+          "precision": 0.4444444444444444
+        },
+        "height_p30": {
+          "fit": 0.6004,
+          "precision": 0.5789473684210527
+        },
+        "rot_m15": {
+          "fit": 0.5927,
+          "precision": 0.15
+        },
+        "rot_m7_5": {
+          "fit": 0.6004,
+          "precision": 0.21052631578947367
+        },
+        "rot_p7_5": {
+          "fit": 0.6023,
+          "precision": 0.2
+        },
+        "rot_p15": {
+          "fit": 0.6004,
+          "precision": 0.15
+        },
+        "trans_x_m15": {
+          "fit": 0.6023,
+          "precision": 0.15789473684210525
+        },
+        "trans_x_p15": {
+          "fit": 0.5966,
+          "precision": 0.5
+        },
+        "trans_y_m15": {
+          "fit": 0.6004,
+          "precision": 0.25
+        },
+        "trans_y_p15": {
+          "fit": 0.6023,
+          "precision": 0.25
+        },
+        "scale_m15": {
+          "fit": 0.6023,
+          "precision": 0.2777777777777778
+        },
+        "scale_p15": {
+          "fit": 0.6004,
+          "precision": 0.21052631578947367
+        },
+        "scale_m30": {
+          "fit": 0.5851,
+          "precision": 0.631578947368421
+        },
+        "scale_p30": {
+          "fit": 0.5966,
+          "precision": 0.8095238095238095
+        },
+        "missing_10": {
+          "fit": 0.5992,
+          "precision": 0.5333333333333333
+        },
+        "missing_20": {
+          "fit": 0.5825,
+          "precision": 0.7647058823529411
+        },
+        "missing_30": {
+          "fit": 0.6054,
+          "precision": 0.9411764705882353
+        },
+        "duplicate_10": {
+          "fit": 0.5467,
+          "precision": 0.11764705882352941
+        },
+        "duplicate_20": {
+          "fit": 0.5056,
+          "precision": 0.42105263157894735
+        },
+        "duplicate_30": {
+          "fit": 0.4755,
+          "precision": 0.6666666666666666
+        },
+        "class_swap_10": {
+          "fit": 0.543,
+          "precision": 1.0
+        },
+        "class_swap_20": {
+          "fit": 0.4818,
+          "precision": 0.9411764705882353
+        },
+        "class_swap_30": {
+          "fit": 0.4283,
+          "precision": 0.95
+        }
+      }
+    },
+    "broad 자전거중": {
+      "42": {
+        "width_m30": {
+          "fit": 0.6099,
+          "precision": 0.45
+        },
+        "width_m15": {
+          "fit": 0.6119,
+          "precision": 0.3333333333333333
+        },
+        "width_p15": {
+          "fit": 0.6119,
+          "precision": 0.2777777777777778
+        },
+        "width_p30": {
+          "fit": 0.608,
+          "precision": 0.5789473684210527
+        },
+        "height_m30": {
+          "fit": 0.608,
+          "precision": 0.3888888888888889
+        },
+        "height_m15": {
+          "fit": 0.6119,
+          "precision": 0.3333333333333333
+        },
+        "height_p15": {
+          "fit": 0.6061,
+          "precision": 0.5
+        },
+        "height_p30": {
+          "fit": 0.6099,
+          "precision": 0.5
+        },
+        "rot_m15": {
+          "fit": 0.608,
+          "precision": 0.5789473684210527
+        },
+        "rot_m7_5": {
+          "fit": 0.608,
+          "precision": 0.4444444444444444
+        },
+        "rot_p7_5": {
+          "fit": 0.6099,
+          "precision": 0.5789473684210527
+        },
+        "rot_p15": {
+          "fit": 0.6042,
+          "precision": 0.3157894736842105
+        },
+        "trans_x_m15": {
+          "fit": 0.6119,
+          "precision": 0.2222222222222222
+        },
+        "trans_x_p15": {
+          "fit": 0.6119,
+          "precision": 0.3684210526315789
+        },
+        "trans_y_m15": {
+          "fit": 0.608,
+          "precision": 0.4
+        },
+        "trans_y_p15": {
+          "fit": 0.608,
+          "precision": 0.21052631578947367
+        },
+        "scale_m15": {
+          "fit": 0.6119,
+          "precision": 0.17647058823529413
+        },
+        "scale_p15": {
+          "fit": 0.6138,
+          "precision": 0.21052631578947367
+        },
+        "scale_m30": {
+          "fit": 0.6004,
+          "precision": 0.6111111111111112
+        },
+        "scale_p30": {
+          "fit": 0.5966,
+          "precision": 0.7368421052631579
+        },
+        "missing_10": {
+          "fit": 0.6138,
+          "precision": 0.6428571428571429
+        },
+        "missing_20": {
+          "fit": 0.5943,
+          "precision": 0.6
+        },
+        "missing_30": {
+          "fit": 0.6108,
+          "precision": 0.875
+        },
+        "duplicate_10": {
+          "fit": 0.5571,
+          "precision": 0.1875
+        },
+        "duplicate_20": {
+          "fit": 0.5136,
+          "precision": 0.3888888888888889
+        },
+        "duplicate_30": {
+          "fit": 0.4889,
+          "precision": 0.6818181818181818
+        },
+        "class_swap_10": {
+          "fit": 0.5526,
+          "precision": 0.8
+        },
+        "class_swap_20": {
+          "fit": 0.4933,
+          "precision": 0.875
+        },
+        "class_swap_30": {
+          "fit": 0.4321,
+          "precision": 0.8888888888888888
+        }
+      },
+      "123": {
+        "width_m30": {
+          "fit": 0.6176,
+          "precision": 0.55
+        },
+        "width_m15": {
+          "fit": 0.6138,
+          "precision": 0.2777777777777778
+        },
+        "width_p15": {
+          "fit": 0.6195,
+          "precision": 0.3333333333333333
+        },
+        "width_p30": {
+          "fit": 0.6195,
+          "precision": 0.55
+        },
+        "height_m30": {
+          "fit": 0.6138,
+          "precision": 0.3684210526315789
+        },
+        "height_m15": {
+          "fit": 0.6157,
+          "precision": 0.29411764705882354
+        },
+        "height_p15": {
+          "fit": 0.6195,
+          "precision": 0.47058823529411764
+        },
+        "height_p30": {
+          "fit": 0.6157,
+          "precision": 0.42105263157894735
+        },
+        "rot_m15": {
+          "fit": 0.6157,
+          "precision": 0.3
+        },
+        "rot_m7_5": {
+          "fit": 0.6176,
+          "precision": 0.3684210526315789
+        },
+        "rot_p7_5": {
+          "fit": 0.6176,
+          "precision": 0.3684210526315789
+        },
+        "rot_p15": {
+          "fit": 0.6176,
+          "precision": 0.35
+        },
+        "trans_x_m15": {
+          "fit": 0.6176,
+          "precision": 0.2222222222222222
+        },
+        "trans_x_p15": {
+          "fit": 0.6176,
+          "precision": 0.3684210526315789
+        },
+        "trans_y_m15": {
+          "fit": 0.6138,
+          "precision": 0.3333333333333333
+        },
+        "trans_y_p15": {
+          "fit": 0.6195,
+          "precision": 0.2631578947368421
+        },
+        "scale_m15": {
+          "fit": 0.6176,
+          "precision": 0.23529411764705882
+        },
+        "scale_p15": {
+          "fit": 0.6138,
+          "precision": 0.3888888888888889
+        },
+        "scale_m30": {
+          "fit": 0.5985,
+          "precision": 0.4444444444444444
+        },
+        "scale_p30": {
+          "fit": 0.6138,
+          "precision": 0.6
+        },
+        "missing_10": {
+          "fit": 0.618,
+          "precision": 0.42857142857142855
+        },
+        "missing_20": {
+          "fit": 0.5943,
+          "precision": 0.6875
+        },
+        "missing_30": {
+          "fit": 0.6216,
+          "precision": 0.75
+        },
+        "duplicate_10": {
+          "fit": 0.564,
+          "precision": 0.125
+        },
+        "duplicate_20": {
+          "fit": 0.5184,
+          "precision": 0.3888888888888889
+        },
+        "duplicate_30": {
+          "fit": 0.4903,
+          "precision": 0.5909090909090909
+        },
+        "class_swap_10": {
+          "fit": 0.5545,
+          "precision": 0.875
+        },
+        "class_swap_20": {
+          "fit": 0.4914,
+          "precision": 0.8235294117647058
+        },
+        "class_swap_30": {
+          "fit": 0.4398,
+          "precision": 0.9444444444444444
+        }
+      },
+      "2024": {
+        "width_m30": {
+          "fit": 0.6272,
+          "precision": 0.4
+        },
+        "width_m15": {
+          "fit": 0.6291,
+          "precision": 0.2631578947368421
+        },
+        "width_p15": {
+          "fit": 0.6291,
+          "precision": 0.47368421052631576
+        },
+        "width_p30": {
+          "fit": 0.6291,
+          "precision": 0.6
+        },
+        "height_m30": {
+          "fit": 0.6252,
+          "precision": 0.3684210526315789
+        },
+        "height_m15": {
+          "fit": 0.6272,
+          "precision": 0.2631578947368421
+        },
+        "height_p15": {
+          "fit": 0.6291,
+          "precision": 0.4444444444444444
+        },
+        "height_p30": {
+          "fit": 0.6291,
+          "precision": 0.42105263157894735
+        },
+        "rot_m15": {
+          "fit": 0.6233,
+          "precision": 0.5714285714285714
+        },
+        "rot_m7_5": {
+          "fit": 0.6291,
+          "precision": 0.4
+        },
+        "rot_p7_5": {
+          "fit": 0.6291,
+          "precision": 0.3
+        },
+        "rot_p15": {
+          "fit": 0.6291,
+          "precision": 0.2
+        },
+        "trans_x_m15": {
+          "fit": 0.6291,
+          "precision": 0.10526315789473684
+        },
+        "trans_x_p15": {
+          "fit": 0.6291,
+          "precision": 0.35
+        },
+        "trans_y_m15": {
+          "fit": 0.6272,
+          "precision": 0.38095238095238093
+        },
+        "trans_y_p15": {
+          "fit": 0.6291,
+          "precision": 0.25
+        },
+        "scale_m15": {
+          "fit": 0.631,
+          "precision": 0.2631578947368421
+        },
+        "scale_p15": {
+          "fit": 0.6291,
+          "precision": 0.21052631578947367
+        },
+        "scale_m30": {
+          "fit": 0.6176,
+          "precision": 0.5
+        },
+        "scale_p30": {
+          "fit": 0.6272,
+          "precision": 0.6
+        },
+        "missing_10": {
+          "fit": 0.6284,
+          "precision": 0.5
+        },
+        "missing_20": {
+          "fit": 0.6085,
+          "precision": 0.6875
+        },
+        "missing_30": {
+          "fit": 0.6297,
+          "precision": 0.7647058823529411
+        },
+        "duplicate_10": {
+          "fit": 0.5744,
+          "precision": 0.11764705882352941
+        },
+        "duplicate_20": {
+          "fit": 0.5296,
+          "precision": 0.3157894736842105
+        },
+        "duplicate_30": {
+          "fit": 0.5007,
+          "precision": 0.5416666666666666
+        },
+        "class_swap_10": {
+          "fit": 0.566,
+          "precision": 0.9375
+        },
+        "class_swap_20": {
+          "fit": 0.5029,
+          "precision": 0.9411764705882353
+        },
+        "class_swap_30": {
+          "fit": 0.4493,
+          "precision": 0.9473684210526315
+        }
+      }
+    },
+    "broad 자전거多": {
+      "42": {
+        "width_m30": {
+          "fit": 0.6597,
+          "precision": 0.7619047619047619
+        },
+        "width_m15": {
+          "fit": 0.6654,
+          "precision": 0.3157894736842105
+        },
+        "width_p15": {
+          "fit": 0.6654,
+          "precision": 0.45
+        },
+        "width_p30": {
+          "fit": 0.6635,
+          "precision": 0.7
+        },
+        "height_m30": {
+          "fit": 0.6635,
+          "precision": 0.75
+        },
+        "height_m15": {
+          "fit": 0.6654,
+          "precision": 0.4
+        },
+        "height_p15": {
+          "fit": 0.6654,
+          "precision": 0.5789473684210527
+        },
+        "height_p30": {
+          "fit": 0.6616,
+          "precision": 0.7368421052631579
+        },
+        "rot_m15": {
+          "fit": 0.6635,
+          "precision": 0.6190476190476191
+        },
+        "rot_m7_5": {
+          "fit": 0.6635,
+          "precision": 0.65
+        },
+        "rot_p7_5": {
+          "fit": 0.6654,
+          "precision": 0.7142857142857143
+        },
+        "rot_p15": {
+          "fit": 0.6635,
+          "precision": 0.47619047619047616
+        },
+        "trans_x_m15": {
+          "fit": 0.6635,
+          "precision": 0.47368421052631576
+        },
+        "trans_x_p15": {
+          "fit": 0.6635,
+          "precision": 0.55
+        },
+        "trans_y_m15": {
+          "fit": 0.6635,
+          "precision": 0.5909090909090909
+        },
+        "trans_y_p15": {
+          "fit": 0.6654,
+          "precision": 0.6190476190476191
+        },
+        "scale_m15": {
+          "fit": 0.6635,
+          "precision": 0.10526315789473684
+        },
+        "scale_p15": {
+          "fit": 0.6654,
+          "precision": 0.35
+        },
+        "scale_m30": {
+          "fit": 0.652,
+          "precision": 0.75
+        },
+        "scale_p30": {
+          "fit": 0.6597,
+          "precision": 0.8636363636363636
+        },
+        "missing_10": {
+          "fit": 0.666,
+          "precision": 0.6666666666666666
+        },
+        "missing_20": {
+          "fit": 0.6415,
+          "precision": 0.7647058823529411
+        },
+        "missing_30": {
+          "fit": 0.6703,
+          "precision": 0.9411764705882353
+        },
+        "duplicate_10": {
+          "fit": 0.6073,
+          "precision": 0.4444444444444444
+        },
+        "duplicate_20": {
+          "fit": 0.5584,
+          "precision": 0.6
+        },
+        "duplicate_30": {
+          "fit": 0.529,
+          "precision": 0.76
+        },
+        "class_swap_10": {
+          "fit": 0.5946,
+          "precision": 0.8823529411764706
+        },
+        "class_swap_20": {
+          "fit": 0.5392,
+          "precision": 0.8888888888888888
+        },
+        "class_swap_30": {
+          "fit": 0.4837,
+          "precision": 0.9473684210526315
+        }
+      },
+      "123": {
+        "width_m30": {
+          "fit": 0.7189,
+          "precision": 0.84
+        },
+        "width_m15": {
+          "fit": 0.7228,
+          "precision": 0.21739130434782608
+        },
+        "width_p15": {
+          "fit": 0.7208,
+          "precision": 0.17391304347826086
+        },
+        "width_p30": {
+          "fit": 0.7247,
+          "precision": 0.72
+        },
+        "height_m30": {
+          "fit": 0.7247,
+          "precision": 0.6666666666666666
+        },
+        "height_m15": {
+          "fit": 0.7228,
+          "precision": 0.2916666666666667
+        },
+        "height_p15": {
+          "fit": 0.7208,
+          "precision": 0.4090909090909091
+        },
+        "height_p30": {
+          "fit": 0.717,
+          "precision": 0.7391304347826086
+        },
+        "rot_m15": {
+          "fit": 0.7208,
+          "precision": 0.76
+        },
+        "rot_m7_5": {
+          "fit": 0.7189,
+          "precision": 0.6666666666666666
+        },
+        "rot_p7_5": {
+          "fit": 0.717,
+          "precision": 0.72
+        },
+        "rot_p15": {
+          "fit": 0.7189,
+          "precision": 0.8
+        },
+        "trans_x_m15": {
+          "fit": 0.7228,
+          "precision": 0.21739130434782608
+        },
+        "trans_x_p15": {
+          "fit": 0.7247,
+          "precision": 0.28
+        },
+        "trans_y_m15": {
+          "fit": 0.7247,
+          "precision": 0.46153846153846156
+        },
+        "trans_y_p15": {
+          "fit": 0.7132,
+          "precision": 0.20833333333333334
+        },
+        "scale_m15": {
+          "fit": 0.717,
+          "precision": 0.17391304347826086
+        },
+        "scale_p15": {
+          "fit": 0.717,
+          "precision": 0.125
+        },
+        "scale_m30": {
+          "fit": 0.696,
+          "precision": 0.5833333333333334
+        },
+        "scale_p30": {
+          "fit": 0.717,
+          "precision": 0.8
+        },
+        "missing_10": {
+          "fit": 0.7265,
+          "precision": 0.65
+        },
+        "missing_20": {
+          "fit": 0.7052,
+          "precision": 0.8181818181818182
+        },
+        "missing_30": {
+          "fit": 0.7216,
+          "precision": 0.9090909090909091
+        },
+        "duplicate_10": {
+          "fit": 0.6626,
+          "precision": 0.13043478260869565
+        },
+        "duplicate_20": {
+          "fit": 0.6176,
+          "precision": 0.32
+        },
+        "duplicate_30": {
+          "fit": 0.5884,
+          "precision": 0.6896551724137931
+        },
+        "class_swap_10": {
+          "fit": 0.652,
+          "precision": 0.9523809523809523
+        },
+        "class_swap_20": {
+          "fit": 0.5774,
+          "precision": 0.9545454545454546
+        },
+        "class_swap_30": {
+          "fit": 0.5258,
+          "precision": 0.9565217391304348
+        }
+      },
+      "2024": {
+        "width_m30": {
+          "fit": 0.6902,
+          "precision": 0.6666666666666666
+        },
+        "width_m15": {
+          "fit": 0.6922,
+          "precision": 0.3
+        },
+        "width_p15": {
+          "fit": 0.6941,
+          "precision": 0.45
+        },
+        "width_p30": {
+          "fit": 0.6941,
+          "precision": 0.7619047619047619
+        },
+        "height_m30": {
+          "fit": 0.6883,
+          "precision": 0.75
+        },
+        "height_m15": {
+          "fit": 0.6922,
+          "precision": 0.45
+        },
+        "height_p15": {
+          "fit": 0.6941,
+          "precision": 0.47368421052631576
+        },
+        "height_p30": {
+          "fit": 0.6922,
+          "precision": 0.85
+        },
+        "rot_m15": {
+          "fit": 0.696,
+          "precision": 0.8181818181818182
+        },
+        "rot_m7_5": {
+          "fit": 0.6941,
+          "precision": 0.7142857142857143
+        },
+        "rot_p7_5": {
+          "fit": 0.696,
+          "precision": 0.6818181818181818
+        },
+        "rot_p15": {
+          "fit": 0.6922,
+          "precision": 0.8095238095238095
+        },
+        "trans_x_m15": {
+          "fit": 0.6922,
+          "precision": 0.47368421052631576
+        },
+        "trans_x_p15": {
+          "fit": 0.6922,
+          "precision": 0.5714285714285714
+        },
+        "trans_y_m15": {
+          "fit": 0.6922,
+          "precision": 0.45454545454545453
+        },
+        "trans_y_p15": {
+          "fit": 0.6902,
+          "precision": 0.6190476190476191
+        },
+        "scale_m15": {
+          "fit": 0.6922,
+          "precision": 0.10526315789473684
+        },
+        "scale_p15": {
+          "fit": 0.6941,
+          "precision": 0.2857142857142857
+        },
+        "scale_m30": {
+          "fit": 0.6769,
+          "precision": 0.75
+        },
+        "scale_p30": {
+          "fit": 0.6902,
+          "precision": 0.9545454545454546
+        },
+        "missing_10": {
+          "fit": 0.6952,
+          "precision": 0.8
+        },
+        "missing_20": {
+          "fit": 0.6792,
+          "precision": 0.8235294117647058
+        },
+        "missing_30": {
+          "fit": 0.7,
+          "precision": 1.0
+        },
+        "duplicate_10": {
+          "fit": 0.6332,
+          "precision": 0.3888888888888889
+        },
+        "duplicate_20": {
+          "fit": 0.5888,
+          "precision": 0.6190476190476191
+        },
+        "duplicate_30": {
+          "fit": 0.5527,
+          "precision": 0.84
+        },
+        "class_swap_10": {
+          "fit": 0.6252,
+          "precision": 0.9375
+        },
+        "class_swap_20": {
+          "fit": 0.5564,
+          "precision": 1.0
+        },
+        "class_swap_30": {
+          "fit": 0.5067,
+          "precision": 0.95
+        }
+      }
+    },
+    "약한 이동": {
+      "42": {
+        "width_m30": {
+          "fit": 0.717,
+          "precision": 0.5652173913043478
+        },
+        "width_m15": {
+          "fit": 0.7208,
+          "precision": 0.25
+        },
+        "width_p15": {
+          "fit": 0.7228,
+          "precision": 0.5263157894736842
+        },
+        "width_p30": {
+          "fit": 0.7228,
+          "precision": 0.6666666666666666
+        },
+        "height_m30": {
+          "fit": 0.7208,
+          "precision": 0.6190476190476191
+        },
+        "height_m15": {
+          "fit": 0.7228,
+          "precision": 0.25
+        },
+        "height_p15": {
+          "fit": 0.7208,
+          "precision": 0.6
+        },
+        "height_p30": {
+          "fit": 0.7208,
+          "precision": 0.7619047619047619
+        },
+        "rot_m15": {
+          "fit": 0.7189,
+          "precision": 0.6363636363636364
+        },
+        "rot_m7_5": {
+          "fit": 0.717,
+          "precision": 0.7142857142857143
+        },
+        "rot_p7_5": {
+          "fit": 0.7208,
+          "precision": 0.5238095238095238
+        },
+        "rot_p15": {
+          "fit": 0.7208,
+          "precision": 0.7142857142857143
+        },
+        "trans_x_m15": {
+          "fit": 0.7228,
+          "precision": 0.3
+        },
+        "trans_x_p15": {
+          "fit": 0.7189,
+          "precision": 0.42857142857142855
+        },
+        "trans_y_m15": {
+          "fit": 0.7208,
+          "precision": 0.4782608695652174
+        },
+        "trans_y_p15": {
+          "fit": 0.7151,
+          "precision": 0.3333333333333333
+        },
+        "scale_m15": {
+          "fit": 0.7208,
+          "precision": 0.15789473684210525
+        },
+        "scale_p15": {
+          "fit": 0.7208,
+          "precision": 0.3333333333333333
+        },
+        "scale_m30": {
+          "fit": 0.6998,
+          "precision": 0.5714285714285714
+        },
+        "scale_p30": {
+          "fit": 0.7113,
+          "precision": 0.8181818181818182
+        },
+        "missing_10": {
+          "fit": 0.714,
+          "precision": 0.6875
+        },
+        "missing_20": {
+          "fit": 0.717,
+          "precision": 0.8235294117647058
+        },
+        "missing_30": {
+          "fit": 0.7162,
+          "precision": 0.8947368421052632
+        },
+        "duplicate_10": {
+          "fit": 0.6557,
+          "precision": 0.16666666666666666
+        },
+        "duplicate_20": {
+          "fit": 0.608,
+          "precision": 0.5454545454545454
+        },
+        "duplicate_30": {
+          "fit": 0.575,
+          "precision": 0.6923076923076923
+        },
+        "class_swap_10": {
+          "fit": 0.6539,
+          "precision": 1.0
+        },
+        "class_swap_20": {
+          "fit": 0.5679,
+          "precision": 1.0
+        },
+        "class_swap_30": {
+          "fit": 0.5315,
+          "precision": 1.0
+        }
+      },
+      "123": {
+        "width_m30": {
+          "fit": 0.7419,
+          "precision": 0.6666666666666666
+        },
+        "width_m15": {
+          "fit": 0.7514,
+          "precision": 0.2727272727272727
+        },
+        "width_p15": {
+          "fit": 0.7514,
+          "precision": 0.2727272727272727
+        },
+        "width_p30": {
+          "fit": 0.7495,
+          "precision": 0.6086956521739131
+        },
+        "height_m30": {
+          "fit": 0.7419,
+          "precision": 0.6956521739130435
+        },
+        "height_m15": {
+          "fit": 0.7495,
+          "precision": 0.09090909090909091
+        },
+        "height_p15": {
+          "fit": 0.7514,
+          "precision": 0.4090909090909091
+        },
+        "height_p30": {
+          "fit": 0.7495,
+          "precision": 0.7727272727272727
+        },
+        "rot_m15": {
+          "fit": 0.7438,
+          "precision": 0.7916666666666666
+        },
+        "rot_m7_5": {
+          "fit": 0.7476,
+          "precision": 0.6956521739130435
+        },
+        "rot_p7_5": {
+          "fit": 0.7495,
+          "precision": 0.7083333333333334
+        },
+        "rot_p15": {
+          "fit": 0.7476,
+          "precision": 0.8260869565217391
+        },
+        "trans_x_m15": {
+          "fit": 0.7514,
+          "precision": 0.0
+        },
+        "trans_x_p15": {
+          "fit": 0.7476,
+          "precision": 0.45454545454545453
+        },
+        "trans_y_m15": {
+          "fit": 0.7476,
+          "precision": 0.28
+        },
+        "trans_y_p15": {
+          "fit": 0.7457,
+          "precision": 0.391304347826087
+        },
+        "scale_m15": {
+          "fit": 0.7495,
+          "precision": 0.18181818181818182
+        },
+        "scale_p15": {
+          "fit": 0.7514,
+          "precision": 0.22727272727272727
+        },
+        "scale_m30": {
+          "fit": 0.7323,
+          "precision": 0.7272727272727273
+        },
+        "scale_p30": {
+          "fit": 0.7361,
+          "precision": 0.7916666666666666
+        },
+        "missing_10": {
+          "fit": 0.7453,
+          "precision": 0.7777777777777778
+        },
+        "missing_20": {
+          "fit": 0.7406,
+          "precision": 0.7894736842105263
+        },
+        "missing_30": {
+          "fit": 0.7459,
+          "precision": 0.9
+        },
+        "duplicate_10": {
+          "fit": 0.6903,
+          "precision": 0.09523809523809523
+        },
+        "duplicate_20": {
+          "fit": 0.6368,
+          "precision": 0.25
+        },
+        "duplicate_30": {
+          "fit": 0.6033,
+          "precision": 0.75
+        },
+        "class_swap_10": {
+          "fit": 0.675,
+          "precision": 0.9473684210526315
+        },
+        "class_swap_20": {
+          "fit": 0.5985,
+          "precision": 0.9545454545454546
+        },
+        "class_swap_30": {
+          "fit": 0.5545,
+          "precision": 0.9545454545454546
+        }
+      },
+      "2024": {
+        "width_m30": {
+          "fit": 0.7017,
+          "precision": 0.7727272727272727
+        },
+        "width_m15": {
+          "fit": 0.7055,
+          "precision": 0.4
+        },
+        "width_p15": {
+          "fit": 0.6979,
+          "precision": 0.47368421052631576
+        },
+        "width_p30": {
+          "fit": 0.7055,
+          "precision": 0.7
+        },
+        "height_m30": {
+          "fit": 0.7017,
+          "precision": 0.7619047619047619
+        },
+        "height_m15": {
+          "fit": 0.7055,
+          "precision": 0.3
+        },
+        "height_p15": {
+          "fit": 0.7036,
+          "precision": 0.42105263157894735
+        },
+        "height_p30": {
+          "fit": 0.7036,
+          "precision": 0.8
+        },
+        "rot_m15": {
+          "fit": 0.6998,
+          "precision": 0.7727272727272727
+        },
+        "rot_m7_5": {
+          "fit": 0.7017,
+          "precision": 0.75
+        },
+        "rot_p7_5": {
+          "fit": 0.7017,
+          "precision": 0.7142857142857143
+        },
+        "rot_p15": {
+          "fit": 0.6998,
+          "precision": 0.5238095238095238
+        },
+        "trans_x_m15": {
+          "fit": 0.7055,
+          "precision": 0.3157894736842105
+        },
+        "trans_x_p15": {
+          "fit": 0.6979,
+          "precision": 0.6190476190476191
+        },
+        "trans_y_m15": {
+          "fit": 0.6998,
+          "precision": 0.5
+        },
+        "trans_y_p15": {
+          "fit": 0.7036,
+          "precision": 0.55
+        },
+        "scale_m15": {
+          "fit": 0.7017,
+          "precision": 0.3157894736842105
+        },
+        "scale_p15": {
+          "fit": 0.7017,
+          "precision": 0.45
+        },
+        "scale_m30": {
+          "fit": 0.6769,
+          "precision": 0.7368421052631579
+        },
+        "scale_p30": {
+          "fit": 0.6979,
+          "precision": 0.8571428571428571
+        },
+        "missing_10": {
+          "fit": 0.6973,
+          "precision": 0.7333333333333333
+        },
+        "missing_20": {
+          "fit": 0.6887,
+          "precision": 0.8125
+        },
+        "missing_30": {
+          "fit": 0.7081,
+          "precision": 0.9411764705882353
+        },
+        "duplicate_10": {
+          "fit": 0.6436,
+          "precision": 0.2777777777777778
+        },
+        "duplicate_20": {
+          "fit": 0.6016,
+          "precision": 0.7619047619047619
+        },
+        "duplicate_30": {
+          "fit": 0.5602,
+          "precision": 0.8333333333333334
+        },
+        "class_swap_10": {
+          "fit": 0.6386,
+          "precision": 1.0
+        },
+        "class_swap_20": {
+          "fit": 0.5621,
+          "precision": 1.0
+        },
+        "class_swap_30": {
+          "fit": 0.5124,
+          "precision": 1.0
+        }
+      }
+    },
+    "넓은 자(800)": {
+      "42": {
+        "width_m30": {
+          "fit": 0.6845,
+          "precision": 0.6666666666666666
+        },
+        "width_m15": {
+          "fit": 0.6845,
+          "precision": 0.3157894736842105
+        },
+        "width_p15": {
+          "fit": 0.6864,
+          "precision": 0.3684210526315789
+        },
+        "width_p30": {
+          "fit": 0.6883,
+          "precision": 0.65
+        },
+        "height_m30": {
+          "fit": 0.6807,
+          "precision": 0.5789473684210527
+        },
+        "height_m15": {
+          "fit": 0.6845,
+          "precision": 0.3684210526315789
+        },
+        "height_p15": {
+          "fit": 0.6883,
+          "precision": 0.6470588235294118
+        },
+        "height_p30": {
+          "fit": 0.6845,
+          "precision": 0.6842105263157895
+        },
+        "rot_m15": {
+          "fit": 0.6864,
+          "precision": 0.6190476190476191
+        },
+        "rot_m7_5": {
+          "fit": 0.6864,
+          "precision": 0.5789473684210527
+        },
+        "rot_p7_5": {
+          "fit": 0.6845,
+          "precision": 0.65
+        },
+        "rot_p15": {
+          "fit": 0.6845,
+          "precision": 0.3
+        },
+        "trans_x_m15": {
+          "fit": 0.6845,
+          "precision": 0.5263157894736842
+        },
+        "trans_x_p15": {
+          "fit": 0.6845,
+          "precision": 0.5789473684210527
+        },
+        "trans_y_m15": {
+          "fit": 0.6826,
+          "precision": 0.5238095238095238
+        },
+        "trans_y_p15": {
+          "fit": 0.6845,
+          "precision": 0.5263157894736842
+        },
+        "scale_m15": {
+          "fit": 0.6826,
+          "precision": 0.05555555555555555
+        },
+        "scale_p15": {
+          "fit": 0.6864,
+          "precision": 0.3157894736842105
+        },
+        "scale_m30": {
+          "fit": 0.6635,
+          "precision": 0.631578947368421
+        },
+        "scale_p30": {
+          "fit": 0.6788,
+          "precision": 0.8095238095238095
+        },
+        "missing_10": {
+          "fit": 0.6848,
+          "precision": 0.6428571428571429
+        },
+        "missing_20": {
+          "fit": 0.6698,
+          "precision": 0.75
+        },
+        "missing_30": {
+          "fit": 0.6838,
+          "precision": 0.8235294117647058
+        },
+        "duplicate_10": {
+          "fit": 0.6211,
+          "precision": 0.375
+        },
+        "duplicate_20": {
+          "fit": 0.5792,
+          "precision": 0.47368421052631576
+        },
+        "duplicate_30": {
+          "fit": 0.5394,
+          "precision": 0.7083333333333334
+        },
+        "class_swap_10": {
+          "fit": 0.6214,
+          "precision": 0.9375
+        },
+        "class_swap_20": {
+          "fit": 0.5392,
+          "precision": 0.9411764705882353
+        },
+        "class_swap_30": {
+          "fit": 0.4876,
+          "precision": 1.0
+        }
+      },
+      "123": {
+        "width_m30": {
+          "fit": 0.6673,
+          "precision": 0.6190476190476191
+        },
+        "width_m15": {
+          "fit": 0.6692,
+          "precision": 0.47368421052631576
+        },
+        "width_p15": {
+          "fit": 0.6711,
+          "precision": 0.47368421052631576
+        },
+        "width_p30": {
+          "fit": 0.6769,
+          "precision": 0.6666666666666666
+        },
+        "height_m30": {
+          "fit": 0.6673,
+          "precision": 0.6
+        },
+        "height_m15": {
+          "fit": 0.6692,
+          "precision": 0.35
+        },
+        "height_p15": {
+          "fit": 0.6692,
+          "precision": 0.5789473684210527
+        },
+        "height_p30": {
+          "fit": 0.6692,
+          "precision": 0.7
+        },
+        "rot_m15": {
+          "fit": 0.6635,
+          "precision": 0.7142857142857143
+        },
+        "rot_m7_5": {
+          "fit": 0.6635,
+          "precision": 0.6
+        },
+        "rot_p7_5": {
+          "fit": 0.6711,
+          "precision": 0.65
+        },
+        "rot_p15": {
+          "fit": 0.6616,
+          "precision": 0.3333333333333333
+        },
+        "trans_x_m15": {
+          "fit": 0.6692,
+          "precision": 0.5789473684210527
+        },
+        "trans_x_p15": {
+          "fit": 0.6635,
+          "precision": 0.7
+        },
+        "trans_y_m15": {
+          "fit": 0.6673,
+          "precision": 0.6363636363636364
+        },
+        "trans_y_p15": {
+          "fit": 0.6692,
+          "precision": 0.65
+        },
+        "scale_m15": {
+          "fit": 0.6654,
+          "precision": 0.05555555555555555
+        },
+        "scale_p15": {
+          "fit": 0.6673,
+          "precision": 0.2
+        },
+        "scale_m30": {
+          "fit": 0.6597,
+          "precision": 0.7368421052631579
+        },
+        "scale_p30": {
+          "fit": 0.6558,
+          "precision": 0.8095238095238095
+        },
+        "missing_10": {
+          "fit": 0.6639,
+          "precision": 0.5714285714285714
+        },
+        "missing_20": {
+          "fit": 0.6486,
+          "precision": 0.8125
+        },
+        "missing_30": {
+          "fit": 0.6757,
+          "precision": 0.8888888888888888
+        },
+        "duplicate_10": {
+          "fit": 0.6107,
+          "precision": 0.47058823529411764
+        },
+        "duplicate_20": {
+          "fit": 0.5648,
+          "precision": 0.6
+        },
+        "duplicate_30": {
+          "fit": 0.5349,
+          "precision": 0.75
+        },
+        "class_swap_10": {
+          "fit": 0.6042,
+          "precision": 1.0
+        },
+        "class_swap_20": {
+          "fit": 0.5315,
+          "precision": 0.9444444444444444
+        },
+        "class_swap_30": {
+          "fit": 0.4876,
+          "precision": 0.9473684210526315
+        }
+      },
+      "2024": {
+        "width_m30": {
+          "fit": 0.675,
+          "precision": 0.5238095238095238
+        },
+        "width_m15": {
+          "fit": 0.675,
+          "precision": 0.3333333333333333
+        },
+        "width_p15": {
+          "fit": 0.675,
+          "precision": 0.3333333333333333
+        },
+        "width_p30": {
+          "fit": 0.675,
+          "precision": 0.6
+        },
+        "height_m30": {
+          "fit": 0.6711,
+          "precision": 0.5789473684210527
+        },
+        "height_m15": {
+          "fit": 0.675,
+          "precision": 0.3333333333333333
+        },
+        "height_p15": {
+          "fit": 0.675,
+          "precision": 0.5555555555555556
+        },
+        "height_p30": {
+          "fit": 0.6769,
+          "precision": 0.6842105263157895
+        },
+        "rot_m15": {
+          "fit": 0.675,
+          "precision": 0.6190476190476191
+        },
+        "rot_m7_5": {
+          "fit": 0.675,
+          "precision": 0.47368421052631576
+        },
+        "rot_p7_5": {
+          "fit": 0.673,
+          "precision": 0.55
+        },
+        "rot_p15": {
+          "fit": 0.673,
+          "precision": 0.7
+        },
+        "trans_x_m15": {
+          "fit": 0.675,
+          "precision": 0.3888888888888889
+        },
+        "trans_x_p15": {
+          "fit": 0.6711,
+          "precision": 0.47368421052631576
+        },
+        "trans_y_m15": {
+          "fit": 0.6692,
+          "precision": 0.47619047619047616
+        },
+        "trans_y_p15": {
+          "fit": 0.675,
+          "precision": 0.55
+        },
+        "scale_m15": {
+          "fit": 0.6711,
+          "precision": 0.0
+        },
+        "scale_p15": {
+          "fit": 0.673,
+          "precision": 0.3684210526315789
+        },
+        "scale_m30": {
+          "fit": 0.6539,
+          "precision": 0.5789473684210527
+        },
+        "scale_p30": {
+          "fit": 0.6577,
+          "precision": 0.75
+        },
+        "missing_10": {
+          "fit": 0.6743,
+          "precision": 0.5
+        },
+        "missing_20": {
+          "fit": 0.658,
+          "precision": 0.6875
+        },
+        "missing_30": {
+          "fit": 0.6784,
+          "precision": 0.8823529411764706
+        },
+        "duplicate_10": {
+          "fit": 0.6142,
+          "precision": 0.1875
+        },
+        "duplicate_20": {
+          "fit": 0.568,
+          "precision": 0.42105263157894735
+        },
+        "duplicate_30": {
+          "fit": 0.5364,
+          "precision": 0.6521739130434783
+        },
+        "class_swap_10": {
+          "fit": 0.6099,
+          "precision": 1.0
+        },
+        "class_swap_20": {
+          "fit": 0.5392,
+          "precision": 0.9411764705882353
+        },
+        "class_swap_30": {
+          "fit": 0.4876,
+          "precision": 0.9473684210526315
+        }
+      }
+    }
+  }
+}
