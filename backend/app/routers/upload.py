@@ -522,9 +522,15 @@ def _suggest_profile(class_ids: set[int]) -> tuple[str | None, str]:
         if classes and _weights_exist(classes):
             candidates.append((len(classes), name, classes))
 
+    if not candidates:
+        # 자가 한 대도 없다. "최대 0개까지만 압니다"로 빠지면 클래스를 줄이면
+        # 될 것처럼 읽히는데, 실제로는 무엇을 해도 안 된다.
+        return None, ("이 서버에 학습된 기준 모델이 없습니다. "
+                      "clean 조건을 먼저 학습해야 진단할 수 있습니다.")
+
     covering = sorted(c for c in candidates if c[0] >= needed)
     if not covering:
-        widest = max((c[0] for c in candidates), default=0)
+        widest = max(c[0] for c in candidates)
         return None, (f"라벨에 클래스 인덱스 {sorted(class_ids)}가 있는데, "
                       f"이 서버의 기준 모델은 최대 {widest}개까지만 압니다. "
                       f"모르는 클래스는 검사되지 않습니다.")

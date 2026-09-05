@@ -145,19 +145,40 @@ def test_delete_cannot_escape_the_uploads_dir(client, tmp_path, bad):
     assert outside.is_dir()
 
 
-@pytest.mark.parametrize("bad", ["..", "../keep_me", "..\keep_me", "ok/../../keep_me", ""])
-def test_delete_guard_rejects_traversal_directly(tmp_path, monkeypatch, bad):
-    """HTTP 계층이 경로를 미리 정규화해 버리면 위 검사가 헐거워진다.
-    핸들러를 직접 불러 가드 자체를 확인한다."""
-    from fastapi import HTTPException
-
+@pytest.fixture
+def guard_dirs(tmp_path, monkeypatch):
     monkeypatch.setattr(upload, "UPLOADS_DIR", tmp_path / "uploads")
     (tmp_path / "uploads" / "ok").mkdir(parents=True)
     outside = tmp_path / "keep_me"
     outside.mkdir()
+    return outside
+
+
+@pytest.mark.parametrize("bad", ["..", "../keep_me", "ok/../../keep_me", ""])
+def test_delete_guard_rejects_traversal_directly(tmp_path, guard_dirs, bad):
+    """HTTP 계층이 경로를 미리 정규화해 버리면 요청으로 하는 검사는 헐거워진다.
+    핸들러를 직접 불러 가드 자체를 확인한다."""
+    from fastapi import HTTPException
 
     with pytest.raises(HTTPException) as e:
         upload.delete_dataset(bad)
     assert e.value.status_code == 400
-    assert outside.is_dir()
+    assert guard_dirs.is_dir()
+    assert (tmp_path / "uploads" / "ok").is_dir()
+
+
+def test_delete_guard_and_backslash(tmp_path, guard_dirs):
+    r"""역슬래시는 플랫폼을 탄다.
+
+    윈도우에서 "..\keep_me"는 경로 두 조각이라 가드가 400으로 막는다. 리눅스
+    에서는 그냥 그런 이름의 파일 하나라 애초에 나갈 수가 없고, 없는 폴더라
+    404가 난다. **어느 쪽이든 바깥은 안전하다** — 상태 코드를 한쪽으로 못
+    박으면 다른 플랫폼에서 거짓으로 깨진다. 실제로 CI에서 그렇게 깨졌다.
+    """
+    from fastapi import HTTPException
+
+    with pytest.raises(HTTPException) as e:
+        upload.delete_dataset("..\\keep_me")
+    assert e.value.status_code in (400, 404)
+    assert guard_dirs.is_dir()
     assert (tmp_path / "uploads" / "ok").is_dir()

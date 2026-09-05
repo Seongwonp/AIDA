@@ -106,9 +106,25 @@ def test_sidecar_is_json_the_frontend_can_read(dataset):
 
 def test_no_suggestion_when_default_covers_the_data():
     """Car 하나뿐이면 기본 기준 모델로 충분하다. 넓힐 이유가 없다."""
+    if not upload._weights_exist(["Car"]):
+        pytest.skip("기본 기준 모델이 이 환경에 학습돼 있지 않음")
     name, reason = upload._suggest_profile({0})
     assert name is None
     assert reason == ""
+
+
+def test_says_so_when_the_server_has_no_ruler_at_all(monkeypatch):
+    """자가 한 대도 없으면 "최대 0개까지만 압니다"라고 하고 있었다.
+
+    그렇게 쓰면 클래스를 줄이면 될 것처럼 읽히는데 실제로는 무엇을 해도 안
+    된다. 두 상황은 대응이 다르다 — 좁은 것뿐이면 넓은 자를 학습하면 되고,
+    아예 없으면 clean 조건부터 학습해야 한다. CI가 찾아준 것이다.
+    """
+    monkeypatch.setattr(upload, "_weights_exist", lambda *a, **k: False)
+    name, reason = upload._suggest_profile({0})
+    assert name is None
+    assert "0개" not in reason
+    assert "학습된 기준 모델이 없습니다" in reason
 
 
 def test_empty_labels_get_no_suggestion():
@@ -125,11 +141,18 @@ def test_suggests_a_wider_ruler_when_classes_exceed_default():
 
 
 def test_suggestion_explains_itself_when_nothing_covers():
-    """덮는 자가 없으면 조용히 넘어가지 말고 왜인지 말해야 한다."""
+    """덮는 자가 없으면 조용히 넘어가지 말고 왜인지 말해야 한다.
+
+    이유는 두 가지로 갈리고 대응도 다르다. 가진 자가 좁기만 한 것이면 "검사되지
+    않습니다"이고, 자가 아예 없으면 그건 다른 문장이어야 한다
+    (test_says_so_when_the_server_has_no_ruler_at_all). 어느 쪽이든 **말은
+    해야 한다**는 것이 여기서 보는 것이다.
+    """
     name, reason = upload._suggest_profile({0, 99})
     assert name is None
     assert reason, "덮는 자가 없는데 아무 설명이 없다"
-    assert "검사되지 않습니다" in reason
+    if upload._weights_exist(["Car"]):
+        assert "검사되지 않습니다" in reason
 
 
 def test_suggestion_prefers_the_narrowest_covering_ruler():

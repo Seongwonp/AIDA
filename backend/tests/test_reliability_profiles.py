@@ -36,10 +36,26 @@ def test_no_profile_means_no_env_override():
     assert upload._profile_env("") == {}
 
 
+def _profiles_with_weights() -> list[str]:
+    """프로파일 파일이 있고 **그 자(가중치)까지 있는** 것만.
+
+    프로파일 JSON은 저장소에 들어 있지만 학습 가중치는 아니다. 자가 없으면
+    _profile_env가 400을 내는 게 맞는 동작이므로, 여기서 그걸 실패로 셀 일이
+    아니다 — 이 검사가 보려는 건 환경변수 배선이다.
+    """
+    out = []
+    for name in upload._available_profiles():
+        path = upload._resolve_profile(name)
+        if upload._weights_exist(upload._profile_classes(path),
+                                 upload._profile_dataset(path)):
+            out.append(name)
+    return out
+
+
 def test_known_profile_resolves_under_experiment_root():
-    names = upload._available_profiles()
+    names = _profiles_with_weights()
     if not names:
-        pytest.skip("이 환경에 보정 프로파일 파일이 없음")
+        pytest.skip("이 환경에 기준 모델이 학습돼 있는 프로파일이 없음")
     env = upload._profile_env(names[0])
     assert env["AIDA_RELIABILITY_PROFILE"].endswith(f"reliability_profile_{names[0]}.json")
 
@@ -50,10 +66,10 @@ def test_profile_carries_its_class_configuration():
     그 상수는 특정 클래스 구성에서 잰 값이라, 진단도 같은 구성(같은 기준
     모델·같은 클래스 인덱스)으로 돌아가야 한다.
     """
-    names = [n for n in upload._available_profiles()
+    names = [n for n in _profiles_with_weights()
              if upload._profile_classes(upload._resolve_profile(n))]
     if not names:
-        pytest.skip("클래스 구성이 적힌 프로파일이 이 환경에 없음")
+        pytest.skip("클래스 구성이 적혀 있고 기준 모델도 있는 프로파일이 없음")
     env = upload._profile_env(names[0])
     assert "AIDA_CLASSES" in env and env["AIDA_CLASSES"]
 
