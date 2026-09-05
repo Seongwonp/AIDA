@@ -37,6 +37,12 @@ import config
 import evaluate_box_accuracy as E
 from compare_rulers_seeded import RULERS, ruler_path
 
+# 자가 아는 클래스 수. runs*(_mc 없음)는 Car 1클래스다 — config.py의
+# 접미사 규칙과 같은 이야기라 여기서도 폴더 이름으로 가른다.
+def ruler_class_count(kind: str) -> int | None:
+    base = RULERS[kind][1]
+    return None if "_mc" in base or "coco" in base else 1
+
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
@@ -68,7 +74,14 @@ def main() -> None:
     ap.add_argument("--source", required=True,
                     help="조건별 정밀도가 들어 있는 seeded_*.json")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--analyze-only", action="store_true",
+                    help="--out에 이미 있는 측정을 읽어 분석만 다시 한다 (GPU 안 씀)")
     args = ap.parse_args()
+
+    if args.analyze_only:
+        saved = json.loads(Path(args.out).read_text(encoding="utf-8"))
+        analyze(saved["rows"], saved["conditions"], saved["seeds"])
+        return
 
     src = json.loads(Path(args.source).read_text(encoding="utf-8"))
     conditions, seeds, limit = src["conditions"], src["seeds"], src["limit"]
@@ -100,6 +113,28 @@ def main() -> None:
     print(f"\n저장 → {args.out}")
 
     analyze(rows, conditions, seeds)
+
+
+def label_class_share(conditions: list[str], cls: int = 0, limit: int = 80) -> float | None:
+    """평가에 쓰는 라벨 중 클래스 `cls`의 비중.
+
+    1클래스 자의 적합도 천장이 곧 이 값이다 — 나머지 클래스의 라벨은
+    그 자가 무슨 수를 써도 짝지을 수 없다.
+    """
+    for name in conditions:
+        root = config.CONDITIONS_DIR / name / "labels" / "train"
+        if not root.is_dir():
+            continue
+        total = hit = 0
+        for i, f in enumerate(sorted(root.glob("*.txt"))):
+            if i >= limit:
+                break
+            for line in f.read_text(encoding="utf-8").splitlines():
+                if line.strip():
+                    total += 1
+                    hit += (int(line.split()[0]) == cls)
+        return hit / total if total else None
+    return None
 
 
 def analyze(rows: dict, conditions: list[str], seeds: list[int]) -> None:
@@ -169,6 +204,64 @@ def analyze(rows: dict, conditions: list[str], seeds: list[int]) -> None:
     print(f"  무작위로 골랐을 때 기대값          : {chance * 100:.1f}%")
     print(f"\n  적합도로 고른 자를 썼을 때 놓치는 정밀도(평균): {statistics.mean(gaps):.3f}")
     print(f"  최악의 경우                                   : {max(gaps):.3f}")
+
+    # --- 가까이 붙은 자끼리도 구분하나 -------------------------------------
+    print("\n" + "=" * 66)
+    print("자를 둘씩 짝지어 — 가까운 자끼리도 순서를 맞히나")
+    print("=" * 66)
+    print("멀리 떨어진 자를 가려내는 건 쉽다. 실제 고객 상황은 그럴듯한 자")
+    print("두엇 중에 고르는 것이라, 가까운 짝에서도 맞아야 쓸모가 있다.\n")
+    print(f"{'자 두 대':<34}{'적합도차':>9}{'정밀도차':>9}{'순서맞힘':>10}")
+
+    pairs = [(a, b) for i, a in enumerate(labels) for b in labels[i + 1:]]
+    for a, b in pairs:
+        agree = total = 0
+        fit_gaps, prec_gaps = [], []
+        for cond in conditions:
+            for seed in seeds:
+                va = rows[a].get(str(seed), {}).get(cond)
+                vb = rows[b].get(str(seed), {}).get(cond)
+                if not va or not vb or va["precision"] == vb["precision"]:
+                    continue        # 정밀도가 같으면 맞히고 말고가 없다
+                total += 1
+                fit_gaps.append(abs(va["fit"] - vb["fit"]))
+                prec_gaps.append(abs(va["precision"] - vb["precision"]))
+                higher_fit = a if va["fit"] > vb["fit"] else b
+                higher_prec = a if va["precision"] > vb["precision"] else b
+                agree += (higher_fit == higher_prec)
+        if not total:
+            continue
+        pct = agree / total * 100
+        mark = "★" if pct >= 70 else ("·" if pct >= 50 else "✗")
+        print(f"{a + ' vs ' + b:<34}{statistics.mean(fit_gaps):>9.3f}"
+              f"{statistics.mean(prec_gaps):>9.3f}{pct:>9.1f}% {mark}")
+    print("\n  50%가 동전 던지기다. 적합도 차이가 작은 짝에서 50% 근처면,")
+    print("  '가까운 자는 구분 못 한다'는 뜻이다.")
+
+    # --- 왜 거꾸로 맞히나: 적합도에는 구조적 천장이 있다 ---------------------
+    print("\n" + "=" * 66)
+    print("적합도의 천장 — 자가 아는 클래스가 좁으면 눈금 자체가 다르다")
+    print("=" * 66)
+    print("적합도는 '라벨 중 예측과 짝지어진 비율'이다. 자가 모르는 클래스의")
+    print("라벨은 절대 안 짝지어지므로, 좁은 자는 아무리 잘해도 그 클래스들의")
+    print("비중만큼을 못 채운다. 그 자의 적합도를 넓은 자와 나란히 놓으면")
+    print("**서로 다른 눈금을 비교하는 것**이 된다.\n")
+
+    car_share = label_class_share(conditions)
+    if car_share is None:
+        print("  라벨 구성을 읽지 못해 건너뛴다.")
+    else:
+        print(f"  평가 데이터의 Car 비중: {car_share:.3f}")
+        print(f"\n{'자':<16}{'천장':>8}{'적합도':>9}{'천장 대비':>11}{'정밀도':>9}")
+        for label in labels:
+            if label not in means:
+                continue
+            kind = kind_by_label(label)
+            ceiling = car_share if ruler_class_count(kind) == 1 else 1.0
+            fit, prec = means[label]
+            print(f"{label:<16}{ceiling:>8.3f}{fit:>9.3f}"
+                  f"{fit / ceiling:>11.3f}{prec:>9.3f}")
+        print("\n  천장이 1.0이 아닌 자와 1.0인 자를 생짜 적합도로 견주면 안 된다.")
 
     # --- 제품이 쓰려는 모양: 적합도 구간 → 정밀도 ---------------------------
     print("\n" + "=" * 66)
