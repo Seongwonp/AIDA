@@ -120,3 +120,44 @@ def test_history_lists_the_upload(client):
     assert [r["dataset_id"] for r in rows] == [ds]
     # 아직 진단 전이라 재검수 목록이 없다 — 화면은 '열기' 대신 그렇게 표시한다
     assert rows[0]["has_label_diagnosis"] is False
+
+
+def test_delete_removes_the_dataset(client, tmp_path):
+    ds = post(client, make_zip({
+        "images/a.png": PNG, "labels/a.txt": LABEL,
+    })).json()["dataset_id"]
+    assert client.delete(f"/api/datasets/{ds}").status_code == 204
+    assert client.get("/api/datasets/history").json() == []
+    assert not (tmp_path / "uploads" / ds).exists()
+
+
+def test_delete_missing_dataset_is_404(client):
+    assert client.delete("/api/datasets/nope").status_code == 404
+
+
+@pytest.mark.parametrize("bad", ["..", "%2e%2e", "a%2Fb"])
+def test_delete_cannot_escape_the_uploads_dir(client, tmp_path, bad):
+    """지우는 동작이라 한 번 틀리면 되돌릴 수 없다."""
+    outside = tmp_path / "keep_me"
+    outside.mkdir()
+    res = client.delete(f"/api/datasets/{bad}")
+    assert res.status_code in (400, 404, 405), res.text
+    assert outside.is_dir()
+
+
+@pytest.mark.parametrize("bad", ["..", "../keep_me", "..\keep_me", "ok/../../keep_me", ""])
+def test_delete_guard_rejects_traversal_directly(tmp_path, monkeypatch, bad):
+    """HTTP 계층이 경로를 미리 정규화해 버리면 위 검사가 헐거워진다.
+    핸들러를 직접 불러 가드 자체를 확인한다."""
+    from fastapi import HTTPException
+
+    monkeypatch.setattr(upload, "UPLOADS_DIR", tmp_path / "uploads")
+    (tmp_path / "uploads" / "ok").mkdir(parents=True)
+    outside = tmp_path / "keep_me"
+    outside.mkdir()
+
+    with pytest.raises(HTTPException) as e:
+        upload.delete_dataset(bad)
+    assert e.value.status_code == 400
+    assert outside.is_dir()
+    assert (tmp_path / "uploads" / "ok").is_dir()

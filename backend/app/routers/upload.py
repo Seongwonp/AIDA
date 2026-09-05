@@ -15,7 +15,7 @@ import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi import APIRouter, HTTPException, Response, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 
 from app.config import EXPERIMENT_PYTHON, EXPERIMENT_ROOT, UPLOADS_DIR
@@ -771,6 +771,33 @@ def list_dataset_history() -> list[DatasetHistoryItem]:
 
     rows.sort(key=lambda r: r[0], reverse=True)
     return [item for _mtime, item in rows]
+
+
+@router.delete("/{dataset_id}", status_code=204)
+def delete_dataset(dataset_id: str) -> Response:
+    """업로드한 데이터셋과 진단 결과를 지운다.
+
+    이력을 화면에 꺼내 놓고 보니 지우는 길이 없었다. 쌓이는 용량도 문제지만,
+    **고객 데이터가 서버에 무기한 남는 게** 더 문제다 — 검수가 끝나면 지울 수
+    있어야 한다.
+
+    dataset_id는 우리가 만든 uuid지만 요청으로 오는 값이다. 지우는 동작이라
+    한 번 틀리면 되돌릴 수 없으므로, 한 조각짜리 이름인지 보고 해석한 경로가
+    정말 UPLOADS_DIR의 바로 아래인지 다시 확인한다.
+    """
+    if dataset_id != Path(dataset_id).name or dataset_id in ("", ".", ".."):
+        raise HTTPException(400, "허용되지 않은 경로입니다.")
+
+    root = UPLOADS_DIR.resolve()
+    target = (UPLOADS_DIR / dataset_id).resolve()
+    # 심볼릭 링크로 밖을 가리킬 수 있으니 부모가 정말 UPLOADS_DIR인지 본다
+    if target.parent != root:
+        raise HTTPException(400, "허용되지 않은 경로입니다.")
+    if not target.is_dir():
+        raise HTTPException(404, "데이터셋을 찾을 수 없습니다.")
+
+    shutil.rmtree(target)
+    return Response(status_code=204)
 
 
 @router.get("/{dataset_id}/images/{name}")

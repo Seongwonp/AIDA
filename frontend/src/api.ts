@@ -91,3 +91,6 @@ export const getLabelDiagnosis = (datasetId: string) =>
   client
     .get<LabelDiagnosisResult>(`/api/datasets/${datasetId}/label-diagnosis`)
     .then((res) => res.data);
+
+export const deleteDataset = (datasetId: string) =>
+  client.delete(`/api/datasets/${datasetId}`).then(() => undefined);

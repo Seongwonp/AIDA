@@ -1226,3 +1226,17 @@
   color: var(--muted);
   min-width: 8px;
 }
+
+/* 이력 줄의 버튼 묶음. 지우기는 되돌릴 수 없으니 눌러야 확인이 뜬다. */
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.verdict-danger {
+  border-color: var(--black);
+  background: var(--black);
+  color: var(--white);
+}
