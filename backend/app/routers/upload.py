@@ -152,9 +152,12 @@ def _unwrap_single_dir(dataset_dir: Path) -> None:
     # 잡동사니를 먼저 치운다. 안 치우면 inner 안에도 같은 이름이 있을 때
     # 올리다가 부딪힌다.
     for junk in dataset_dir.iterdir():
-        if junk is inner or junk == inner:
-            continue
-        shutil.rmtree(junk, ignore_errors=True) if junk.is_dir() else junk.unlink()
+        if junk == inner:
+            continue                 # 위에서 걸러 이것 말고는 전부 잡동사니다
+        if junk.is_dir():
+            shutil.rmtree(junk, ignore_errors=True)
+        else:
+            junk.unlink()
 
     # inner의 자식을 한 겹 위로 올린다. 옆에 임시 폴더를 만들지 않는 이유는
     # 중간에 실패하면 그게 UPLOADS_DIR에 남아 진단 이력 목록에 끼기 때문이다.
