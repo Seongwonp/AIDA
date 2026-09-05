@@ -309,7 +309,13 @@ export function DatasetUpload() {
 
           <h4 className="subsection-heading">우선 재검수 박스</h4>
           <ReviewQueue items={labelResult.review_queue}
-                       datasetId={labelResult.dataset_id} />
+                       datasetId={labelResult.dataset_id}
+                       fitRatio={labelResult.ruler_fit?.matched_label_ratio ?? null}
+                       // 다른 데이터셋에서도 65% 이상 버틴 유형. 아래 신뢰도
+                       // 표의 "데이터가 달라도 신뢰"와 같은 기준이다.
+                       robustTypes={labelResult.robustness
+                         .filter((r) => r.cross_dataset !== null && r.cross_dataset >= 0.65)
+                         .map((r) => r.suspicion)} />
 
           <RulerCard result={labelResult} />
 

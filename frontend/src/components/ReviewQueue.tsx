@@ -22,6 +22,9 @@ import type { ReviewQueueItem } from "../types";
  * 필요한데 지금 제품에는 없다. 데이터셋 id로 키를 나눠 섞이지 않게 한다.
  */
 
+// 기본값 배열을 컴포넌트 안에 두면 렌더마다 새로 만들어져 참조가 달라진다
+const NO_TYPES: string[] = [];
+
 type Verdict = "hit" | "miss";           // 오류 맞음 | 오류 아님
 type Verdicts = Record<string, Verdict>;
 
@@ -76,8 +79,15 @@ function toCsv(items: ReviewQueueItem[], verdicts: Verdicts): string {
   return "﻿" + [head.join(","), ...rows].join("\n");
 }
 
-export function ReviewQueue({ items, datasetId }:
-                            { items: ReviewQueueItem[]; datasetId: string }) {
+export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = NO_TYPES }:
+                            {
+                              items: ReviewQueueItem[];
+                              datasetId: string;
+                              /** 기준 모델이 라벨의 몇 %를 짚었나. 모르면 null. */
+                              fitRatio?: number | null;
+                              /** 도메인이 어긋나도 버티는 의심 유형 (docs/21 AI). */
+                              robustTypes?: string[];
+                            }) {
   const [type, setType] = useState("");
   const [query, setQuery] = useState("");
   const [verdicts, setVerdicts] = useState<Verdicts>(() => loadVerdicts(datasetId));
@@ -179,6 +189,12 @@ export function ReviewQueue({ items, datasetId }:
     return () => window.removeEventListener("keydown", onKey);
   });   // 매 렌더 다시 건다 — shown/verdicts/cursor를 모두 보므로 그게 단순하다
 
+  // 자가 이 데이터를 절반도 못 봤나. 이러면 목록 전체를 의심해야 한다.
+  const shaky = fitRatio !== null && fitRatio < 0.5;
+  // 그중 도메인이 어긋나도 버티는 유형이 실제로 목록에 있는가. 하나도 없으면
+  // 좁힐 곳이 없다는 뜻이고, 그건 조용히 넘어갈 상황이 아니라 더 나쁜 경우다.
+  const safeTypes = robustTypes.filter((t) => items.some((i) => i.suspicion === t));
+
   const judged = items.filter((i) => verdicts[keyOf(i)]);
   const hits = judged.filter((i) => verdicts[keyOf(i)] === "hit").length;
   const pct = items.length ? (judged.length / items.length) * 100 : 0;
@@ -241,6 +257,30 @@ export function ReviewQueue({ items, datasetId }:
         키보드: <kbd>j</kbd>/<kbd>k</kbd> 줄 이동 · <kbd>f</kbd> 오류 ·{" "}
         <kbd>d</kbd> 아님 — 판정하면 다음 줄로 넘어갑니다.
       </p>
+
+      {shaky && !type && (
+        <p className="error-banner">
+          기준 모델이 이 데이터의 라벨 중 {(fitRatio * 100).toFixed(0)}%밖에 짚지
+          못했습니다. 도메인이 어긋나면 <b>기하 오류(크기·위치) 판정이 거의
+          무너집니다</b> (docs/21 AI 실측).{" "}
+          {safeTypes.length > 0 ? (
+            <>
+              목록은 그대로 두었으니, 버티는 유형부터 보려면 좁히세요.{" "}
+              {safeTypes.map((t) => (
+                <button key={t} className="verdict" onClick={() => setType(t)}>
+                  {items.find((i) => i.suspicion === t)?.label ?? t}만 보기
+                </button>
+              ))}
+            </>
+          ) : (
+            <>
+              그런데 <b>여기서 나온 유형은 전부 그 영향을 크게 받는 것들입니다</b> —
+              좁혀서 건질 것이 없다는 뜻이라 목록 전체를 의심해야 합니다. 이
+              데이터에 맞는 기준 모델을 골라 다시 진단하는 편이 낫습니다.
+            </>
+          )}
+        </p>
+      )}
 
       {precision !== null && judged.length < items.length && (
         <p className="report-caveat">
