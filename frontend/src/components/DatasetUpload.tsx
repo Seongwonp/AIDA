@@ -33,6 +33,9 @@ export function DatasetUpload() {
   const [autoProfile, setAutoProfile] = useState("");
   // 서버가 알려준 실패 사유. 없으면 일반 안내로 돌아간다.
   const [errorDetail, setErrorDetail] = useState("");
+  // 목록에서 연 결과인가. 그때만 "목록으로"를 붙인다 — 방금 돌린 결과에
+  // 붙이면 되돌리기가 아니라 결과를 버리는 것으로 읽힌다.
+  const [fromHistory, setFromHistory] = useState(false);
 
   useEffect(() => {
     // 프로파일을 못 불러와도 진단 자체는 기본값으로 돌아가야 하므로 조용히 넘긴다
@@ -44,6 +47,7 @@ export function DatasetUpload() {
 
   /** 지난 진단을 그대로 불러온다. 추론을 다시 돌리지 않는다. */
   const openPast = async (datasetId: string) => {
+    setFromHistory(true);
     setStatus("diagnosing");
     setErrorDetail("");
     try {
@@ -61,7 +65,17 @@ export function DatasetUpload() {
     }
   };
 
+  /** 목록으로 돌아간다. 지난 진단을 열었을 때만 쓴다. */
+  const backToHistory = () => {
+    setLabelResult(null);
+    setResult(null);
+    setDataset(null);
+    setFromHistory(false);
+    setStatus("idle");
+  };
+
   const handleRun = async () => {
+    setFromHistory(false);
     if (!file) return;
     setStatus("uploading");
     setErrorDetail("");
@@ -182,6 +196,15 @@ export function DatasetUpload() {
       )}
 
       {status === "idle" && <HistoryCard onOpen={openPast} />}
+
+      {status === "done" && fromHistory && (
+        <p className="report-caveat">
+          지난 진단을 열어 둔 상태입니다.{" "}
+          <button className="verdict" onClick={backToHistory}>
+            목록으로
+          </button>
+        </p>
+      )}
 
       {status === "error" && (
         <div className="error-banner">
