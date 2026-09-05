@@ -124,14 +124,16 @@ def main() -> None:
         up = all(b > a for a, b in zip(vals, vals[1:]))
         down = all(b < a for a, b in zip(vals, vals[1:]))
         if up:
-            print("  → 규모가 커질수록 비율이 계속 오른다")
+            print("  → 관측값이 계속 오른다 (단일 관측이므로 추세로 단정하지 않는다)")
         elif down:
-            print("  → 규모가 커질수록 비율이 계속 내린다")
+            print("  → 관측값이 계속 내린다 (단일 관측이므로 추세로 단정하지 않는다)")
         else:
             # 양 끝만 비교하면 가운데가 제일 높아도 "올랐다"고 말하게 된다.
             # X가 점 둘로 직선을 그었고, AJ에서 점 셋으로 같은 실수를 할
             # 뻔했다(0.58/0.56/0.24 → "줄어든다" → 네 번째 0.47이 지웠다).
-            print(f"  → 추세가 아니라 오르내림이다 "
+            # "현상이 오르내린다"가 아니라 "관측값이 단조가 아니다"까지만
+            # 말한다. 각 점이 단일 관측이라 그 이상은 이 데이터로 못 한다.
+            print(f"  → 관측값이 단조가 아니다 — 규모에 따른 추세를 말할 수 없다 "
                   f"(최저 {min(vals):.2f}, 최고 {max(vals):.2f}, "
                   f"양 끝 {vals[0]:.2f} → {vals[-1]:.2f})")
 
@@ -141,7 +143,7 @@ def main() -> None:
         ceilings = [ctrl - ref for _l, _f, _h, _c, _s, ctrl, ref in rows]
         spread = max(ceilings) - min(ceilings)
         print(f"\n  천장 {len(ceilings)}개의 폭 {spread:.3f} vs "
-              f"학습 실행 간 흔들림 ±{NOISE:.3f}")
+              f"학습 실행 간 흔들림 ±{NOISE:.3f} (검정 아님, 대략적 눈금)")
         # 폭이 흔들림과 "같다"는 건 실재한다는 뜻이 아니라 구분이 안 된다는
         # 뜻이다. 처음엔 1.0배에서 "실재한다"고 찍었는데, 그러면 AJ가 같은
         # 값(0.027 vs 0.026)을 두고 "흔들림"이라 한 결론과 어긋난다.

@@ -25,6 +25,34 @@ import {
  * "맞는가"는 안 본다. 여기 모은 것들은 눈으로 봐서는 틀린 줄 모르는 종류다.
  */
 
+/**
+ * CSV 한 줄을 칸으로 나눈다 — 따옴표 안의 쉼표는 세지 않는다.
+ *
+ * 원래 `row.split(",")`로 칸 수를 셌는데, 그건 따옴표 안 쉼표도 쪼개므로
+ * "칸이 몇 개인가"를 재는 게 아니었다. 재려는 것을 실제로 재려면 이만큼은
+ * 필요하다.
+ */
+function parseCsvRow(row: string): string[] {
+  const out: string[] = [];
+  let cur = "";
+  let quoted = false;
+  for (let i = 0; i < row.length; i++) {
+    const ch = row[i];
+    if (quoted) {
+      if (ch === '"') {
+        if (row[i + 1] === '"') { cur += '"'; i++; }   // "" → 따옴표 한 개
+        else quoted = false;
+      } else cur += ch;
+    } else if (ch === '"') {
+      quoted = true;
+    } else if (ch === ",") {
+      out.push(cur); cur = "";
+    } else cur += ch;
+  }
+  out.push(cur);
+  return out;
+}
+
 function item(over: Partial<ReviewQueueItem> = {}): ReviewQueueItem {
   return {
     rank: 1,
@@ -140,16 +168,27 @@ describe("toCsv — 받는 쪽은 엑셀과 라벨링 도구다", () => {
   });
 
   test("쉼표가 든 근거를 한 칸으로 지킨다", () => {
-    const row = toCsv([item({ detail: "예측보다 28% 작고, 중심도 밀렸습니다" })], {})
-      .split("\n")[1];
-    expect(row).toContain('"예측보다 28% 작고, 중심도 밀렸습니다"');
-    // 감싸지 않으면 칸이 하나 더 생겨 뒤가 전부 밀린다
-    expect(row.split(",").length).toBe(12);
+    const detail = "예측보다 28% 작고, 중심도 밀렸습니다";
+    const csv = toCsv([item({ detail })], {});
+    const [head, row] = csv.split("\n");
+    // 감싸지 않으면 칸이 하나 더 생겨 뒤가 전부 밀린다. 그걸 보려면 따옴표를
+    // 아는 파서로 세야 한다 — split(",")는 따옴표 안 쉼표도 쪼갠다.
+    const cells = parseCsvRow(row);
+    expect(cells).toHaveLength(parseCsvRow(head).length);
+    expect(cells[9]).toBe(detail);          // 쉼표가 든 값이 한 칸에 온전히
+  });
+
+  test("칸 수가 머리글과 같다", () => {
+    const cells = parseCsvRow(toCsv([item()], {}).split("\n")[1]);
+    expect(cells).toHaveLength(11);
+    expect(parseCsvRow(toCsv([item()], {}).split("\n")[0])).toHaveLength(11);
   });
 
   test("따옴표는 겹따옴표로 escape 한다", () => {
-    expect(toCsv([item({ image: 'a".png' })], {}).split("\n")[1])
-      .toContain('"a"".png"');
+    const row = toCsv([item({ image: 'a".png' })], {}).split("\n")[1];
+    expect(row).toContain('"a"".png"');
+    // 되읽었을 때 원래 값으로 돌아와야 진짜 escape다
+    expect(parseCsvRow(row)[1]).toBe('a".png');
   });
 
   test("판정한 것만 판정 칸이 찬다", () => {
