@@ -1,0 +1,52 @@
+# 검사가 쌓였는데 돌려주는 곳이 없었다.
+#
+# 백엔드 93건, 프론트 21건, 타입체크, 린트 — 전부 손으로 돌려야 했고 그래서
+# 커밋마다 다 돌리지는 않았다. 실제로 그 사이에 조용히 깨진 것을 여러 번 찾았다
+# (타입체크가 파일을 하나도 안 보고 있던 것, 린트에 규칙이 둘뿐이던 것).
+#
+# **무거운 것은 안 돌린다.** 실험(ultralytics·torch)은 GPU가 필요하고 몇 시간이
+# 걸린다. 여기서 도는 것은 CSV와 JSON만 읽는 백엔드와 프론트다.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install -r requirements.txt
+        working-directory: backend
+      # conftest가 app을 import하므로 backend 안에서 돌아야 한다
+      - run: python -m pytest tests -q
+        working-directory: backend
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      # 타입체크를 따로 돌린다. tsc -b는 캐시를 보므로 --force 없이는
+      # 아무 파일도 안 볼 수 있다 — 실제로 그런 적이 있다.
+      - run: npm run typecheck
+        working-directory: frontend
+      - run: npm run lint
+        working-directory: frontend
+      - run: npm test
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
