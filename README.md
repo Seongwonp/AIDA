@@ -221,6 +221,55 @@ python cleanup_runs.py                                    # 안 쓰는 학습 �
 
 명령어 전체 목록은 [docs/09-getting-started.md](docs/09-getting-started.md).
 
+## 실험 스크립트
+
+`experiment/` 아래 스크립트가 많다. 언제 쓰는지로 묶었다. 각 파일 첫머리
+docstring에 **왜 만들었는지**와 근거 문서 절이 적혀 있다.
+
+### 데이터 준비
+
+| 스크립트 | 하는 일 |
+|---|---|
+| `download_kitti.py` | KITTI 라벨 전체 + 필요한 이미지만 Range 요청으로. `--select nested`는 규모 비교용 순열을 남긴다 |
+| `download_coco.py` | COCO val2017에서 자동차 프레임만. 진짜 도메인 이동 실험용(docs/21 AI) |
+| `prepare_coco.py` | COCO를 KITTI와 같은 형식·분할로 변환 |
+| `data_loader.py` | 원본 → YOLO 형식 학습/평가셋 |
+| `error_injector.py` | 조건별 오류 라벨 생성 |
+| `build_clean_subset.py` | 정제 조건과 **같은 프레임에 깨끗한 라벨**을 붙인 대조군 |
+
+### 학습·평가
+
+| 스크립트 | 하는 일 |
+|---|---|
+| `train.py` / `evaluate.py` | 조건 하나 또는 우선순위 묶음 |
+| `run_all.py` | 조건 전체를 순서대로 |
+| `run_multi_seed.py` | 같은 조건을 시드 여러 개로 — 오차막대의 근거 |
+| `refine_ruler.py` | 자기 정제용 부분집합 생성(docs/21 W·X·AJ) |
+
+### 진단 품질 측정
+
+| 스크립트 | 하는 일 |
+|---|---|
+| `diagnose_labels.py` | 박스 단위 진단. 제품이 부르는 것과 같은 코드 |
+| `evaluate_box_accuracy.py` | 주입한 오류를 얼마나 짚어내는지 채점 |
+| `compare_rulers_seeded.py` | 자를 바꿔가며 진단. `--seeds`로 시드 산포까지 |
+| `bench_rulers_on_coco.py` | 자들을 **같은 평가셋**으로 재기 — 각자 검증셋 점수는 비교 불가 |
+| `analyze_ruler_spread.py` | 자별·유형별 산포 |
+| `pairwise_rulers.py` | 모든 쌍의 간격을 σ로 환산 |
+| `recompute_without.py` | 저장된 조건별 점수에서 조건군을 빼고 재집계 (GPU 불필요) |
+| `compare_refine_scale.py` | 자기 정제 손익을 규모별로 분해 |
+| `check_confidence_margin.py` / `check_prediction_drift.py` | 자의 안정성이 어디서 오는지(docs/21 AH) |
+
+### 점검·정리
+
+| 스크립트 | 하는 일 |
+|---|---|
+| `check_consistency.py` | **조용히 틀리는 것들**을 잡는다. 라벨 없는 이미지, 깨진 링크, 겹치는 산출물 경로 |
+| `cleanup_runs.py` | 다시 만들 수 있는 학습 산출물 정리 |
+| `move_to_drive.py` | 링크를 보존하며 다른 드라이브로 이동 (robocopy는 링크를 복사본으로 만든다) |
+| `relink_duplicates.py` | 복사본이 된 파일을 내용 대조 후 링크로 환원 |
+| `build_docs_toc.py` | docs/21의 목차 생성. 정정된 절을 표시한다 |
+
 ## 테스트
 
 ```bash
