@@ -45,6 +45,14 @@ RULERS = {
     "shifted": ("약한 이동", "runs_mc"),
     "far": ("먼 이동(1C)", "runs"),
     "broad": ("넓은 자(800)", "runs_mc_broad_n800"),
+    # AL이 남긴 구멍을 메우려고 만든 자들. 넷 다 4클래스라 **클래스 구성이
+    # 같고**, broad 풀에서 뽑아 평가셋(cyclist_rich)과 겹침이 0이다.
+    # 다른 것은 Cyclist를 몇 개나 봤느냐뿐이다 — 0개 / 약 38개 / 76개.
+    # AL은 클래스 구성이 같은 어긋난 짝이 하나뿐이라 "같은 클래스끼리는
+    # 적합도가 듣는다"를 말할 수 없었다.
+    "bpoor": ("broad 자전거0", "runs_mc_broad_poor"),
+    "bmid": ("broad 자전거중", "runs_mc_broad_mid"),
+    "brich": ("broad 자전거多", "runs_mc_broad_rich"),
     # 진짜 도메인 이동용. 위 넷은 전부 KITTI 안에서 만든 자라, "도메인이
     # 어긋나면"의 어긋남이 같은 데이터셋 안의 프레임 선택 차이였다.
     # coco_self는 COCO로 학습한 자, kitti_on_coco는 KITTI 자를 COCO 데이터에
@@ -97,11 +105,16 @@ def measure(kind: str, seed: int, limit: int) -> dict | None:
     tp = fp = 0
     p10 = []
     per_condition: dict[str, float] = {}
+    per_condition_fit: dict[str, float] = {}
     silent = []
     for name in CONDITIONS:
         r = E.score_condition(config._BY_NAME[name], limit)
         tp += r["tp"]
         fp += r["fp"]
+        # 정답 없이 재는 값. 같은 채점에서 같이 나오므로 여기서 남긴다 —
+        # AL 때는 이게 없어서 적합도를 재려고 전체를 한 번 더 돌렸다.
+        if r.get("matched_label_ratio") is not None:
+            per_condition_fit[name] = r["matched_label_ratio"]
         v = r["verdicts_by_rank"]
         if not v:
             # 지목이 0건인 건 오판이 아니라 침묵이다. Car 1클래스 자는
@@ -124,6 +137,8 @@ def measure(kind: str, seed: int, limit: int) -> dict | None:
             # 조건별 점수를 버리지 않는다. 이게 있어야 나중에 유형별 산포를
             # GPU 재실행 없이 뽑을 수 있다 — AD 때 없어서 다시 돌려야 했다.
             "per_condition": per_condition,
+            # 조건별 적합도. 정밀도와 짝이 맞아야 AL 같은 분석을 다시 할 수 있다.
+            "per_condition_fit": per_condition_fit,
             "silent": silent}
 
 
