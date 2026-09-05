@@ -938,6 +938,12 @@
   margin: 0 0 12px;
 }
 
+/* 키보드가 없는 기기에서는 안내가 그냥 잡음이다. 화면 크기가 아니라
+   포인터 종류로 가른다 — 태블릿에 키보드를 붙여 쓰는 경우가 있다. */
+@media (hover: none) and (pointer: coarse) {
+  .queue-keys { display: none; }
+}
+
 .queue-keys kbd {
   font-family: inherit;
   font-size: 11px;
