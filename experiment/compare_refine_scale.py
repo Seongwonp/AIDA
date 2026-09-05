@@ -120,10 +120,38 @@ def main() -> None:
         for n, ratio in ratios:
             bar = "#" * min(int(ratio * 40), 60)
             print(f"  {n:>5}장  {ratio:>5.2f}  {bar}")
-        trend = ("규모가 커질수록 정제에 유리해진다"
-                 if ratios[-1][1] > ratios[0][1]
-                 else "규모가 커져도 정제에 유리해지지 않는다")
-        print(f"  → {trend}")
+        vals = [r for _n, r in ratios]
+        up = all(b > a for a, b in zip(vals, vals[1:]))
+        down = all(b < a for a, b in zip(vals, vals[1:]))
+        if up:
+            print("  → 규모가 커질수록 비율이 계속 오른다")
+        elif down:
+            print("  → 규모가 커질수록 비율이 계속 내린다")
+        else:
+            # 양 끝만 비교하면 가운데가 제일 높아도 "올랐다"고 말하게 된다.
+            # X가 점 둘로 직선을 그었고, AJ에서 점 셋으로 같은 실수를 할
+            # 뻔했다(0.58/0.56/0.24 → "줄어든다" → 네 번째 0.47이 지웠다).
+            print(f"  → 추세가 아니라 오르내림이다 "
+                  f"(최저 {min(vals):.2f}, 최고 {max(vals):.2f}, "
+                  f"양 끝 {vals[0]:.2f} → {vals[-1]:.2f})")
+
+        # 그 오르내림이 잴 수 있는 크기인가. 천장은 두 학습 결과의 차이이므로
+        # 실행 간 산포(AJ의 ±0.0185)가 √2배로 붙는다 → ±0.026.
+        NOISE = 0.026
+        ceilings = [ctrl - ref for _l, _f, _h, _c, _s, ctrl, ref in rows]
+        spread = max(ceilings) - min(ceilings)
+        print(f"\n  천장 {len(ceilings)}개의 폭 {spread:.3f} vs "
+              f"학습 실행 간 흔들림 ±{NOISE:.3f}")
+        # 폭이 흔들림과 "같다"는 건 실재한다는 뜻이 아니라 구분이 안 된다는
+        # 뜻이다. 처음엔 1.0배에서 "실재한다"고 찍었는데, 그러면 AJ가 같은
+        # 값(0.027 vs 0.026)을 두고 "흔들림"이라 한 결론과 어긋난다.
+        if spread <= NOISE:
+            print("  → 규모별 천장 차이는 측정된 것이 아니라 흔들림으로 봐야 한다")
+        elif spread < 2 * NOISE:
+            print(f"  → 폭이 흔들림의 {spread / NOISE:.1f}배뿐이라 "
+                  f"흔들림과 구분되지 않는다")
+        else:
+            print(f"  → 폭이 흔들림의 {spread / NOISE:.1f}배 — 이 차이는 실재한다")
 
 
 if __name__ == "__main__":
