@@ -66,7 +66,21 @@ cd frontend && npm run dev        # http://localhost:5173
 # 검증
 cd backend && ./venv/Scripts/python.exe -m pytest tests -q
 cd frontend && npm run typecheck  # tsc -b — tsc --noEmit는 아무것도 안 본다
-cd experiment && ./venv/Scripts/python.exe check_consistency.py
+cd frontend && npm run lint && npm test
+cd experiment && ./venv/Scripts/python.exe check_consistency.py   # 느리다(수십 분)
+```
+
+앞의 넷은 push할 때마다 GitHub Actions가 돌린다(`.github/workflows/ci.yml`).
+실험은 GPU가 필요해 빠져 있고, `check_consistency.py`도 원본 데이터가 있어야
+해서 로컬 전용이다.
+
+**CI에서는 5건이 건너뛰어진다.** 학습된 자(기준 모델)가 있어야 하는 검사들이다.
+여기서는 자가 있으니 통과하는데 CI에서는 없다 — 그래서 "여기서만 통과하는 검사"가
+생기지 않도록, 자가 필요하면 건너뛰게 해뒀다. 새 검사를 쓸 때도 같게 해야 한다.
+로컬에서 CI 환경을 흉내 내려면:
+
+```bash
+cd backend && EXPERIMENT_ROOT=/tmp/empty ./venv/Scripts/python.exe -m pytest tests -q
 ```
 
 실험 산출물(조건 폴더·원본 데이터)은 `D:\AIDA-data\experiment`에 있고

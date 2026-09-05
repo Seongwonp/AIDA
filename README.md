@@ -1,5 +1,7 @@
 # AIDA — AI 데이터 품질 진단 (연구 프로토타입)
 
+[![CI](https://github.com/Seongwonp/AIDA/actions/workflows/ci.yml/badge.svg)](https://github.com/Seongwonp/AIDA/actions/workflows/ci.yml)
+
 > 이 프로젝트가 처음이라면 [`docs/README.md`](docs/README.md)부터 읽을 것.
 > 프로젝트 배경, 핵심 기술 원리(특허 연계), 아키텍처, 실험 설계, 의사결정 이유가
 > 전부 문서화되어 있다. 개발 이력은 [`CHANGELOG.md`](CHANGELOG.md), 새 세션에서
