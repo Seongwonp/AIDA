@@ -386,6 +386,7 @@ URL 등)은 코드에 하드코딩하지 않고 `.env` 파일로 관리한다. �
 | GET | `/api/datasets/{id}/images/{name}` | 문제 박스를 그리려고 원본 이미지를 준다 |
 | GET | `/api/datasets/{id}/report` | 내려받는 HTML 리포트 |
 | GET | `/api/datasets/history` | 지난 진단 목록 — 새로고침해도 다시 열 수 있게 |
+| DELETE | `/api/datasets/{id}` | 올린 이미지와 진단 결과를 지운다 |
 
 `/{dataset_id}/...` 는 전부 두 조각이라 한 조각짜리 `/history`·`/upload`·
 `/reliability-profiles`와는 서로 가리지 않는다. 다만 한 조각짜리
