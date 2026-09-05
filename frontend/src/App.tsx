@@ -93,7 +93,10 @@ function App() {
         <button className="brand" onClick={() => setView("landing")}
                 aria-label="처음 화면으로">
           <span className="app-kicker">AI 데이터 품질 인증 플랫폼</span>
-          <h1>AIDA</h1>
+          {/* 로고는 사이트 이름이지 페이지 제목이 아니다. 페이지의 h1은
+              랜딩의 히어로 문장이 갖는다 — 한 화면에 h1이 둘이면 스크린
+              리더가 문서 구조를 잘못 읽는다. */}
+          <span className="brand-name">AIDA</span>
         </button>
         <div className="header-controls">
           {view === "app" && profiles.length > 1 && (

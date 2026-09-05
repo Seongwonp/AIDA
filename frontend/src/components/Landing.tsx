@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useReveal } from "../useReveal";
 
 /**
  * 랜딩 화면.
@@ -87,21 +88,23 @@ export function Landing({ onStart }: { onStart: () => void }) {
     const id = setTimeout(() => setRun(true), 120);
     return () => clearTimeout(id);
   }, []);
+  // 스크롤해서 들어온 것부터 하나씩 올라오게 한다
+  useReveal();
 
   return (
     <div className="landing">
       <section className="hero">
-        <span className="hero-kicker">AI 데이터 품질 진단 · 국방과학연구소 특허 10-2664201</span>
-        <h1 className="hero-title">
+        <span className="hero-kicker" data-reveal>AI 데이터 품질 진단 · 국방과학연구소 특허 10-2664201</span>
+        <h1 className="hero-title" data-reveal data-reveal-delay="80">
           라벨이 틀렸는지<br />
           <em>모델에게 묻는다</em>
         </h1>
-        <p className="hero-sub">
+        <p className="hero-sub" data-reveal data-reveal-delay="160">
           정답 데이터를 새로 만들지 않고, 이미 학습된 모델의 예측을 자로 삼아
           어느 라벨을 다시 봐야 하는지 짚어냅니다. 전수 재검수 대신
           <strong> 위에서부터 필요한 만큼만</strong>.
         </p>
-        <div className="hero-actions">
+        <div className="hero-actions" data-reveal data-reveal-delay="240">
           <button className="cta" onClick={onStart}>데이터셋 진단하기</button>
           <a className="cta cta-ghost" href="https://github.com/Seongwonp/AIDA"
              target="_blank" rel="noreferrer">실험 기록 보기</a>
@@ -116,15 +119,16 @@ export function Landing({ onStart }: { onStart: () => void }) {
         </div>
       </div>
 
-      <section className="stat-band">
+      <section className="stat-band" data-reveal>
         {STATS.map((s) => <Stat key={s.label} {...s} run={run} />)}
       </section>
 
-      <section className="steps">
+      <section className="steps" data-reveal>
         <h2 className="section-title">어떻게 동작하나</h2>
         <div className="step-grid">
-          {STEPS.map((s) => (
-            <article key={s.n} className="step">
+          {STEPS.map((s, i) => (
+            <article key={s.n} className="step" data-reveal
+                     data-reveal-delay={i * 90}>
               <span className="step-n">{s.n}</span>
               <h3>{s.title}</h3>
               <p>{s.body}</p>
@@ -133,7 +137,7 @@ export function Landing({ onStart }: { onStart: () => void }) {
         </div>
       </section>
 
-      <section className="evidence-teaser">
+      <section className="evidence-teaser" data-reveal>
         <h2 className="section-title">가장 중요한 실측 결과</h2>
         <p className="teaser-lead">
           진단 품질을 정하는 건 알고리즘이 아니라 <strong>기준 모델이 그 데이터에
@@ -158,7 +162,7 @@ export function Landing({ onStart }: { onStart: () => void }) {
         </p>
       </section>
 
-      <section className="final-cta">
+      <section className="final-cta" data-reveal>
         <h2>지금 가진 데이터셋으로 확인해보세요</h2>
         <button className="cta" onClick={onStart}>데이터셋 진단하기</button>
       </section>
