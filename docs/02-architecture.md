@@ -1,4 +1,8 @@
 # 02. 시스템 아키텍처
+<!-- 시점 표시 -->
+
+> 큰 틀(실험 파이프라인 → CSV → FastAPI → React)은 그대로다. 다만 **파일 목록은 2026-07 기준**이라 그 뒤에 늘어난 것이 빠져 있다 — 백엔드 `routers/upload.py`, 프론트 `Landing`·`ReviewQueue`·`RulerCard`·`BoxPreview`, 실험 스크립트 여럿. 현재 목록은 저장소 README의 '실험 스크립트' 절에 있다.
+
 
 ## 전체 구성
 
