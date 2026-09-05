@@ -38,6 +38,16 @@ from app.routers.report import TYPE_LABELS
 router = APIRouter(prefix="/api/datasets", tags=["upload"])
 
 MAX_UPLOAD_BYTES = 200 * 1024 * 1024  # 200MB
+
+# **압축 후 크기만으로는 부족하다.** 0으로 채운 zip은 1000배 넘게 부푼다
+# (실측 0.97MB → 0.98GB). 이 한도를 안 두면 200MB 업로드로 디스크를 수백 GB
+# 채울 수 있다. 이미지는 원래 잘 안 눌리므로 200MB zip이 정상적으로 풀리면
+# 200~400MB다 — 2GB면 넉넉하다.
+MAX_EXTRACTED_BYTES = 2 * 1024 * 1024 * 1024   # 2GB
+# 작은 파일 수십만 개로도 같은 짓을 할 수 있다. KITTI 전체가 이미지+라벨
+# 15,000개 정도다.
+MAX_ZIP_ENTRIES = 100_000
+
 DIAGNOSE_TIMEOUT_SEC = 300
 
 # 프로파일 파일 이름 → 사람이 읽을 이름. 없으면 파일 이름을 그대로 쓴다.
@@ -126,6 +136,47 @@ def _robustness(by_type: list) -> list[ReliabilityRow]:
 # 맥이 zip에 끼워 넣는 메타데이터. 이게 있으면 "최상위 폴더가 하나"가
 # 아니게 되어 한 겹 벗기기가 안 먹는다.
 _ZIP_NOISE = {"__MACOSX", ".DS_Store", "Thumbs.db"}
+
+
+def _check_zip_is_safe(zf: zipfile.ZipFile, dest: Path) -> None:
+    """풀기 전에 목록만 보고 거절할 것을 거절한다.
+
+    목록(`infolist`)은 압축을 풀지 않고 읽히므로, 폭탄을 디스크에 쏟기 전에
+    막을 수 있다. 보는 것은 셋이다.
+
+    **압축률.** 업로드 바이트만 재고 있었는데 그것으로는 부족하다. 0으로 채운
+    1MB짜리 zip이 풀면 1GB가 된다(실측 1028배). 200MB 한도를 지키면서 디스크를
+    수백 GB 채울 수 있다.
+
+    **개수.** 작은 파일 수십만 개로도 같은 짓을 할 수 있다.
+
+    **경로.** CPython의 `extractall`은 "../"와 절대경로를 실제로 제거하므로
+    지금도 밖으로 나가지는 않는다(확인함). 그래도 여기서 한 번 더 보는 이유는,
+    그 보장이 표준 라이브러리 구현에 딸린 것이라 코드만 읽어서는 안 보이고
+    검사로 고정해두지 않으면 다음 사람이 알 수 없기 때문이다.
+    """
+    entries = zf.infolist()
+    if len(entries) > MAX_ZIP_ENTRIES:
+        raise HTTPException(
+            400, f"zip 안 파일이 너무 많습니다 ({len(entries):,}개). "
+                 f"{MAX_ZIP_ENTRIES:,}개까지만 받습니다.")
+
+    total = 0
+    for info in entries:
+        total += info.file_size
+        if total > MAX_EXTRACTED_BYTES:
+            gb = MAX_EXTRACTED_BYTES / 1024 / 1024 / 1024
+            raise HTTPException(
+                413, f"압축을 풀면 {gb:.0f}GB를 넘습니다. 압축률이 비정상적으로 "
+                     f"높거나 데이터셋이 너무 큽니다.")
+
+        # 목록에 적힌 이름 그대로가 dest 안에 떨어지는지 본다
+        name = info.filename
+        if name.endswith("/"):
+            continue                       # 폴더 항목
+        landed = (dest / name).resolve()
+        if not landed.is_relative_to(dest.resolve()):
+            raise HTTPException(400, f"허용되지 않은 경로가 들어 있습니다: {name}")
 
 
 def _unwrap_single_dir(dataset_dir: Path) -> None:
@@ -338,6 +389,7 @@ async def upload_dataset(file: UploadFile) -> UploadedDatasetInfo:
 
         try:
             with zipfile.ZipFile(zip_path) as zf:
+                _check_zip_is_safe(zf, dataset_dir)
                 zf.extractall(dataset_dir)
         except zipfile.BadZipFile:
             raise HTTPException(400, "손상된 zip 파일입니다.")

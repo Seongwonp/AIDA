@@ -182,3 +182,83 @@ def test_delete_guard_and_backslash(tmp_path, guard_dirs):
     assert e.value.status_code in (400, 404)
     assert guard_dirs.is_dir()
     assert (tmp_path / "uploads" / "ok").is_dir()
+
+
+# --- 압축 폭탄 --------------------------------------------------------------
+#
+# 업로드 바이트만 200MB로 재고 있었다. 압축률은 안 봤다 — 0으로 채운 1MB짜리
+# zip이 풀면 1GB가 된다(실측 1028배). 코덱스 리뷰가 잡아준 것이다.
+
+def bomb_zip(entries: int = 2, each: int = 100 * 1024 * 1024) -> bytes:
+    """압축하면 작고 풀면 큰 zip. 0으로 채우면 1000배 넘게 눌린다."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+        zf.writestr("images/a.png", PNG)
+        zf.writestr("labels/a.txt", LABEL)
+        for i in range(entries):
+            zf.writestr(f"images/big{i}.png", b"\x00" * each)
+    return buf.getvalue()
+
+
+def test_compression_ratio_is_the_actual_danger():
+    """업로드 바이트만 재면 왜 부족한지부터 못 박는다.
+
+    200MB가 풀려서 200MB가 되는 게 아니다. 여기 만든 zip이 몇 배로 부푸는지
+    실제로 세어, 한도의 근거가 상상이 아니라는 것을 남긴다.
+    """
+    data = bomb_zip()
+    with zipfile.ZipFile(io.BytesIO(data)) as zf:
+        expanded = sum(i.file_size for i in zf.infolist())
+    assert len(data) < 5 * 1024 * 1024, "압축된 것은 업로드 한도에 한참 못 미친다"
+    assert expanded / len(data) > 100, f"부푸는 배율 {expanded / len(data):.0f}배"
+
+
+def test_zip_bomb_is_rejected_before_extracting(client, tmp_path, monkeypatch):
+    # 실제 한도는 2GB지만 그걸 넘기는 zip을 테스트에서 만들면 느리다. 한도를
+    # 낮춰 같은 길을 탄다 — 보는 것은 "풀기 전에 막는가"다.
+    monkeypatch.setattr(upload, "MAX_EXTRACTED_BYTES", 50 * 1024 * 1024)
+    data = bomb_zip()
+    assert len(data) < 200 * 1024 * 1024, "이 zip 자체는 업로드 한도를 통과한다"
+
+    res = post(client, data)
+    assert res.status_code == 413, res.text
+    # 풀기 전에 막아야 의미가 있다 — 디스크에 남은 게 없어야 한다
+    uploads = tmp_path / "uploads"
+    assert not uploads.exists() or list(uploads.iterdir()) == []
+
+
+def test_too_many_entries_is_rejected(client, monkeypatch):
+    monkeypatch.setattr(upload, "MAX_ZIP_ENTRIES", 5)
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("labels/a.txt", LABEL)
+        for i in range(10):
+            zf.writestr(f"images/{i}.png", PNG)
+    res = post(client, buf.getvalue())
+    assert res.status_code == 400
+    assert "너무 많습니다" in res.json()["detail"]
+
+
+def test_normal_dataset_still_passes_the_size_guard(client):
+    """정상 데이터셋을 실수로 막으면 안 된다."""
+    res = post(client, make_zip({
+        "images/a.png": PNG, "images/b.png": PNG,
+        "labels/a.txt": LABEL, "labels/b.txt": LABEL,
+    }))
+    assert res.status_code == 200, res.text
+
+
+def test_zip_slip_paths_are_rejected(client, tmp_path):
+    """CPython의 extractall이 "../"를 실제로 제거하므로 지금도 밖으로 나가지는
+    않는다. 그 보장이 표준 라이브러리 구현에 딸린 것이라 코드만 읽어서는 안
+    보이므로, 우리가 직접 막는다는 것을 검사로 고정한다."""
+    outside = tmp_path / "keep_me"
+    outside.mkdir()
+    res = post(client, make_zip({
+        "../../keep_me/pwned.txt": b"x",
+        "images/a.png": PNG,
+        "labels/a.txt": LABEL,
+    }))
+    assert res.status_code == 400
+    assert "허용되지 않은 경로" in res.json()["detail"]
+    assert list(outside.iterdir()) == []
