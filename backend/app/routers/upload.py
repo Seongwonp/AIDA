@@ -731,8 +731,9 @@ IMAGE_MEDIA_TYPES = {
 def list_dataset_history() -> list[DatasetHistoryItem]:
     """지난 진단 목록. 최근 것부터.
 
-    경로가 "/{dataset_id}/..." 보다 **먼저** 선언돼야 한다. 뒤에 두면
-    FastAPI가 "history"를 dataset_id로 읽어 404를 낸다.
+    이 파일의 "/{dataset_id}/..." 는 전부 두 조각이라 한 조각짜리 이 경로와는
+    서로 가리지 않는다 — 선언 순서는 상관없다. 한 조각짜리 "/{dataset_id}" 를
+    나중에 추가한다면 그때는 이 경로가 먼저 와야 한다.
     """
     if not UPLOADS_DIR.is_dir():
         return []

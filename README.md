@@ -43,7 +43,9 @@
 - **어느 기준 모델로 쟀는지 숨기지 않는다.** 데이터의 클래스를 읽어 맞는
   모델을 추천하고, 모르는 클래스가 있으면 경고하고, 그 모델이 이 데이터를
   실제로 보고 있는지(라벨 중 몇 %를 짚었는지)까지 보여준다.
-- 백엔드 테스트 63개, 프론트 타입체크, 실험 산출물 정합성 검사기.
+- 백엔드 테스트 83개, 프론트 타입체크·린트, 실험 산출물 정합성 검사기.
+- **검수를 키보드로 한다.** `j`/`k`로 이동, `f` 오류, `d` 아님. 판정하면
+  다음 줄로 넘어간다. 지난 진단은 새로고침 뒤에도 다시 열 수 있다.
 
 ### 안 되는 것
 
@@ -359,12 +361,35 @@ URL 등)은 코드에 하드코딩하지 않고 `.env` 파일로 관리한다. �
 
 ## API 엔드포인트
 
+**연구 결과** — KITTI 412장에 오류를 주입해 잰 기준 실험. 어느 데이터셋을
+올리든 같은 값이다.
+
 | 메서드 | 경로 | 설명 |
 |---|---|---|
 | GET | `/api/health` | 서버 상태 확인 |
-| GET | `/api/summary` | 데이터셋 전체 요약 (품질 점수, 총 이미지/객체 수) |
-| GET | `/api/conditions` | 실험 조건별 성능 지표 (mAP, Precision, Recall) |
-| GET | `/api/diagnose` | 오류 유형별 진단 리포트 (재검수 우선순위 포함) |
+| GET | `/api/summary` | 기준 실험 요약 (품질 점수, 총 이미지/객체 수) |
+| GET | `/api/conditions` | 조건별 성능 지표 (mAP, Precision, Recall) |
+| GET | `/api/conditions/aggregated` | 시드 여러 개를 묶은 평균과 오차막대 |
+| GET | `/api/obb/conditions` | 회전 박스(OBB)로 같은 조건을 다시 잰 것 |
+| GET | `/api/diagnose` | 오류 유형별 진단 리포트 |
+| GET | `/api/roi-estimate` | 재검수 비용 대비 회수 추정 |
+
+**내 데이터셋 진단** — 올린 데이터에 대해 실제로 추론을 돌린다.
+
+| 메서드 | 경로 | 설명 |
+|---|---|---|
+| POST | `/api/datasets/upload` | zip 업로드. 폴더째 압축한 것은 한 겹 벗겨 읽는다 |
+| GET | `/api/datasets/reliability-profiles` | 쓸 수 있는 기준 모델 목록 |
+| POST | `/api/datasets/{id}/diagnose` | 데이터셋 단위 — 어떤 오류 유형과 닮았나 |
+| POST | `/api/datasets/{id}/diagnose-labels` | 박스 단위 — 재검수 목록을 만든다 |
+| GET | `/api/datasets/{id}/label-diagnosis` | 만들어 둔 재검수 목록 (추론 안 함) |
+| GET | `/api/datasets/{id}/images/{name}` | 문제 박스를 그리려고 원본 이미지를 준다 |
+| GET | `/api/datasets/{id}/report` | 내려받는 HTML 리포트 |
+| GET | `/api/datasets/history` | 지난 진단 목록 — 새로고침해도 다시 열 수 있게 |
+
+`/{dataset_id}/...` 는 전부 두 조각이라 한 조각짜리 `/history`·`/upload`·
+`/reliability-profiles`와는 서로 가리지 않는다. 다만 한 조각짜리
+`/{dataset_id}` 를 나중에 추가한다면 그때는 선언 순서가 문제가 된다.
 
 자세한 응답 스키마는 [docs/04-api-reference.md](docs/04-api-reference.md).
 
