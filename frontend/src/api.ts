@@ -5,6 +5,7 @@ import type {
   DatasetSummary,
   DiagnosisResult,
   LabelDiagnosisResult,
+  DatasetHistoryItem,
   ReliabilityProfile,
   RoiEstimate,
   UploadDiagnosisResult,
@@ -79,3 +80,14 @@ export const getReliabilityProfiles = () =>
 
 export const getDatasetReportUrl = (datasetId: string) =>
   `${API_BASE_URL}/api/datasets/${datasetId}/report`;
+
+export const getDatasetHistory = () =>
+  client
+    .get<DatasetHistoryItem[]>("/api/datasets/history")
+    .then((res) => res.data);
+
+/** 지난 진단을 다시 읽는다. 추론을 돌리지 않는다. */
+export const getLabelDiagnosis = (datasetId: string) =>
+  client
+    .get<LabelDiagnosisResult>(`/api/datasets/${datasetId}/label-diagnosis`)
+    .then((res) => res.data);

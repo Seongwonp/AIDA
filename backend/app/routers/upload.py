@@ -20,6 +20,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 
 from app.config import EXPERIMENT_PYTHON, EXPERIMENT_ROOT, UPLOADS_DIR
 from app.models import (
+    DatasetHistoryItem,
     ErrorTypeCandidate,
     LabelDiagnosisResult,
     PerformanceVector,
@@ -673,6 +674,51 @@ IMAGE_MEDIA_TYPES = {
     ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
     ".bmp": "image/bmp", ".webp": "image/webp",
 }
+
+
+@router.get("/history", response_model=list[DatasetHistoryItem])
+def list_dataset_history() -> list[DatasetHistoryItem]:
+    """지난 진단 목록. 최근 것부터.
+
+    경로가 "/{dataset_id}/..." 보다 **먼저** 선언돼야 한다. 뒤에 두면
+    FastAPI가 "history"를 dataset_id로 읽어 404를 낸다.
+    """
+    if not UPLOADS_DIR.is_dir():
+        return []
+
+    rows: list[tuple[float, DatasetHistoryItem]] = []
+    for d in UPLOADS_DIR.iterdir():
+        if not d.is_dir():
+            continue
+        label_path = d / "label_diagnosis.json"
+        summary: dict = {}
+        when: str | None = None
+        if label_path.exists():
+            try:
+                data = json.loads(label_path.read_text(encoding="utf-8"))
+                summary = data.get("summary", {})
+                when = data.get("generated_at")
+            except (OSError, json.JSONDecodeError):
+                pass                       # 깨진 결과는 목록에서 빼지 않고 빈칸으로 둔다
+
+        n_images, n_labels = _dataset_counts(d)
+        dominant = summary.get("dominant_type")
+        rows.append((
+            label_path.stat().st_mtime if label_path.exists() else d.stat().st_mtime,
+            DatasetHistoryItem(
+                dataset_id=d.name,
+                diagnosed_at=when,
+                num_images=n_images,
+                num_labels=n_labels,
+                has_label_diagnosis=label_path.exists(),
+                total_findings=summary.get("total_findings"),
+                dominant_label=(SUSPICION_LABELS.get(dominant, dominant)
+                                if dominant else None),
+            ),
+        ))
+
+    rows.sort(key=lambda r: r[0], reverse=True)
+    return [item for _mtime, item in rows]
 
 
 @router.get("/{dataset_id}/images/{name}")

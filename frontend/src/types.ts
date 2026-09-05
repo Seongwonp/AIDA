@@ -205,3 +205,14 @@ export interface ReliabilityProfile {
   /** 이 구성의 기준 모델이 서버에 있는가. false면 고를 수 없다. */
   available: boolean;
 }
+
+/** 지난 진단 하나. 목록에서 골라 다시 열 수 있게 최소한만 담는다. */
+export interface DatasetHistoryItem {
+  dataset_id: string;
+  diagnosed_at: string | null;
+  num_images: number;
+  num_labels: number;
+  has_label_diagnosis: boolean;
+  total_findings: number | null;
+  dominant_label: string | null;
+}

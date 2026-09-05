@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import {
   diagnoseDataset,
   diagnoseDatasetLabels,
+  getLabelDiagnosis,
   getDatasetReportUrl,
   getReliabilityProfiles,
   uploadDataset,
 } from "../api";
 import { ReviewQueue } from "./ReviewQueue";
+import { HistoryCard } from "./HistoryCard";
 import { RulerCard } from "./RulerCard";
 import type {
   LabelDiagnosisResult,
@@ -39,6 +41,25 @@ export function DatasetUpload() {
 
   const busy = status === "uploading" || status === "diagnosing";
   const selectedProfile = profiles.find((p) => p.name === profile);
+
+  /** 지난 진단을 그대로 불러온다. 추론을 다시 돌리지 않는다. */
+  const openPast = async (datasetId: string) => {
+    setStatus("diagnosing");
+    setErrorDetail("");
+    try {
+      const labels = await getLabelDiagnosis(datasetId);
+      setLabelResult(labels);
+      setResult(null);          // 데이터셋 단위 결과는 따로 불러오지 않는다
+      setDataset(null);
+      setStatus("done");
+      // 결과가 화면 아래에 붙으므로 거기로 데려간다
+      requestAnimationFrame(() =>
+        document.querySelector(".upload-card")?.scrollIntoView({ block: "start" }));
+    } catch {
+      setErrorDetail("지난 진단을 불러오지 못했습니다.");
+      setStatus("error");
+    }
+  };
 
   const handleRun = async () => {
     if (!file) return;
@@ -158,6 +179,8 @@ export function DatasetUpload() {
           </div>
         </div>
       )}
+
+      {status === "idle" && <HistoryCard onOpen={openPast} />}
 
       {status === "error" && (
         <div className="error-banner">

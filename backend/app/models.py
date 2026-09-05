@@ -177,6 +177,22 @@ class RulerInfo(BaseModel):
     unknown_class_ids: list[int] = []
 
 
+class DatasetHistoryItem(BaseModel):
+    """지난 진단 하나. 목록에서 골라 다시 열 수 있게 최소한만 담는다.
+
+    검수는 한 번에 끝나지 않는다 — 반쯤 보다가 내일 이어 보는 게 정상이고,
+    그러려면 어제 진단을 다시 열 수 있어야 한다.
+    """
+    dataset_id: str
+    diagnosed_at: str | None = None
+    num_images: int = 0
+    num_labels: int = 0
+    # 라벨 단위 진단(재검수 목록)이 있는가. 없으면 데이터셋 단위 결과만 있다.
+    has_label_diagnosis: bool = False
+    total_findings: int | None = None
+    dominant_label: str | None = None
+
+
 class RulerFit(BaseModel):
     """기준 모델이 이 데이터를 실제로 보는가 (docs/21 AE의 남은 한계).
 
