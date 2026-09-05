@@ -46,6 +46,33 @@ def ruler_class_count(kind: str) -> int | None:
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
+def rows_from_seeded(src: dict) -> dict:
+    """채점 결과에서 (자, 시드, 조건) → {적합도, 정밀도}를 뽑는다.
+
+    적합도와 정밀도가 **같은 채점 한 번**에서 나온 값이라 짝이 정확히 맞는다.
+    AL에서는 둘을 따로 재서 조인이 유효한지 따로 확인해야 했다.
+    """
+    rows: dict[str, dict] = {}
+    for label, per_seed in src["rulers"].items():
+        rows[label] = {}
+        for i, seed in enumerate(src["seeds"]):
+            if i >= len(per_seed) or per_seed[i] is None:
+                continue
+            entry = per_seed[i]
+            fit = entry.get("per_condition_fit") or {}
+            prec = entry["per_condition"]
+            if not fit:
+                raise SystemExit(
+                    f"{label} seed {seed}에 per_condition_fit이 없다 — "
+                    "적합도를 같이 남기기 전에 만든 결과다. --from-seeded 말고 "
+                    "그냥 --source로 측정할 것.")
+            rows[label][str(seed)] = {
+                c: {"fit": fit[c], "precision": prec[c]}
+                for c in prec if c in fit
+            }
+    return rows
+
+
 def kind_by_label(label: str) -> str:
     """저장된 JSON은 자를 한글 이름으로 갖고 있다. 코드 쪽 키로 되돌린다."""
     for kind, (name, _base) in RULERS.items():
@@ -76,7 +103,20 @@ def main() -> None:
     ap.add_argument("--out", required=True)
     ap.add_argument("--analyze-only", action="store_true",
                     help="--out에 이미 있는 측정을 읽어 분석만 다시 한다 (GPU 안 씀)")
+    ap.add_argument("--from-seeded", action="store_true",
+                    help="--source가 조건별 적합도까지 갖고 있으면 재지 않고 바로 읽는다")
     args = ap.parse_args()
+
+    if args.from_seeded:
+        src = json.loads(Path(args.source).read_text(encoding="utf-8"))
+        rows = rows_from_seeded(src)
+        Path(args.out).write_text(json.dumps(
+            {"source": args.source, "conditions": src["conditions"],
+             "seeds": src["seeds"], "limit": src["limit"], "rows": rows},
+            ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"저장 → {args.out} (측정 없음)")
+        analyze(rows, src["conditions"], src["seeds"])
+        return
 
     if args.analyze_only:
         saved = json.loads(Path(args.out).read_text(encoding="utf-8"))
