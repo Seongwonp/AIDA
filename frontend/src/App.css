@@ -1192,3 +1192,31 @@
   .hero::before { animation: none; }
   .stat-value::after { animation: none; width: 42px; }
 }
+
+/* 정렬 가능한 열 제목. 버튼이지만 표 머리로 보여야 하므로 th의 글자 모양을
+   그대로 물려받는다 — 버튼처럼 생기면 30줄짜리 표 위가 시끄러워진다. */
+.sort-header {
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.sort-header:hover {
+  text-decoration: underline;
+}
+
+/* 화살표 자리를 늘 비워 둔다. 정렬을 바꿀 때마다 열 너비가 흔들리면
+   표 전체가 출렁인다. */
+.sort-arrow {
+  font-size: 9px;
+  color: var(--muted);
+  min-width: 8px;
+}
