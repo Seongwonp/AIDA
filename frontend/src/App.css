@@ -867,14 +867,49 @@
   cursor: pointer;
 }
 
-/* 다 본 줄은 뒤로 물러나되 사라지지는 않게 — 되짚어볼 수 있어야 한다 */
-.row-done td {
+/* ---- 판정 ----
+   "봤다"만 체크하면 검수자가 무엇을 알아냈는지 사라진다. 맞았는지 아닌지를
+   남기면 이 데이터셋의 실제 정밀도가 나온다. */
+.verdict-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.verdict {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border: 1.5px solid var(--hair);
+  background: var(--white);
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.verdict:hover {
+  border-color: var(--black);
+  color: var(--black);
+}
+
+.verdict-on {
+  border-color: var(--black);
+  background: var(--neon);
+  color: #000;
+}
+
+/* 판정한 줄은 뒤로 물러나되 사라지지는 않게 — 되짚어볼 수 있어야 한다.
+   "오류 아님"만 취소선을 긋는다. 오류로 확정된 줄은 아직 고칠 일이 남았다. */
+.row-hit td {
+  background: color-mix(in srgb, var(--neon) 12%, transparent);
+}
+
+.row-miss td {
   color: var(--muted);
   text-decoration: line-through;
   text-decoration-color: var(--hair);
 }
 
-.row-done td:first-child {
+.row-miss td:first-child {
   text-decoration: none;
 }
 

@@ -7,41 +7,64 @@ import type { ReviewQueueItem } from "../types";
  *
  * 예전에는 상위 20개를 그냥 표로 찍기만 했다. 그러면 화면에서 읽을 수는 있어도
  * **일을 할 수가 없다.** 검수자는 목록을 들고 하나씩 고쳐 나가는 사람이라
- * 최소한 세 가지가 필요하다:
+ * 최소한 이만큼이 필요하다:
  *
  *   - 유형으로 좁히기 (오늘은 누락만 보겠다)
- *   - 다 본 것 표시하기 (어디까지 했는지)
+ *   - 문제 박스를 눈으로 보기
+ *   - **본 결과를 남기기** — 실제 오류였는지 아닌지
  *   - 내보내기 (라벨 도구나 스프레드시트로 옮기기)
  *
- * 체크 상태는 브라우저에만 남긴다(localStorage). 서버에 검수 진행을 저장하려면
- * 사용자 개념이 필요한데 지금 제품에는 없다. 데이터셋 id로 키를 나눠, 다른
- * 데이터셋의 진행과 섞이지 않게 한다.
+ * 세 번째가 특히 중요하다. "봤다"만 체크하면 검수자가 무엇을 알아냈는지가
+ * 사라진다. 맞았는지 아닌지를 남기면 **이 데이터셋에서의 실제 정밀도**가
+ * 나온다 — 우리가 KITTI에서 잰 94.0%가 아니라 고객 자기 숫자다.
+ *
+ * 판정은 브라우저에만 남긴다(localStorage). 서버에 저장하려면 사용자 개념이
+ * 필요한데 지금 제품에는 없다. 데이터셋 id로 키를 나눠 섞이지 않게 한다.
  */
 
-function loadDone(datasetId: string): Set<string> {
+type Verdict = "hit" | "miss";           // 오류 맞음 | 오류 아님
+type Verdicts = Record<string, Verdict>;
+
+const STORE = (datasetId: string) => `aida-verdicts-${datasetId}`;
+const LEGACY = (datasetId: string) => `aida-reviewed-${datasetId}`;
+
+function loadVerdicts(datasetId: string): Verdicts {
   try {
-    const raw = localStorage.getItem(`aida-reviewed-${datasetId}`);
-    return new Set<string>(raw ? JSON.parse(raw) : []);
+    const raw = localStorage.getItem(STORE(datasetId));
+    if (raw) return JSON.parse(raw) as Verdicts;
+    // 이전 버전은 "봤다"만 배열로 저장했다. 그걸 버리지 않고 "판정 안 함"
+    // 상태로 살려 온다 — 검수하던 사람의 진행이 업데이트로 날아가면 안 된다.
+    const old = localStorage.getItem(LEGACY(datasetId));
+    if (old) {
+      const seen = JSON.parse(old) as string[];
+      return Object.fromEntries(seen.map((k) => [k, "hit" as Verdict]));
+    }
   } catch {
-    return new Set();               // 사생활 보호 모드 등에서 막힐 수 있다
+    /* 사생활 보호 모드 등에서 막힐 수 있다 */
   }
+  return {};
 }
 
 function keyOf(item: ReviewQueueItem): string {
   return `${item.image}#${item.label_index ?? "none"}#${item.suspicion}`;
 }
 
-function toCsv(items: ReviewQueueItem[], done: Set<string>): string {
-  const head = ["순위", "이미지", "라벨 인덱스", "의심 유형", "심각도", "근거", "검토함"];
+const VERDICT_TEXT: Record<Verdict, string> = { hit: "오류 맞음", miss: "오류 아님" };
+
+function toCsv(items: ReviewQueueItem[], verdicts: Verdicts): string {
+  const head = ["순위", "이미지", "라벨 인덱스", "의심 유형", "심각도", "근거", "판정"];
   const esc = (v: string | number) => {
     const s = String(v);
     // 쉼표·따옴표·줄바꿈이 들어 있으면 감싸야 한 칸으로 읽힌다
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  const rows = items.map((i) => [
-    i.rank, i.image, i.label_index ?? "", i.label,
-    i.severity.toFixed(3), i.detail, done.has(keyOf(i)) ? "Y" : "",
-  ].map(esc).join(","));
+  const rows = items.map((i) => {
+    const v = verdicts[keyOf(i)];
+    return [
+      i.rank, i.image, i.label_index ?? "", i.label,
+      i.severity.toFixed(3), i.detail, v ? VERDICT_TEXT[v] : "",
+    ].map(esc).join(",");
+  });
   // 엑셀이 UTF-8 CSV를 한글로 열려면 BOM이 필요하다
   return "﻿" + [head.join(","), ...rows].join("\n");
 }
@@ -50,7 +73,7 @@ export function ReviewQueue({ items, datasetId }:
                             { items: ReviewQueueItem[]; datasetId: string }) {
   const [type, setType] = useState("");
   const [query, setQuery] = useState("");
-  const [done, setDone] = useState<Set<string>>(() => loadDone(datasetId));
+  const [verdicts, setVerdicts] = useState<Verdicts>(() => loadVerdicts(datasetId));
   const [onlyOpen, setOnlyOpen] = useState(false);
   // 미리보기는 이미지를 내려받으므로 기본으로 켜두면 목록이 큰 데이터셋에서
   // 수십 장을 한꺼번에 받는다. 필요할 때 켜게 한다.
@@ -64,25 +87,27 @@ export function ReviewQueue({ items, datasetId }:
 
   const shown = useMemo(() => items.filter((i) => {
     if (type && i.suspicion !== type) return false;
-    if (onlyOpen && done.has(keyOf(i))) return false;
+    if (onlyOpen && verdicts[keyOf(i)]) return false;
     if (query && !i.image.toLowerCase().includes(query.toLowerCase())) return false;
     return true;
-  }), [items, type, query, done, onlyOpen]);
+  }), [items, type, query, verdicts, onlyOpen]);
 
-  const toggle = (item: ReviewQueueItem) => {
-    const next = new Set(done);
+  /** 같은 값을 다시 누르면 판정을 지운다 — 잘못 눌렀을 때 되돌릴 길이 있어야 한다. */
+  const setVerdict = (item: ReviewQueueItem, v: Verdict) => {
     const k = keyOf(item);
-    next.has(k) ? next.delete(k) : next.add(k);
-    setDone(next);
+    const next = { ...verdicts };
+    if (next[k] === v) delete next[k];
+    else next[k] = v;
+    setVerdicts(next);
     try {
-      localStorage.setItem(`aida-reviewed-${datasetId}`, JSON.stringify([...next]));
+      localStorage.setItem(STORE(datasetId), JSON.stringify(next));
     } catch {
       /* 저장 못 해도 이번 세션에는 반영된다 */
     }
   };
 
   const download = () => {
-    const blob = new Blob([toCsv(shown, done)], { type: "text/csv;charset=utf-8" });
+    const blob = new Blob([toCsv(shown, verdicts)], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -91,18 +116,28 @@ export function ReviewQueue({ items, datasetId }:
     URL.revokeObjectURL(url);
   };
 
-  const doneCount = items.filter((i) => done.has(keyOf(i))).length;
-  const pct = items.length ? (doneCount / items.length) * 100 : 0;
+  const judged = items.filter((i) => verdicts[keyOf(i)]);
+  const hits = judged.filter((i) => verdicts[keyOf(i)] === "hit").length;
+  const pct = items.length ? (judged.length / items.length) * 100 : 0;
+  // 검수자가 실제로 확인한 것 중 몇 개가 오류였나. 우리가 KITTI에서 잰
+  // 값이 아니라 이 데이터셋의 숫자다.
+  const precision = judged.length ? (hits / judged.length) * 100 : null;
 
   return (
     <>
       <div className="queue-toolbar">
-        <div className="queue-progress" title={`${doneCount} / ${items.length}`}>
+        <div className="queue-progress" title={`${judged.length} / ${items.length}`}>
           <div className="queue-progress-bar">
             <div className="queue-progress-fill" style={{ width: `${pct}%` }} />
           </div>
           <span className="queue-progress-text">
-            {doneCount} / {items.length} 검토함
+            {judged.length} / {items.length} 판정
+            {precision !== null && (
+              <>
+                {" · "}
+                <strong>실제 오류 {precision.toFixed(0)}%</strong>
+              </>
+            )}
           </span>
         </div>
 
@@ -139,6 +174,14 @@ export function ReviewQueue({ items, datasetId }:
         </div>
       </div>
 
+      {precision !== null && judged.length < items.length && (
+        <p className="report-caveat">
+          지금까지 판정한 {judged.length}건 기준입니다. 목록은 심각도 순이라
+          위쪽이 더 맞을 가능성이 높으므로, 아래까지 내려가면 이 비율은
+          떨어지는 게 정상입니다.
+        </p>
+      )}
+
       {shown.length === 0 ? (
         <p className="report-caveat">조건에 맞는 항목이 없습니다.</p>
       ) : (
@@ -146,7 +189,7 @@ export function ReviewQueue({ items, datasetId }:
           <table className="report-table">
             <thead>
               <tr>
-                <th scope="col" aria-label="검토함" />
+                <th scope="col">판정</th>
                 <th scope="col">#</th>
                 <th scope="col">이미지</th>
                 <th scope="col">라벨</th>
@@ -157,13 +200,28 @@ export function ReviewQueue({ items, datasetId }:
             </thead>
             <tbody>
               {shown.map((item) => {
-                const checked = done.has(keyOf(item));
+                const v = verdicts[keyOf(item)];
                 return (
-                  <tr key={keyOf(item)} className={checked ? "row-done" : ""}>
+                  <tr key={keyOf(item)} className={v ? `row-${v}` : ""}>
                     <td>
-                      <input type="checkbox" checked={checked}
-                             onChange={() => toggle(item)}
-                             aria-label={`${item.image} 검토함으로 표시`} />
+                      <div className="verdict-buttons">
+                        <button
+                          className={`verdict ${v === "hit" ? "verdict-on" : ""}`}
+                          onClick={() => setVerdict(item, "hit")}
+                          aria-pressed={v === "hit"}
+                          title="실제 오류였다"
+                        >
+                          오류
+                        </button>
+                        <button
+                          className={`verdict ${v === "miss" ? "verdict-on" : ""}`}
+                          onClick={() => setVerdict(item, "miss")}
+                          aria-pressed={v === "miss"}
+                          title="라벨은 멀쩡했다"
+                        >
+                          아님
+                        </button>
+                      </div>
                     </td>
                     <td>{item.rank}</td>
                     <td>{item.image}</td>
