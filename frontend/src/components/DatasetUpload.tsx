@@ -103,7 +103,8 @@ export function DatasetUpload() {
         <span className="badge badge-pending">베타</span>
       </div>
       <p className="report-caveat">
-        images/ + labels/(YOLO 포맷) 폴더를 담은 zip을 올리면, 이미 학습된
+        images/ + labels/(YOLO 포맷) 폴더를 담은 zip을 올리면 — 폴더째
+        우클릭해 압축한 것도 그대로 됩니다 — 이미 학습된
         기준 모델로 추론해 어떤 오류 유형과 가장 비슷한지 후보를 보여줍니다.
         아래에서 고른 클래스 구성과 같은 라벨이어야 합니다. 이 데이터셋이
         기준 모델의 데이터와 비슷한 난이도라고 가정하는 확률적 추정이며,

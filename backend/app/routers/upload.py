@@ -123,19 +123,70 @@ def _robustness(by_type: list) -> list[ReliabilityRow]:
     return rows
 
 
+# 맥이 zip에 끼워 넣는 메타데이터. 이게 있으면 "최상위 폴더가 하나"가
+# 아니게 되어 한 겹 벗기기가 안 먹는다.
+_ZIP_NOISE = {"__MACOSX", ".DS_Store", "Thumbs.db"}
+
+
+def _unwrap_single_dir(dataset_dir: Path) -> None:
+    """폴더째 압축한 zip의 한 겹을 벗긴다.
+
+    윈도우·맥 둘 다 폴더를 우클릭해 압축하면 안이 mydata/images/... 로 한 겹
+    싸인다. 가장 흔한 방식인데 그대로 두면 "images/ 폴더가 없다"고 거절하게
+    된다 — 사용자 눈에는 분명히 있는데 없다고 하는 셈이다.
+
+    경로를 다르게 돌려주지 않고 파일을 실제로 옮긴다. 이 뒤로
+    dataset_dir/images 를 그대로 쓰는 곳이 여럿이라 한 군데서 끝내는 게 낫다.
+    """
+    if (dataset_dir / "images").is_dir():
+        return                       # 이미 제대로 된 모양이면 건드리지 않는다
+
+    entries = [e for e in dataset_dir.iterdir() if e.name not in _ZIP_NOISE]
+    if len(entries) != 1 or not entries[0].is_dir():
+        return                       # 한 겹이 아니면 벗길 게 없다
+
+    inner = entries[0]
+    if not (inner / "images").is_dir():
+        return                       # 안에도 images/가 없으면 어차피 다른 문제다
+
+    # 잡동사니를 먼저 치운다. 안 치우면 inner 안에도 같은 이름이 있을 때
+    # 올리다가 부딪힌다.
+    for junk in dataset_dir.iterdir():
+        if junk is inner or junk == inner:
+            continue
+        shutil.rmtree(junk, ignore_errors=True) if junk.is_dir() else junk.unlink()
+
+    # inner의 자식을 한 겹 위로 올린다. 옆에 임시 폴더를 만들지 않는 이유는
+    # 중간에 실패하면 그게 UPLOADS_DIR에 남아 진단 이력 목록에 끼기 때문이다.
+    for child in list(inner.iterdir()):
+        child.rename(dataset_dir / child.name)
+    inner.rmdir()
+
+
 def _validate_dataset_dir(dataset_dir: Path) -> tuple[int, int]:
+    _unwrap_single_dir(dataset_dir)
+
     images_dir = dataset_dir / "images"
     labels_dir = dataset_dir / "labels"
     if not images_dir.is_dir() or not labels_dir.is_dir():
         raise HTTPException(
             400,
             "zip 안에 images/ 와 labels/ 폴더가 있어야 합니다 "
-            "(YOLO 포맷: images/xxx.jpg + labels/xxx.txt, 클래스는 1개만 지원).",
+            "(YOLO 포맷: images/xxx.jpg + labels/xxx.txt). "
+            "폴더째 압축한 zip은 한 겹 벗겨서 읽으니 그대로 올리셔도 됩니다.",
         )
     n_images = sum(1 for p in images_dir.iterdir() if p.is_file())
     n_labels = sum(1 for _ in labels_dir.glob("*.txt"))
     if n_images == 0:
         raise HTTPException(400, "images/ 폴더가 비어 있습니다.")
+    if n_labels == 0:
+        # 라벨이 한 장도 없으면 진단할 게 없다. 대개 확장자가 .txt가 아니거나
+        # (.json·.xml) 라벨을 다른 폴더에 둔 경우다.
+        raise HTTPException(
+            400,
+            "labels/ 폴더에 .txt 라벨이 없습니다. YOLO 포맷(한 줄에 "
+            "class cx cy w h, 0~1로 정규화)의 .txt 파일이어야 합니다.",
+        )
     return n_images, n_labels
 
 
