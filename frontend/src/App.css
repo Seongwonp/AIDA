@@ -627,10 +627,17 @@
 }
 
 /* ---- 3단계 ---- */
+/* 네 칸이라 폭이 어중간하면 마지막 하나가 혼자 다음 줄로 떨어진다. 최소폭을
+   240px로 낮춰 4열이 되는 지점을 앞당기고, 그래도 3열밖에 안 되는 구간에서는
+   2×2로 접는다 — 3 + 1 보다 낫다. */
 .step-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 24px;
+}
+
+@media (min-width: 720px) and (max-width: 1040px) {
+  .step-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 .step {
