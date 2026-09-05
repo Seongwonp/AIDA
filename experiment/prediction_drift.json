@@ -1,0 +1,26 @@
+{
+  "자기 도메인": {
+    "n_seeds": 4,
+    "unmatched_ratio": 0.08589887344800451,
+    "mean_conf_diff": 0.06455437030323669,
+    "count_diff_ratio": 0.01812327294468639
+  },
+  "먼 이동(1C)": {
+    "n_seeds": 4,
+    "unmatched_ratio": 0.19848696063269405,
+    "mean_conf_diff": 0.07099493806892242,
+    "count_diff_ratio": 0.18305444894482828
+  },
+  "약한 이동": {
+    "n_seeds": 4,
+    "unmatched_ratio": 0.18415079269801354,
+    "mean_conf_diff": 0.08337929555176143,
+    "count_diff_ratio": 0.067486838162762
+  },
+  "넓은 자(800)": {
+    "n_seeds": 4,
+    "unmatched_ratio": 0.15504602082444152,
+    "mean_conf_diff": 0.0778569816301725,
+    "count_diff_ratio": 0.025487166744693094
+  }
+}
