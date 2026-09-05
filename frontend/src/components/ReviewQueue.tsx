@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BoxPreview } from "./BoxPreview";
 import type { ReviewQueueItem } from "../types";
 
@@ -52,7 +52,10 @@ function keyOf(item: ReviewQueueItem): string {
 const VERDICT_TEXT: Record<Verdict, string> = { hit: "오류 맞음", miss: "오류 아님" };
 
 function toCsv(items: ReviewQueueItem[], verdicts: Verdicts): string {
-  const head = ["순위", "이미지", "라벨 인덱스", "의심 유형", "심각도", "근거", "판정"];
+  // 좌표를 넣는 이유: 받는 쪽이 라벨링 도구다. 이미지 이름만으로는 어느
+  // 박스인지 못 찾는다 — 한 장에 스무 개가 들어 있는 게 보통이다.
+  const head = ["순위", "이미지", "라벨 인덱스", "의심 유형", "심각도",
+                "x1", "y1", "x2", "y2", "근거", "판정"];
   const esc = (v: string | number) => {
     const s = String(v);
     // 쉼표·따옴표·줄바꿈이 들어 있으면 감싸야 한 칸으로 읽힌다
@@ -60,9 +63,13 @@ function toCsv(items: ReviewQueueItem[], verdicts: Verdicts): string {
   };
   const rows = items.map((i) => {
     const v = verdicts[keyOf(i)];
+    // 누락 의심은 가리킬 라벨이 없어 좌표도 없다. 예전 진단 결과에도 없다.
+    const box = i.box ?? [];
+    const coord = [0, 1, 2, 3].map((k) =>
+      box[k] === undefined ? "" : box[k].toFixed(1));
     return [
       i.rank, i.image, i.label_index ?? "", i.label,
-      i.severity.toFixed(3), i.detail, v ? VERDICT_TEXT[v] : "",
+      i.severity.toFixed(3), ...coord, i.detail, v ? VERDICT_TEXT[v] : "",
     ].map(esc).join(",");
   });
   // 엑셀이 UTF-8 CSV를 한글로 열려면 BOM이 필요하다
@@ -78,6 +85,9 @@ export function ReviewQueue({ items, datasetId }:
   // 미리보기는 이미지를 내려받으므로 기본으로 켜두면 목록이 큰 데이터셋에서
   // 수십 장을 한꺼번에 받는다. 필요할 때 켜게 한다.
   const [preview, setPreview] = useState(false);
+  // 키보드로 판정할 때 "지금 어느 줄인가". -1이면 아직 아무 줄도 안 잡았다.
+  const [cursor, setCursor] = useState(-1);
+  const rowRefs = useRef<(HTMLTableRowElement | null)[]>([]);
 
   const types = useMemo(() => {
     const seen = new Map<string, string>();
@@ -115,6 +125,59 @@ export function ReviewQueue({ items, datasetId }:
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  /**
+   * 키보드 판정.
+   *
+   * j/k(또는 ↓/↑)로 줄을 옮기고 f로 "오류", d로 "아님"을 매긴다. 판정하면
+   * 다음 줄로 내려간다 — 검수는 한 건씩 훑는 일이라 매번 손으로 옮기게 하면
+   * 결국 안 쓴다.
+   *
+   * f/d를 고른 이유는 홈 포지션이어서다. 오류가 압도적으로 많으므로 오른손
+   * 검지(f)에 둔다.
+   *
+   * 입력칸에 글자를 치는 중에는 아무것도 하지 않는다 — 이미지 이름에 'd'가
+   * 들어가면 판정이 찍히는 꼴이 된다.
+   */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      const tag = el?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (shown.length === 0) return;
+
+      const move = (d: number) => {
+        e.preventDefault();
+        setCursor((c) => {
+          const next = c < 0 ? (d > 0 ? 0 : shown.length - 1)
+                             : Math.min(shown.length - 1, Math.max(0, c + d));
+          rowRefs.current[next]?.scrollIntoView({ block: "nearest" });
+          return next;
+        });
+      };
+
+      if (e.key === "j" || e.key === "ArrowDown") return move(1);
+      if (e.key === "k" || e.key === "ArrowUp") return move(-1);
+
+      if (e.key === "f" || e.key === "d") {
+        e.preventDefault();
+        // 아무 줄도 안 잡았으면 첫 줄부터 시작한다
+        const at = cursor < 0 ? 0 : cursor;
+        const item = shown[at];
+        if (!item) return;
+        setVerdict(item, e.key === "f" ? "hit" : "miss");
+        // 판정한 줄이 "안 본 것만" 때문에 사라질 수 있다. 그러면 그 자리에
+        // 다음 항목이 올라오므로 커서를 그대로 두는 게 맞다.
+        const next = onlyOpen ? Math.min(at, shown.length - 2) : at + 1;
+        const clamped = Math.min(Math.max(next, 0), shown.length - 1);
+        setCursor(clamped);
+        rowRefs.current[clamped]?.scrollIntoView({ block: "nearest" });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });   // 매 렌더 다시 건다 — shown/verdicts/cursor를 모두 보므로 그게 단순하다
 
   const judged = items.filter((i) => verdicts[keyOf(i)]);
   const hits = judged.filter((i) => verdicts[keyOf(i)] === "hit").length;
@@ -174,6 +237,11 @@ export function ReviewQueue({ items, datasetId }:
         </div>
       </div>
 
+      <p className="queue-keys">
+        키보드: <kbd>j</kbd>/<kbd>k</kbd> 줄 이동 · <kbd>f</kbd> 오류 ·{" "}
+        <kbd>d</kbd> 아님 — 판정하면 다음 줄로 넘어갑니다.
+      </p>
+
       {precision !== null && judged.length < items.length && (
         <p className="report-caveat">
           지금까지 판정한 {judged.length}건 기준입니다. 목록은 심각도 순이라
@@ -199,10 +267,16 @@ export function ReviewQueue({ items, datasetId }:
               </tr>
             </thead>
             <tbody>
-              {shown.map((item) => {
+              {shown.map((item, idx) => {
                 const v = verdicts[keyOf(item)];
+                const here = idx === cursor;
                 return (
-                  <tr key={keyOf(item)} className={v ? `row-${v}` : ""}>
+                  <tr key={keyOf(item)}
+                      ref={(el) => { rowRefs.current[idx] = el; }}
+                      onClick={() => setCursor(idx)}
+                      aria-current={here ? "true" : undefined}
+                      className={[v ? `row-${v}` : "", here ? "row-cursor" : ""]
+                        .filter(Boolean).join(" ")}>
                     <td>
                       <div className="verdict-buttons">
                         <button
