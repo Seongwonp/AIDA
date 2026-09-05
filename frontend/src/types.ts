@@ -121,7 +121,18 @@ export interface LabelDiagnosisResult {
   review_queue: ReviewQueueItem[];
   robustness: TypeRobustness[];
   ruler: RulerInfo | null;
+  ruler_fit: RulerFit | null;
   caveat: string;
+}
+
+/**
+ * 기준 모델이 이 데이터를 실제로 보는가. 정답 없이 재지는 신호다 —
+ * 실측으로 맞는 자는 라벨의 85.1%를 짚었고 안 맞는 자는 31.9%였다.
+ */
+export interface RulerFit {
+  matched_label_ratio: number | null;
+  predictions: number;
+  median_confidence: number | null;
 }
 
 /**

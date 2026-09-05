@@ -49,7 +49,8 @@ EXPECTED_SUSPICION: dict[str, set[str]] = {
 
 def evaluate_condition(condition: config.Condition, limit: int | None) -> dict:
     root = config.CONDITIONS_DIR / condition.name
-    findings, total_labels = run(root / "images" / "train", root / "labels" / "train", limit)
+    findings, total_labels, _fit = run(root / "images" / "train",
+                                       root / "labels" / "train", limit)
     summary = summarize(findings, total_labels)
 
     expected = EXPECTED_SUSPICION.get(condition.type)

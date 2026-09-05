@@ -113,7 +113,8 @@ def score_condition(condition: config.Condition, limit: int | None) -> dict:
 
     root = config.CONDITIONS_DIR / condition.name
     images_dir, labels_dir = root / "images" / "train", root / "labels" / "train"
-    findings, total_labels = run(images_dir, labels_dir, limit, weights=ruler_for(condition))
+    findings, total_labels, _fit = run(images_dir, labels_dir, limit,
+                                       weights=ruler_for(condition))
     record = load_injection_record(condition.name)
 
     # 진단이 스스로 예측한 대표 유형 — 신뢰도 보정 기준은 정답(주입 유형)이

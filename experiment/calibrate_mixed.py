@@ -57,7 +57,7 @@ def _is_real_error(finding, entry: dict, images_dir: Path) -> bool:
 def score_mixed(mixed: config.MixedCondition, limit: int | None) -> dict:
     root = config.MIXED_CONDITIONS_DIR / mixed.name
     images_dir, labels_dir = root / "images" / "train", root / "labels" / "train"
-    findings, total_labels = run(images_dir, labels_dir, limit)
+    findings, total_labels, _fit = run(images_dir, labels_dir, limit)
     record = json.loads((root / "injection_record.json").read_text(encoding="utf-8"))
 
     summary = summarize(findings, total_labels)

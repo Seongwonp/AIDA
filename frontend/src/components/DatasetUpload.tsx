@@ -299,23 +299,42 @@ export function DatasetUpload() {
                 <table className="report-table">
                   <tbody>
                     <tr>
-                      <th>기준 모델</th>
+                      <th scope="row">기준 모델</th>
                       <td>{labelResult.ruler.profile_label}</td>
                     </tr>
                     <tr>
-                      <th>아는 클래스</th>
+                      <th scope="row">아는 클래스</th>
                       <td>{labelResult.ruler.classes.join(", ")}</td>
                     </tr>
                     <tr>
-                      <th>클래스 오기입 판정</th>
+                      <th scope="row">클래스 오기입 판정</th>
                       <td>
                         {labelResult.ruler.class_aware
                           ? "함"
                           : "하지 않음 — 이 자가 아는 클래스 수가 데이터와 달라 위치만으로 진단합니다"}
                       </td>
                     </tr>
+                    {labelResult.ruler_fit &&
+                     labelResult.ruler_fit.matched_label_ratio !== null && (
+                      <tr>
+                        <th scope="row">이 데이터를 보고 있나</th>
+                        <td>
+                          라벨의{" "}
+                          <b>{(labelResult.ruler_fit.matched_label_ratio * 100).toFixed(0)}%</b>
+                          를 이 모델이 짚어냈습니다
+                          {labelResult.ruler_fit.median_confidence !== null &&
+                            ` (예측 신뢰도 중앙값 ${labelResult.ruler_fit.median_confidence.toFixed(2)})`}
+                          {labelResult.ruler_fit.matched_label_ratio < 0.5 && (
+                            <b className="fit-warn">
+                              {" "}— 절반도 못 봤습니다. 이 데이터에 맞는 기준 모델이
+                              아닐 수 있고, 그러면 진단 결과를 믿기 어렵습니다.
+                            </b>
+                          )}
+                        </td>
+                      </tr>
+                    )}
                     <tr>
-                      <th>학습 시드에 따른 흔들림</th>
+                      <th scope="row">학습 시드에 따른 흔들림</th>
                       <td>
                         ±{labelResult.ruler.seed_spread_pp.toFixed(2)}%p — 같은 설정으로
                         다시 학습하기만 해도 이만큼 달라집니다 (시드 7개 실측)
@@ -324,6 +343,15 @@ export function DatasetUpload() {
                   </tbody>
                 </table>
               </div>
+              <p className="report-caveat">
+                "이 데이터를 보고 있나"는 <b>정답 없이 재는 값</b>입니다. 라벨과
+                겹치는 예측이 얼마나 되는지만 세므로, 낮다고 해서 그게 전부 라벨
+                오류라는 뜻은 아닙니다 — 자가 이 데이터의 물체를 못 보는 경우와
+                구분되지 않습니다. 다만 <b>낮으면 어느 쪽이든 진단을 믿기 어렵다</b>는
+                신호입니다. 실측으로는 데이터에 맞는 모델이 85.1%, 다른 데이터셋에서
+                가져온 모델이 31.9%였습니다 (docs/21 AI).
+              </p>
+
               {labelResult.ruler.unknown_class_ids.length > 0 && (
                 <p className="error-banner">
                   업로드한 라벨에 이 기준 모델이 모르는 클래스가 있습니다 (인덱스{" "}

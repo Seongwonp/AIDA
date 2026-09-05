@@ -177,6 +177,23 @@ class RulerInfo(BaseModel):
     unknown_class_ids: list[int] = []
 
 
+class RulerFit(BaseModel):
+    """기준 모델이 이 데이터를 실제로 보는가 (docs/21 AE의 남은 한계).
+
+    AA·AD·AG가 세 번 같은 말을 했다 — 대상 분포에서의 실력이 전부다. 그런데
+    추천은 "클래스를 덮는가"만 봤다. 클래스를 덮어도 그 데이터를 못 보는 자면
+    진단이 26.0%까지 무너진다(AI).
+
+    고객 데이터에는 믿을 정답이 없어 정밀도를 직접 잴 수 없다. 대신 정답 없이
+    재지는 신호를 쓴다. 실측으로 COCO 데이터에서 맞는 자는 라벨의 85.1%를
+    짚었고 KITTI 자는 31.9%였다.
+    """
+    # 라벨 중 예측과 짝지어진 비율
+    matched_label_ratio: float | None = None
+    predictions: int = 0
+    median_confidence: float | None = None
+
+
 class LabelDiagnosisResult(BaseModel):
     dataset_id: str
     generated_at: str
@@ -193,6 +210,8 @@ class LabelDiagnosisResult(BaseModel):
     robustness: list[TypeRobustness] = []
     # 어느 자로 쟀는가. 예전 진단 결과에는 없으므로 None을 허용한다.
     ruler: RulerInfo | None = None
+    # 이 기능 전에 만든 진단 결과에는 없다.
+    ruler_fit: RulerFit | None = None
     caveat: str
 
 

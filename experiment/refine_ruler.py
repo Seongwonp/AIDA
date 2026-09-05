@@ -42,7 +42,7 @@ def main() -> None:
         raise SystemExit(f"{ruler} 없음 — 이 조건을 먼저 학습하세요 (self 자가 필요)")
 
     images_dir = root / "images" / "train"
-    findings, _total = run(images_dir, root / "labels" / "train", weights=ruler)
+    findings, _total, _fit = run(images_dir, root / "labels" / "train", weights=ruler)
 
     # 의심 건수가 적은 이미지부터. 같으면 이름 순 — 시드 없이 재현되게.
     suspicion = Counter(f.image for f in findings)

@@ -24,6 +24,7 @@ from app.models import (
     LabelDiagnosisResult,
     PerformanceVector,
     ReliabilityProfileInfo,
+    RulerFit,
     RulerInfo,
     TypeRobustness as ReliabilityRow,
     ReviewQueueItem,
@@ -616,6 +617,8 @@ def _load_label_diagnosis_json(dataset_id: str) -> LabelDiagnosisResult:
         ],
         robustness=_robustness(summary["by_type"]),
         ruler=_load_ruler_sidecar(dataset_id),
+        ruler_fit=(RulerFit(**summary["ruler_fit"])
+                   if summary.get("ruler_fit") else None),
         caveat=data["caveat"] + (
             " 이 수치는 기준 모델이 이 데이터와 같은 도메인일 때의 것입니다. "
             "도메인이 어긋나면 유형마다 다르게 무너지며, 아래 유형별 신뢰도를 "

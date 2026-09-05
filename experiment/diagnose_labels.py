@@ -18,7 +18,8 @@ from PIL import Image
 from ultralytics import YOLO
 
 import config
-from label_diagnosis import (Box, BoxFinding, diagnose_image, rescore,
+from label_diagnosis import (
+    match_boxes,Box, BoxFinding, diagnose_image, rescore,
                              review_value, summarize)
 
 UPLOADS_DIR = config.EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "uploads"
@@ -85,7 +86,7 @@ def resolve_dataset(args) -> tuple[Path, Path, str]:
 
 
 def run(images_dir: Path, labels_dir: Path, limit: int | None = None,
-        weights: Path | None = None) -> tuple[list[BoxFinding], int]:
+        weights: Path | None = None) -> tuple[list[BoxFinding], int, dict]:
     """weights를 주면 그 모델을 자로 쓴다. 안 주면 clean 모델."""
     weights = weights or CLEAN_WEIGHTS
     if not weights.exists():
@@ -118,6 +119,8 @@ def run(images_dir: Path, labels_dir: Path, limit: int | None = None,
 
     findings: list[BoxFinding] = []
     total_labels = 0
+    # 기준 모델 적합도. 라벨이 맞다고 가정하지 않는 값들만 모은다.
+    fit: dict = {"matched_labels": 0, "predictions": 0, "confidences": []}
 
     # 이미지를 한 장씩 넘기면 GPU 호출 오버헤드가 커서, 배치로 끊어 예측한다.
     batch_size = 16
@@ -152,10 +155,26 @@ def run(images_dir: Path, labels_dir: Path, limit: int | None = None,
                 class_names=config.CLASS_NAMES if class_aware else None,
             ))
 
-    return findings, total_labels
+            # 자가 이 데이터를 얼마나 보는가. 정답이 없어도 재지는 신호다.
+            # 짝짓기는 진단이 쓰는 것과 같은 기준(MATCH_IOU_THRESHOLD)이라야
+            # "진단이 근거로 삼은 짝"과 같은 것을 센다.
+            # 반환은 (라벨→예측 매칭, 짝 없는 예측, 짝 없는 라벨) 3튜플이다.
+            # len(반환)을 세면 항상 3이 나온다 — 실제로 그렇게 써서 짝 비율이
+            # 127%로 나왔고 두 자가 똑같아 보였다.
+            matched, _unmatched_pred, _unmatched_label = match_boxes(
+                predictions, labels,
+                pred_classes=pred_classes if class_aware else None,
+                label_classes=label_classes if class_aware else None,
+            )
+            fit["matched_labels"] += len(matched)
+            fit["predictions"] += len(predictions)
+            fit["confidences"].extend(confs)
+
+    return findings, total_labels, fit
 
 
-def build_result(name: str, findings: list[BoxFinding], total_labels: int, top_n: int) -> dict:
+def build_result(name: str, findings: list[BoxFinding], total_labels: int,
+                 top_n: int, fit: dict | None = None) -> dict:
     # 2패스 구조: 이미지별 진단은 데이터셋 전체를 못 보므로 보수적인 신뢰도로
     # 점수를 매겨두고, summarize()가 대표 오류 유형을 확정한 뒤 rescore()가
     # 그 유형의 severity를 올린다. 그래야 "이 데이터셋의 문제는 누락"이라는
@@ -177,6 +196,19 @@ def build_result(name: str, findings: list[BoxFinding], total_labels: int, top_n
     # 확인된 비용은 있고 확인된 이득은 없으므로 되돌린다. review_value는
     # 남겨둔다 — 표본을 늘리면 판단이 달라질 수 있다.
     ranked = sorted(findings, key=lambda f: -f.severity)
+    if fit:
+        import statistics
+        confs = fit["confidences"]
+        summary["ruler_fit"] = {
+            # 라벨 중 예측과 짝지어진 비율. 낮으면 자가 이 데이터의 물체를
+            # 못 보고 있다는 뜻인데, 라벨이 틀려서 안 겹치는 것과는 구분되지
+            # 않는다 — 화면에서도 그렇게 말해야 한다.
+            "matched_label_ratio": (round(fit["matched_labels"] / total_labels, 4)
+                                    if total_labels else None),
+            "predictions": fit["predictions"],
+            "median_confidence": round(statistics.median(confs), 4) if confs else None,
+        }
+
     return {
         "dataset": name,
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -216,8 +248,8 @@ def main():
     args = parser.parse_args()
 
     images_dir, labels_dir, name = resolve_dataset(args)
-    findings, total_labels = run(images_dir, labels_dir, args.limit)
-    result = build_result(name, findings, total_labels, args.top_n)
+    findings, total_labels, fit = run(images_dir, labels_dir, args.limit)
+    result = build_result(name, findings, total_labels, args.top_n, fit)
 
     out_path = Path(args.out) if args.out else None
     if out_path is None and args.upload_id:
