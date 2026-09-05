@@ -279,7 +279,7 @@ docstring에 **왜 만들었는지**와 근거 문서 절이 적혀 있다.
 | `train.py` / `evaluate.py` | 조건 하나 또는 우선순위 묶음 |
 | `run_all.py` | 조건 전체를 순서대로 |
 | `run_multi_seed.py` | 같은 조건을 시드 여러 개로 — 오차막대의 근거 |
-| `refine_ruler.py` | 자기 정제용 부분집합 생성(docs/21 W·X·AJ) |
+| `refine_ruler.py` | 자기 정제용 부분집합 생성(docs/21 W·X·AJ·AK) |
 
 ### 진단 품질 측정
 
