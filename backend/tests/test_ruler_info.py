@@ -136,3 +136,50 @@ def test_suggestion_prefers_the_narrowest_covering_ruler():
     """Z·AA: 실력이 비슷하면 좁은 쪽이 낫다. 덮기만 하면 넓힐 이유가 없다."""
     name, _ = upload._suggest_profile({0})
     assert name is None, "Car만 있는 데이터에 더 넓은 자를 권했다"
+
+
+# --- 프로파일이 어느 데이터셋의 자를 쓰는가 -------------------------------
+#
+# _ruler_weights가 클래스 구성만 보던 시절, COCO 프로파일은 클래스가 ["Car"]
+# 하나라 KITTI 자(runs/)를 가리켰다. **엉뚱한 자로 진단해도 오류가 안 나고**
+# 화면에는 "COCO 프로파일"이라 찍힌다. docs/21 AI에서 그 조합의 상위 10%가
+# 26.0%까지 무너지는 걸 쟀다.
+
+def test_dataset_changes_the_ruler_directory():
+    """같은 클래스라도 데이터셋이 다르면 다른 자를 써야 한다."""
+    kitti = upload._ruler_weights(["Car"], "kitti")
+    coco = upload._ruler_weights(["Car"], "coco")
+    assert kitti != coco, "COCO 프로파일이 KITTI 자를 가리킨다"
+    assert kitti.parent.parent.parent.name == "runs"
+    assert coco.parent.parent.parent.name == "runs_coco"
+
+
+def test_suffix_order_matches_config():
+    """접미사 순서가 config와 같아야 한다 — 클래스가 먼저, 데이터셋이 그다음.
+
+    어긋나면 없는 폴더를 찾거나, 더 나쁘게는 다른 실험의 가중치를 연다.
+    """
+    p = upload._ruler_weights(["Car", "Van", "Pedestrian", "Cyclist"], "coco")
+    assert p.parent.parent.parent.name == "runs_mc_coco"
+
+
+def test_default_dataset_keeps_old_paths():
+    """데이터셋을 안 적은 기존 프로파일이 그대로 동작해야 한다."""
+    assert upload._ruler_weights(["Car"]) == upload._ruler_weights(["Car"], "kitti")
+    assert (upload._ruler_weights(["Car", "Van"]).parent.parent.parent.name
+            == "runs_mc")
+
+
+def test_profile_dataset_defaults_to_kitti(tmp_path):
+    """dataset 키가 없으면 kitti로 본다 — 기존 프로파일에는 그 키가 없다."""
+    f = tmp_path / "p.json"
+    f.write_text('{"classes": ["Car"]}', encoding="utf-8")
+    assert upload._profile_dataset(f) == "kitti"
+    f.write_text('{"classes": ["Car"], "dataset": "coco"}', encoding="utf-8")
+    assert upload._profile_dataset(f) == "coco"
+
+
+def test_broken_profile_does_not_crash(tmp_path):
+    f = tmp_path / "bad.json"
+    f.write_text("{", encoding="utf-8")
+    assert upload._profile_dataset(f) == "kitti"

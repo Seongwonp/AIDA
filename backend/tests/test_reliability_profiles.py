@@ -69,7 +69,9 @@ def test_unavailable_profile_is_rejected_before_running(monkeypatch):
     names = upload._available_profiles()
     if not names:
         pytest.skip("보정 프로파일 파일이 이 환경에 없음")
-    monkeypatch.setattr(upload, "_weights_exist", lambda classes: False)
+    # _weights_exist는 이제 데이터셋도 받는다 — 프로파일이 어느 데이터셋의
+    # 자를 쓰는지 밝히지 않으면 COCO 프로파일이 KITTI 자를 조용히 연다.
+    monkeypatch.setattr(upload, "_weights_exist", lambda classes, dataset="kitti": False)
     with pytest.raises(HTTPException) as e:
         upload._profile_env(names[0])
     assert e.value.status_code == 400

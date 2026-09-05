@@ -317,7 +317,8 @@ def _profile_env(profile: str | None) -> dict[str, str]:
         return {}
     path = _resolve_profile(profile)
     classes_for_check = _profile_classes(path)
-    if not _weights_exist(classes_for_check):
+    dataset = _profile_dataset(path)
+    if not _weights_exist(classes_for_check, dataset):
         raise HTTPException(
             400,
             f"'{profile}' 프로파일의 기준 모델이 이 환경에 없습니다 "
@@ -330,6 +331,9 @@ def _profile_env(profile: str | None) -> dict[str, str]:
     classes = _profile_classes(path)
     if classes:
         env["AIDA_CLASSES"] = ",".join(classes)
+    if dataset and dataset != "kitti":
+        # 상수만 갈아끼우고 데이터셋을 안 넘기면 진단이 KITTI 자를 연다.
+        env["AIDA_DATASET"] = dataset
     return env
 
 
@@ -377,24 +381,39 @@ RULER_SEED_SPREAD_PP = {1: 2.59, 4: 5.45}
 DEFAULT_SEED_SPREAD_PP = 5.45
 
 
-def _ruler_weights(classes: list[str]) -> Path:
-    """이 클래스 구성에서 자로 쓸 가중치 경로.
+def _ruler_weights(classes: list[str], dataset: str = "kitti") -> Path:
+    """이 구성에서 자로 쓸 가중치 경로.
 
-    config.py가 클래스 구성마다 실행 폴더를 나눠 쓴다(Car는 runs/, 그 외는
-    runs_mc/). 여기서도 같은 규칙을 따라야 진단 서브프로세스가 실제로 여는
-    파일과 일치한다.
+    config.py의 접미사 규칙을 그대로 따라야 진단 서브프로세스가 실제로 여는
+    파일과 일치한다. 순서도 같아야 한다 — 클래스(_mc)가 먼저, 데이터셋이
+    그다음이다.
+
+    **데이터셋을 빼먹으면 조용히 틀린다.** COCO 프로파일은 클래스가 ["Car"]
+    하나라, 클래스만 보면 KITTI 자(runs/)를 가리킨다. 엉뚱한 자로 진단해도
+    오류가 안 나고, 화면에는 "COCO 프로파일"이라 찍힌다. AI에서 그 조합의
+    상위 10%가 26.0%까지 무너지는 걸 쟀다.
     """
     suffix = "" if classes in ([], ["Car"]) else "_mc"
+    if dataset and dataset != "kitti":
+        suffix += f"_{dataset}"
     return EXPERIMENT_ROOT / f"runs{suffix}" / "clean" / "weights" / "best.pt"
 
 
-def _weights_exist(classes: list[str]) -> bool:
-    """이 클래스 구성의 기준 모델이 이 환경에 있는가.
+def _weights_exist(classes: list[str], dataset: str = "kitti") -> bool:
+    """이 구성의 기준 모델이 이 환경에 있는가.
 
     없는 프로파일을 고르면 진단이 서브프로세스 오류로 실패하는데, 고르기
     전에 알려주는 편이 낫다.
     """
-    return _ruler_weights(classes).exists()
+    return _ruler_weights(classes, dataset).exists()
+
+
+def _profile_dataset(path: Path) -> str:
+    """프로파일이 어느 데이터셋에서 잰 것인지. 안 적혀 있으면 kitti."""
+    try:
+        return json.loads(path.read_text(encoding="utf-8")).get("dataset", "kitti")
+    except (OSError, json.JSONDecodeError):
+        return "kitti"
 
 
 def _label_class_ids(dataset_dir: Path, cap: int = 2000) -> set[int]:
@@ -468,15 +487,16 @@ def _suggest_profile(class_ids: set[int]) -> tuple[str | None, str]:
 def _ruler_info(profile: str | None, dataset_dir: Path) -> RulerInfo:
     """이 진단이 어느 자를 쓰는지. 진단 시점에 확정해 사이드카로 남긴다."""
     name = profile or ""
-    classes = _profile_classes(_resolve_profile(name)) if name else ["Car"]
-    classes = classes or ["Car"]
+    path = _resolve_profile(name) if name else None
+    classes = (_profile_classes(path) if path else ["Car"]) or ["Car"]
+    dataset = _profile_dataset(path) if path else "kitti"
     unknown = sorted(i for i in _label_class_ids(dataset_dir) if i >= len(classes))
     return RulerInfo(
         profile=name,
         profile_label=(PROFILE_LABELS.get(name, name) if name
                        else "기본 (KITTI Car 단일 클래스 실측)"),
         classes=classes,
-        weights=_ruler_weights(classes).parent.parent.parent.name,
+        weights=_ruler_weights(classes, dataset).parent.parent.parent.name,
         # 자가 아는 클래스 수와 데이터의 클래스 수가 맞아야 클래스 대조를 한다
         # (docs/21 Z). 여기서는 자가 2개 이상 알면 대조하는 것으로 본다.
         class_aware=len(classes) > 1 and not unknown,
@@ -503,7 +523,8 @@ def list_reliability_profiles() -> list[ReliabilityProfileInfo]:
             label=PROFILE_LABELS.get(name, name),
             types=sorted(data.get("present", {})),
             classes=list(data.get("classes", [])),
-            available=_weights_exist(list(data.get("classes", []))),
+            available=_weights_exist(list(data.get("classes", [])),
+                                     data.get("dataset", "kitti")),
         ))
     return profiles
 
