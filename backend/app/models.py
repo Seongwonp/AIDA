@@ -208,6 +208,11 @@ class RulerFit(BaseModel):
     matched_label_ratio: float | None = None
     predictions: int = 0
     median_confidence: float | None = None
+    # 이 자가 **원리적으로** 넘을 수 없는 적합도 — 자가 아는 클래스가 라벨에서
+    # 차지하는 비중이다. 자가 모르는 클래스의 라벨은 절대 안 짝지어지므로,
+    # 생짜 적합도를 0.5 같은 고정 문턱에 견주면 좁은 자에 오경보가 난다
+    # (docs/21 AL). 예전 진단 결과에는 없으므로 None을 허용한다.
+    coverage_ceiling: float | None = None
 
 
 class LabelDiagnosisResult(BaseModel):

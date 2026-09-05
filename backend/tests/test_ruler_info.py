@@ -202,3 +202,50 @@ def test_broken_profile_does_not_crash(tmp_path):
     f = tmp_path / "bad.json"
     f.write_text("{", encoding="utf-8")
     assert upload._profile_dataset(f) == "kitti"
+
+
+# --- 적합도의 구조적 천장 (docs/21 AL) --------------------------------------
+#
+# 적합도는 자가 모르는 클래스의 라벨을 절대 못 채운다. 그래서 0.5 같은 고정
+# 문턱에 견주면 좁은 자에 오경보가 난다 — 실측에서 생짜 적합도 꼴찌인 자가
+# 정밀도는 2등이었다.
+
+def _labels(tmp_path, counts: dict[int, int]):
+    d = tmp_path / "ds" / "labels"
+    d.mkdir(parents=True)
+    n = 0
+    for cid, k in counts.items():
+        for _ in range(k):
+            d.joinpath(f"{n}.txt").write_text(f"{cid} 0.5 0.5 0.2 0.2", encoding="utf-8")
+            n += 1
+    return tmp_path / "ds"
+
+
+def test_ceiling_is_the_share_of_classes_the_ruler_knows(tmp_path):
+    """Car 61%, 나머지 39% — Car만 아는 자의 천장은 0.61이다."""
+    ds = _labels(tmp_path, {0: 61, 1: 20, 2: 19})
+    assert upload._coverage_ceiling(ds, known_classes=1) == 0.61
+    assert upload._coverage_ceiling(ds, known_classes=3) == 1.0
+
+
+def test_ceiling_counts_boxes_not_files(tmp_path):
+    """한 파일에 박스가 여럿이면 박스 단위로 세야 한다."""
+    d = tmp_path / "ds" / "labels"
+    d.mkdir(parents=True)
+    d.joinpath("a.txt").write_text(
+        "0 .5 .5 .1 .1\n3 .5 .5 .1 .1\n3 .5 .5 .1 .1", encoding="utf-8")
+    assert upload._coverage_ceiling(tmp_path / "ds", known_classes=1) == 0.3333
+
+
+def test_ceiling_survives_junk_lines(tmp_path):
+    """빈 줄과 깨진 줄이 있어도 죽지 않는다 — 고객 zip은 뭐든 들어 있다."""
+    d = tmp_path / "ds" / "labels"
+    d.mkdir(parents=True)
+    d.joinpath("a.txt").write_text(
+        "0 .5 .5 .1 .1\n\nnot-a-number x\n1 .5 .5 .1 .1", encoding="utf-8")
+    assert upload._coverage_ceiling(tmp_path / "ds", known_classes=1) == 0.5
+
+
+def test_ceiling_is_none_without_labels(tmp_path):
+    (tmp_path / "ds").mkdir()
+    assert upload._coverage_ceiling(tmp_path / "ds", known_classes=1) is None

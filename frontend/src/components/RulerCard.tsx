@@ -51,12 +51,34 @@ export function RulerCard({ result }: { result: LabelDiagnosisResult }) {
                       를 이 모델이 짚어냈습니다
                       {result.ruler_fit.median_confidence !== null &&
                         ` (예측 신뢰도 중앙값 ${result.ruler_fit.median_confidence.toFixed(2)})`}
-                      {result.ruler_fit.matched_label_ratio < 0.5 && (
-                        <b className="fit-warn">
-                          {" "}— 절반도 못 봤습니다. 이 데이터에 맞는 기준 모델이
-                          아닐 수 있고, 그러면 진단 결과를 믿기 어렵습니다.
-                        </b>
-                      )}
+                      {(() => {
+                        // 문턱을 0.5에 못 박으면 좁은 자에 오경보가 난다.
+                        // 적합도는 자가 모르는 클래스의 라벨을 절대 못 채우므로,
+                        // Car만 아는 자는 Car 비중이 곧 천장이다 (docs/21 AL).
+                        const fit = result.ruler_fit!.matched_label_ratio!;
+                        const ceiling = result.ruler_fit!.coverage_ceiling ?? 1;
+                        const narrow = ceiling < 0.95;
+                        const relative = fit / ceiling;
+                        if (relative >= 0.5) {
+                          return narrow ? (
+                            <>
+                              {" "}— 이 자가 아는 클래스가 라벨의{" "}
+                              {(ceiling * 100).toFixed(0)}%뿐이라 적합도는 그
+                              위로 못 올라갑니다. 그 안에서는{" "}
+                              <b>{(relative * 100).toFixed(0)}%</b>를 짚었습니다.
+                            </>
+                          ) : null;
+                        }
+                        return (
+                          <b className="fit-warn">
+                            {" "}— {narrow
+                              ? `이 자가 아는 클래스(라벨의 ${(ceiling * 100).toFixed(0)}%) 안에서도 절반을 못 짚었습니다.`
+                              : "절반도 못 봤습니다."}{" "}
+                            이 데이터에 맞는 기준 모델이 아닐 수 있고, 그러면
+                            진단 결과를 믿기 어렵습니다.
+                          </b>
+                        );
+                      })()}
                     </td>
                   </tr>
                 )}
@@ -77,6 +99,13 @@ export function RulerCard({ result }: { result: LabelDiagnosisResult }) {
             구분되지 않습니다. 다만 <b>낮으면 어느 쪽이든 진단을 믿기 어렵다</b>는
             신호입니다. 실측으로는 데이터에 맞는 모델이 85.1%, 다른 데이터셋에서
             가져온 모델이 31.9%였습니다 (docs/21 AI).
+          </p>
+          <p className="report-caveat">
+            <b>이 값은 자를 고르는 데 쓰고, 품질 눈금으로는 읽지 마세요.</b>{" "}
+            자 6종을 조건마다 견줘 보니 적합도가 가장 높은 자를 고르면 정밀도도
+            거의 최선이었지만(놓치는 정밀도 평균 0.001), <b>적합도 몇 %가 정밀도
+            몇 %</b>인지는 말할 수 없었습니다 — 구간별 정밀도가 오르내립니다
+            (docs/21 AL).
           </p>
 
           {result.ruler.unknown_class_ids.length > 0 && (

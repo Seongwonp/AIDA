@@ -131,6 +131,8 @@ export interface LabelDiagnosisResult {
  */
 export interface RulerFit {
   matched_label_ratio: number | null;
+  /** 이 자가 원리적으로 넘을 수 없는 적합도 (아는 클래스의 라벨 비중) */
+  coverage_ceiling?: number | null;
   predictions: number;
   median_confidence: number | null;
 }

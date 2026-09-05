@@ -524,6 +524,43 @@ def _profile_dataset(path: Path) -> str:
         return "kitti"
 
 
+def _coverage_ceiling(dataset_dir: Path, known_classes: int,
+                      cap: int = 2000) -> float | None:
+    """이 자가 원리적으로 넘을 수 없는 적합도.
+
+    적합도는 "라벨 중 예측과 짝지어진 비율"인데 자가 모르는 클래스의 라벨은
+    절대 안 짝지어진다. 그러니 자가 아는 클래스가 라벨에서 차지하는 비중이
+    곧 천장이다.
+
+    **이걸 안 보면 좁은 자에 오경보가 난다.** Car만 아는 자를 Car 비중 40%인
+    데이터에 쓰면 Car를 완벽히 짚어도 적합도가 0.4라 "절반도 못 봤습니다"가
+    뜬다. AG 자료에서 실제로 그런 자가 있었다 — 생짜 적합도 꼴찌인데 정밀도는
+    2등이었다 (docs/21 AL).
+    """
+    labels_dir = dataset_dir / "labels"
+    if not labels_dir.is_dir():
+        return None
+    total = known = 0
+    for i, path in enumerate(sorted(labels_dir.rglob("*.txt"))):
+        if i >= cap:
+            break
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        for line in lines:
+            parts = line.split()
+            if not parts:
+                continue
+            try:
+                cid = int(float(parts[0]))
+            except ValueError:
+                continue
+            total += 1
+            known += (cid < known_classes)
+    return round(known / total, 4) if total else None
+
+
 def _label_class_ids(dataset_dir: Path, cap: int = 2000) -> set[int]:
     """업로드된 라벨에 실제로 등장하는 클래스 인덱스.
 
@@ -709,6 +746,24 @@ def _load_ruler_sidecar(dataset_id: str) -> RulerInfo | None:
         return None
 
 
+def _ruler_fit_with_ceiling(dataset_id: str, summary: dict) -> RulerFit | None:
+    """적합도에 그 자의 천장을 붙인다.
+
+    천장은 진단 스크립트가 모른다 — 그건 자의 클래스 수와 업로드된 라벨 구성을
+    같이 봐야 나오고, 그 둘을 아는 건 backend다. 자를 모르면(예전 결과) 붙일
+    수 없으므로 None으로 둔다.
+    """
+    raw = summary.get("ruler_fit")
+    if not raw:
+        return None
+    fit = RulerFit(**raw)
+    ruler = _load_ruler_sidecar(dataset_id)
+    if ruler and ruler.classes:
+        fit.coverage_ceiling = _coverage_ceiling(
+            UPLOADS_DIR / dataset_id, len(ruler.classes))
+    return fit
+
+
 def _load_label_diagnosis_json(dataset_id: str) -> LabelDiagnosisResult:
     result_path = UPLOADS_DIR / dataset_id / "label_diagnosis.json"
     if not result_path.exists():
@@ -752,8 +807,7 @@ def _load_label_diagnosis_json(dataset_id: str) -> LabelDiagnosisResult:
         ],
         robustness=_robustness(summary["by_type"]),
         ruler=_load_ruler_sidecar(dataset_id),
-        ruler_fit=(RulerFit(**summary["ruler_fit"])
-                   if summary.get("ruler_fit") else None),
+        ruler_fit=_ruler_fit_with_ceiling(dataset_id, summary),
         caveat=data["caveat"] + (
             " 이 수치는 기준 모델이 이 데이터와 같은 도메인일 때의 것입니다. "
             "도메인이 어긋나면 유형마다 다르게 무너지며, 아래 유형별 신뢰도를 "
