@@ -1,0 +1,5 @@
+condition,type,magnitude,map50,map50_95,precision,recall
+clean,none,0,0.837,0.565,0.853,0.76
+clean_sub1600,refined,0,0.631,0.404,0.746,0.564
+scale_m30,scale,-30,0.79,0.512,0.851,0.7
+scale_m30_refined50,refined,50,0.621,0.388,0.724,0.548
