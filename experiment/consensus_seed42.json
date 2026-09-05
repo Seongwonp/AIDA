@@ -1,0 +1,503 @@
+{
+  "seed": 42,
+  "limit": 80,
+  "ks": [
+    5,
+    10,
+    20
+  ],
+  "decide_k": 10,
+  "conditions": [
+    "width_m30",
+    "width_p30",
+    "height_m30",
+    "height_p30",
+    "rot_m15",
+    "rot_p15",
+    "width_m15",
+    "width_p15",
+    "height_m15",
+    "height_p15",
+    "rot_m7_5",
+    "rot_p7_5",
+    "trans_x_m15",
+    "trans_x_p15",
+    "trans_y_m15",
+    "trans_y_p15",
+    "scale_m15",
+    "scale_p15",
+    "scale_m30",
+    "scale_p30",
+    "missing_10",
+    "missing_20",
+    "missing_30",
+    "duplicate_10",
+    "duplicate_20",
+    "duplicate_30",
+    "class_swap_10",
+    "class_swap_20",
+    "class_swap_30"
+  ],
+  "rows": [
+    {
+      "combo": [
+        "bpoor"
+      ],
+      "labels": [
+        "broad 자전거0"
+      ],
+      "n_rulers": 1,
+      "precision_at": {
+        "5": 0.33793103448275863,
+        "10": 0.43103448275862066,
+        "20": 0.5224137931034483
+      },
+      "mean_flags": 179.17241379310346,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "bmid"
+      ],
+      "labels": [
+        "broad 자전거중"
+      ],
+      "n_rulers": 1,
+      "precision_at": {
+        "5": 0.3103448275862069,
+        "10": 0.3931034482758621,
+        "20": 0.5086206896551724
+      },
+      "mean_flags": 183.06896551724137,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "brich"
+      ],
+      "labels": [
+        "broad 자전거多"
+      ],
+      "n_rulers": 1,
+      "precision_at": {
+        "5": 0.27586206896551724,
+        "10": 0.45517241379310347,
+        "20": 0.6275862068965518
+      },
+      "mean_flags": 199.86206896551724,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "shifted"
+      ],
+      "labels": [
+        "약한 이동"
+      ],
+      "n_rulers": 1,
+      "precision_at": {
+        "5": 0.31724137931034485,
+        "10": 0.4,
+        "20": 0.5741379310344827
+      },
+      "mean_flags": 209.13793103448276,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "broad"
+      ],
+      "labels": [
+        "넓은 자(800)"
+      ],
+      "n_rulers": 1,
+      "precision_at": {
+        "5": 0.25517241379310346,
+        "10": 0.39655172413793105,
+        "20": 0.603448275862069
+      },
+      "mean_flags": 193.0344827586207,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "bpoor",
+        "bmid"
+      ],
+      "labels": [
+        "broad 자전거0",
+        "broad 자전거중"
+      ],
+      "n_rulers": 2,
+      "precision_at": {
+        "5": 0.3310344827586207,
+        "10": 0.4103448275862069,
+        "20": 0.5724137931034483
+      },
+      "mean_flags": 98.65517241379311,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "bpoor",
+        "brich"
+      ],
+      "labels": [
+        "broad 자전거0",
+        "broad 자전거多"
+      ],
+      "n_rulers": 2,
+      "precision_at": {
+        "5": 0.4068965517241379,
+        "10": 0.5310344827586206,
+        "20": 0.6844827586206896
+      },
+      "mean_flags": 102.17241379310344,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "bpoor",
+        "shifted"
+      ],
+      "labels": [
+        "broad 자전거0",
+        "약한 이동"
+      ],
+      "n_rulers": 2,
+      "precision_at": {
+        "5": 0.4,
+        "10": 0.5655172413793104,
+        "20": 0.7051724137931035
+      },
+      "mean_flags": 91.44827586206897,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "bpoor",
+        "broad"
+      ],
+      "labels": [
+        "broad 자전거0",
+        "넓은 자(800)"
+      ],
+      "n_rulers": 2,
+      "precision_at": {
+        "5": 0.3931034482758621,
+        "10": 0.506896551724138,
+        "20": 0.646551724137931
+      },
+      "mean_flags": 96.3103448275862,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "bmid",
+        "brich"
+      ],
+      "labels": [
+        "broad 자전거중",
+        "broad 자전거多"
+      ],
+      "n_rulers": 2,
+      "precision_at": {
+        "5": 0.3931034482758621,
+        "10": 0.5655172413793104,
+        "20": 0.7258620689655172
+      },
+      "mean_flags": 101.3103448275862,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "bmid",
+        "shifted"
+      ],
+      "labels": [
+        "broad 자전거중",
+        "약한 이동"
+      ],
+      "n_rulers": 2,
+      "precision_at": {
+        "5": 0.3448275862068966,
+        "10": 0.5827586206896552,
+        "20": 0.7310344827586207
+      },
+      "mean_flags": 98.27586206896552,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "bmid",
+        "broad"
+      ],
+      "labels": [
+        "broad 자전거중",
+        "넓은 자(800)"
+      ],
+      "n_rulers": 2,
+      "precision_at": {
+        "5": 0.32413793103448274,
+        "10": 0.45517241379310347,
+        "20": 0.646551724137931
+      },
+      "mean_flags": 102,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "brich",
+        "shifted"
+      ],
+      "labels": [
+        "broad 자전거多",
+        "약한 이동"
+      ],
+      "n_rulers": 2,
+      "precision_at": {
+        "5": 0.47586206896551725,
+        "10": 0.603448275862069,
+        "20": 0.7224137931034482
+      },
+      "mean_flags": 99.55172413793103,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "brich",
+        "broad"
+      ],
+      "labels": [
+        "broad 자전거多",
+        "넓은 자(800)"
+      ],
+      "n_rulers": 2,
+      "precision_at": {
+        "5": 0.4827586206896552,
+        "10": 0.6655172413793103,
+        "20": 0.7775862068965517
+      },
+      "mean_flags": 106.27586206896552,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "shifted",
+        "broad"
+      ],
+      "labels": [
+        "약한 이동",
+        "넓은 자(800)"
+      ],
+      "n_rulers": 2,
+      "precision_at": {
+        "5": 0.4,
+        "10": 0.5413793103448276,
+        "20": 0.6844827586206896
+      },
+      "mean_flags": 105.86206896551724,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "bpoor",
+        "bmid",
+        "brich"
+      ],
+      "labels": [
+        "broad 자전거0",
+        "broad 자전거중",
+        "broad 자전거多"
+      ],
+      "n_rulers": 3,
+      "precision_at": {
+        "5": 0.41379310344827586,
+        "10": 0.6103448275862069,
+        "20": 0.746551724137931
+      },
+      "mean_flags": 75.27586206896552,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "bpoor",
+        "bmid",
+        "shifted"
+      ],
+      "labels": [
+        "broad 자전거0",
+        "broad 자전거중",
+        "약한 이동"
+      ],
+      "n_rulers": 3,
+      "precision_at": {
+        "5": 0.5103448275862069,
+        "10": 0.6689655172413793,
+        "20": 0.7948275862068965
+      },
+      "mean_flags": 69.65517241379311,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "bpoor",
+        "bmid",
+        "broad"
+      ],
+      "labels": [
+        "broad 자전거0",
+        "broad 자전거중",
+        "넓은 자(800)"
+      ],
+      "n_rulers": 3,
+      "precision_at": {
+        "5": 0.3793103448275862,
+        "10": 0.5448275862068965,
+        "20": 0.7086206896551724
+      },
+      "mean_flags": 75.17241379310344,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "bpoor",
+        "brich",
+        "shifted"
+      ],
+      "labels": [
+        "broad 자전거0",
+        "broad 자전거多",
+        "약한 이동"
+      ],
+      "n_rulers": 3,
+      "precision_at": {
+        "5": 0.4068965517241379,
+        "10": 0.5758620689655173,
+        "20": 0.7310344827586207
+      },
+      "mean_flags": 73.37931034482759,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "bpoor",
+        "brich",
+        "broad"
+      ],
+      "labels": [
+        "broad 자전거0",
+        "broad 자전거多",
+        "넓은 자(800)"
+      ],
+      "n_rulers": 3,
+      "precision_at": {
+        "5": 0.3793103448275862,
+        "10": 0.5655172413793104,
+        "20": 0.7241379310344828
+      },
+      "mean_flags": 73.17241379310344,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "bpoor",
+        "shifted",
+        "broad"
+      ],
+      "labels": [
+        "broad 자전거0",
+        "약한 이동",
+        "넓은 자(800)"
+      ],
+      "n_rulers": 3,
+      "precision_at": {
+        "5": 0.42758620689655175,
+        "10": 0.6068965517241379,
+        "20": 0.7517241379310344
+      },
+      "mean_flags": 74.24137931034483,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "bmid",
+        "brich",
+        "shifted"
+      ],
+      "labels": [
+        "broad 자전거중",
+        "broad 자전거多",
+        "약한 이동"
+      ],
+      "n_rulers": 3,
+      "precision_at": {
+        "5": 0.4689655172413793,
+        "10": 0.6413793103448275,
+        "20": 0.7775862068965517
+      },
+      "mean_flags": 73.3103448275862,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "bmid",
+        "brich",
+        "broad"
+      ],
+      "labels": [
+        "broad 자전거중",
+        "broad 자전거多",
+        "넓은 자(800)"
+      ],
+      "n_rulers": 3,
+      "precision_at": {
+        "5": 0.45517241379310347,
+        "10": 0.6310344827586207,
+        "20": 0.7637931034482759
+      },
+      "mean_flags": 74.96551724137932,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "bmid",
+        "shifted",
+        "broad"
+      ],
+      "labels": [
+        "broad 자전거중",
+        "약한 이동",
+        "넓은 자(800)"
+      ],
+      "n_rulers": 3,
+      "precision_at": {
+        "5": 0.3517241379310345,
+        "10": 0.5517241379310345,
+        "20": 0.7137931034482758
+      },
+      "mean_flags": 75.96551724137932,
+      "conditions_short_of_k": 0
+    },
+    {
+      "combo": [
+        "brich",
+        "shifted",
+        "broad"
+      ],
+      "labels": [
+        "broad 자전거多",
+        "약한 이동",
+        "넓은 자(800)"
+      ],
+      "n_rulers": 3,
+      "precision_at": {
+        "5": 0.4689655172413793,
+        "10": 0.6206896551724138,
+        "20": 0.7413793103448276
+      },
+      "mean_flags": 77.24137931034483,
+      "conditions_short_of_k": 0
+    }
+  ]
+}
