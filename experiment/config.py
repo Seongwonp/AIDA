@@ -257,8 +257,14 @@ REFINED_CONDITIONS: list[Condition] = [
     # 규모마다 절반의 크기가 다르므로(400장→200, 3200장→1600) 현재 N_TRAIN에
     # 맞는 것을 자동으로 넣는다. 예전 실험이 쓰던 200·400도 남겨둔다 —
     # compare_refine_scale.py가 이름으로 찾는다.
+    #
+    # 정제 비율을 바꾸면(keep 0.3/0.7) 남는 프레임 수도 달라진다 — 400장에서
+    # 70%를 남기면 280장이고, 그때 대조군은 clean_sub280이어야 공정하다.
+    # 절반짜리만 등록해두면 그 실험을 이름으로 돌릴 수 없다 (docs/23 계획 1번).
     *[Condition(f"clean_sub{n}", "refined", 0)
-      for n in dict.fromkeys([200, 400, N_TRAIN // 2])],
+      for n in dict.fromkeys([200, 400,
+                              N_TRAIN // 2,
+                              int(N_TRAIN * 0.3), int(N_TRAIN * 0.7)])],
 ]
 
 # 재검수 시뮬레이션이 만든 조건들(docs/21 T). simulate_review.py가 폴더를
