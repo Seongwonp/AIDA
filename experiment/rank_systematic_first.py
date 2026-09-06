@@ -43,7 +43,7 @@ from compare_rulers_seeded import RULERS, ruler_path
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-KINDS = ["matched", "bpoor", "bmid", "brich", "shifted", "broad"]
+DEFAULT_KINDS = ["matched", "bpoor", "bmid", "brich", "shifted", "broad"]
 KS = [5, 10, 20, 50]
 
 
@@ -63,16 +63,20 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--limit", type=int, default=80)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--kinds", nargs="+", default=DEFAULT_KINDS,
+                    help="비교할 자. COCO는 coco_self kitti_on_coco")
+    ap.add_argument("--matched-kind", default="matched",
+                    help="맞는 자로 볼 것. COCO는 coco_self")
     args = ap.parse_args()
 
     from diagnose_labels import run
 
     names = [c.name for c in config.conditions_in_run_order() if c.name != "clean"]
-    print(f"조건 {len(names)}개 · 자 {len(KINDS)}종 · 시드 {args.seed}")
+    print(f"조건 {len(names)}개 · 자 {len(args.kinds)}종 · 시드 {args.seed}")
     print("추론은 자·조건마다 한 번만 하고, 그 결과를 두 방식으로 채점한다.\n")
 
     rows = []
-    for kind in KINDS:
+    for kind in args.kinds:
         w = ruler_path(kind, args.seed)
         if not w.exists():
             print(f"  [{kind}] 자 없음 — 건너뜀")
@@ -134,13 +138,14 @@ def main() -> None:
               f"(상위10위 중 비계통 {row['top10_nonsystematic_pct']*100:.0f}%)")
 
     Path(args.out).write_text(json.dumps(
-        {"seed": args.seed, "limit": args.limit, "ks": KS, "rows": rows},
+        {"seed": args.seed, "limit": args.limit, "ks": KS,
+         "matched_kind": args.matched_kind, "rows": rows},
         ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\n저장 → {args.out}")
     report(rows)
 
 
-def report(rows: list) -> None:
+def report(rows: list, matched_kind: str = "matched") -> None:
     print("\n" + "=" * 72)
     print("계통적 유형을 먼저 보여주면 (정밀도, 조건 평균)")
     print("=" * 72)
@@ -152,8 +157,8 @@ def report(rows: list) -> None:
               f"{b['10']:.3f}→{a['10']:.3f}{'':>4}"
               f"{b['20']:.3f}→{a['20']:.3f}")
 
-    mismatched = [r for r in rows if r["kind"] != "matched"]
-    matched = [r for r in rows if r["kind"] == "matched"]
+    mismatched = [r for r in rows if r["kind"] != matched_kind]
+    matched = [r for r in rows if r["kind"] == matched_kind]
     if mismatched:
         for k in ("5", "10", "20"):
             gains = [r["after"][k] - r["before"][k] for r in mismatched]
