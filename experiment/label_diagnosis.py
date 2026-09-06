@@ -293,9 +293,36 @@ def present_types(summary: dict) -> set[str]:
     dominant_ratio가 임계값을 넘는다는 건 곧 이 집합이 비지 않는다는 뜻이라,
     기존의 systematic 판정과도 어긋나지 않는다.
     """
-    return {
+    absolute = {
         t["suspicion"] for t in summary.get("by_type", [])
         if t["ratio"] >= SYSTEMATIC_ERROR_RATIO
+    }
+    if absolute:
+        return absolute
+
+    # 절대 문턱이 하나도 못 잡으면 상대 문턱으로 물러난다.
+    #
+    # **왜 필요한가.** 자가 크게 어긋나면 지목이 여러 유형에 흩어져 분포가
+    # 통째로 납작해진다. KITTI 자로 COCO를 진단하면 최대 유형 비율이
+    # 0.103~0.112로 문턱(0.12)을 아슬아슬하게 못 넘어 **하나도 안 잡힌다**
+    # (조건 26개 중 26개). 그러면 review_order가 아무 일도 못 해서 AN 처방이
+    # 통째로 no-op이 된다 (docs/21 AN·AO).
+    #
+    # **왜 문턱을 낮추지 않는가.** 낮추면 맞는 자에서 잡음 유형까지 승격돼
+    # 지금 잘 되는 쪽을 망친다(실측 −0.038~−0.092). 여기서는 새 문턱 값을
+    # 고르지 않는다 — 고르면 그 값이 이 데이터에 맞춰진 것이라 다음
+    # 데이터셋에서 또 틀린다.
+    by_type = summary.get("by_type", [])
+    ratios = [t["ratio"] for t in by_type]
+    if not ratios:
+        return set()
+    import statistics
+    median_ratio = statistics.median(ratios)
+    return {
+        t["suspicion"] for t in by_type
+        # 완전한 잡음까지 올라오면 안 되므로 절대 문턱의 절반은 넘어야 하고,
+        # 동시에 나머지 유형보다 뚜렷하게 커야 한다. 둘 다 요구한다.
+        if t["ratio"] >= SYSTEMATIC_ERROR_RATIO * 0.5 and t["ratio"] >= median_ratio * 2
     }
 
 

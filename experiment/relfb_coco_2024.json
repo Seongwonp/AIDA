@@ -1,0 +1,49 @@
+{
+  "seed": 2024,
+  "kinds": [
+    "coco_self",
+    "kitti_on_coco"
+  ],
+  "matched_kind": "coco_self",
+  "ks": [
+    5,
+    10,
+    20
+  ],
+  "rows": [
+    {
+      "kind": "coco_self",
+      "label": "COCO 자기(1C)",
+      "n_conditions": 26,
+      "an_only": {
+        "5": 0.9538461538461539,
+        "10": 0.9538461538461539,
+        "20": 0.9230769230769231
+      },
+      "with_relative": {
+        "5": 0.9538461538461539,
+        "10": 0.9538461538461539,
+        "20": 0.9230769230769231
+      },
+      "empty_absolute": 3,
+      "empty_relative": 4
+    },
+    {
+      "kind": "kitti_on_coco",
+      "label": "KITTI→COCO(1C)",
+      "n_conditions": 26,
+      "an_only": {
+        "5": 0.25384615384615383,
+        "10": 0.28076923076923077,
+        "20": 0.3019230769230769
+      },
+      "with_relative": {
+        "5": 0.3153846153846154,
+        "10": 0.33076923076923076,
+        "20": 0.2865384615384615
+      },
+      "empty_absolute": 5,
+      "empty_relative": 0
+    }
+  ]
+}
