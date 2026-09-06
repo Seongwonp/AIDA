@@ -91,28 +91,32 @@ def main() -> None:
             summary = L.summarize(findings, total_labels)
             present = L.present_types(summary)
 
-            # 지금 방식
-            v = E.score_findings(cond, findings, total_labels, args.limit)["verdicts_by_rank"]
+            # 처방 **전** = 순수 심각도 순. 처방을 제품에 넣은 뒤로는
+            # score_findings가 이미 review_order를 쓰므로, 옛 정렬을 재려면
+            # 여기서 되돌려야 한다. 안 그러면 before와 after가 같아져 차이가
+            # 0으로 나온다(실제로 한 번 그렇게 쟀다).
+            # score_findings가 rescore는 이미 적용하므로 정렬만 되돌리면 된다
+            plain = lambda f, _s: sorted(f, key=lambda x: -x.severity)
+            saved = E.review_order
+            try:
+                E.review_order = plain
+                v = E.score_findings(cond, findings, total_labels,
+                                     args.limit)["verdicts_by_rank"]
+            finally:
+                E.review_order = saved
             if not v:
                 continue
             n_cond += 1
             for k in KS:
                 before[k].append(E.precision_at_k(v, k))
 
-            # 처방. rescore를 감싸 순서만 바꾼다 — score_findings가 안에서
-            # rescore를 부르므로 미리 바꿔봐야 덮어쓰인다(한 번 그렇게 틀렸다).
-            orig = L.rescore
-            try:
-                L.rescore = E.rescore = (
-                    lambda f, s: rank_by_systematic_then_severity(orig(f, s), s))
-                v2 = E.score_findings(cond, findings, total_labels,
-                                      args.limit)["verdicts_by_rank"]
-            finally:
-                L.rescore = E.rescore = orig
+            # 처방 = 지금 제품이 쓰는 순서 (review_order)
+            v2 = E.score_findings(cond, findings, total_labels,
+                                  args.limit)["verdicts_by_rank"]
             for k in KS:
                 after[k].append(E.precision_at_k(v2, k))
 
-            ranked = sorted(orig(findings, summary), key=lambda f: -f.severity)
+            ranked = sorted(L.rescore(findings, summary), key=lambda f: -f.severity)
             top10_nonsystematic += sum(1 for f in ranked[:10] if f.suspicion not in present)
             worst_first += (bool(ranked) and ranked[0].suspicion not in present)
 
