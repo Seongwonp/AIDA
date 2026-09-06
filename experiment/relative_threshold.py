@@ -51,6 +51,23 @@ def relative_present_types(summary: dict) -> set[str]:
             if t["ratio"] >= floor and t["ratio"] >= med * 2}
 
 
+_ORIG_PRESENT = None
+
+
+def fallback_present_types(summary: dict) -> set[str]:
+    """절대 문턱이 아무것도 못 찾을 때만 상대 문턱으로 물러난다.
+
+    상대 문턱을 항상 쓰면 **맞는 자가 손해**다(COCO 자기 −0.038 ~ −0.092).
+    맞는 자에서는 절대 문턱이 이미 잘 잡고 있으므로 건드릴 이유가 없다.
+    실패하는 경우는 "하나도 못 잡는" 경우이고, 그때만 물러나면 된다.
+
+    문턱 값을 새로 고르지 않는다는 게 요점이다 — 고르면 그 값이 이 데이터에
+    맞춰진 것이라 다음 데이터셋에서 또 틀린다.
+    """
+    absolute = _ORIG_PRESENT(summary)
+    return absolute if absolute else relative_present_types(summary)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--seed", type=int, default=42)
@@ -58,6 +75,7 @@ def main() -> None:
     ap.add_argument("--kinds", nargs="+", required=True)
     ap.add_argument("--matched-kind", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--mode", choices=["always", "fallback"], default="always")
     args = ap.parse_args()
 
     from diagnose_labels import run
@@ -96,8 +114,11 @@ def main() -> None:
                 an_only[k].append(E.precision_at_k(v, k))
 
             saved = L.present_types
+            global _ORIG_PRESENT
+            _ORIG_PRESENT = saved
             try:
-                L.present_types = relative_present_types
+                L.present_types = (relative_present_types if args.mode == "always"
+                                   else fallback_present_types)
                 v2 = E.score_findings(cond, findings, total_labels,
                                       args.limit)["verdicts_by_rank"]
             finally:
