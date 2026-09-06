@@ -298,6 +298,7 @@ docstring에 **왜 만들었는지**와 근거 문서 절이 적혀 있다.
 | `pairwise_rulers.py` | 모든 쌍의 간격을 σ로 환산 |
 | `recompute_without.py` | 저장된 조건별 점수에서 조건군을 빼고 재집계 (GPU 불필요) |
 | `compare_refine_scale.py` | 자기 정제 손익을 규모별로 분해 |
+| `compare_keep_ratio.py` | 자기 정제를 **정제 안 하기와 직접** 견준다(docs/21 AT) |
 | `check_confidence_margin.py` / `check_prediction_drift.py` | 자의 안정성이 어디서 오는지(docs/21 AH) |
 
 ### 점검·정리
