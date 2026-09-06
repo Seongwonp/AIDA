@@ -36,7 +36,7 @@ import {
 // 기본값 배열을 컴포넌트 안에 두면 렌더마다 새로 만들어져 참조가 달라진다
 const NO_TYPES: string[] = [];
 
-export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = NO_TYPES }:
+export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = NO_TYPES, dominantType = null }:
                             {
                               items: ReviewQueueItem[];
                               datasetId: string;
@@ -44,6 +44,8 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
                               fitRatio?: number | null;
                               /** 도메인이 어긋나도 버티는 의심 유형 (docs/21 AI). */
                               robustTypes?: string[];
+                              /** 진단이 고른 대표 오류 유형. 없으면 계통적이지 않다는 뜻. */
+                              dominantType?: string | null;
                             }) {
   const [type, setType] = useState("");
   const [query, setQuery] = useState("");
@@ -174,7 +176,13 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
   const shaky = fitRatio !== null && fitRatio < 0.5;
   // 그중 도메인이 어긋나도 버티는 유형이 실제로 목록에 있는가. 하나도 없으면
   // 좁힐 곳이 없다는 뜻이고, 그건 조용히 넘어갈 상황이 아니라 더 나쁜 경우다.
-  const safeTypes = robustTypes.filter((t) => items.some((i) => i.suspicion === t));
+  // **대표 유형일 때만 권한다.** 버티는 유형이 목록에 있기만 하면 권하던 때가
+  // 있었는데, 실측으로 그건 맞으면 크게 이기고 틀리면 전멸이다 —
+  // 무너진 자에서 데이터의 오류가 그 유형이면 @5가 0.444 → 0.844로 오르고,
+  // 아니면 0.391 → **0.000**이다 (docs/21 AR). 대표 유형이 아니면 그 지목은
+  // 거의 전부 오탐이라 좁히는 순간 알짜가 하나도 안 남는다.
+  const safeTypes = robustTypes.filter(
+    (t) => t === dominantType && items.some((i) => i.suspicion === t));
 
   const judged = items.filter((i) => verdicts[keyOf(i)]);
   const hits = judged.filter((i) => verdicts[keyOf(i)] === "hit").length;
@@ -255,9 +263,10 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
             </>
           ) : (
             <>
-              그런데 <b>여기서 나온 유형은 전부 그 영향을 크게 받는 것들입니다</b> —
-              좁혀서 건질 것이 없다는 뜻이라 목록 전체를 의심해야 합니다. 이
-              데이터에 맞는 기준 모델을 골라 다시 진단하는 편이 낫습니다.
+              그런데 <b>이 데이터의 대표 오류가 그 영향을 크게 받는 유형입니다</b> —
+              좁혀도 건질 것이 없습니다. 실측으로 대표 유형이 아닌 것만 남기면
+              상위 5건의 정밀도가 0이 됐습니다. 이 데이터에 맞는 기준 모델을
+              골라 다시 진단하는 편이 낫습니다.
             </>
           )}
         </p>

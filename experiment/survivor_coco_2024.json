@@ -1,0 +1,521 @@
+{
+  "seed": 2024,
+  "keep": [
+    "missing"
+  ],
+  "ks": [
+    5,
+    10,
+    20
+  ],
+  "rows": [
+    {
+      "kind": "kitti_on_coco",
+      "label": "KITTI→COCO(1C)",
+      "all": {
+        "5": 0.3153846153846154,
+        "10": 0.33076923076923076,
+        "20": 0.2865384615384615
+      },
+      "kept": {
+        "5": 0.1,
+        "10": 0.07307692307692308,
+        "20": 0.05938914027149321
+      },
+      "mean_flags_all": 82.6923076923077,
+      "mean_flags_kept": 13.115384615384615,
+      "conditions_under_5": 0,
+      "n_conditions": 26,
+      "per_condition": [
+        {
+          "condition": "width_m30",
+          "injected_type": "width",
+          "matches_kept": false,
+          "all_at5": 0.8,
+          "kept_at5": 0.0,
+          "n_all": 84,
+          "n_kept": 17
+        },
+        {
+          "condition": "width_p30",
+          "injected_type": "width",
+          "matches_kept": false,
+          "all_at5": 0.2,
+          "kept_at5": 0.0,
+          "n_all": 86,
+          "n_kept": 10
+        },
+        {
+          "condition": "height_m30",
+          "injected_type": "height",
+          "matches_kept": false,
+          "all_at5": 0.0,
+          "kept_at5": 0.0,
+          "n_all": 78,
+          "n_kept": 14
+        },
+        {
+          "condition": "height_p30",
+          "injected_type": "height",
+          "matches_kept": false,
+          "all_at5": 0.4,
+          "kept_at5": 0.0,
+          "n_all": 84,
+          "n_kept": 10
+        },
+        {
+          "condition": "rot_m15",
+          "injected_type": "rotation",
+          "matches_kept": false,
+          "all_at5": 0.2,
+          "kept_at5": 0.0,
+          "n_all": 85,
+          "n_kept": 10
+        },
+        {
+          "condition": "rot_p15",
+          "injected_type": "rotation",
+          "matches_kept": false,
+          "all_at5": 0.0,
+          "kept_at5": 0.0,
+          "n_all": 90,
+          "n_kept": 11
+        },
+        {
+          "condition": "width_m15",
+          "injected_type": "width",
+          "matches_kept": false,
+          "all_at5": 0.6,
+          "kept_at5": 0.0,
+          "n_all": 79,
+          "n_kept": 12
+        },
+        {
+          "condition": "width_p15",
+          "injected_type": "width",
+          "matches_kept": false,
+          "all_at5": 0.2,
+          "kept_at5": 0.0,
+          "n_all": 80,
+          "n_kept": 11
+        },
+        {
+          "condition": "height_m15",
+          "injected_type": "height",
+          "matches_kept": false,
+          "all_at5": 0.2,
+          "kept_at5": 0.0,
+          "n_all": 81,
+          "n_kept": 14
+        },
+        {
+          "condition": "height_p15",
+          "injected_type": "height",
+          "matches_kept": false,
+          "all_at5": 0.2,
+          "kept_at5": 0.0,
+          "n_all": 80,
+          "n_kept": 11
+        },
+        {
+          "condition": "rot_m7_5",
+          "injected_type": "rotation",
+          "matches_kept": false,
+          "all_at5": 0.0,
+          "kept_at5": 0.0,
+          "n_all": 84,
+          "n_kept": 8
+        },
+        {
+          "condition": "rot_p7_5",
+          "injected_type": "rotation",
+          "matches_kept": false,
+          "all_at5": 0.6,
+          "kept_at5": 0.0,
+          "n_all": 89,
+          "n_kept": 10
+        },
+        {
+          "condition": "trans_x_m15",
+          "injected_type": "translation_x",
+          "matches_kept": false,
+          "all_at5": 0.4,
+          "kept_at5": 0.0,
+          "n_all": 82,
+          "n_kept": 12
+        },
+        {
+          "condition": "trans_x_p15",
+          "injected_type": "translation_x",
+          "matches_kept": false,
+          "all_at5": 0.4,
+          "kept_at5": 0.0,
+          "n_all": 84,
+          "n_kept": 11
+        },
+        {
+          "condition": "trans_y_m15",
+          "injected_type": "translation_y",
+          "matches_kept": false,
+          "all_at5": 0.2,
+          "kept_at5": 0.0,
+          "n_all": 82,
+          "n_kept": 13
+        },
+        {
+          "condition": "trans_y_p15",
+          "injected_type": "translation_y",
+          "matches_kept": false,
+          "all_at5": 0.2,
+          "kept_at5": 0.0,
+          "n_all": 84,
+          "n_kept": 12
+        },
+        {
+          "condition": "scale_m15",
+          "injected_type": "scale",
+          "matches_kept": false,
+          "all_at5": 0.4,
+          "kept_at5": 0.0,
+          "n_all": 79,
+          "n_kept": 12
+        },
+        {
+          "condition": "scale_p15",
+          "injected_type": "scale",
+          "matches_kept": false,
+          "all_at5": 0.4,
+          "kept_at5": 0.0,
+          "n_all": 83,
+          "n_kept": 10
+        },
+        {
+          "condition": "scale_m30",
+          "injected_type": "scale",
+          "matches_kept": false,
+          "all_at5": 0.0,
+          "kept_at5": 0.0,
+          "n_all": 77,
+          "n_kept": 18
+        },
+        {
+          "condition": "scale_p30",
+          "injected_type": "scale",
+          "matches_kept": false,
+          "all_at5": 0.8,
+          "kept_at5": 0.0,
+          "n_all": 86,
+          "n_kept": 11
+        },
+        {
+          "condition": "missing_10",
+          "injected_type": "missing",
+          "matches_kept": true,
+          "all_at5": 0.0,
+          "kept_at5": 0.6,
+          "n_all": 76,
+          "n_kept": 17
+        },
+        {
+          "condition": "missing_20",
+          "injected_type": "missing",
+          "matches_kept": true,
+          "all_at5": 0.0,
+          "kept_at5": 1.0,
+          "n_all": 72,
+          "n_kept": 24
+        },
+        {
+          "condition": "missing_30",
+          "injected_type": "missing",
+          "matches_kept": true,
+          "all_at5": 1.0,
+          "kept_at5": 1.0,
+          "n_all": 77,
+          "n_kept": 29
+        },
+        {
+          "condition": "duplicate_10",
+          "injected_type": "duplicate",
+          "matches_kept": false,
+          "all_at5": 0.4,
+          "kept_at5": 0.0,
+          "n_all": 86,
+          "n_kept": 12
+        },
+        {
+          "condition": "duplicate_20",
+          "injected_type": "duplicate",
+          "matches_kept": false,
+          "all_at5": 0.0,
+          "kept_at5": 0.0,
+          "n_all": 84,
+          "n_kept": 11
+        },
+        {
+          "condition": "duplicate_30",
+          "injected_type": "duplicate",
+          "matches_kept": false,
+          "all_at5": 0.6,
+          "kept_at5": 0.0,
+          "n_all": 98,
+          "n_kept": 11
+        }
+      ]
+    },
+    {
+      "kind": "coco_self",
+      "label": "COCO 자기(1C)",
+      "all": {
+        "5": 0.9538461538461539,
+        "10": 0.9538461538461539,
+        "20": 0.9230769230769231
+      },
+      "kept": {
+        "5": 0.11538461538461539,
+        "10": 0.1076923076923077,
+        "20": 0.10454545454545454
+      },
+      "mean_flags_all": 116.07692307692308,
+      "mean_flags_kept": 5.1923076923076925,
+      "conditions_under_5": 22,
+      "n_conditions": 26,
+      "per_condition": [
+        {
+          "condition": "width_m30",
+          "injected_type": "width",
+          "matches_kept": false,
+          "all_at5": 1.0,
+          "kept_at5": 0.0,
+          "n_all": 125,
+          "n_kept": 2
+        },
+        {
+          "condition": "width_p30",
+          "injected_type": "width",
+          "matches_kept": false,
+          "all_at5": 1.0,
+          "kept_at5": 0.0,
+          "n_all": 126,
+          "n_kept": 2
+        },
+        {
+          "condition": "height_m30",
+          "injected_type": "height",
+          "matches_kept": false,
+          "all_at5": 1.0,
+          "kept_at5": 0.0,
+          "n_all": 119,
+          "n_kept": 4
+        },
+        {
+          "condition": "height_p30",
+          "injected_type": "height",
+          "matches_kept": false,
+          "all_at5": 1.0,
+          "kept_at5": 0.0,
+          "n_all": 117,
+          "n_kept": 2
+        },
+        {
+          "condition": "rot_m15",
+          "injected_type": "rotation",
+          "matches_kept": false,
+          "all_at5": 1.0,
+          "kept_at5": 0.0,
+          "n_all": 127,
+          "n_kept": 2
+        },
+        {
+          "condition": "rot_p15",
+          "injected_type": "rotation",
+          "matches_kept": false,
+          "all_at5": 1.0,
+          "kept_at5": 0.0,
+          "n_all": 119,
+          "n_kept": 2
+        },
+        {
+          "condition": "width_m15",
+          "injected_type": "width",
+          "matches_kept": false,
+          "all_at5": 1.0,
+          "kept_at5": 0.0,
+          "n_all": 117,
+          "n_kept": 2
+        },
+        {
+          "condition": "width_p15",
+          "injected_type": "width",
+          "matches_kept": false,
+          "all_at5": 1.0,
+          "kept_at5": 0.0,
+          "n_all": 111,
+          "n_kept": 2
+        },
+        {
+          "condition": "height_m15",
+          "injected_type": "height",
+          "matches_kept": false,
+          "all_at5": 0.8,
+          "kept_at5": 0.0,
+          "n_all": 112,
+          "n_kept": 2
+        },
+        {
+          "condition": "height_p15",
+          "injected_type": "height",
+          "matches_kept": false,
+          "all_at5": 0.8,
+          "kept_at5": 0.0,
+          "n_all": 105,
+          "n_kept": 2
+        },
+        {
+          "condition": "rot_m7_5",
+          "injected_type": "rotation",
+          "matches_kept": false,
+          "all_at5": 1.0,
+          "kept_at5": 0.0,
+          "n_all": 112,
+          "n_kept": 2
+        },
+        {
+          "condition": "rot_p7_5",
+          "injected_type": "rotation",
+          "matches_kept": false,
+          "all_at5": 1.0,
+          "kept_at5": 0.0,
+          "n_all": 124,
+          "n_kept": 2
+        },
+        {
+          "condition": "trans_x_m15",
+          "injected_type": "translation_x",
+          "matches_kept": false,
+          "all_at5": 1.0,
+          "kept_at5": 0.0,
+          "n_all": 115,
+          "n_kept": 2
+        },
+        {
+          "condition": "trans_x_p15",
+          "injected_type": "translation_x",
+          "matches_kept": false,
+          "all_at5": 1.0,
+          "kept_at5": 0.0,
+          "n_all": 119,
+          "n_kept": 2
+        },
+        {
+          "condition": "trans_y_m15",
+          "injected_type": "translation_y",
+          "matches_kept": false,
+          "all_at5": 1.0,
+          "kept_at5": 0.0,
+          "n_all": 120,
+          "n_kept": 2
+        },
+        {
+          "condition": "trans_y_p15",
+          "injected_type": "translation_y",
+          "matches_kept": false,
+          "all_at5": 1.0,
+          "kept_at5": 0.0,
+          "n_all": 125,
+          "n_kept": 2
+        },
+        {
+          "condition": "scale_m15",
+          "injected_type": "scale",
+          "matches_kept": false,
+          "all_at5": 1.0,
+          "kept_at5": 0.0,
+          "n_all": 114,
+          "n_kept": 2
+        },
+        {
+          "condition": "scale_p15",
+          "injected_type": "scale",
+          "matches_kept": false,
+          "all_at5": 1.0,
+          "kept_at5": 0.0,
+          "n_all": 118,
+          "n_kept": 2
+        },
+        {
+          "condition": "scale_m30",
+          "injected_type": "scale",
+          "matches_kept": false,
+          "all_at5": 1.0,
+          "kept_at5": 0.0,
+          "n_all": 122,
+          "n_kept": 5
+        },
+        {
+          "condition": "scale_p30",
+          "injected_type": "scale",
+          "matches_kept": false,
+          "all_at5": 1.0,
+          "kept_at5": 0.0,
+          "n_all": 127,
+          "n_kept": 2
+        },
+        {
+          "condition": "missing_10",
+          "injected_type": "missing",
+          "matches_kept": true,
+          "all_at5": 1.0,
+          "kept_at5": 1.0,
+          "n_all": 83,
+          "n_kept": 11
+        },
+        {
+          "condition": "missing_20",
+          "injected_type": "missing",
+          "matches_kept": true,
+          "all_at5": 1.0,
+          "kept_at5": 1.0,
+          "n_all": 89,
+          "n_kept": 29
+        },
+        {
+          "condition": "missing_30",
+          "injected_type": "missing",
+          "matches_kept": true,
+          "all_at5": 1.0,
+          "kept_at5": 1.0,
+          "n_all": 98,
+          "n_kept": 44
+        },
+        {
+          "condition": "duplicate_10",
+          "injected_type": "duplicate",
+          "matches_kept": false,
+          "all_at5": 0.8,
+          "kept_at5": 0.0,
+          "n_all": 112,
+          "n_kept": 2
+        },
+        {
+          "condition": "duplicate_20",
+          "injected_type": "duplicate",
+          "matches_kept": false,
+          "all_at5": 0.6,
+          "kept_at5": 0.0,
+          "n_all": 115,
+          "n_kept": 2
+        },
+        {
+          "condition": "duplicate_30",
+          "injected_type": "duplicate",
+          "matches_kept": false,
+          "all_at5": 0.8,
+          "kept_at5": 0.0,
+          "n_all": 147,
+          "n_kept": 2
+        }
+      ]
+    }
+  ]
+}
