@@ -142,7 +142,7 @@ def main() -> None:
          "matched_kind": args.matched_kind, "rows": rows},
         ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\n저장 → {args.out}")
-    report(rows)
+    report(rows, args.matched_kind)
 
 
 def report(rows: list, matched_kind: str = "matched") -> None:
