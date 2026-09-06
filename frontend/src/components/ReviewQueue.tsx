@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+
+import { getVerdicts, putVerdicts } from "../api";
 import { BoxPreview } from "./BoxPreview";
 import type { ReviewQueueItem } from "../types";
 import {
@@ -68,6 +70,30 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
   }), [items, type, query, verdicts, onlyOpen]);
 
   /** 같은 값을 다시 누르면 판정을 지운다 — 잘못 눌렀을 때 되돌릴 길이 있어야 한다. */
+  // 서버에 남은 판정을 우선한다 — 다른 기계에서 이어받는 게 목적이다.
+  // 브라우저 저장을 없애지는 않는다: 서버가 죽어도 검수는 이어져야 하고,
+  // localStorage가 막힌 환경에서는 서버 쪽이 유일한 보관소가 된다.
+  useEffect(() => {
+    let alive = true;
+    getVerdicts(datasetId)
+      .then((remote) => {
+        if (!alive) return;
+        const keys = Object.keys(remote.verdicts);
+        if (keys.length === 0) return;      // 서버가 비었으면 브라우저 것을 쓴다
+        const next = remote.verdicts as Verdicts;
+        setVerdicts(next);
+        try {
+          localStorage.setItem(STORE(datasetId), JSON.stringify(next));
+        } catch {
+          /* 저장 못 해도 이번 세션에는 반영된다 */
+        }
+      })
+      .catch(() => {
+        /* 서버가 없어도 브라우저 것으로 검수는 이어진다 */
+      });
+    return () => { alive = false; };
+  }, [datasetId]);
+
   const setVerdict = (item: ReviewQueueItem, v: Verdict) => {
     const k = keyOf(item);
     const next = { ...verdicts };
@@ -79,6 +105,8 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
     } catch {
       /* 저장 못 해도 이번 세션에는 반영된다 */
     }
+    // 서버에도 남긴다. 실패해도 검수를 막지 않는다 — 브라우저 쪽이 이미 있다.
+    putVerdicts(datasetId, next).catch(() => {});
   };
 
   const download = () => {

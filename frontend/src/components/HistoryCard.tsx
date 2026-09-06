@@ -30,7 +30,7 @@ export function HistoryCard({ onOpen }: { onOpen: (datasetId: string) => void })
     setError("");
     try {
       await deleteDataset(datasetId);
-      // 서버에서 지웠으면 브라우저에 남은 판정도 같이 지운다
+      // 서버는 폴더째 지우므로 판정도 같이 간다. 브라우저 쪽도 맞춘다.
       clearVerdicts(datasetId);
       setRows((prev) => prev.filter((r) => r.dataset_id !== datasetId));
     } catch {

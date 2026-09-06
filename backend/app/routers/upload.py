@@ -22,6 +22,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from app.config import EXPERIMENT_PYTHON, EXPERIMENT_ROOT, UPLOADS_DIR
 from app.models import (
     DatasetHistoryItem,
+    VerdictMap,
     ErrorTypeCandidate,
     LabelDiagnosisResult,
     PerformanceVector,
@@ -920,6 +921,58 @@ def delete_dataset(dataset_id: str) -> Response:
 
     shutil.rmtree(target)
     return Response(status_code=204)
+
+
+VERDICTS_FILE = "verdicts.json"
+# 판정 하나는 키 60자 + 값 4자 남짓이다. 2만 건이면 재검수 목록보다 훨씬 큰데,
+# 그만큼 쌓일 일이 없으므로 넘으면 요청이 잘못된 것으로 본다.
+MAX_VERDICTS = 20_000
+VALID_VERDICTS = {"hit", "miss"}
+
+
+def _verdicts_path(dataset_id: str) -> Path:
+    d = (UPLOADS_DIR / dataset_id).resolve()
+    if d.parent != UPLOADS_DIR.resolve() or not d.is_dir():
+        raise HTTPException(404, "데이터셋을 찾을 수 없습니다.")
+    return d / VERDICTS_FILE
+
+
+@router.get("/{dataset_id}/verdicts", response_model=VerdictMap)
+def get_verdicts(dataset_id: str) -> VerdictMap:
+    """이 데이터셋에 남아 있는 검수 판정.
+
+    브라우저에만 두면 기계를 옮길 때 사라진다. 검수는 한 번에 끝나지 않는
+    일이라 진행이 기계에 묶이면 반쪽이다.
+    """
+    path = _verdicts_path(dataset_id)
+    if not path.exists():
+        return VerdictMap()
+    try:
+        return VerdictMap(**json.loads(path.read_text(encoding="utf-8")))
+    except (OSError, json.JSONDecodeError, ValueError):
+        # 깨진 파일 때문에 검수를 못 하게 되면 안 된다 — 빈 것으로 시작한다
+        return VerdictMap()
+
+
+@router.put("/{dataset_id}/verdicts", response_model=VerdictMap)
+def put_verdicts(dataset_id: str, body: VerdictMap) -> VerdictMap:
+    """판정을 통째로 덮어쓴다.
+
+    부분 갱신이 아니라 전체 교체다. 판정은 한 사람이 한 자리에서 매기는
+    것이라 병합할 상대가 없고, 병합을 넣으면 "지운 판정이 되살아나는" 쪽이
+    더 흔한 사고가 된다.
+    """
+    if len(body.verdicts) > MAX_VERDICTS:
+        raise HTTPException(413, f"판정이 너무 많습니다 ({len(body.verdicts):,}건).")
+    bad = {v for v in body.verdicts.values()} - VALID_VERDICTS
+    if bad:
+        raise HTTPException(400, f"알 수 없는 판정: {sorted(bad)}")
+
+    saved = VerdictMap(verdicts=body.verdicts,
+                       updated_at=datetime.now(timezone.utc).isoformat())
+    _verdicts_path(dataset_id).write_text(saved.model_dump_json(indent=2),
+                                          encoding="utf-8")
+    return saved
 
 
 @router.get("/{dataset_id}/images/{name}")

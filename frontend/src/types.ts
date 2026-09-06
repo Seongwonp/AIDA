@@ -218,3 +218,9 @@ export interface DatasetHistoryItem {
   total_findings: number | null;
   dominant_label: string | null;
 }
+
+/** 서버에 남긴 검수 판정. 키는 "이미지#라벨번호#의심유형". */
+export interface VerdictMap {
+  verdicts: Record<string, string>;
+  updated_at: string | null;
+}

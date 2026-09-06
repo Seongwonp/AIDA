@@ -6,6 +6,7 @@ import type {
   DiagnosisResult,
   LabelDiagnosisResult,
   DatasetHistoryItem,
+  VerdictMap,
   ReliabilityProfile,
   RoiEstimate,
   UploadDiagnosisResult,
@@ -94,3 +95,13 @@ export const getLabelDiagnosis = (datasetId: string) =>
 
 export const deleteDataset = (datasetId: string) =>
   client.delete(`/api/datasets/${datasetId}`).then(() => undefined);
+
+export const getVerdicts = (datasetId: string) =>
+  client
+    .get<VerdictMap>(`/api/datasets/${datasetId}/verdicts`)
+    .then((res) => res.data);
+
+export const putVerdicts = (datasetId: string, verdicts: Record<string, string>) =>
+  client
+    .put<VerdictMap>(`/api/datasets/${datasetId}/verdicts`, { verdicts })
+    .then((res) => res.data);

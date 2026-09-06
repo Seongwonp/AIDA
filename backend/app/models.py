@@ -262,3 +262,13 @@ class ReliabilityProfileInfo(BaseModel):
     classes: list[str] = []
     # 이 구성의 기준 모델이 서버에 있는가. False면 고를 수는 있어도 진단은 실패한다.
     available: bool = True
+
+
+class VerdictMap(BaseModel):
+    """검수 판정 묶음. 키는 "이미지#라벨번호#의심유형", 값은 hit/miss.
+
+    사용자 개념이 없어 **데이터셋 단위로만 묶는다.** 그 데이터셋을 볼 수 있는
+    사람은 이미 결과를 다 볼 수 있으므로 새 권한 문제를 만들지 않는다.
+    """
+    verdicts: dict[str, str] = {}
+    updated_at: str | None = None
