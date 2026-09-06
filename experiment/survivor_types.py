@@ -48,6 +48,11 @@ def main() -> None:
         allp = {k: [] for k in KS}
         keptp = {k: [] for k in KS}
         n_all, n_kept, short = [], [], 0
+        # **조건 유형별로 갈라야 한다.** 26개 조건 대부분은 주입된 오류가
+        # missing이 아니라서, 거기서 나온 missing 지목은 정의상 전부 오탐이다.
+        # 전부 뭉쳐 평균 내면 "유형 좁히기가 해롭다"로 보이는데, 그건
+        # "내 데이터의 오류가 그 유형일 때"를 안 가른 것이다.
+        per_cond = []
 
         for name in names:
             cond = config._BY_NAME[name]
@@ -71,6 +76,12 @@ def main() -> None:
             if v2:
                 for k in KS:
                     keptp[k].append(E.precision_at_k(v2, k))
+            per_cond.append({
+                "condition": name, "injected_type": cond.type,
+                "matches_kept": cond.type in keep or any(name.startswith(t) for t in keep),
+                "all_at5": E.precision_at_k(v, 5),
+                "kept_at5": E.precision_at_k(v2, 5) if v2 else None,
+                "n_all": len(v), "n_kept": len(v2)})
 
         row = {"kind": kind, "label": RULERS[kind][0],
                "all": {str(k): statistics.mean(allp[k]) for k in KS},
@@ -78,7 +89,8 @@ def main() -> None:
                         for k in KS},
                "mean_flags_all": statistics.mean(n_all) if n_all else 0,
                "mean_flags_kept": statistics.mean(n_kept) if n_kept else 0,
-               "conditions_under_5": short, "n_conditions": len(n_all)}
+               "conditions_under_5": short, "n_conditions": len(n_all),
+               "per_condition": per_cond}
         rows.append(row)
         a, b = row["all"], row["kept"]
         fmt = lambda x: "—" if x is None else f"{x:.3f}"
