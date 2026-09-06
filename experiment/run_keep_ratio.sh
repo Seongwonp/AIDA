@@ -1,6 +1,8 @@
 #!/bin/sh
 # 정제 비율을 바꾼다 (docs/23 계획 1번).
 #
+# 비율은 KEEPS로 바꾼다 (기본 30 70).  예: KEEPS=90 ./run_keep_ratio.sh 400 800
+#
 # 대조군도 비율마다 새로 만든다 — AK·AQ의 clean_sub{N/2}는 절반을 버린 것이라
 # keep 0.5에만 맞는다. 70%를 남겼으면 70%짜리 clean 대조군과 견줘야 공정하다.
 set -e
@@ -13,7 +15,7 @@ export AIDA_WORKERS=2
 
 for N in ${*:-400 800}; do
   export AIDA_N_TRAIN=$N
-  for K in 30 70; do
+  for K in ${KEEPS:-30 70}; do
     SUB=$((N * K / 100))
     echo "########## N=$N keep=${K}% (대조군 clean_sub$SUB) ##########"
     ./venv/Scripts/python.exe refine_ruler.py --condition missing_30 --keep 0.$K

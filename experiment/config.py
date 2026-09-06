@@ -249,7 +249,7 @@ MIXED_CONDITIONS_DIR = EXPERIMENT_ROOT / f"conditions_mixed{_esuffix}"
 REFINED_CONDITIONS: list[Condition] = [
     Condition(f"{c}_refined{pct}", "refined", pct)
     for c in ("scale_m30", "missing_30", "width_m30")
-    for pct in (30, 50, 70)
+    for pct in (30, 50, 70, 90)
 ] + [
     # 데이터 크기와 라벨 품질을 분리하는 대조군: refined50과 같은 프레임에
     # 깨끗한 라벨을 붙인 것. 손해가 크기 탓인지 오류 탓인지 가른다.
@@ -264,7 +264,7 @@ REFINED_CONDITIONS: list[Condition] = [
     *[Condition(f"clean_sub{n}", "refined", 0)
       for n in dict.fromkeys([200, 400,
                               N_TRAIN // 2,
-                              int(N_TRAIN * 0.3), int(N_TRAIN * 0.7)])],
+                              *(int(N_TRAIN * k) for k in (0.3, 0.7, 0.9))])],
 ]
 
 # 재검수 시뮬레이션이 만든 조건들(docs/21 T). simulate_review.py가 폴더를
