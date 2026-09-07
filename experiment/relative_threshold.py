@@ -51,7 +51,6 @@ def relative_present_types(summary: dict) -> set[str]:
             if t["ratio"] >= floor and t["ratio"] >= med * 2}
 
 
-_ORIG_PRESENT = None
 
 
 def absolute_present_types(summary: dict) -> set[str]:
@@ -77,7 +76,7 @@ def fallback_present_types(summary: dict) -> set[str]:
     문턱 값을 새로 고르지 않는다는 게 요점이다 — 고르면 그 값이 이 데이터에
     맞춰진 것이라 다음 데이터셋에서 또 틀린다.
     """
-    absolute = _ORIG_PRESENT(summary)
+    absolute = absolute_present_types(summary)
     return absolute if absolute else relative_present_types(summary)
 
 
@@ -89,6 +88,8 @@ def main() -> None:
     ap.add_argument("--matched-kind", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--mode", choices=["always", "fallback"], default="always")
+    ap.add_argument("--per-condition", action="store_true",
+                    help="조건별 변화를 산출물에 남긴다 (docs/21 계획: 어느 조건이 손해인가)")
     args = ap.parse_args()
 
     from diagnose_labels import run
@@ -107,6 +108,7 @@ def main() -> None:
         an_only = {k: [] for k in KS}
         with_rel = {k: [] for k in KS}
         empty_abs = empty_rel = n_cond = 0
+        per_cond = []
 
         for name in names:
             cond = config._BY_NAME[name]
@@ -134,8 +136,6 @@ def main() -> None:
                 an_only[k].append(E.precision_at_k(v, k))
 
             saved = L.present_types
-            global _ORIG_PRESENT
-            _ORIG_PRESENT = saved
             try:
                 L.present_types = (relative_present_types if args.mode == "always"
                                    else fallback_present_types)
@@ -146,10 +146,25 @@ def main() -> None:
             for k in KS:
                 with_rel[k].append(E.precision_at_k(v2, k))
 
+            if args.per_condition:
+                abs_types = absolute_present_types(summary)
+                per_cond.append({
+                    "condition": cond.name,
+                    # 이 조건에 실제로 주입된 오류 유형. 승격된 유형과 견주면
+                    # "후퇴가 잡음을 올린 것인가"가 갈린다.
+                    "injected": cond.type,
+                    "delta5": E.precision_at_k(v2, 5) - E.precision_at_k(v, 5),
+                    "absolute_empty": not abs_types,
+                    "absolute_types": sorted(abs_types),
+                    "promoted_types": sorted(fallback_present_types(summary)),
+                })
+
         row = {"kind": kind, "label": RULERS[kind][0], "n_conditions": n_cond,
                "an_only": {str(k): statistics.mean(an_only[k]) for k in KS},
                "with_relative": {str(k): statistics.mean(with_rel[k]) for k in KS},
                "empty_absolute": empty_abs, "empty_relative": empty_rel}
+        if args.per_condition:
+            row["per_condition"] = per_cond
         rows.append(row)
         a, b = row["an_only"], row["with_relative"]
         print(f"  {row['label']:<16} @5 {a['5']:.3f}→{b['5']:.3f}  "
