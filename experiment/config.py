@@ -329,7 +329,12 @@ INTENSITY_CONDITIONS: list[Condition] = [
     # class_mismatch는 구조적 오류인데 자가 많이 만드는 잡음 유형이기도 하다
     # (AN). 어느 쪽으로 행동하는지 보려면 4클래스가 있어야 한다 (docs/21 AY).
     Condition(f"class_swap_{pct}", "class_swap", pct)
-    for pct in (5, 15, 25)
+    for pct in (5, 7, 8, 15, 25)
+] + [
+    # 0.06 근처를 좁히는 조건들 (docs/21 BB). BA에서 관측이 0.045와 0.076
+    # 사이가 비어 "0.06에서 갈린다"의 정밀도가 낮았다.
+    Condition(f"duplicate_{pct}", "duplicate", pct)
+    for pct in (6, 7)
 ] + [
     # 기하 오류는 세기(−30%)를 고정하고 **영향받는 비율**을 축으로 놓는다.
     # 그래야 missing·duplicate와 같은 축에서 견줄 수 있다 (docs/21 AX).
