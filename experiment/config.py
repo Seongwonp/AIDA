@@ -143,6 +143,12 @@ class Condition:
     # missing/duplicate에서는 magnitude가 "라벨의 몇 %가 이 오류를 겪는가" 자체다
     # (다른 타입처럼 ERROR_RATIO 30% 중 얼마나 세게 변형하는지가 아니라, 영향받는
     # 라벨의 비율 자체를 의미 — error_injector.build_condition_labels 참고)
+    #
+    # 기하 오류에서 **영향받는 비율**을 축으로 놓고 싶을 때만 채운다(docs/21 AX).
+    # None이면 ERROR_RATIO(30%)를 쓴다 — 기존 조건은 전부 그쪽이다.
+    # AIDA_ERROR_RATIO 환경변수로 바꾸면 조건 폴더 이름이 겹쳐 **기존 조건을
+    # 덮어쓴다.** 그래서 이름을 따로 주는 이 길이 필요하다.
+    ratio: float | None = None
 
 
 CONDITIONS: list[Condition] = [
@@ -319,6 +325,11 @@ INTENSITY_CONDITIONS: list[Condition] = [
     Condition(f"{kind}_{pct}", kind, pct)
     for kind in ("missing", "duplicate")
     for pct in (5, 15, 25)
+] + [
+    # 기하 오류는 세기(−30%)를 고정하고 **영향받는 비율**을 축으로 놓는다.
+    # 그래야 missing·duplicate와 같은 축에서 견줄 수 있다 (docs/21 AX).
+    Condition(f"width_m30_r{pct:02d}", "width", -30, ratio=pct / 100)
+    for pct in (5, 10, 15, 20, 25, 30)
 ]
 
 _BY_NAME = {c.name: c for c in

@@ -196,7 +196,7 @@ def build_condition_labels(condition: Condition, image_dir: Path, gt_label_dir: 
                     errored.append(len(out_lines))
                     out_lines.append(pixel_to_yolo_line(dup_box, img.width, img.height, cid))
             else:
-                if condition.type != "none" and rng.random() < config.ERROR_RATIO:
+                if condition.type != "none" and rng.random() < (condition.ratio or config.ERROR_RATIO):
                     box = transform_box(box, condition)
                     errored.append(len(out_lines))
                 out_lines.append(pixel_to_yolo_line(box, img.width, img.height, cid))
@@ -472,7 +472,7 @@ def build_obb_condition_labels(condition: config.Condition, image_dir: Path,
         out_lines = []
         for line in lines:
             poly = yolo_obb_to_pixel(line, img.width, img.height)
-            if condition.type != "none" and rng.random() < config.ERROR_RATIO:
+            if condition.type != "none" and rng.random() < (condition.ratio or config.ERROR_RATIO):
                 if condition.type == "rotation":
                     # 핵심: polygon을 직접 회전 → 방향성 보존 (AABB 외접 박스 X)
                     poly = rotate_obb_poly(poly, condition.magnitude)
