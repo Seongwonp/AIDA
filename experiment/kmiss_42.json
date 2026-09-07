@@ -1,0 +1,200 @@
+{
+  "seed": 42,
+  "kinds": [
+    "matched",
+    "broad"
+  ],
+  "matched_kind": "matched",
+  "ks": [
+    5,
+    10,
+    20
+  ],
+  "rows": [
+    {
+      "kind": "matched",
+      "label": "자기 도메인",
+      "n_conditions": 6,
+      "an_only": {
+        "5": 1.0,
+        "10": 1.0,
+        "20": 0.9416666666666667
+      },
+      "with_relative": {
+        "5": 0.8333333333333334,
+        "10": 0.8333333333333334,
+        "20": 0.8333333333333334
+      },
+      "empty_absolute": 3,
+      "empty_relative": 0,
+      "per_condition": [
+        {
+          "condition": "missing_5",
+          "injected": "missing",
+          "delta5": -1.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ],
+          "promoted_hit": false
+        },
+        {
+          "condition": "missing_10",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "missing",
+            "width"
+          ],
+          "promoted_hit": true
+        },
+        {
+          "condition": "missing_15",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "missing",
+            "width"
+          ],
+          "promoted_hit": true
+        },
+        {
+          "condition": "missing_20",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "missing"
+          ],
+          "promoted_types": [
+            "missing"
+          ],
+          "promoted_hit": true
+        },
+        {
+          "condition": "missing_25",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "missing"
+          ],
+          "promoted_types": [
+            "missing"
+          ],
+          "promoted_hit": true
+        },
+        {
+          "condition": "missing_30",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "missing"
+          ],
+          "promoted_types": [
+            "missing"
+          ],
+          "promoted_hit": true
+        }
+      ]
+    },
+    {
+      "kind": "broad",
+      "label": "넓은 자(800)",
+      "n_conditions": 6,
+      "an_only": {
+        "5": 0.4666666666666667,
+        "10": 0.6166666666666667,
+        "20": 0.7583333333333333
+      },
+      "with_relative": {
+        "5": 0.43333333333333335,
+        "10": 0.5333333333333333,
+        "20": 0.6
+      },
+      "empty_absolute": 3,
+      "empty_relative": 0,
+      "per_condition": [
+        {
+          "condition": "missing_5",
+          "injected": "missing",
+          "delta5": -0.2,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ],
+          "promoted_hit": false
+        },
+        {
+          "condition": "missing_10",
+          "injected": "missing",
+          "delta5": -0.4,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ],
+          "promoted_hit": false
+        },
+        {
+          "condition": "missing_15",
+          "injected": "missing",
+          "delta5": 0.39999999999999997,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "missing",
+            "width"
+          ],
+          "promoted_hit": true
+        },
+        {
+          "condition": "missing_20",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "missing"
+          ],
+          "promoted_types": [
+            "missing"
+          ],
+          "promoted_hit": true
+        },
+        {
+          "condition": "missing_25",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "missing"
+          ],
+          "promoted_types": [
+            "missing"
+          ],
+          "promoted_hit": true
+        },
+        {
+          "condition": "missing_30",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "missing"
+          ],
+          "promoted_types": [
+            "missing"
+          ],
+          "promoted_hit": true
+        }
+      ]
+    }
+  ]
+}

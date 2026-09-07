@@ -1,0 +1,55 @@
+{
+  "seed": 2025,
+  "kinds": [
+    "coco_self"
+  ],
+  "matched_kind": "coco_self",
+  "ks": [
+    5,
+    10,
+    20
+  ],
+  "rows": [
+    {
+      "kind": "coco_self",
+      "label": "COCO 자기(1C)",
+      "n_conditions": 2,
+      "an_only": {
+        "5": 0.8,
+        "10": 0.9,
+        "20": 0.85
+      },
+      "with_relative": {
+        "5": 0.0,
+        "10": 0.05,
+        "20": 0.025
+      },
+      "empty_absolute": 2,
+      "empty_relative": 0,
+      "per_condition": [
+        {
+          "condition": "duplicate_6",
+          "injected": "duplicate",
+          "delta5": -0.8,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "height"
+          ],
+          "promoted_hit": false
+        },
+        {
+          "condition": "duplicate_7",
+          "injected": "duplicate",
+          "delta5": -0.8,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "height"
+          ],
+          "promoted_hit": false
+        }
+      ]
+    }
+  ]
+}
