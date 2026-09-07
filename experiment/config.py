@@ -326,6 +326,11 @@ INTENSITY_CONDITIONS: list[Condition] = [
     for kind in ("missing", "duplicate")
     for pct in (5, 15, 25)
 ] + [
+    # class_mismatch는 구조적 오류인데 자가 많이 만드는 잡음 유형이기도 하다
+    # (AN). 어느 쪽으로 행동하는지 보려면 4클래스가 있어야 한다 (docs/21 AY).
+    Condition(f"class_swap_{pct}", "class_swap", pct)
+    for pct in (5, 15, 25)
+] + [
     # 기하 오류는 세기(−30%)를 고정하고 **영향받는 비율**을 축으로 놓는다.
     # 그래야 missing·duplicate와 같은 축에서 견줄 수 있다 (docs/21 AX).
     Condition(f"width_m30_r{pct:02d}", "width", -30, ratio=pct / 100)
