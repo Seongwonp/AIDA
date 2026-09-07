@@ -117,6 +117,8 @@ export interface LabelDiagnosisResult {
   dominant_label: string | null;
   dominant_ratio: number;
   systematic: boolean;
+  // 재검수 순서를 무엇으로 정했는가 (docs/21 AO). 예전 진단 결과에는 없다.
+  order_basis: "absolute" | "relative" | "none" | null;
   by_type: SuspicionTypeCount[];
   review_queue: ReviewQueueItem[];
   robustness: TypeRobustness[];

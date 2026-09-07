@@ -119,3 +119,44 @@ def test_diagnose_labels_uses_review_order(L):
         "build_result가 review_order를 안 쓴다 — AN 처방이 빠졌다"
     assert "sorted(findings, key=lambda f: -f.severity)" not in src, \
         "순수 심각도 정렬이 되살아났다"
+
+
+# --- 순서를 무엇으로 정했는지 화면에 내보내는가 (docs/21 AO) -------------------
+#
+# 상대 문턱으로 물러난 경우는 **순서를 정한 규칙 자체가 다른데** 지금까지 그
+# 사실이 어디에도 안 나왔다. 이 프로젝트는 "어느 자로 쟀는지 숨기지 않는다"를
+# 지켜왔고 이것도 같은 종류다.
+
+def test_order_basis_absolute_when_threshold_catches(L):
+    assert L.order_basis(summary_of({"width": 0.30, "missing": 0.05})) == "absolute"
+
+
+def test_order_basis_relative_when_absolute_is_empty(L):
+    """자가 어긋나면 분포가 납작해져 절대 문턱이 통째로 빈다.
+
+    실측에서 KITTI 자로 COCO를 진단하면 최대 유형 비율이 0.103~0.112로
+    문턱(0.12)을 아슬아슬하게 못 넘었다.
+    """
+    basis = L.order_basis(summary_of({"width": 0.10, "missing": 0.02, "scale": 0.01}))
+    assert basis == "relative"
+
+
+def test_order_basis_none_when_flat(L):
+    """상대 문턱도 못 잡을 만큼 고르면 순수 심각도 순이다."""
+    assert L.order_basis(summary_of({"a": 0.05, "b": 0.05, "c": 0.05})) == "none"
+    assert L.order_basis({"by_type": []}) == "none"
+
+
+def test_order_basis_agrees_with_present_types(L):
+    """두 함수가 어긋나면 화면이 순서와 다른 말을 하게 된다."""
+    for ratios in ({"width": 0.30}, {"width": 0.10, "b": 0.02, "c": 0.01},
+                   {"a": 0.05, "b": 0.05, "c": 0.05}):
+        s = summary_of(ratios)
+        assert (L.order_basis(s) == "none") == (not L.present_types(s))
+
+
+def test_diagnose_labels_reports_order_basis(L):
+    """제품 경로가 실제로 그 값을 결과에 담는지."""
+    src = (EXPERIMENT / "diagnose_labels.py").read_text(encoding="utf-8")
+    assert 'summary["order_basis"] = order_basis(summary)' in src, \
+        "진단 결과가 순서 근거를 안 담는다 — 화면이 알 방법이 없다"

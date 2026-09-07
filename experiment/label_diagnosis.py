@@ -285,6 +285,31 @@ class BoxFinding:
     class_id: int | None = None
 
 
+def _absolute_present_types(summary: dict) -> set[str]:
+    """절대 문턱만으로 고른 계통적 유형들. present_types와 order_basis가 같이 쓴다."""
+    return {
+        t["suspicion"] for t in summary.get("by_type", [])
+        if t["ratio"] >= SYSTEMATIC_ERROR_RATIO
+    }
+
+
+def order_basis(summary: dict) -> str:
+    """재검수 순서를 **무엇으로** 정했는지.
+
+    "absolute"  절대 문턱(ratio >= 0.12)이 유형을 잡았다. 흔한 경우다.
+    "relative"  절대 문턱이 비어 상대 문턱으로 물러났다. 자가 어긋나 지목이
+                여러 유형에 흩어지면 이렇게 된다(docs/21 AO).
+    "none"      둘 다 못 잡았다. 순서가 순수 severity 순이다.
+
+    **왜 화면에 내보내는가.** 물러난 경우는 순서를 정한 규칙 자체가 다른데,
+    지금까지 그 사실이 어디에도 안 나왔다. 이 프로젝트는 "어느 자로 쟀는지
+    숨기지 않는다"를 지켜왔고 이것도 같은 종류다.
+    """
+    if _absolute_present_types(summary):
+        return "absolute"
+    return "relative" if present_types(summary) else "none"
+
+
 def present_types(summary: dict) -> set[str]:
     """데이터셋에 계통적 수준으로 존재한다고 볼 오류 유형들.
 
@@ -293,10 +318,7 @@ def present_types(summary: dict) -> set[str]:
     dominant_ratio가 임계값을 넘는다는 건 곧 이 집합이 비지 않는다는 뜻이라,
     기존의 systematic 판정과도 어긋나지 않는다.
     """
-    absolute = {
-        t["suspicion"] for t in summary.get("by_type", [])
-        if t["ratio"] >= SYSTEMATIC_ERROR_RATIO
-    }
+    absolute = _absolute_present_types(summary)
     if absolute:
         return absolute
 

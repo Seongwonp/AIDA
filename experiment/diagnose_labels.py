@@ -19,7 +19,7 @@ from ultralytics import YOLO
 
 import config
 from label_diagnosis import (
-    match_boxes,Box, BoxFinding, diagnose_image, rescore, review_order,
+    match_boxes,Box, BoxFinding, diagnose_image, order_basis, rescore, review_order,
                              review_value, summarize)
 
 UPLOADS_DIR = config.EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "uploads"
@@ -198,6 +198,9 @@ def build_result(name: str, findings: list[BoxFinding], total_labels: int,
     # 계통적 유형을 먼저. 심각도만으로 정렬하면 어긋난 자에서 목록 맨 위가
     # 아래보다 나빠진다 (docs/21 AN, @5 정밀도 +0.42).
     ranked = review_order(findings, summary)
+    # 그 순서를 절대 문턱으로 정했는지, 상대 문턱으로 물러났는지 (docs/21 AO).
+    # 물러난 경우는 순서를 정한 규칙 자체가 다른데 지금까지 어디에도 안 나왔다.
+    summary["order_basis"] = order_basis(summary)
     if fit:
         import statistics
         confs = fit["confidences"]

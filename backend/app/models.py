@@ -225,6 +225,12 @@ class LabelDiagnosisResult(BaseModel):
     dominant_label: str | None
     dominant_ratio: float
     systematic: bool
+    # 재검수 순서를 무엇으로 정했는가 (docs/21 AO).
+    #   "absolute"  절대 문턱이 계통적 유형을 잡았다 — 흔한 경우
+    #   "relative"  절대 문턱이 비어 상대 문턱으로 물러났다 — 자가 어긋난 신호
+    #   "none"      둘 다 못 잡아 심각도 순
+    # 이 기능 전에 만든 진단 결과에는 없으므로 None을 허용한다.
+    order_basis: str | None = None
     by_type: list[SuspicionTypeCount]
     review_queue: list[ReviewQueueItem]
     # 이 데이터셋에서 실제로 나온 유형들에 대해서만 채운다

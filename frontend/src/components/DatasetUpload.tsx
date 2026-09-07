@@ -309,6 +309,22 @@ export function DatasetUpload() {
             )}
           </p>
 
+          {/* 순서를 정한 규칙이 평소와 다를 때만 말한다. 절대 문턱이 잡은
+              흔한 경우(absolute)는 굳이 꺼내면 소음이다. */}
+          {labelResult.order_basis === "relative" && (
+            <p className="report-caveat">
+              어느 유형도 계통적 문턱을 넘지 못해, <strong>상대 문턱</strong>으로 물러나
+              가장 두드러진 유형을 먼저 보여주고 있습니다. 지목이 여러 유형에 흩어졌다는
+              뜻이고, 대개 <strong>기준 모델이 이 데이터에 잘 맞지 않을 때</strong>
+              나타납니다 — 위의 기준 모델 정보를 같이 보세요.
+            </p>
+          )}
+          {labelResult.order_basis === "none" && (
+            <p className="report-caveat">
+              어느 유형도 두드러지지 않아 <strong>심각도 순서로만</strong> 정렬했습니다.
+            </p>
+          )}
+
           <div className="table-scroll">
             <table className="report-table">
               <thead>

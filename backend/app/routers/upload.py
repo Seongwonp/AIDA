@@ -784,6 +784,7 @@ def _load_label_diagnosis_json(dataset_id: str) -> LabelDiagnosisResult:
         dominant_label=SUSPICION_LABELS.get(dominant, dominant) if dominant else None,
         dominant_ratio=summary["dominant_ratio"],
         systematic=summary["systematic"],
+        order_basis=summary.get("order_basis"),
         by_type=[
             SuspicionTypeCount(
                 suspicion=t["suspicion"],
