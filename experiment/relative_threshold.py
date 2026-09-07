@@ -88,13 +88,16 @@ def main() -> None:
     ap.add_argument("--matched-kind", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--mode", choices=["always", "fallback"], default="always")
+    ap.add_argument("--conditions", nargs="+",
+                    help="조건을 이름으로 고른다 (기본: 실행 순서 전부)")
     ap.add_argument("--per-condition", action="store_true",
                     help="조건별 변화를 산출물에 남긴다 (docs/21 계획: 어느 조건이 손해인가)")
     args = ap.parse_args()
 
     from diagnose_labels import run
 
-    names = [c.name for c in config.conditions_in_run_order() if c.name != "clean"]
+    names = (args.conditions or
+             [c.name for c in config.conditions_in_run_order() if c.name != "clean"])
     print(f"조건 {len(names)}개 · 자 {len(args.kinds)}종 · 시드 {args.seed}")
     print("비교는 'AN만' vs 'AN + 상대 문턱'이다 — AN 없는 상태와 견주면 안 된다.\n")
 

@@ -520,6 +520,18 @@ def build_obb_condition(condition: config.Condition) -> Path:
 
 
 def main():
+    """이름을 주면 그것만, 안 주면 실행 순서의 조건 전부를 만든다.
+
+    이름으로 고르는 길이 필요한 이유: 강도 조건(INTENSITY_CONDITIONS)처럼
+    **실행 순서에 일부러 안 넣은** 조건들이 있다. 넣으면 학습까지 돌고
+    조건 개수가 바뀌어 앞 절들의 평균이 다른 것이 된다.
+    """
+    import sys
+    names = sys.argv[1:]
+    if names:
+        for name in names:
+            build_condition(config._BY_NAME[name])
+        return
     for condition in config.conditions_in_run_order():
         build_condition(condition)
 

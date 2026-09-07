@@ -306,9 +306,24 @@ OBB_CONDITIONS: list[Condition] = [
     Condition("obb_rot_p15", "rotation", 15),
 ]
 
+# 오류 강도를 촘촘히 보는 조건들 (docs/21 AV가 만든 질문).
+#
+# AV에서 `missing`은 10%에서 지고 30%에서 이겼다 — 그 사이 어디서 뒤집히는지가
+# "진단이 믿을 만한 최소 오류 강도"라는 제품이 할 수 있는 말이 된다.
+#
+# **conditions_in_run_order()에 일부러 안 넣는다.** 넣으면 (1) run_all.py가
+# 학습까지 돌리고 (2) 조건 개수가 26 → 32로 바뀌어 **앞 절들의 평균이 전부
+# 다른 것이 된다.** 라벨 단위 진단은 clean 모델로 추론만 하므로 라벨만 있으면
+# 된다(MIXED_CONDITIONS와 같은 이유·같은 방식).
+INTENSITY_CONDITIONS: list[Condition] = [
+    Condition(f"{kind}_{pct}", kind, pct)
+    for kind in ("missing", "duplicate")
+    for pct in (5, 15, 25)
+]
+
 _BY_NAME = {c.name: c for c in
              CONDITIONS + CLASS_SWAP_CONDITIONS + REVIEW_SIM_CONDITIONS
-             + REFINED_CONDITIONS}
+             + REFINED_CONDITIONS + INTENSITY_CONDITIONS}
 _OBB_BY_NAME = {c.name: c for c in OBB_CONDITIONS}
 
 
