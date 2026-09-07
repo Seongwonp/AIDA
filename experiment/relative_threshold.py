@@ -54,6 +54,19 @@ def relative_present_types(summary: dict) -> set[str]:
 _ORIG_PRESENT = None
 
 
+def absolute_present_types(summary: dict) -> set[str]:
+    """처방 **전**의 판정 — 절대 문턱만.
+
+    예전에는 이 자리에 `L.present_types`를 그냥 썼다. AO를 제품에 넣은 뒤로는
+    그 함수 안에 후퇴가 이미 들어 있어서 "처방 전"과 "처방 후"가 같은 것이
+    됐고, 시드 7개를 다시 쟀더니 28개 측정이 전부 +0.000으로 나왔다.
+    처방이 안 듣는 게 아니라 **측정이 낡은 것이었다**(docs/21 AT·AU).
+
+    그래서 기준선을 제품 코드에서 물려받지 않고 여기에 못 박는다.
+    """
+    return L._absolute_present_types(summary)
+
+
 def fallback_present_types(summary: dict) -> set[str]:
     """절대 문턱이 아무것도 못 찾을 때만 상대 문턱으로 물러난다.
 
@@ -103,12 +116,19 @@ def main() -> None:
                                                args.limit, weights=w)
             summary = L.summarize(findings, total_labels)
 
-            v = E.score_findings(cond, findings, total_labels,
-                                 args.limit)["verdicts_by_rank"]
+            # 기준선도 명시적으로 갈아끼운다 — 제품의 present_types를 그냥
+            # 쓰면 거기 이미 처방이 들어 있어 같은 것을 두 번 재게 된다.
+            saved0 = L.present_types
+            try:
+                L.present_types = absolute_present_types
+                v = E.score_findings(cond, findings, total_labels,
+                                     args.limit)["verdicts_by_rank"]
+            finally:
+                L.present_types = saved0
             if not v:
                 continue
             n_cond += 1
-            empty_abs += (not L.present_types(summary))
+            empty_abs += (not absolute_present_types(summary))
             empty_rel += (not relative_present_types(summary))
             for k in KS:
                 an_only[k].append(E.precision_at_k(v, k))

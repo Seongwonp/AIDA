@@ -160,3 +160,27 @@ def test_diagnose_labels_reports_order_basis(L):
     src = (EXPERIMENT / "diagnose_labels.py").read_text(encoding="utf-8")
     assert 'summary["order_basis"] = order_basis(summary)' in src, \
         "진단 결과가 순서 근거를 안 담는다 — 화면이 알 방법이 없다"
+
+
+# --- 측정 스크립트가 기준선을 제품 코드에서 물려받지 않는가 (docs/21 AT·AU) ----
+#
+# 이틀 새 두 번 같은 일이 났다. 처방을 제품에 넣으면, 그 제품 함수를 "처방 전"
+# 으로 쓰던 측정 스크립트는 조용히 **같은 것을 두 번 재게 된다.** 둘 다 결과가
+# 전부 +0.000으로 나와서 겨우 알아챘다 — 처방이 안 듣는 줄 알았다.
+#
+# 수치는 CI에서 못 재지만 "기준선을 못 박았는가"는 잴 수 있다.
+
+def test_shipped_present_types_is_not_absolute_only(L):
+    """제품 함수에 후퇴가 들어 있다 — 그래서 기준선으로 쓰면 안 된다."""
+    flat = summary_of({"width": 0.10, "missing": 0.02, "scale": 0.01})
+    assert not L._absolute_present_types(flat), "절대 문턱은 이걸 못 잡아야 한다"
+    assert L.present_types(flat), "제품 함수는 후퇴로 잡아야 한다"
+
+
+def test_relative_threshold_pins_its_own_baseline(L):
+    """AO 측정이 '처방 전'을 절대 문턱으로 직접 계산하는가."""
+    src = (EXPERIMENT / "relative_threshold.py").read_text(encoding="utf-8")
+    assert "L.present_types = absolute_present_types" in src, \
+        "기준선을 제품의 present_types에서 물려받으면 같은 것을 두 번 잰다"
+    assert "empty_abs += (not L.present_types(summary))" not in src, \
+        "'절대 문턱이 빈 조건' 세는 곳도 제품 함수를 쓰면 안 된다"
