@@ -314,9 +314,12 @@ export function DatasetUpload() {
           {labelResult.order_basis === "relative" && (
             <p className="report-caveat">
               어느 유형도 계통적 문턱을 넘지 못해, <strong>상대 문턱</strong>으로 물러나
-              가장 두드러진 유형을 먼저 보여주고 있습니다. 지목이 여러 유형에 흩어졌다는
-              뜻이고, 대개 <strong>기준 모델이 이 데이터에 잘 맞지 않을 때</strong>
-              나타납니다 — 위의 기준 모델 정보를 같이 보세요.
+              가장 두드러진 유형을 먼저 보여주고 있습니다. 이렇게 되는 경우는 둘입니다 —
+              <strong>기준 모델이 이 데이터에 잘 맞지 않거나</strong>(그때는 이 순서가
+              크게 도움이 됩니다), <strong>오류가 약해서</strong>(라벨의 15% 남짓 이하)
+              모델 자신의 오탐이 진짜 오류보다 많은 경우입니다. 후자라면 이 순서가
+              오탐을 좇고 있을 수 있으니, 위의 기준 모델 정보를 같이 보세요
+              (실측: docs/21 AO·AW).
             </p>
           )}
           {labelResult.order_basis === "none" && (
