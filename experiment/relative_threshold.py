@@ -160,6 +160,11 @@ def main() -> None:
                     "absolute_empty": not abs_types,
                     "absolute_types": sorted(abs_types),
                     "promoted_types": sorted(fallback_present_types(summary)),
+                    # 조건 유형 이름과 의심 유형 이름이 다른 경우가 있다
+                    # (class_swap → class_mismatch, rotation → width/height/scale).
+                    # 문자열로 비교하면 그 조건들을 전부 "못 맞힘"으로 센다.
+                    "promoted_hit": any(E._type_matches(cond.type, t)
+                                        for t in fallback_present_types(summary)),
                 })
 
         row = {"kind": kind, "label": RULERS[kind][0], "n_conditions": n_cond,

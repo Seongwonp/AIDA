@@ -1,5 +1,5 @@
 {
-  "seed": 42,
+  "seed": 777,
   "kinds": [
     "matched",
     "brich",
@@ -18,14 +18,14 @@
       "label": "자기 도메인",
       "n_conditions": 29,
       "an_only": {
-        "5": 0.9586206896551724,
+        "5": 0.9862068965517241,
         "10": 0.9793103448275862,
-        "20": 0.9896551724137931
+        "20": 0.9758620689655172
       },
       "with_relative": {
-        "5": 0.9586206896551724,
+        "5": 0.9862068965517241,
         "10": 0.9793103448275862,
-        "20": 0.9896551724137931
+        "20": 0.9758620689655172
       },
       "empty_absolute": 3,
       "empty_relative": 0,
@@ -84,10 +84,12 @@
           "delta5": 0.0,
           "absolute_empty": false,
           "absolute_types": [
-            "scale"
+            "scale",
+            "width"
           ],
           "promoted_types": [
-            "scale"
+            "scale",
+            "width"
           ]
         },
         {
@@ -170,10 +172,12 @@
           "delta5": 0.0,
           "absolute_empty": false,
           "absolute_types": [
-            "height"
+            "height",
+            "width"
           ],
           "promoted_types": [
-            "height"
+            "height",
+            "width"
           ]
         },
         {
@@ -242,10 +246,12 @@
           "delta5": 0.0,
           "absolute_empty": false,
           "absolute_types": [
-            "scale"
+            "scale",
+            "width"
           ],
           "promoted_types": [
-            "scale"
+            "scale",
+            "width"
           ]
         },
         {
@@ -289,10 +295,12 @@
           "delta5": 0.0,
           "absolute_empty": false,
           "absolute_types": [
-            "missing"
+            "missing",
+            "width"
           ],
           "promoted_types": [
-            "missing"
+            "missing",
+            "width"
           ]
         },
         {
@@ -380,18 +388,18 @@
       ]
     },
     {
-      "kind": "brich",
-      "label": "broad 자전거多",
+      "kind": "shifted",
+      "label": "약한 이동",
       "n_conditions": 29,
       "an_only": {
-        "5": 0.6137931034482759,
-        "10": 0.6827586206896552,
-        "20": 0.7120689655172414
+        "5": 0.8620689655172413,
+        "10": 0.8413793103448276,
+        "20": 0.8586206896551724
       },
       "with_relative": {
-        "5": 0.6758620689655173,
-        "10": 0.7241379310344828,
-        "20": 0.743103448275862
+        "5": 0.896551724137931,
+        "10": 0.8724137931034482,
+        "20": 0.8793103448275862
       },
       "empty_absolute": 3,
       "empty_relative": 0,
@@ -447,25 +455,25 @@
         {
           "condition": "rot_m15",
           "injected": "rotation",
-          "delta5": 0.8,
-          "absolute_empty": true,
-          "absolute_types": [],
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "scale"
+          ],
           "promoted_types": [
-            "height",
-            "scale",
-            "width"
+            "scale"
           ]
         },
         {
           "condition": "rot_p15",
           "injected": "rotation",
-          "delta5": 1.0,
-          "absolute_empty": true,
-          "absolute_types": [],
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "scale"
+          ],
           "promoted_types": [
-            "height",
-            "scale",
-            "width"
+            "scale"
           ]
         },
         {
@@ -498,12 +506,10 @@
           "delta5": 0.0,
           "absolute_empty": false,
           "absolute_types": [
-            "height",
-            "width"
+            "height"
           ],
           "promoted_types": [
-            "height",
-            "width"
+            "height"
           ]
         },
         {
@@ -538,12 +544,10 @@
           "delta5": 0.0,
           "absolute_empty": false,
           "absolute_types": [
-            "height",
-            "width"
+            "height"
           ],
           "promoted_types": [
-            "height",
-            "width"
+            "height"
           ]
         },
         {
@@ -552,12 +556,10 @@
           "delta5": 0.0,
           "absolute_empty": false,
           "absolute_types": [
-            "translation_x",
-            "width"
+            "translation_x"
           ],
           "promoted_types": [
-            "translation_x",
-            "width"
+            "translation_x"
           ]
         },
         {
@@ -566,12 +568,10 @@
           "delta5": 0.0,
           "absolute_empty": false,
           "absolute_types": [
-            "translation_x",
-            "width"
+            "translation_x"
           ],
           "promoted_types": [
-            "translation_x",
-            "width"
+            "translation_x"
           ]
         },
         {
@@ -580,12 +580,10 @@
           "delta5": 0.0,
           "absolute_empty": false,
           "absolute_types": [
-            "translation_y",
-            "width"
+            "translation_y"
           ],
           "promoted_types": [
-            "translation_y",
-            "width"
+            "translation_y"
           ]
         },
         {
@@ -594,12 +592,10 @@
           "delta5": 0.0,
           "absolute_empty": false,
           "absolute_types": [
-            "translation_y",
-            "width"
+            "translation_y"
           ],
           "promoted_types": [
-            "translation_y",
-            "width"
+            "translation_y"
           ]
         },
         {
@@ -682,35 +678,31 @@
           "delta5": 0.0,
           "absolute_empty": false,
           "absolute_types": [
-            "missing",
-            "width"
+            "missing"
           ],
           "promoted_types": [
-            "missing",
-            "width"
+            "missing"
           ]
         },
         {
           "condition": "duplicate_10",
           "injected": "duplicate",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "width"
-          ],
+          "delta5": 0.20000000000000007,
+          "absolute_empty": true,
+          "absolute_types": [],
           "promoted_types": [
+            "duplicate",
             "width"
           ]
         },
         {
           "condition": "duplicate_20",
           "injected": "duplicate",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "width"
-          ],
+          "delta5": 0.8,
+          "absolute_empty": true,
+          "absolute_types": [],
           "promoted_types": [
+            "duplicate",
             "width"
           ]
         },
@@ -728,399 +720,12 @@
         },
         {
           "condition": "class_swap_10",
-          "injected": "class_swap",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "width"
-          ],
-          "promoted_types": [
-            "width"
-          ]
-        },
-        {
-          "condition": "class_swap_20",
           "injected": "class_swap",
           "delta5": 0.0,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
             "class_mismatch",
-            "width"
-          ]
-        },
-        {
-          "condition": "class_swap_30",
-          "injected": "class_swap",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "class_mismatch"
-          ],
-          "promoted_types": [
-            "class_mismatch"
-          ]
-        }
-      ]
-    },
-    {
-      "kind": "shifted",
-      "label": "약한 이동",
-      "n_conditions": 29,
-      "an_only": {
-        "5": 0.7310344827586207,
-        "10": 0.7206896551724138,
-        "20": 0.7637931034482759
-      },
-      "with_relative": {
-        "5": 0.7310344827586207,
-        "10": 0.7206896551724138,
-        "20": 0.7637931034482759
-      },
-      "empty_absolute": 0,
-      "empty_relative": 0,
-      "per_condition": [
-        {
-          "condition": "width_m30",
-          "injected": "width",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "width"
-          ],
-          "promoted_types": [
-            "width"
-          ]
-        },
-        {
-          "condition": "width_p30",
-          "injected": "width",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "width"
-          ],
-          "promoted_types": [
-            "width"
-          ]
-        },
-        {
-          "condition": "height_m30",
-          "injected": "height",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "height"
-          ],
-          "promoted_types": [
-            "height"
-          ]
-        },
-        {
-          "condition": "height_p30",
-          "injected": "height",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "height"
-          ],
-          "promoted_types": [
-            "height"
-          ]
-        },
-        {
-          "condition": "rot_m15",
-          "injected": "rotation",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "scale",
-            "width"
-          ],
-          "promoted_types": [
-            "scale",
-            "width"
-          ]
-        },
-        {
-          "condition": "rot_p15",
-          "injected": "rotation",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "height"
-          ],
-          "promoted_types": [
-            "height"
-          ]
-        },
-        {
-          "condition": "width_m15",
-          "injected": "width",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "width"
-          ],
-          "promoted_types": [
-            "width"
-          ]
-        },
-        {
-          "condition": "width_p15",
-          "injected": "width",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "width"
-          ],
-          "promoted_types": [
-            "width"
-          ]
-        },
-        {
-          "condition": "height_m15",
-          "injected": "height",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "height",
-            "width"
-          ],
-          "promoted_types": [
-            "height",
-            "width"
-          ]
-        },
-        {
-          "condition": "height_p15",
-          "injected": "height",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "height"
-          ],
-          "promoted_types": [
-            "height"
-          ]
-        },
-        {
-          "condition": "rot_m7_5",
-          "injected": "rotation",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "height"
-          ],
-          "promoted_types": [
-            "height"
-          ]
-        },
-        {
-          "condition": "rot_p7_5",
-          "injected": "rotation",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "height",
-            "width"
-          ],
-          "promoted_types": [
-            "height",
-            "width"
-          ]
-        },
-        {
-          "condition": "trans_x_m15",
-          "injected": "translation_x",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "translation_x",
-            "width"
-          ],
-          "promoted_types": [
-            "translation_x",
-            "width"
-          ]
-        },
-        {
-          "condition": "trans_x_p15",
-          "injected": "translation_x",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "translation_x",
-            "width"
-          ],
-          "promoted_types": [
-            "translation_x",
-            "width"
-          ]
-        },
-        {
-          "condition": "trans_y_m15",
-          "injected": "translation_y",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "translation_y",
-            "width"
-          ],
-          "promoted_types": [
-            "translation_y",
-            "width"
-          ]
-        },
-        {
-          "condition": "trans_y_p15",
-          "injected": "translation_y",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "translation_y",
-            "width"
-          ],
-          "promoted_types": [
-            "translation_y",
-            "width"
-          ]
-        },
-        {
-          "condition": "scale_m15",
-          "injected": "scale",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "width"
-          ],
-          "promoted_types": [
-            "width"
-          ]
-        },
-        {
-          "condition": "scale_p15",
-          "injected": "scale",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "scale",
-            "width"
-          ],
-          "promoted_types": [
-            "scale",
-            "width"
-          ]
-        },
-        {
-          "condition": "scale_m30",
-          "injected": "scale",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "scale"
-          ],
-          "promoted_types": [
-            "scale"
-          ]
-        },
-        {
-          "condition": "scale_p30",
-          "injected": "scale",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "scale"
-          ],
-          "promoted_types": [
-            "scale"
-          ]
-        },
-        {
-          "condition": "missing_10",
-          "injected": "missing",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "width"
-          ],
-          "promoted_types": [
-            "width"
-          ]
-        },
-        {
-          "condition": "missing_20",
-          "injected": "missing",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "missing",
-            "width"
-          ],
-          "promoted_types": [
-            "missing",
-            "width"
-          ]
-        },
-        {
-          "condition": "missing_30",
-          "injected": "missing",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "missing",
-            "width"
-          ],
-          "promoted_types": [
-            "missing",
-            "width"
-          ]
-        },
-        {
-          "condition": "duplicate_10",
-          "injected": "duplicate",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "width"
-          ],
-          "promoted_types": [
-            "width"
-          ]
-        },
-        {
-          "condition": "duplicate_20",
-          "injected": "duplicate",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "duplicate"
-          ],
-          "promoted_types": [
-            "duplicate"
-          ]
-        },
-        {
-          "condition": "duplicate_30",
-          "injected": "duplicate",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "duplicate"
-          ],
-          "promoted_types": [
-            "duplicate"
-          ]
-        },
-        {
-          "condition": "class_swap_10",
-          "injected": "class_swap",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "width"
-          ],
-          "promoted_types": [
             "width"
           ]
         },
@@ -1155,16 +760,16 @@
       "label": "넓은 자(800)",
       "n_conditions": 29,
       "an_only": {
-        "5": 0.7793103448275862,
-        "10": 0.7965517241379311,
-        "20": 0.85
+        "5": 0.8275862068965517,
+        "10": 0.8310344827586207,
+        "20": 0.8689655172413793
       },
       "with_relative": {
-        "5": 0.8827586206896552,
-        "10": 0.8758620689655172,
-        "20": 0.9
+        "5": 0.9103448275862069,
+        "10": 0.9172413793103449,
+        "20": 0.9379310344827586
       },
-      "empty_absolute": 6,
+      "empty_absolute": 5,
       "empty_relative": 0,
       "per_condition": [
         {
@@ -1221,22 +826,24 @@
           "delta5": 0.0,
           "absolute_empty": false,
           "absolute_types": [
-            "scale"
+            "height",
+            "width"
           ],
           "promoted_types": [
-            "scale"
+            "height",
+            "width"
           ]
         },
         {
           "condition": "rot_p15",
           "injected": "rotation",
-          "delta5": 1.0,
-          "absolute_empty": true,
-          "absolute_types": [],
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "height"
+          ],
           "promoted_types": [
-            "height",
-            "scale",
-            "width"
+            "height"
           ]
         },
         {
@@ -1362,7 +969,7 @@
         {
           "condition": "scale_m15",
           "injected": "scale",
-          "delta5": 0.6,
+          "delta5": 0.8,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
@@ -1410,10 +1017,11 @@
         {
           "condition": "missing_10",
           "injected": "missing",
-          "delta5": -0.4,
+          "delta5": 0.0,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
+            "missing",
             "width"
           ]
         },
@@ -1423,10 +1031,12 @@
           "delta5": 0.0,
           "absolute_empty": false,
           "absolute_types": [
-            "missing"
+            "missing",
+            "width"
           ],
           "promoted_types": [
-            "missing"
+            "missing",
+            "width"
           ]
         },
         {
@@ -1435,10 +1045,12 @@
           "delta5": 0.0,
           "absolute_empty": false,
           "absolute_types": [
-            "missing"
+            "missing",
+            "width"
           ],
           "promoted_types": [
-            "missing"
+            "missing",
+            "width"
           ]
         },
         {
@@ -1455,7 +1067,7 @@
         {
           "condition": "duplicate_20",
           "injected": "duplicate",
-          "delta5": 1.0,
+          "delta5": 0.8,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [

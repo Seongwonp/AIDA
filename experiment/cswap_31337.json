@@ -1,0 +1,189 @@
+{
+  "seed": 31337,
+  "kinds": [
+    "matched",
+    "broad"
+  ],
+  "matched_kind": "matched",
+  "ks": [
+    5,
+    10,
+    20
+  ],
+  "rows": [
+    {
+      "kind": "matched",
+      "label": "자기 도메인",
+      "n_conditions": 6,
+      "an_only": {
+        "5": 1.0,
+        "10": 1.0,
+        "20": 1.0
+      },
+      "with_relative": {
+        "5": 0.8333333333333334,
+        "10": 0.8333333333333334,
+        "20": 0.8333333333333334
+      },
+      "empty_absolute": 3,
+      "empty_relative": 0,
+      "per_condition": [
+        {
+          "condition": "class_swap_5",
+          "injected": "class_swap",
+          "delta5": -1.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "class_swap_10",
+          "injected": "class_swap",
+          "delta5": 0.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "class_mismatch"
+          ]
+        },
+        {
+          "condition": "class_swap_15",
+          "injected": "class_swap",
+          "delta5": 0.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "class_mismatch"
+          ]
+        },
+        {
+          "condition": "class_swap_20",
+          "injected": "class_swap",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "class_mismatch"
+          ],
+          "promoted_types": [
+            "class_mismatch"
+          ]
+        },
+        {
+          "condition": "class_swap_25",
+          "injected": "class_swap",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "class_mismatch"
+          ],
+          "promoted_types": [
+            "class_mismatch"
+          ]
+        },
+        {
+          "condition": "class_swap_30",
+          "injected": "class_swap",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "class_mismatch"
+          ],
+          "promoted_types": [
+            "class_mismatch"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "broad",
+      "label": "넓은 자(800)",
+      "n_conditions": 6,
+      "an_only": {
+        "5": 0.8333333333333334,
+        "10": 0.8,
+        "20": 0.7833333333333333
+      },
+      "with_relative": {
+        "5": 0.8333333333333334,
+        "10": 0.8,
+        "20": 0.7833333333333333
+      },
+      "empty_absolute": 2,
+      "empty_relative": 0,
+      "per_condition": [
+        {
+          "condition": "class_swap_5",
+          "injected": "class_swap",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "class_swap_10",
+          "injected": "class_swap",
+          "delta5": 0.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "class_mismatch",
+            "width"
+          ]
+        },
+        {
+          "condition": "class_swap_15",
+          "injected": "class_swap",
+          "delta5": 0.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "class_mismatch",
+            "width"
+          ]
+        },
+        {
+          "condition": "class_swap_20",
+          "injected": "class_swap",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "class_mismatch"
+          ],
+          "promoted_types": [
+            "class_mismatch"
+          ]
+        },
+        {
+          "condition": "class_swap_25",
+          "injected": "class_swap",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "class_mismatch"
+          ],
+          "promoted_types": [
+            "class_mismatch"
+          ]
+        },
+        {
+          "condition": "class_swap_30",
+          "injected": "class_swap",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "class_mismatch"
+          ],
+          "promoted_types": [
+            "class_mismatch"
+          ]
+        }
+      ]
+    }
+  ]
+}

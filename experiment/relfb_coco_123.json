@@ -26,7 +26,321 @@
         "20": 0.9192307692307692
       },
       "empty_absolute": 3,
-      "empty_relative": 0
+      "empty_relative": 0,
+      "per_condition": [
+        {
+          "condition": "width_m30",
+          "injected": "width",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "width_p30",
+          "injected": "width",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "height_m30",
+          "injected": "height",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "height"
+          ],
+          "promoted_types": [
+            "height"
+          ]
+        },
+        {
+          "condition": "height_p30",
+          "injected": "height",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "height"
+          ],
+          "promoted_types": [
+            "height"
+          ]
+        },
+        {
+          "condition": "rot_m15",
+          "injected": "rotation",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "height",
+            "scale"
+          ],
+          "promoted_types": [
+            "height",
+            "scale"
+          ]
+        },
+        {
+          "condition": "rot_p15",
+          "injected": "rotation",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "height",
+            "scale"
+          ],
+          "promoted_types": [
+            "height",
+            "scale"
+          ]
+        },
+        {
+          "condition": "width_m15",
+          "injected": "width",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "width_p15",
+          "injected": "width",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "height_m15",
+          "injected": "height",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "height"
+          ],
+          "promoted_types": [
+            "height"
+          ]
+        },
+        {
+          "condition": "height_p15",
+          "injected": "height",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "height"
+          ],
+          "promoted_types": [
+            "height"
+          ]
+        },
+        {
+          "condition": "rot_m7_5",
+          "injected": "rotation",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "height"
+          ],
+          "promoted_types": [
+            "height"
+          ]
+        },
+        {
+          "condition": "rot_p7_5",
+          "injected": "rotation",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "height"
+          ],
+          "promoted_types": [
+            "height"
+          ]
+        },
+        {
+          "condition": "trans_x_m15",
+          "injected": "translation_x",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "translation_x"
+          ],
+          "promoted_types": [
+            "translation_x"
+          ]
+        },
+        {
+          "condition": "trans_x_p15",
+          "injected": "translation_x",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "translation_x"
+          ],
+          "promoted_types": [
+            "translation_x"
+          ]
+        },
+        {
+          "condition": "trans_y_m15",
+          "injected": "translation_y",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "translation_y"
+          ],
+          "promoted_types": [
+            "translation_y"
+          ]
+        },
+        {
+          "condition": "trans_y_p15",
+          "injected": "translation_y",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "translation_y"
+          ],
+          "promoted_types": [
+            "translation_y"
+          ]
+        },
+        {
+          "condition": "scale_m15",
+          "injected": "scale",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "scale"
+          ],
+          "promoted_types": [
+            "scale"
+          ]
+        },
+        {
+          "condition": "scale_p15",
+          "injected": "scale",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "scale"
+          ],
+          "promoted_types": [
+            "scale"
+          ]
+        },
+        {
+          "condition": "scale_m30",
+          "injected": "scale",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "scale"
+          ],
+          "promoted_types": [
+            "scale"
+          ]
+        },
+        {
+          "condition": "scale_p30",
+          "injected": "scale",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "scale"
+          ],
+          "promoted_types": [
+            "scale"
+          ]
+        },
+        {
+          "condition": "missing_10",
+          "injected": "missing",
+          "delta5": -1.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "height"
+          ]
+        },
+        {
+          "condition": "missing_20",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "missing"
+          ],
+          "promoted_types": [
+            "missing"
+          ]
+        },
+        {
+          "condition": "missing_30",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "missing"
+          ],
+          "promoted_types": [
+            "missing"
+          ]
+        },
+        {
+          "condition": "duplicate_10",
+          "injected": "duplicate",
+          "delta5": 0.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "duplicate",
+            "height"
+          ]
+        },
+        {
+          "condition": "duplicate_20",
+          "injected": "duplicate",
+          "delta5": 0.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "duplicate",
+            "height"
+          ]
+        },
+        {
+          "condition": "duplicate_30",
+          "injected": "duplicate",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "duplicate"
+          ],
+          "promoted_types": [
+            "duplicate"
+          ]
+        }
+      ]
     },
     {
       "kind": "kitti_on_coco",
@@ -43,7 +357,293 @@
         "20": 0.34423076923076923
       },
       "empty_absolute": 17,
-      "empty_relative": 0
+      "empty_relative": 0,
+      "per_condition": [
+        {
+          "condition": "width_m30",
+          "injected": "width",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "width_p30",
+          "injected": "width",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "height_m30",
+          "injected": "height",
+          "delta5": 1.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "height",
+            "width"
+          ]
+        },
+        {
+          "condition": "height_p30",
+          "injected": "height",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "rot_m15",
+          "injected": "rotation",
+          "delta5": 0.8,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "height",
+            "width"
+          ]
+        },
+        {
+          "condition": "rot_p15",
+          "injected": "rotation",
+          "delta5": 0.2,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "width_m15",
+          "injected": "width",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "width_p15",
+          "injected": "width",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "height_m15",
+          "injected": "height",
+          "delta5": -0.2,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "height_p15",
+          "injected": "height",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "rot_m7_5",
+          "injected": "rotation",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "rot_p7_5",
+          "injected": "rotation",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "trans_x_m15",
+          "injected": "translation_x",
+          "delta5": 0.6,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "trans_x_p15",
+          "injected": "translation_x",
+          "delta5": 0.6,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "trans_y_m15",
+          "injected": "translation_y",
+          "delta5": 0.2,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "trans_y_p15",
+          "injected": "translation_y",
+          "delta5": 0.2,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "scale_m15",
+          "injected": "scale",
+          "delta5": 0.4,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "scale",
+            "width"
+          ]
+        },
+        {
+          "condition": "scale_p15",
+          "injected": "scale",
+          "delta5": 0.2,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "scale_m30",
+          "injected": "scale",
+          "delta5": 0.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "scale_p30",
+          "injected": "scale",
+          "delta5": 0.8,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "scale",
+            "width"
+          ]
+        },
+        {
+          "condition": "missing_10",
+          "injected": "missing",
+          "delta5": -0.6,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "missing_20",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "missing",
+            "width"
+          ]
+        },
+        {
+          "condition": "missing_30",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "duplicate_10",
+          "injected": "duplicate",
+          "delta5": -0.2,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "duplicate_20",
+          "injected": "duplicate",
+          "delta5": 0.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "duplicate_30",
+          "injected": "duplicate",
+          "delta5": 0.4,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "duplicate",
+            "width"
+          ]
+        }
+      ]
     }
   ]
 }

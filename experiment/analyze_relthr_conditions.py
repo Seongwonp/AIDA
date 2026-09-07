@@ -18,6 +18,9 @@ import json
 import pathlib
 import sys
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from evaluate_box_accuracy import _type_matches  # noqa: E402
+
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -81,12 +84,16 @@ def main() -> None:
         print(f"      → {verdict}")
 
         # 2차: 승격된 유형이 주입된 유형과 다른가
+        #
+        # **문자열로 비교하면 안 된다.** class_swap의 의심 유형 이름은
+        # class_mismatch이고 rotation은 width/height/scale로 나온다. 처음에
+        # 문자열로 셌다가 그 조건들을 전부 "못 맞힘"으로 넣었다 (docs/21 AY).
         same = diff = 0
         for name, obs in harmed.items():
             for _s, delta, injected, promoted, _e in obs:
                 if delta >= 0:
                     continue
-                if injected in promoted:
+                if any(_type_matches(injected, t) for t in promoted):
                     same += 1
                 else:
                     diff += 1

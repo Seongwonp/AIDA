@@ -1,0 +1,184 @@
+{
+  "seed": 31337,
+  "kinds": [
+    "coco_self",
+    "kitti_on_coco"
+  ],
+  "matched_kind": "coco_self",
+  "ks": [
+    5,
+    10,
+    20
+  ],
+  "rows": [
+    {
+      "kind": "coco_self",
+      "label": "COCO 자기(1C)",
+      "n_conditions": 6,
+      "an_only": {
+        "5": 0.8666666666666667,
+        "10": 0.8666666666666667,
+        "20": 0.7416666666666667
+      },
+      "with_relative": {
+        "5": 0.9333333333333333,
+        "10": 0.9,
+        "20": 0.7583333333333333
+      },
+      "empty_absolute": 1,
+      "empty_relative": 0,
+      "per_condition": [
+        {
+          "condition": "width_m30_r05",
+          "injected": "width",
+          "delta5": 0.39999999999999997,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "height",
+            "width"
+          ]
+        },
+        {
+          "condition": "width_m30_r10",
+          "injected": "width",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "width_m30_r15",
+          "injected": "width",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "width_m30_r20",
+          "injected": "width",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "width_m30_r25",
+          "injected": "width",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "width_m30_r30",
+          "injected": "width",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "kitti_on_coco",
+      "label": "KITTI→COCO(1C)",
+      "n_conditions": 6,
+      "an_only": {
+        "5": 0.0,
+        "10": 0.03333333333333333,
+        "20": 0.2
+      },
+      "with_relative": {
+        "5": 0.5666666666666667,
+        "10": 0.4,
+        "20": 0.33333333333333337
+      },
+      "empty_absolute": 6,
+      "empty_relative": 0,
+      "per_condition": [
+        {
+          "condition": "width_m30_r05",
+          "injected": "width",
+          "delta5": 0.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "width_m30_r10",
+          "injected": "width",
+          "delta5": 0.4,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "width_m30_r15",
+          "injected": "width",
+          "delta5": 0.4,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "width_m30_r20",
+          "injected": "width",
+          "delta5": 0.8,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "width_m30_r25",
+          "injected": "width",
+          "delta5": 0.8,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "width_m30_r30",
+          "injected": "width",
+          "delta5": 1.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        }
+      ]
+    }
+  ]
+}

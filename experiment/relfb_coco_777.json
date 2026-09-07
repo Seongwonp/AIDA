@@ -1,5 +1,5 @@
 {
-  "seed": 42,
+  "seed": 777,
   "kinds": [
     "coco_self",
     "kitti_on_coco"
@@ -16,16 +16,16 @@
       "label": "COCO 자기(1C)",
       "n_conditions": 26,
       "an_only": {
-        "5": 0.8461538461538461,
-        "10": 0.8692307692307693,
-        "20": 0.8730769230769231
+        "5": 0.9230769230769231,
+        "10": 0.9423076923076923,
+        "20": 0.9307692307692308
       },
       "with_relative": {
-        "5": 0.8461538461538461,
-        "10": 0.8615384615384616,
-        "20": 0.8615384615384615
+        "5": 0.9153846153846154,
+        "10": 0.9307692307692308,
+        "20": 0.923076923076923
       },
-      "empty_absolute": 2,
+      "empty_absolute": 4,
       "empty_relative": 1,
       "per_condition": [
         {
@@ -83,13 +83,11 @@
           "absolute_empty": false,
           "absolute_types": [
             "height",
-            "scale",
-            "width"
+            "scale"
           ],
           "promoted_types": [
             "height",
-            "scale",
-            "width"
+            "scale"
           ]
         },
         {
@@ -99,13 +97,11 @@
           "absolute_empty": false,
           "absolute_types": [
             "height",
-            "scale",
-            "width"
+            "scale"
           ],
           "promoted_types": [
             "height",
-            "scale",
-            "width"
+            "scale"
           ]
         },
         {
@@ -214,12 +210,10 @@
           "delta5": 0.0,
           "absolute_empty": false,
           "absolute_types": [
-            "translation_y",
-            "width"
+            "translation_y"
           ],
           "promoted_types": [
-            "translation_y",
-            "width"
+            "translation_y"
           ]
         },
         {
@@ -228,12 +222,10 @@
           "delta5": 0.0,
           "absolute_empty": false,
           "absolute_types": [
-            "translation_y",
-            "width"
+            "translation_y"
           ],
           "promoted_types": [
-            "translation_y",
-            "width"
+            "translation_y"
           ]
         },
         {
@@ -242,12 +234,10 @@
           "delta5": 0.0,
           "absolute_empty": false,
           "absolute_types": [
-            "scale",
-            "width"
+            "scale"
           ],
           "promoted_types": [
-            "scale",
-            "width"
+            "scale"
           ]
         },
         {
@@ -257,12 +247,10 @@
           "absolute_empty": false,
           "absolute_types": [
             "height",
-            "scale",
             "width"
           ],
           "promoted_types": [
             "height",
-            "scale",
             "width"
           ]
         },
@@ -293,12 +281,11 @@
         {
           "condition": "missing_10",
           "injected": "missing",
-          "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "width"
-          ],
+          "delta5": -1.0,
+          "absolute_empty": true,
+          "absolute_types": [],
           "promoted_types": [
+            "height",
             "width"
           ]
         },
@@ -306,17 +293,9 @@
           "condition": "missing_20",
           "injected": "missing",
           "delta5": 0.0,
-          "absolute_empty": false,
-          "absolute_types": [
-            "height",
-            "missing",
-            "width"
-          ],
-          "promoted_types": [
-            "height",
-            "missing",
-            "width"
-          ]
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": []
         },
         {
           "condition": "missing_30",
@@ -324,21 +303,20 @@
           "delta5": 0.0,
           "absolute_empty": false,
           "absolute_types": [
-            "missing",
-            "width"
+            "missing"
           ],
           "promoted_types": [
-            "missing",
-            "width"
+            "missing"
           ]
         },
         {
           "condition": "duplicate_10",
           "injected": "duplicate",
-          "delta5": -0.39999999999999997,
+          "delta5": 0.4,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
+            "duplicate",
             "height",
             "width"
           ]
@@ -351,6 +329,7 @@
           "absolute_types": [],
           "promoted_types": [
             "duplicate",
+            "height",
             "width"
           ]
         },
@@ -373,22 +352,22 @@
       "label": "KITTI→COCO(1C)",
       "n_conditions": 26,
       "an_only": {
-        "5": 0.23846153846153847,
-        "10": 0.35,
-        "20": 0.37115384615384617
+        "5": 0.16923076923076924,
+        "10": 0.33461538461538465,
+        "20": 0.4153846153846154
       },
       "with_relative": {
-        "5": 0.46153846153846156,
-        "10": 0.46923076923076923,
-        "20": 0.38846153846153847
+        "5": 0.36153846153846153,
+        "10": 0.3769230769230769,
+        "20": 0.37884615384615383
       },
-      "empty_absolute": 26,
-      "empty_relative": 1,
+      "empty_absolute": 25,
+      "empty_relative": 2,
       "per_condition": [
         {
           "condition": "width_m30",
           "injected": "width",
-          "delta5": 0.6,
+          "delta5": 1.0,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
@@ -398,9 +377,11 @@
         {
           "condition": "width_p30",
           "injected": "width",
-          "delta5": 0.39999999999999997,
-          "absolute_empty": true,
-          "absolute_types": [],
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
           "promoted_types": [
             "width"
           ]
@@ -420,16 +401,18 @@
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
+            "height",
             "width"
           ]
         },
         {
           "condition": "rot_m15",
           "injected": "rotation",
-          "delta5": 0.2,
+          "delta5": 0.6,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
+            "height",
             "width"
           ]
         },
@@ -446,7 +429,7 @@
         {
           "condition": "width_m15",
           "injected": "width",
-          "delta5": 0.2,
+          "delta5": 0.6,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
@@ -456,7 +439,7 @@
         {
           "condition": "width_p15",
           "injected": "width",
-          "delta5": 0.6,
+          "delta5": 0.0,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
@@ -466,7 +449,7 @@
         {
           "condition": "height_m15",
           "injected": "height",
-          "delta5": -0.2,
+          "delta5": 0.0,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
@@ -476,7 +459,7 @@
         {
           "condition": "height_p15",
           "injected": "height",
-          "delta5": 0.6,
+          "delta5": 0.2,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
@@ -486,7 +469,7 @@
         {
           "condition": "rot_m7_5",
           "injected": "rotation",
-          "delta5": 0.4,
+          "delta5": 0.0,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
@@ -496,17 +479,18 @@
         {
           "condition": "rot_p7_5",
           "injected": "rotation",
-          "delta5": 0.6000000000000001,
+          "delta5": 0.39999999999999997,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
+            "height",
             "width"
           ]
         },
         {
           "condition": "trans_x_m15",
           "injected": "translation_x",
-          "delta5": 0.4,
+          "delta5": 0.2,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
@@ -516,7 +500,7 @@
         {
           "condition": "trans_x_p15",
           "injected": "translation_x",
-          "delta5": 0.4,
+          "delta5": 0.6,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
@@ -526,7 +510,7 @@
         {
           "condition": "trans_y_m15",
           "injected": "translation_y",
-          "delta5": 0.4,
+          "delta5": 0.6,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
@@ -536,7 +520,7 @@
         {
           "condition": "trans_y_p15",
           "injected": "translation_y",
-          "delta5": 0.0,
+          "delta5": 0.2,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
@@ -546,7 +530,7 @@
         {
           "condition": "scale_m15",
           "injected": "scale",
-          "delta5": 0.2,
+          "delta5": 0.0,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
@@ -557,7 +541,7 @@
         {
           "condition": "scale_p15",
           "injected": "scale",
-          "delta5": 0.39999999999999997,
+          "delta5": 0.4,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
@@ -567,18 +551,17 @@
         {
           "condition": "scale_m30",
           "injected": "scale",
-          "delta5": 0.6000000000000001,
+          "delta5": 0.0,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
-            "scale",
             "width"
           ]
         },
         {
           "condition": "scale_p30",
           "injected": "scale",
-          "delta5": 0.39999999999999997,
+          "delta5": 0.2,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
@@ -602,10 +585,7 @@
           "delta5": 0.0,
           "absolute_empty": true,
           "absolute_types": [],
-          "promoted_types": [
-            "missing",
-            "width"
-          ]
+          "promoted_types": []
         },
         {
           "condition": "missing_30",
@@ -621,7 +601,7 @@
         {
           "condition": "duplicate_10",
           "injected": "duplicate",
-          "delta5": -0.19999999999999996,
+          "delta5": -0.2,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [
@@ -631,7 +611,7 @@
         {
           "condition": "duplicate_20",
           "injected": "duplicate",
-          "delta5": -0.4,
+          "delta5": 0.0,
           "absolute_empty": true,
           "absolute_types": [],
           "promoted_types": [

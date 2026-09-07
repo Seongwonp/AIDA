@@ -1,0 +1,323 @@
+{
+  "seed": 42,
+  "kinds": [
+    "coco_self",
+    "kitti_on_coco"
+  ],
+  "matched_kind": "coco_self",
+  "ks": [
+    5,
+    10,
+    20
+  ],
+  "rows": [
+    {
+      "kind": "coco_self",
+      "label": "COCO 자기(1C)",
+      "n_conditions": 12,
+      "an_only": {
+        "5": 0.6,
+        "10": 0.6666666666666666,
+        "20": 0.7083333333333333
+      },
+      "with_relative": {
+        "5": 0.5833333333333334,
+        "10": 0.6,
+        "20": 0.6
+      },
+      "empty_absolute": 4,
+      "empty_relative": 1,
+      "per_condition": [
+        {
+          "condition": "missing_5",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "missing_10",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "width"
+          ],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "missing_15",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "missing",
+            "width"
+          ],
+          "promoted_types": [
+            "missing",
+            "width"
+          ]
+        },
+        {
+          "condition": "missing_20",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "height",
+            "missing",
+            "width"
+          ],
+          "promoted_types": [
+            "height",
+            "missing",
+            "width"
+          ]
+        },
+        {
+          "condition": "missing_25",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "missing",
+            "width"
+          ],
+          "promoted_types": [
+            "missing",
+            "width"
+          ]
+        },
+        {
+          "condition": "missing_30",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "missing",
+            "width"
+          ],
+          "promoted_types": [
+            "missing",
+            "width"
+          ]
+        },
+        {
+          "condition": "duplicate_5",
+          "injected": "duplicate",
+          "delta5": 0.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "height",
+            "width"
+          ]
+        },
+        {
+          "condition": "duplicate_10",
+          "injected": "duplicate",
+          "delta5": -0.39999999999999997,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "height",
+            "width"
+          ]
+        },
+        {
+          "condition": "duplicate_15",
+          "injected": "duplicate",
+          "delta5": -0.2,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "height",
+            "width"
+          ]
+        },
+        {
+          "condition": "duplicate_20",
+          "injected": "duplicate",
+          "delta5": 0.4,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "duplicate",
+            "width"
+          ]
+        },
+        {
+          "condition": "duplicate_25",
+          "injected": "duplicate",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "duplicate"
+          ],
+          "promoted_types": [
+            "duplicate"
+          ]
+        },
+        {
+          "condition": "duplicate_30",
+          "injected": "duplicate",
+          "delta5": 0.0,
+          "absolute_empty": false,
+          "absolute_types": [
+            "duplicate"
+          ],
+          "promoted_types": [
+            "duplicate"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "kitti_on_coco",
+      "label": "KITTI→COCO(1C)",
+      "n_conditions": 12,
+      "an_only": {
+        "5": 0.6,
+        "10": 0.6,
+        "20": 0.44166666666666665
+      },
+      "with_relative": {
+        "5": 0.35,
+        "10": 0.2916666666666667,
+        "20": 0.23333333333333334
+      },
+      "empty_absolute": 12,
+      "empty_relative": 1,
+      "per_condition": [
+        {
+          "condition": "missing_5",
+          "injected": "missing",
+          "delta5": -0.4,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "missing_10",
+          "injected": "missing",
+          "delta5": -0.4,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "missing_15",
+          "injected": "missing",
+          "delta5": -0.8,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "missing_20",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "missing",
+            "width"
+          ]
+        },
+        {
+          "condition": "missing_25",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": []
+        },
+        {
+          "condition": "missing_30",
+          "injected": "missing",
+          "delta5": 0.0,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "missing",
+            "width"
+          ]
+        },
+        {
+          "condition": "duplicate_5",
+          "injected": "duplicate",
+          "delta5": -0.2,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "duplicate_10",
+          "injected": "duplicate",
+          "delta5": -0.19999999999999996,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "duplicate_15",
+          "injected": "duplicate",
+          "delta5": -0.2,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "duplicate_20",
+          "injected": "duplicate",
+          "delta5": -0.4,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "duplicate_25",
+          "injected": "duplicate",
+          "delta5": -0.2,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        },
+        {
+          "condition": "duplicate_30",
+          "injected": "duplicate",
+          "delta5": -0.19999999999999996,
+          "absolute_empty": true,
+          "absolute_types": [],
+          "promoted_types": [
+            "width"
+          ]
+        }
+      ]
+    }
+  ]
+}
