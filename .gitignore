@@ -75,3 +75,7 @@ tmp/
 
 # OS
 .DS_Store
+
+# 대회 자료 — 리포지토리에 넣지 않는다 (git add -A로 두 번 딸려 들어갔다)
+*.hwpx
+발표자료.pdf
