@@ -293,6 +293,34 @@ def _absolute_present_types(summary: dict) -> set[str]:
     }
 
 
+# 라벨 자체의 존재·정체가 틀린 유형들. 기하 유형(width·height·scale·translation)과
+# 달리 **자가 스스로는 잘 안 만드는** 지목이다 (docs/21 AX).
+STRUCTURAL_SUSPICIONS = frozenset({"missing", "duplicate", "class_mismatch"})
+
+
+def order_risk(summary: dict) -> bool:
+    """이 순서가 오탐을 좇고 있을 위험이 있는가.
+
+    후퇴가 일어났고(order_basis == "relative") **올린 유형이 전부 기하 유형**일
+    때 참이다.
+
+    **근거**(docs/21 AV~BB, 후퇴가 유형을 올린 431칸):
+
+        구조적 유형을 하나라도 올림 → 손해   0 / 150  (0%)
+        기하 유형만 올림            → 손해 132 / 281  (47%)
+
+    구조적 유형이 올라갔으면 안전하다는 쪽은 관측 150개에서 예외가 없었다.
+    반대쪽(기하만)은 절반이라 **위험을 말할 수는 있어도 단정할 수 없다** —
+    진짜 오류가 기하 오류면 올바른 승격이고, 그 경우와 구분이 안 된다.
+
+    **판정만 하고 순서는 안 바꾼다.** 여기 쓰인 자와 조건은 전부 우리가 오류를
+    넣어 만든 것이라, 순서를 바꿀 근거로는 아직 부족하다.
+    """
+    if order_basis(summary) != "relative":
+        return False
+    return not (present_types(summary) & STRUCTURAL_SUSPICIONS)
+
+
 def order_basis(summary: dict) -> str:
     """재검수 순서를 **무엇으로** 정했는지.
 

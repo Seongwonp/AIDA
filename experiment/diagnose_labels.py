@@ -19,7 +19,7 @@ from ultralytics import YOLO
 
 import config
 from label_diagnosis import (
-    match_boxes,Box, BoxFinding, diagnose_image, order_basis, rescore, review_order,
+    match_boxes,Box, BoxFinding, diagnose_image, order_basis, order_risk, rescore, review_order,
                              review_value, summarize)
 
 UPLOADS_DIR = config.EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "uploads"
@@ -201,6 +201,8 @@ def build_result(name: str, findings: list[BoxFinding], total_labels: int,
     # 그 순서를 절대 문턱으로 정했는지, 상대 문턱으로 물러났는지 (docs/21 AO).
     # 물러난 경우는 순서를 정한 규칙 자체가 다른데 지금까지 어디에도 안 나왔다.
     summary["order_basis"] = order_basis(summary)
+    # 그 순서가 오탐을 좇고 있을 위험이 있는지 (docs/21 BB).
+    summary["order_risk"] = order_risk(summary)
     if fit:
         import statistics
         confs = fit["confidences"]

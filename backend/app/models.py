@@ -231,6 +231,10 @@ class LabelDiagnosisResult(BaseModel):
     #   "none"      둘 다 못 잡아 심각도 순
     # 이 기능 전에 만든 진단 결과에는 없으므로 None을 허용한다.
     order_basis: str | None = None
+    # 후퇴가 기하 유형만 올렸는가 — 그러면 순서가 오탐을 좇고 있을 수 있다.
+    # 실측: 구조적 유형이 올라간 150칸은 손해가 0건, 기하만 올라간 281칸은
+    # 47%가 손해였다 (docs/21 BB).
+    order_risk: bool | None = None
     by_type: list[SuspicionTypeCount]
     review_queue: list[ReviewQueueItem]
     # 이 데이터셋에서 실제로 나온 유형들에 대해서만 채운다

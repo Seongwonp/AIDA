@@ -184,3 +184,50 @@ def test_relative_threshold_pins_its_own_baseline(L):
         "기준선을 제품의 present_types에서 물려받으면 같은 것을 두 번 잰다"
     assert "empty_abs += (not L.present_types(summary))" not in src, \
         "'절대 문턱이 빈 조건' 세는 곳도 제품 함수를 쓰면 안 된다"
+
+
+# --- 순서가 오탐을 좇고 있을 위험을 말하는가 (docs/21 BB) ---------------------
+#
+# 후퇴가 기하 유형만 올렸을 때가 위험한 모습이다. 실측(431칸): 구조적 유형이
+# 올라간 150칸은 손해 0건, 기하만 올라간 281칸은 47%가 손해였다.
+#
+# **판정만 하고 순서는 안 바꾼다.** 여기 쓰인 자와 조건은 전부 오류를 넣어 만든
+# 것이라 순서를 바꿀 근거로는 아직 부족하다.
+
+def test_order_risk_only_when_fallback_promoted_geometry(L):
+    """후퇴 + 기하 유형만 → 위험."""
+    s = summary_of({"width": 0.10, "height": 0.02, "scale": 0.01})
+    assert L.order_basis(s) == "relative"
+    assert L.order_risk(s) is True
+
+
+def test_order_risk_false_when_structural_promoted(L):
+    """구조적 유형이 올라갔으면 위험이 아니다 — 실측 150칸에 예외가 없었다."""
+    s = summary_of({"missing": 0.10, "width": 0.02, "scale": 0.01})
+    assert L.order_basis(s) == "relative"
+    assert L.order_risk(s) is False
+
+
+def test_order_risk_false_without_fallback(L):
+    """절대 문턱이 잡았으면 후퇴 자체가 없다."""
+    s = summary_of({"width": 0.30, "missing": 0.05})
+    assert L.order_basis(s) == "absolute"
+    assert L.order_risk(s) is False
+
+
+def test_order_risk_false_when_nothing_promoted(L):
+    s = summary_of({"a": 0.05, "b": 0.05, "c": 0.05})
+    assert L.order_basis(s) == "none"
+    assert L.order_risk(s) is False
+
+
+def test_structural_set_matches_product_types(L):
+    """구조적 유형 목록이 진단이 실제로 내는 유형 이름과 맞는가."""
+    assert L.STRUCTURAL_SUSPICIONS == {"missing", "duplicate", "class_mismatch"}
+    assert L.STRUCTURAL_SUSPICIONS <= set(L.TYPE_RELIABILITY_PRESENT)
+
+
+def test_diagnose_labels_reports_order_risk(L):
+    src = (EXPERIMENT / "diagnose_labels.py").read_text(encoding="utf-8")
+    assert 'summary["order_risk"] = order_risk(summary)' in src, \
+        "진단 결과가 순서 위험을 안 담는다 — 화면이 알 방법이 없다"

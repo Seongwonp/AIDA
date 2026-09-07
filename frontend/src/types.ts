@@ -119,6 +119,8 @@ export interface LabelDiagnosisResult {
   systematic: boolean;
   // 재검수 순서를 무엇으로 정했는가 (docs/21 AO). 예전 진단 결과에는 없다.
   order_basis: "absolute" | "relative" | "none" | null;
+  // 후퇴가 기하 유형만 올렸는가 (docs/21 BB). 예전 결과에는 없다.
+  order_risk: boolean | null;
   by_type: SuspicionTypeCount[];
   review_queue: ReviewQueueItem[];
   robustness: TypeRobustness[];
