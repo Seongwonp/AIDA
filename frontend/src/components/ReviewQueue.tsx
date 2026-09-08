@@ -6,6 +6,8 @@ import type { ReviewQueueItem } from "../types";
 import {
   STORE,
   keyOf,
+  loadSeen,
+  saveStatusMessage,
   loadVerdicts,
   nextCursor,
   toCsv,
@@ -50,6 +52,12 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
   const [type, setType] = useState("");
   const [query, setQuery] = useState("");
   const [verdicts, setVerdicts] = useState<Verdicts>(() => loadVerdicts(datasetId));
+  // 이전 형식이 남긴 "봤다" 표시. **판정이 아니라 진행 표시다**(docs/24 B1) —
+  // 판정으로 세면 이 데이터셋의 정밀도가 100%로 보고된다.
+  const [seenLegacy] = useState<Set<string>>(() => loadSeen(datasetId));
+  // 저장 실패를 삼키지 않는다 (docs/24 B1의 완료 판정).
+  const [serverFailed, setServerFailed] = useState(false);
+  const [localFailed, setLocalFailed] = useState(false);
   const [onlyOpen, setOnlyOpen] = useState(false);
   // 미리보기는 이미지를 내려받으므로 기본으로 켜두면 목록이 큰 데이터셋에서
   // 수십 장을 한꺼번에 받는다. 필요할 때 켜게 한다.
@@ -66,10 +74,10 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
 
   const shown = useMemo(() => items.filter((i) => {
     if (type && i.suspicion !== type) return false;
-    if (onlyOpen && verdicts[keyOf(i)]) return false;
+    if (onlyOpen && (verdicts[keyOf(i)] || seenLegacy.has(keyOf(i)))) return false;
     if (query && !i.image.toLowerCase().includes(query.toLowerCase())) return false;
     return true;
-  }), [items, type, query, verdicts, onlyOpen]);
+  }), [items, type, query, verdicts, onlyOpen, seenLegacy]);
 
   /** 같은 값을 다시 누르면 판정을 지운다 — 잘못 눌렀을 때 되돌릴 길이 있어야 한다. */
   // 서버에 남은 판정을 우선한다 — 다른 기계에서 이어받는 게 목적이다.
@@ -104,11 +112,14 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
     setVerdicts(next);
     try {
       localStorage.setItem(STORE(datasetId), JSON.stringify(next));
+      setLocalFailed(false);
     } catch {
-      /* 저장 못 해도 이번 세션에는 반영된다 */
+      setLocalFailed(true);   // 이번 세션에는 반영되지만 새로고침하면 사라진다
     }
-    // 서버에도 남긴다. 실패해도 검수를 막지 않는다 — 브라우저 쪽이 이미 있다.
-    putVerdicts(datasetId, next).catch(() => {});
+    // 서버에도 남긴다. 실패해도 검수를 막지 않되 **사실은 말한다.**
+    putVerdicts(datasetId, next)
+      .then(() => setServerFailed(false))
+      .catch(() => setServerFailed(true));
   };
 
   const download = () => {
@@ -191,8 +202,13 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
   // 값이 아니라 이 데이터셋의 숫자다.
   const precision = judged.length ? (hits / judged.length) * 100 : null;
 
+  const saveMessage = saveStatusMessage(serverFailed, localFailed);
+
   return (
     <>
+      {saveMessage && (
+        <p className="report-caveat" role="status">{saveMessage}</p>
+      )}
       <div className="queue-toolbar">
         <div className="queue-progress" title={`${judged.length} / ${items.length}`}>
           <div className="queue-progress-bar">

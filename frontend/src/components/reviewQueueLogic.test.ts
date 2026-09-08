@@ -14,6 +14,8 @@ import type { ReviewQueueItem } from "../types";
 import {
   clearVerdicts,
   keyOf,
+  loadSeen,
+  saveStatusMessage,
   loadVerdicts,
   nextCursor,
   STORE,
@@ -100,7 +102,36 @@ describe("keyOf — 판정을 어디에 매다는가", () => {
 
   test("라벨이 없는 누락 의심도 키가 생긴다", () => {
     expect(keyOf(item({ label_index: null, suspicion: "missing" })))
-      .toBe("000001.png#none#missing");
+      .toBe("000001.png#none#missing#10,20,110,220");
+  });
+
+  // docs/24 B1. 누락 의심은 대응하는 라벨이 없어 label_index가 null이다.
+  // 이미지 한 장에 누락 후보가 여럿이면 예전 키는 전부 같은 값이 됐고,
+  // 하나를 판정하면 나머지도 같이 판정된 것으로 보였다.
+  test("같은 이미지의 누락 후보 둘은 다른 키다", () => {
+    const a = item({ label_index: null, suspicion: "missing", box: [10, 20, 60, 70] });
+    const b = item({ label_index: null, suspicion: "missing", box: [200, 30, 260, 90] });
+    expect(keyOf(a)).not.toBe(keyOf(b));
+  });
+
+  test("판정이 이웃 후보로 번지지 않는다", () => {
+    const a = item({ label_index: null, suspicion: "missing", box: [10, 20, 60, 70] });
+    const b = item({ label_index: null, suspicion: "missing", box: [200, 30, 260, 90] });
+    const verdicts = { [keyOf(a)]: "hit" as const };
+    expect(verdicts[keyOf(b)]).toBeUndefined();
+  });
+
+  test("라벨이 있는 후보의 키는 예전 그대로다", () => {
+    // 좌표를 붙이는 것은 라벨 인덱스가 없을 때뿐이다. 그래야 이미 저장된
+    // 판정이 그대로 살아난다.
+    expect(keyOf(item({ label_index: 3, suspicion: "width" })))
+      .toBe("000001.png#3#width");
+  });
+
+  test("좌표가 없는 예전 진단 결과도 키가 생긴다", () => {
+    // box는 나중에 추가된 필드라 예전 결과에는 없다(types.ts 주석).
+    expect(keyOf(item({ label_index: null, suspicion: "missing", box: null })))
+      .toBe("000001.png#none#missing#nobox");
   });
 
   test("순위가 바뀌어도 키는 그대로다", () => {
@@ -121,16 +152,31 @@ describe("loadVerdicts — 검수 진행이 업데이트로 날아가면 안 된
     expect(loadVerdicts("ds1")).toEqual({ "a#0#width": "miss" });
   });
 
-  test("이전 버전의 \"봤다\" 목록을 살려 온다", () => {
-    // 예전에는 본 것만 배열로 저장했다. 검수하던 사람의 진행이 날아가면 안 된다.
+  // docs/24 B1. 이전 형식은 "봤다"만 배열로 저장했다. 그것을 "오류 맞음"으로
+  // 읽으면 **이 데이터셋의 정밀도가 100%로 보고된다** — 보기만 한 것이 전부
+  // 맞은 것으로 세어지기 때문이다. 판정이 아니라 진행 표시로 살린다.
+  test("이전 버전의 \"봤다\"는 판정으로 세지 않는다", () => {
     localStorage.setItem("aida-reviewed-ds1", JSON.stringify(["a#0#width", "b#1#height"]));
-    expect(loadVerdicts("ds1")).toEqual({ "a#0#width": "hit", "b#1#height": "hit" });
+    expect(loadVerdicts("ds1")).toEqual({});
+  });
+
+  test("그래도 진행은 살아 있다", () => {
+    localStorage.setItem("aida-reviewed-ds1", JSON.stringify(["a#0#width", "b#1#height"]));
+    expect(loadSeen("ds1")).toEqual(new Set(["a#0#width", "b#1#height"]));
   });
 
   test("새 형식이 있으면 옛 형식은 무시한다", () => {
     localStorage.setItem(STORE("ds1"), JSON.stringify({ "a#0#width": "miss" }));
     localStorage.setItem("aida-reviewed-ds1", JSON.stringify(["z#9#missing"]));
     expect(loadVerdicts("ds1")).toEqual({ "a#0#width": "miss" });
+  });
+
+  test("판정한 것은 본 것이기도 하다", () => {
+    // 화면의 "안 본 것만" 필터가 둘을 합쳐 봐야 한다.
+    localStorage.setItem(STORE("ds1"), JSON.stringify({ "a#0#width": "miss" }));
+    localStorage.setItem("aida-reviewed-ds1", JSON.stringify(["b#1#height"]));
+    expect(loadSeen("ds1")).toEqual(new Set(["b#1#height"]));
+    expect(Object.keys(loadVerdicts("ds1"))).toEqual(["a#0#width"]);
   });
 
   test("데이터셋마다 따로 남는다", () => {
@@ -216,5 +262,25 @@ describe("clearVerdicts — 데이터셋을 지우면 판정도 따라간다", (
     localStorage.setItem(STORE("ds2"), JSON.stringify({ "b#1#height": "miss" }));
     clearVerdicts("ds1");
     expect(loadVerdicts("ds2")).toEqual({ "b#1#height": "miss" });
+  });
+});
+
+describe("saveStatusMessage — 저장 실패가 드러나는가 (docs/24 B1)", () => {
+  test("둘 다 성공이면 아무 말도 안 한다", () => {
+    expect(saveStatusMessage(false, false)).toBe("");
+  });
+
+  test("서버만 실패하면 '다른 기계에서 못 이어받는다'를 말한다", () => {
+    const m = saveStatusMessage(true, false);
+    expect(m).toContain("서버");
+    expect(m).toContain("다른 기계");
+  });
+
+  test("브라우저만 실패하면 서버에는 남았다고 말한다", () => {
+    expect(saveStatusMessage(false, true)).toContain("서버에는 남았습니다");
+  });
+
+  test("둘 다 실패하면 사라진다고 말한다", () => {
+    expect(saveStatusMessage(true, true)).toContain("사라집니다");
   });
 });
