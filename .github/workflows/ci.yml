@@ -34,7 +34,8 @@ jobs:
       # 실제로 검사된다.
       #
       # 여전히 안 보는 것은 **추론 자체**다. GPU가 필요하고 CI에서 못 한다.
-      - run: python -m pytest tests -q
+      - name: 백엔드 검사
+        run: python -m pytest tests -q
         working-directory: backend
 
       # 실험 로직 중 **GPU가 필요 없는 것**은 여기서 같이 돈다 (docs/24 B).
@@ -46,9 +47,11 @@ jobs:
       #
       # 그래서 무거운 것을 뺀 목록을 따로 뒀다. 최소성은 빈 가상환경에서
       # 확인했다.
-      - run: pip install -r requirements-ci.txt
+      - name: 실험 검사 의존성 (GPU 없이 도는 것만)
+        run: pip install -r requirements-ci.txt
         working-directory: experiment
-      - run: python -m pytest tests -q
+      - name: 실험 검사 — 오류 주입과 진단 규칙
+        run: python -m pytest tests -q
         working-directory: experiment
 
   frontend:
