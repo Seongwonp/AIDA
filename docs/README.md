@@ -17,6 +17,7 @@
 | [24-development-plan.md](./24-development-plan.md) | **현재 실행 계획.** 연구 기준선 → 검수 안정화 → 독립 데이터·사용자 평가. 단계별 완료 조건과 작업 상태 |
 | [23-plan.md](./23-plan.md) | 이전 연구 계획. 완료된 실험과 미완료 과제의 배경은 보존하며, 이후 우선순위는 24번을 따른다 |
 | [22-plan.md](./22-plan.md) | 앞 계획 (2026-09-05). 항목이 거의 다 닫혔다 — 무엇을 왜 했는지 남긴다 |
+| [reproduction.md](./reproduction.md) | **무엇이 저장소에 있고 무엇이 없는가.** 환경·명령·복원 불가 항목·대회와 개인 개발의 구분 (docs/24 A2) |
 | [current-evidence.md](./current-evidence.md) | **지금 유효한 주장과 근거 파일의 대응표.** 수치를 인용하기 전에 여기부터 본다 (docs/24 A1) |
 | [21-next-plan.md](./21-next-plan.md) | **실험 기록의 본체.** 절 54개, 결론이 뒤집힌 이력까지. 목차에 정정 표시가 있다 |
 | [../CHANGELOG.md](../CHANGELOG.md) | 날짜별 변경 이력 |
