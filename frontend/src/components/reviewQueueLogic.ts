@@ -79,7 +79,9 @@ export function toCsv(items: ReviewQueueItem[], verdicts: Verdicts): string {
   };
   const rows = items.map((i) => {
     const v = verdicts[keyOf(i)];
-    // 누락 의심은 가리킬 라벨이 없어 좌표도 없다. 예전 진단 결과에도 없다.
+    // 누락 의심에도 좌표는 **있다** — "있어야 할 자리"인 예측 박스가 들어간다
+  // (diagnose_labels의 review_queue 주석). 라벨이 없을 뿐이다. 좌표가 비는
+  // 것은 이 기능 전에 만든 예전 진단 결과뿐이다.
     const box = i.box ?? [];
     const coord = [0, 1, 2, 3].map((k) =>
       box[k] === undefined ? "" : box[k].toFixed(1));
@@ -144,4 +146,31 @@ export function saveStatusMessage(serverFailed: boolean, localFailed: boolean): 
   if (localFailed)
     return "판정을 이 브라우저에 저장하지 못했습니다. 서버에는 남았습니다.";
   return "";
+}
+
+/**
+ * 판정을 브라우저에 저장한다. 성공하면 true (docs/24 B2).
+ *
+ * 화면 두 곳에서 같은 try/catch를 쓰고 있었다. 저장 성공 여부가 화면에
+ * 드러나야 하므로(B1) 한 군데로 모으고 결과를 돌려준다.
+ */
+export function saveVerdicts(datasetId: string, verdicts: Verdicts): boolean {
+  try {
+    localStorage.setItem(STORE(datasetId), JSON.stringify(verdicts));
+    return true;
+  } catch {
+    return false;   // 사생활 보호 모드·용량 초과. 이번 세션에는 반영된다
+  }
+}
+
+/**
+ * 내려받는 CSV가 **전체인지 화면에 보이는 것만인지** (docs/24 B2).
+ *
+ * 내려받기는 걸러진 목록(`shown`)을 쓴다. 유형으로 좁히거나 "안 본 것만"을
+ * 켜 둔 채 내려받으면 일부만 나가는데, 예전에는 그 사실이 화면에 없었다.
+ * 받는 쪽은 라벨링 도구라 **빠진 줄을 "오류 아님"으로 오해할 수 있다.**
+ */
+export function csvScopeNote(shownCount: number, totalCount: number): string {
+  if (shownCount >= totalCount) return `전체 ${totalCount}건을 내려받습니다.`;
+  return `화면에 보이는 ${shownCount}건만 내려받습니다 (전체 ${totalCount}건).`;
 }

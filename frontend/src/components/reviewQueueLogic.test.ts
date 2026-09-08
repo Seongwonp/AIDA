@@ -16,6 +16,8 @@ import {
   keyOf,
   loadSeen,
   saveStatusMessage,
+  saveVerdicts,
+  csvScopeNote,
   loadVerdicts,
   nextCursor,
   STORE,
@@ -282,5 +284,60 @@ describe("saveStatusMessage — 저장 실패가 드러나는가 (docs/24 B1)", 
 
   test("둘 다 실패하면 사라진다고 말한다", () => {
     expect(saveStatusMessage(true, true)).toContain("사라집니다");
+  });
+});
+
+describe("열기 → 판정 → 새로고침 → 복원 → CSV (docs/24 B2)", () => {
+  beforeEach(() => localStorage.clear());
+
+  // B1에서 고친 그 상황을 흐름 전체로 다시 확인한다 — 한 이미지에 누락 후보 둘.
+  const a = item({ label_index: null, suspicion: "missing", label: "라벨 누락 의심",
+                   box: [10, 20, 60, 70], rank: 1 });
+  const b = item({ label_index: null, suspicion: "missing", label: "라벨 누락 의심",
+                   box: [200, 30, 260, 90], rank: 2 });
+
+  test("하나만 판정하면 하나만 남는다", () => {
+    expect(saveVerdicts("ds9", { [keyOf(a)]: "hit" })).toBe(true);
+    const restored = loadVerdicts("ds9");           // 새로고침
+    expect(restored[keyOf(a)]).toBe("hit");
+    expect(restored[keyOf(b)]).toBeUndefined();     // 이웃으로 안 번진다
+  });
+
+  test("복원한 판정이 CSV에 그대로 나온다", () => {
+    saveVerdicts("ds9", { [keyOf(a)]: "hit" });
+    const rows = toCsv([a, b], loadVerdicts("ds9")).split("\n");
+    expect(rows).toHaveLength(3);                   // 머리글 + 두 줄
+    expect(rows[1]).toContain("오류 맞음");
+    expect(rows[2].endsWith(",")).toBe(true);       // 판정 칸이 비어 있다
+  });
+
+  test("CSV의 좌표가 후보의 좌표와 같다", () => {
+    // 받는 쪽은 라벨링 도구다. 좌표가 어긋나면 엉뚱한 박스를 연다.
+    const rows = toCsv([a, b], {}).split("\n");
+    expect(rows[1]).toContain("10.0,20.0,60.0,70.0");
+    expect(rows[2]).toContain("200.0,30.0,260.0,90.0");
+  });
+
+  test("누락 의심에도 좌표가 나온다", () => {
+    // '있어야 할 자리'인 예측 박스다. 이게 없으면 누락 후보를 찾아갈 수 없다.
+    expect(toCsv([a], {}).split("\n")[1]).not.toContain(",,,,");
+  });
+
+  test("판정을 지우면 CSV에서도 빈다", () => {
+    saveVerdicts("ds9", { [keyOf(a)]: "hit" });
+    saveVerdicts("ds9", {});                        // 같은 값을 다시 눌렀다
+    expect(toCsv([a], loadVerdicts("ds9")).split("\n")[1].endsWith(",")).toBe(true);
+  });
+});
+
+describe("csvScopeNote — 전체인가 일부인가 (docs/24 B2)", () => {
+  test("거르지 않았으면 전체라고 말한다", () => {
+    expect(csvScopeNote(22, 22)).toContain("전체 22건");
+  });
+
+  test("걸렀으면 일부라고 말하고 전체 수도 알려준다", () => {
+    const m = csvScopeNote(3, 22);
+    expect(m).toContain("보이는 3건만");
+    expect(m).toContain("전체 22건");
   });
 });

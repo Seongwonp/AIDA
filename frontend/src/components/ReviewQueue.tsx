@@ -4,10 +4,11 @@ import { getVerdicts, putVerdicts } from "../api";
 import { BoxPreview } from "./BoxPreview";
 import type { ReviewQueueItem } from "../types";
 import {
-  STORE,
   keyOf,
   loadSeen,
   saveStatusMessage,
+  saveVerdicts,
+  csvScopeNote,
   loadVerdicts,
   nextCursor,
   toCsv,
@@ -92,11 +93,7 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
         if (keys.length === 0) return;      // 서버가 비었으면 브라우저 것을 쓴다
         const next = remote.verdicts as Verdicts;
         setVerdicts(next);
-        try {
-          localStorage.setItem(STORE(datasetId), JSON.stringify(next));
-        } catch {
-          /* 저장 못 해도 이번 세션에는 반영된다 */
-        }
+        saveVerdicts(datasetId, next);   // 서버 것을 브라우저에도 내려둔다
       })
       .catch(() => {
         /* 서버가 없어도 브라우저 것으로 검수는 이어진다 */
@@ -110,12 +107,8 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
     if (next[k] === v) delete next[k];
     else next[k] = v;
     setVerdicts(next);
-    try {
-      localStorage.setItem(STORE(datasetId), JSON.stringify(next));
-      setLocalFailed(false);
-    } catch {
-      setLocalFailed(true);   // 이번 세션에는 반영되지만 새로고침하면 사라진다
-    }
+    // 실패하면 이번 세션에는 반영되지만 새로고침하면 사라진다 — 화면에 말한다.
+    setLocalFailed(!saveVerdicts(datasetId, next));
     // 서버에도 남긴다. 실패해도 검수를 막지 않되 **사실은 말한다.**
     putVerdicts(datasetId, next)
       .then(() => setServerFailed(false))
@@ -252,11 +245,19 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
           </label>
 
           <button className="refresh-button" onClick={download}
-                  disabled={shown.length === 0}>
+                  disabled={shown.length === 0}
+                  title={csvScopeNote(shown.length, items.length)}>
             CSV 내려받기
           </button>
         </div>
       </div>
+
+      {shown.length < items.length && (
+        <p className="report-caveat">
+          {csvScopeNote(shown.length, items.length)} 걸러 둔 채 내려받으면 빠진 줄을
+          받는 쪽이 "오류 아님"으로 오해할 수 있습니다.
+        </p>
+      )}
 
       <p className="queue-keys">
         키보드: <kbd>j</kbd>/<kbd>k</kbd> 줄 이동 · <kbd>f</kbd> 오류 ·{" "}

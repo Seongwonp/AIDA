@@ -22,7 +22,6 @@ from label_diagnosis import (
     match_boxes,Box, BoxFinding, diagnose_image, order_basis, order_risk, rescore, review_order,
                              review_value, summarize)
 
-UPLOADS_DIR = config.EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "uploads"
 # 진단이 "자"로 쓰는 모델. 기본은 오류 없는 라벨로 학습한 clean 모델이다.
 #
 # **이게 제품의 가장 큰 구조적 전제다.** 고객에게는 clean 모델이 없다 — 라벨에
@@ -72,7 +71,7 @@ def resolve_dataset(args) -> tuple[Path, Path, str]:
     labels/train)의 폴더 구조가 달라서 여기서 흡수한다.
     """
     if args.upload_id:
-        root = UPLOADS_DIR / args.upload_id
+        root = config.uploads_dir() / args.upload_id
         return root / "images", root / "labels", args.upload_id
     if args.condition:
         root = config.CONDITIONS_DIR / args.condition
@@ -260,7 +259,7 @@ def main():
 
     out_path = Path(args.out) if args.out else None
     if out_path is None and args.upload_id:
-        out_path = UPLOADS_DIR / args.upload_id / "label_diagnosis.json"
+        out_path = config.uploads_dir() / args.upload_id / "label_diagnosis.json"
     if out_path:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")

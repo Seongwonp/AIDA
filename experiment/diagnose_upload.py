@@ -31,7 +31,6 @@ from ultralytics import YOLO
 
 import config
 
-UPLOADS_DIR = config.EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "uploads"
 CLEAN_WEIGHTS = config.RUNS_DIR / "clean" / "weights" / "best.pt"
 
 
@@ -107,7 +106,7 @@ def main():
     parser.add_argument("dataset_id")
     args = parser.parse_args()
 
-    dataset_dir = UPLOADS_DIR / args.dataset_id
+    dataset_dir = config.uploads_dir() / args.dataset_id
     if not dataset_dir.exists():
         raise RuntimeError(f"{dataset_dir} 없음")
 

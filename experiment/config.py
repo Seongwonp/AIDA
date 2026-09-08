@@ -12,6 +12,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 EXPERIMENT_ROOT = Path(__file__).resolve().parent
+
+
+def uploads_dir() -> Path:
+    """업로드된 데이터셋이 놓이는 곳 (docs/24 B).
+
+    **백엔드와 같은 환경변수를 읽어야 한다.** 백엔드는 `UPLOADS_DIR`로 이 위치를
+    바꿀 수 있고(Docker 볼륨 등), 진단은 서브프로세스로 돌면서 환경을 그대로
+    물려받는다. 스크립트가 경로를 박아두면 백엔드는 X에 쓰고 스크립트는 Y에서
+    찾는다 — 진단이 죽거나, 더 나쁘게는 **다른 데이터셋을 읽는다.**
+
+    **호출할 때마다 읽는다.** 상수로 굳히면 모듈을 불러온 뒤의 변경을 놓친다.
+    """
+    default = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "uploads"
+    return Path(os.environ.get("UPLOADS_DIR", str(default)))
 RAW_DIR = EXPERIMENT_ROOT / "data" / "raw"
 PROCESSED_DIR = EXPERIMENT_ROOT / "data" / "processed"
 IMAGES_TRAIN_DIR = PROCESSED_DIR / "images" / "train"
