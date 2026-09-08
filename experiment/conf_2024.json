@@ -1,0 +1,131 @@
+{
+  "seed": 2024,
+  "matched_kind": "coco_self",
+  "ks": [
+    5,
+    10,
+    20
+  ],
+  "rows": [
+    {
+      "kind": "coco_self",
+      "label": "COCO 자기(1C)",
+      "floor": 0.1,
+      "n_conditions": 26,
+      "precision": {
+        "5": 0.8769230769230769,
+        "10": 0.8807692307692307,
+        "20": 0.8403846153846154
+      },
+      "true_ratio": 0.19545,
+      "median_ratio": 0.044357692307692306,
+      "promoted": 23,
+      "predictions": 543
+    },
+    {
+      "kind": "coco_self",
+      "label": "COCO 자기(1C)",
+      "floor": 0.15,
+      "n_conditions": 26,
+      "precision": {
+        "5": 0.9153846153846154,
+        "10": 0.9230769230769231,
+        "20": 0.9096153846153846
+      },
+      "true_ratio": 0.1897653846153846,
+      "median_ratio": 0.045446153846153844,
+      "promoted": 23,
+      "predictions": 429
+    },
+    {
+      "kind": "coco_self",
+      "label": "COCO 자기(1C)",
+      "floor": 0.25,
+      "n_conditions": 26,
+      "precision": {
+        "5": 0.9538461538461539,
+        "10": 0.9538461538461539,
+        "20": 0.9230769230769231
+      },
+      "true_ratio": 0.1800653846153846,
+      "median_ratio": 0.03898653846153846,
+      "promoted": 23,
+      "predictions": 312
+    },
+    {
+      "kind": "coco_self",
+      "label": "COCO 자기(1C)",
+      "floor": 0.4,
+      "n_conditions": 26,
+      "precision": {
+        "5": 0.9230769230769231,
+        "10": 0.9461538461538461,
+        "20": 0.9173076923076923
+      },
+      "true_ratio": 0.15864615384615385,
+      "median_ratio": 0.03828653846153846,
+      "promoted": 24,
+      "predictions": 226
+    },
+    {
+      "kind": "kitti_on_coco",
+      "label": "KITTI→COCO(1C)",
+      "floor": 0.1,
+      "n_conditions": 26,
+      "precision": {
+        "5": 0.3769230769230769,
+        "10": 0.3423076923076923,
+        "20": 0.2980769230769231
+      },
+      "true_ratio": 0.10364230769230769,
+      "median_ratio": 0.04780769230769231,
+      "promoted": 10,
+      "predictions": 444
+    },
+    {
+      "kind": "kitti_on_coco",
+      "label": "KITTI→COCO(1C)",
+      "floor": 0.15,
+      "n_conditions": 26,
+      "precision": {
+        "5": 0.3384615384615385,
+        "10": 0.33461538461538465,
+        "20": 0.28076923076923077
+      },
+      "true_ratio": 0.09481153846153846,
+      "median_ratio": 0.034282692307692306,
+      "promoted": 10,
+      "predictions": 329
+    },
+    {
+      "kind": "kitti_on_coco",
+      "label": "KITTI→COCO(1C)",
+      "floor": 0.25,
+      "n_conditions": 26,
+      "precision": {
+        "5": 0.3153846153846154,
+        "10": 0.33076923076923076,
+        "20": 0.2865384615384615
+      },
+      "true_ratio": 0.0896923076923077,
+      "median_ratio": 0.03624230769230769,
+      "promoted": 11,
+      "predictions": 221
+    },
+    {
+      "kind": "kitti_on_coco",
+      "label": "KITTI→COCO(1C)",
+      "floor": 0.4,
+      "n_conditions": 26,
+      "precision": {
+        "5": 0.3230769230769231,
+        "10": 0.3423076923076923,
+        "20": 0.3
+      },
+      "true_ratio": 0.08002692307692308,
+      "median_ratio": 0.03027692307692308,
+      "promoted": 11,
+      "predictions": 147
+    }
+  ]
+}

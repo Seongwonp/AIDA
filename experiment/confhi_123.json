@@ -1,0 +1,101 @@
+{
+  "seed": 123,
+  "matched_kind": "coco_self",
+  "ks": [
+    5,
+    10,
+    20
+  ],
+  "rows": [
+    {
+      "kind": "coco_self",
+      "label": "COCO 자기(1C)",
+      "floor": 0.5,
+      "n_conditions": 26,
+      "precision": {
+        "5": 0.8692307692307693,
+        "10": 0.8884615384615384,
+        "20": 0.9057692307692308
+      },
+      "true_ratio": 0.15397692307692307,
+      "median_ratio": 0.010925,
+      "promoted": 25,
+      "predictions": 196
+    },
+    {
+      "kind": "coco_self",
+      "label": "COCO 자기(1C)",
+      "floor": 0.6,
+      "n_conditions": 26,
+      "precision": {
+        "5": 0.8692307692307693,
+        "10": 0.9076923076923077,
+        "20": 0.925
+      },
+      "true_ratio": 0.13711153846153845,
+      "median_ratio": 0.017917307692307694,
+      "promoted": 25,
+      "predictions": 165
+    },
+    {
+      "kind": "coco_self",
+      "label": "COCO 자기(1C)",
+      "floor": 0.7,
+      "n_conditions": 26,
+      "precision": {
+        "5": 0.9384615384615385,
+        "10": 0.9615384615384616,
+        "20": 0.9307692307692308
+      },
+      "true_ratio": 0.11746923076923077,
+      "median_ratio": 0.01734423076923077,
+      "promoted": 22,
+      "predictions": 138
+    },
+    {
+      "kind": "kitti_on_coco",
+      "label": "KITTI→COCO(1C)",
+      "floor": 0.5,
+      "n_conditions": 26,
+      "precision": {
+        "5": 0.33076923076923076,
+        "10": 0.31153846153846154,
+        "20": 0.27115384615384613
+      },
+      "true_ratio": 0.06277692307692308,
+      "median_ratio": 0.01837692307692308,
+      "promoted": 11,
+      "predictions": 96
+    },
+    {
+      "kind": "kitti_on_coco",
+      "label": "KITTI→COCO(1C)",
+      "floor": 0.6,
+      "n_conditions": 26,
+      "precision": {
+        "5": 0.3230769230769231,
+        "10": 0.29615384615384616,
+        "20": 0.2519230769230769
+      },
+      "true_ratio": 0.057815384615384616,
+      "median_ratio": 0.014526923076923078,
+      "promoted": 10,
+      "predictions": 73
+    },
+    {
+      "kind": "kitti_on_coco",
+      "label": "KITTI→COCO(1C)",
+      "floor": 0.7,
+      "n_conditions": 26,
+      "precision": {
+        "5": 0.24615384615384617,
+        "10": 0.3153846153846154,
+        "20": 0.4403846153846154
+      },
+      "true_ratio": 0.04634615384615385,
+      "median_ratio": 0.011146153846153847,
+      "promoted": 6,
+      "predictions": 55
+    }
+  ]
+}
