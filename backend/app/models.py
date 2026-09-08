@@ -175,6 +175,10 @@ class RulerInfo(BaseModel):
     seed_spread_pp: float
     # 업로드된 라벨에 이 자가 모르는 클래스 인덱스가 있는가
     unknown_class_ids: list[int] = []
+    # 클래스 **의미**가 대응되는지에 대한 한마디 (docs/24 B). 빈 문자열이면
+    # 할 말이 없다는 뜻이다. 개수만 맞고 순서가 다르면 지금까지 아무 경고도
+    # 없었다 — 그게 가장 위험한 경우다.
+    class_note: str = ""
 
 
 class DatasetHistoryItem(BaseModel):

@@ -110,6 +110,15 @@ export function RulerCard({ result }: { result: LabelDiagnosisResult }) {
             동전 던지기였습니다 (docs/21 AL·AM).
           </p>
 
+          {/* 클래스 **의미**의 대응 (docs/24 B). 개수만 맞고 순서가 다르면
+              지금까지 아무 경고도 없었다 — 그게 가장 위험한 경우다. */}
+          {result.ruler.class_note && (
+            <p className={result.ruler.class_note.includes("가정")
+                          ? "report-caveat" : "error-banner"}>
+              {result.ruler.class_note}
+            </p>
+          )}
+
           {result.ruler.unknown_class_ids.length > 0 && (
             <p className="error-banner">
               업로드한 라벨에 이 기준 모델이 모르는 클래스가 있습니다 (인덱스{" "}

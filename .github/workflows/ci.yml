@@ -37,6 +37,20 @@ jobs:
       - run: python -m pytest tests -q
         working-directory: backend
 
+      # 실험 로직 중 **GPU가 필요 없는 것**은 여기서 같이 돈다 (docs/24 B).
+      #
+      # error_injector는 이 프로젝트 모든 수치의 **정답지를 만드는 코드**이고
+      # label_diagnosis는 진단 규칙 자체인데, 둘 다 순수 계산이라 GPU가 없어도
+      # 잴 수 있다. 검사 66건이 대회 때부터 있었는데 **CI에서 한 번도 안
+      # 돌았다** — experiment/requirements.txt에 torch가 들어 있어서다.
+      #
+      # 그래서 무거운 것을 뺀 목록을 따로 뒀다. 최소성은 빈 가상환경에서
+      # 확인했다.
+      - run: pip install -r requirements-ci.txt
+        working-directory: experiment
+      - run: python -m pytest tests -q
+        working-directory: experiment
+
   frontend:
     runs-on: ubuntu-latest
     steps:

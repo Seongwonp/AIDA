@@ -7,6 +7,7 @@ backend에 얹지 않는 것과 같은 구조다.
 """
 import html
 import json
+import yaml
 import os
 import re
 import shutil
@@ -591,6 +592,77 @@ def _label_class_ids(dataset_dir: Path, cap: int = 2000) -> set[int]:
     return ids
 
 
+# 클래스 이름이 들어 있을 만한 파일들. YOLO 데이터셋이 관례적으로 쓰는 이름이다.
+_CLASS_NAME_FILES = ("data.yaml", "data.yml", "classes.txt", "obj.names")
+
+
+def read_class_names(dataset_dir: Path) -> list[str] | None:
+    """업로드된 데이터셋에서 클래스 **이름**을 찾는다 (docs/24 B).
+
+    YOLO 라벨(.txt)에는 숫자뿐이라 이름이 없다. 그래서 zip 안에 같이 들어오는
+    관례적인 파일들을 본다.
+
+    **못 찾으면 None이다.** 빈 목록으로 뭉개면 "이름이 전부 비었다"와 구분이
+    안 되고, 그러면 조용히 "같다고 가정"하게 된다.
+    """
+    for name in _CLASS_NAME_FILES:
+        path = dataset_dir / name
+        if not path.is_file():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+            if path.suffix in (".yaml", ".yml"):
+                data = yaml.safe_load(text)
+                names = data.get("names") if isinstance(data, dict) else None
+                if isinstance(names, dict):
+                    return [str(names[k]) for k in sorted(names)]
+                if isinstance(names, list):
+                    return [str(v) for v in names]
+                continue
+            lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+            if lines:
+                return lines
+        except Exception:
+            continue          # 깨진 파일 하나가 업로드를 막으면 안 된다
+    return None
+
+
+def compare_class_names(uploaded: list[str] | None, ruler: list[str]) -> str:
+    """고객 클래스와 자 클래스의 **의미**가 대응되는가 (docs/24 B).
+
+    지금까지 자를 고를 때 **개수만** 봤다. 그러면 순서가 다른 경우를 못 잡는데,
+    그게 가장 위험하다 — 개수가 맞으니 아무 경고도 없고 적합도도 멀쩡해 보인다.
+    클래스 오기입 지목이 통째로 헛것이 되는데 **화면에 흔적이 안 남는다.**
+
+    근거: COCO `bicycle`(자전거)과 KITTI `Cyclist`(탄 사람)는 의미가 다르다
+    (docs/21 AI). 그래서 COCO 실험은 `Car` 하나만 썼다.
+
+    빈 문자열이면 할 말이 없다는 뜻이다.
+    """
+    if not ruler:
+        return ""
+    if uploaded is None:
+        return ("업로드한 zip에서 클래스 이름을 찾지 못해 "
+                f"기준 모델과 **순서가 같다고 가정**합니다 ({', '.join(ruler)}). "
+                "순서가 다르면 진단이 통째로 어긋나므로, data.yaml이나 "
+                "classes.txt를 같이 넣어 주시면 대조해 드립니다.")
+
+    norm = lambda xs: [x.strip().lower() for x in xs]
+    up, rl = norm(uploaded), norm(ruler)
+    if up == rl[:len(up)]:
+        return ""
+
+    unknown = [u for u, n in zip(uploaded, up) if n not in rl]
+    if unknown:
+        return (f"기준 모델이 모르는 클래스가 있습니다: {', '.join(unknown)}. "
+                f"이 모델이 아는 것은 {', '.join(ruler)}입니다. "
+                "모르는 클래스는 검사되지 않습니다.")
+    return (f"클래스 **순서**가 기준 모델과 다릅니다 — "
+            f"올린 데이터는 {', '.join(uploaded)}이고 기준 모델은 "
+            f"{', '.join(ruler)}입니다. 이대로 진단하면 클래스 판정이 "
+            "어긋납니다. 라벨의 클래스 번호를 기준 모델 순서에 맞춰 주세요.")
+
+
 def _suggest_profile(class_ids: set[int]) -> tuple[str | None, str]:
     """이 데이터에 맞는 기준 모델을 고른다.
 
@@ -652,6 +724,7 @@ def _ruler_info(profile: str | None, dataset_dir: Path) -> RulerInfo:
         # 자가 아는 클래스 수와 데이터의 클래스 수가 맞아야 클래스 대조를 한다
         # (docs/21 Z). 여기서는 자가 2개 이상 알면 대조하는 것으로 본다.
         class_aware=len(classes) > 1 and not unknown,
+        class_note=compare_class_names(read_class_names(dataset_dir), classes),
         seed_spread_pp=RULER_SEED_SPREAD_PP.get(len(classes), DEFAULT_SEED_SPREAD_PP),
         unknown_class_ids=unknown,
     )

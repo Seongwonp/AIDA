@@ -17,6 +17,7 @@
 | [24-development-plan.md](./24-development-plan.md) | **현재 실행 계획.** 연구 기준선 → 검수 안정화 → 독립 데이터·사용자 평가. 단계별 완료 조건과 작업 상태 |
 | [23-plan.md](./23-plan.md) | 이전 연구 계획. 완료된 실험과 미완료 과제의 배경은 보존하며, 이후 우선순위는 24번을 따른다 |
 | [22-plan.md](./22-plan.md) | 앞 계획 (2026-09-05). 항목이 거의 다 닫혔다 — 무엇을 왜 했는지 남긴다 |
+| [testing-boundary.md](./testing-boundary.md) | **검사가 무엇을 잡고 무엇을 못 잡는가.** 가짜와 진짜 추론의 경계 (docs/24 B) |
 | [evaluation-data.md](./evaluation-data.md) | **독립 평가 데이터 후보와 겹침 확인.** 무엇을 빼야 하고 겹침을 어떻게 재는가 (docs/24 C1) |
 | [review-model.md](./review-model.md) | **검수 판정의 식별·보관 규칙.** 무엇이 후보를 구분하고 서버/브라우저가 엇갈리면 누가 이기는가 (docs/24 B1) |
 | [reproduction.md](./reproduction.md) | **무엇이 저장소에 있고 무엇이 없는가.** 환경·명령·복원 불가 항목·대회와 개인 개발의 구분 (docs/24 A2) |

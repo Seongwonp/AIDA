@@ -157,6 +157,8 @@ export interface RulerInfo {
   seed_spread_pp: number;
   /** 업로드된 라벨에 이 자가 모르는 클래스 인덱스 */
   unknown_class_ids: number[];
+  // 클래스 의미가 대응되는지에 대한 한마디 (docs/24 B). 예전 결과에는 없다.
+  class_note?: string;
 }
 
 /**
