@@ -26,6 +26,25 @@ def uploads_dir() -> Path:
     """
     default = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "uploads"
     return Path(os.environ.get("UPLOADS_DIR", str(default)))
+
+
+def eval_data_dir() -> Path:
+    """독립 평가 데이터가 놓이는 곳 (docs/24 C1).
+
+    **기본이 저장소 안이 아니다.** 평가 데이터는 수십 GB가 될 수 있는데
+    C드라이브에 자리가 없다(2026-09-08 기준 남은 용량 17%). `AIDA_EVAL_DATA_DIR`
+    로 바꾸고, 값이 없으면 D드라이브를 쓰되 **거기가 없으면 저장소 안으로
+    물러난다** — 다른 기계에서도 돌아가야 한다.
+
+    `uploads_dir()`와 같은 규칙이다: 한 곳에서 해석하고, 호출할 때마다 읽는다.
+    """
+    override = os.environ.get("AIDA_EVAL_DATA_DIR")
+    if override:
+        return Path(override)
+    external = Path("D:/") / "AIDA-eval"
+    if external.parent.exists():
+        return external
+    return EXPERIMENT_ROOT / "data" / "eval"
 RAW_DIR = EXPERIMENT_ROOT / "data" / "raw"
 PROCESSED_DIR = EXPERIMENT_ROOT / "data" / "processed"
 IMAGES_TRAIN_DIR = PROCESSED_DIR / "images" / "train"

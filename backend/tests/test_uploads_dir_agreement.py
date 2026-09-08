@@ -63,3 +63,39 @@ def test_backend_forwards_the_environment():
     src = (Path(__file__).resolve().parents[1] / "app" / "routers"
            / "upload.py").read_text(encoding="utf-8")
     assert "env={**os.environ" in src, "서브프로세스가 환경을 못 물려받는다"
+
+
+# --- 평가 데이터 경로 (docs/24 C1) --------------------------------------------
+#
+# 평가 데이터는 수십 GB가 될 수 있는데 C드라이브에 자리가 없다. 그래서 기본이
+# 저장소 밖이다. 같은 규칙을 지켜야 한다 — 한 곳에서 해석하고 호출할 때마다
+# 읽는다.
+
+def test_eval_dir_honours_the_env_var(experiment_config, monkeypatch, tmp_path):
+    monkeypatch.setenv("AIDA_EVAL_DATA_DIR", str(tmp_path / "eval"))
+    assert experiment_config.eval_data_dir() == tmp_path / "eval"
+
+
+def test_eval_dir_read_at_call_time(experiment_config, monkeypatch, tmp_path):
+    monkeypatch.setenv("AIDA_EVAL_DATA_DIR", str(tmp_path / "a"))
+    first = experiment_config.eval_data_dir()
+    monkeypatch.setenv("AIDA_EVAL_DATA_DIR", str(tmp_path / "b"))
+    assert experiment_config.eval_data_dir() != first
+
+
+def test_eval_dir_falls_back_inside_the_repo(experiment_config, monkeypatch):
+    """다른 기계에는 D드라이브가 없다. 그때도 돌아가야 한다."""
+    monkeypatch.delenv("AIDA_EVAL_DATA_DIR", raising=False)
+    monkeypatch.setattr(experiment_config.Path, "exists", lambda self: False)
+    assert experiment_config.eval_data_dir() == \
+        experiment_config.EXPERIMENT_ROOT / "data" / "eval"
+
+
+def test_eval_dir_is_not_inside_the_repo_by_default(experiment_config, monkeypatch):
+    """이 기계에서는 저장소 밖이어야 한다 — 수십 GB가 저장소에 들어가면 안 된다."""
+    monkeypatch.delenv("AIDA_EVAL_DATA_DIR", raising=False)
+    d = experiment_config.eval_data_dir()
+    repo = experiment_config.EXPERIMENT_ROOT.parent
+    if d.is_relative_to(repo):
+        pytest.skip("외부 드라이브가 없는 환경 — 저장소 안으로 물러난 것이 맞다")
+    assert not d.is_relative_to(repo)
