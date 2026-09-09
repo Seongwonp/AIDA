@@ -10,6 +10,7 @@ from evaluation.activity import (IDLE_THRESHOLD_SECONDS,
                                  bootstrap_mean_upper,
                                  budget_from_pilot, delta_scenarios,
                                  plan_seconds_per_candidate,
+                                 provenance_warnings,
                                  read_events, summarise_activity)
 from evaluation.schema import ValidationError
 
@@ -632,3 +633,55 @@ def test_델타를_고르지_않고_늘어놓기만_한다():
 def test_예산이_없으면_비례_안도_수를_안_만든다():
     rows = delta_scenarios(None)
     assert [r["delta"] for r in rows] == [1, None, None, None]
+
+
+# ── 사람이 판정한 기록인가 ───────────────────────────────────────────────────
+#
+# 자동 클릭으로 잰 시간이 N으로 흘러가면 안 된다. 처음 dry pilot이 그랬고,
+# 그 값으로 N을 계산하면 868이 나왔다.
+
+def test_너무_빠르면_사람_판정으로_안_본다():
+    summary = summarise_activity(_pilot(2, 6, seconds=0.5))
+    got = plan_seconds_per_candidate(summary)
+    assert got["status"] == "implausible_for_human_judging"
+    assert got["s_plan_seconds"] is None
+    assert "자동 클릭" in got["reason"]
+
+
+def test_표본이_충분해도_자동_클릭이면_막는다():
+    """많이 모아도 자동 클릭 시간은 사람의 검수 시간이 되지 않는다."""
+    summary = summarise_activity(_pilot(5, 20, seconds=0.3))
+    assert summary.timing_usable is True          # 표본 기준은 넘겼다
+    assert plan_seconds_per_candidate(summary)["status"] == \
+        "implausible_for_human_judging"
+
+
+def test_전부_보류면_경고한다():
+    """화면을 안 보고 눌렀거나, 판정할 수 없는 자료였다는 뜻이다."""
+    rows = []
+    for s_index in range(2):
+        events = [ev(0, "session_started")]
+        clock = 0.0
+        for c in range(6):
+            events.append(ev(clock, "candidate_opened", f"h{s_index}_{c}"))
+            clock += 8.0
+            events.append(ev(clock, "verdict_set", f"h{s_index}_{c}",
+                             verdict="hold"))
+        events.append(ev(clock, "session_ended"))
+        rows += session(*events, name=f"h{s_index}")
+
+    summary = summarise_activity(rows)
+    got = plan_seconds_per_candidate(summary)
+    assert got["status"] == "implausible_for_human_judging"
+    assert "보류가" in got["reason"]
+
+
+def test_사람_속도이면_통과한다():
+    got = plan_seconds_per_candidate(summarise_activity(_pilot(2, 6, seconds=12.0)))
+    assert got["status"] == "ok"
+    assert got["provenance_warnings"] == []
+
+
+def test_경고를_따로도_볼_수_있다():
+    assert provenance_warnings(summarise_activity(_pilot(2, 6, seconds=0.4)))
+    assert provenance_warnings(summarise_activity(_pilot(2, 6, seconds=15.0))) == []

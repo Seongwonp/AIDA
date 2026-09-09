@@ -16,10 +16,12 @@ vi.mock("../api", () => ({
   getBlindQueue: (...a: unknown[]) => getBlindQueue(...a),
   putAdjudications: (...a: unknown[]) => putAdjudications(...a),
   postActivity: (...a: unknown[]) => postActivity(...a),
+  getLabelBoxes: () => Promise.resolve({ image: "a.jpg", labels: [] }),
   API_BASE_URL: "",
 }));
-// 미리보기는 이 검사와 무관하고 이미지를 부른다.
-vi.mock("./BoxPreview", () => ({ BoxPreview: () => null }));
+// 이미지 그리기는 이 검사와 무관하다. 그 화면 자체는
+// AdjudicationView.test.tsx가 따로 본다.
+vi.mock("./AdjudicationView", () => ({ AdjudicationView: () => null }));
 
 import { BlindAdjudication } from "./BlindAdjudication";
 
@@ -111,7 +113,7 @@ describe("가림", () => {
     // "여기 객체가 빠졌는가"다. 이것까지 숨기면 판정을 할 수 없다.
     getBlindQueue.mockResolvedValue(queue([cand({ label_index: null })]));
     show();
-    await screen.findByText(/빠진 객체인가/);
+    await screen.findByText(/라벨이 빠졌는가/);
   });
 
   test("안내 문구가 가리는 범위를 정확히 말한다", async () => {

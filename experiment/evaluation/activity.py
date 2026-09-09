@@ -59,6 +59,20 @@ KNOWN_EVENTS = frozenset(INPUT_EVENTS | WAIT_START | WAIT_END | {
 MIN_COMPLETE_SESSIONS = 2
 MIN_JUDGED_CANDIDATES = 10
 
+# ── 사람이 판정한 기록인가 ───────────────────────────────────────────────────
+#
+# **자동 클릭으로 잰 시간이 N으로 흘러가면 안 된다.** 처음 dry pilot이 후보당
+# 2~4초였고, 그 값으로 N을 계산하면 868이 나왔다 — 사람이 클릭 속도로
+# 검수한다는 가정이다.
+#
+# 아래 값들도 **근거가 약한 운영 기준**이다. "사람이 이미지를 보고 판단하는
+# 데 최소 이 정도는 걸린다"는 짐작이고, 통계적으로 유도한 값이 아니다.
+# 넘겼다고 사람이 한 것이 증명되지는 않는다 — **못 한 것만 걸러낸다.**
+MIN_HUMAN_MEDIAN_SECONDS = 2.0
+# 전부 보류면 화면을 안 보고 눌렀을 수 있다. 판정을 못 할 자료였다는 뜻이기도
+# 하다 — 어느 쪽이든 그 시간으로 N을 정하면 안 된다.
+MAX_HOLD_RATE = 0.9
+
 
 @dataclass
 class CandidateTime:
@@ -507,6 +521,31 @@ def bootstrap_mean_upper(summary: ActivitySummary, confidence: float = 0.95,
     return _percentile(means, confidence)
 
 
+def provenance_warnings(summary: ActivitySummary) -> list[str]:
+    """**사람이 판정한 기록으로 보이는가.**
+
+    자동 클릭은 사람보다 훨씬 빠르고, 화면을 안 보므로 판정이 한쪽으로 쏠린다.
+    그 시간으로 N을 정하면 "사람이 클릭 속도로 검수한다"고 가정하는 셈이다.
+
+    **여기서 통과한다고 사람이 한 것이 증명되지는 않는다.** 못 한 것만
+    걸러낸다 — 기록만 보고 누가 눌렀는지 알 방법은 없다.
+    """
+    warnings = []
+    median = summary.median_seconds_per_candidate
+    if median is not None and median < MIN_HUMAN_MEDIAN_SECONDS:
+        warnings.append(
+            f"후보당 중앙값이 {median:.2f}초입니다 "
+            f"(사람 판정의 최소 기준 {MIN_HUMAN_MEDIAN_SECONDS}초). "
+            "자동 클릭으로 잰 시간일 수 있습니다.")
+    if summary.hold_rate is not None and summary.hold_rate > MAX_HOLD_RATE:
+        warnings.append(
+            f"보류가 {summary.hold_rate * 100:.0f}%입니다. 화면을 안 보고 "
+            "눌렀거나, 판정할 수 없는 자료였을 수 있습니다.")
+    if summary.opened_candidates and not summary.judged_candidates:
+        warnings.append("후보를 열기만 하고 판정하지 않았습니다.")
+    return warnings
+
+
 def _why_unusable(summary: ActivitySummary) -> str:
     reasons = []
     if summary.complete_sessions < MIN_COMPLETE_SESSIONS:
@@ -540,6 +579,21 @@ def plan_seconds_per_candidate(summary: ActivitySummary, seed: int = 0) -> dict:
 
     표본이 모자라면 값을 만들지 않고 `insufficient_pilot_data`를 돌려준다.
     """
+    warnings = provenance_warnings(summary)
+    if warnings:
+        # **표본이 충분해도 막는다.** 자동 클릭 시간은 많이 모아도 사람의
+        # 검수 시간이 되지 않는다.
+        return {
+            "status": "implausible_for_human_judging",
+            "reason": " ".join(warnings),
+            "provenance_warnings": warnings,
+            "median_seconds": summary.median_seconds_per_candidate,
+            "hold_rate": summary.hold_rate,
+            "s_plan_seconds": None,
+            "basis": ("근거가 약한 운영 기준이다. 넘겼다고 사람이 한 것이 "
+                      "증명되지는 않는다 — 못 한 것만 걸러낸다."),
+        }
+
     if not summary.timing_usable:
         return {
             "status": "insufficient_pilot_data",
@@ -567,6 +621,7 @@ def plan_seconds_per_candidate(summary: ActivitySummary, seed: int = 0) -> dict:
                          "재표집). 확률 보장이 아니라 보수적 참고값이다."),
         "complete_sessions": summary.complete_sessions,
         "judged_candidates": summary.judged_candidates,
+        "provenance_warnings": [],
     }
 
 

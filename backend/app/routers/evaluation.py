@@ -105,6 +105,7 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
                 "label_index": c.label_index,
                 "suspicion": c.suspicion,
                 "box": normalize_box(c.box),
+                "class_name": c.class_name,
                 "scores": {k: c.scores[k] for k in sorted(c.scores)},
             }
             for c in sorted(candidates, key=lambda c: c.canonical_candidate_id)
@@ -246,6 +247,7 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
             label_index=item.get("label_index"),
             suspicion=item.get("suspicion", ""),
             box=item.get("box"),
+            class_name=item.get("class_name"),
             scores=_scores(item),
         )
         for item in queue
@@ -426,6 +428,7 @@ def blind_queue(snapshot: EvaluationSnapshot,
         items.append(BlindCandidate(
             canonical_candidate_id=c.canonical_candidate_id,
             image=c.image, label_index=c.label_index, box=c.box,
+            class_name=c.class_name,
             verdict=a.verdict if a else None,
             unique_error_id=a.unique_error_id if a else None))
     random.Random(snapshot.shuffle_seed).shuffle(items)

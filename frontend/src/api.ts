@@ -121,6 +121,7 @@ export type BlindQueueResponse = {
     image: string;
     label_index: number | null;
     box: number[] | null;
+    class_name: string | null;
     verdict: "hit" | "miss" | "hold" | null;
     unique_error_id: string | null;
   }>;
@@ -180,4 +181,25 @@ export const postActivity = (
       candidate_set_hash: candidateSetHash,
       events,
     })
+    .then((res) => res.data);
+
+export type LabelBox = {
+  label_index: number;
+  class_id: number;
+  class_name: string | null;
+  /** cx, cy, w, h — 정규화(0~1). 화면이 이미지 크기로 픽셀로 바꾼다. */
+  box: number[];
+};
+
+/**
+ * 이미지 한 장에 이미 붙어 있는 라벨 전부.
+ *
+ * 가림 판정 화면이 문맥을 그리는 데 쓴다 — **주변이 안 보이면 판정할 수 없다.**
+ * 의심 유형이나 점수는 담기지 않는다. 데이터셋의 사실이지 우리 판단이 아니다.
+ */
+export const getLabelBoxes = (datasetId: string, image: string) =>
+  client
+    .get<{ image: string; labels: LabelBox[] }>(
+      `/api/datasets/${datasetId}/label-boxes/${encodeURIComponent(image)}`,
+    )
     .then((res) => res.data);

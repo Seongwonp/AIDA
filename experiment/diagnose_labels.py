@@ -235,6 +235,11 @@ def build_result(name: str, findings: list[BoxFinding], total_labels: int,
                 # — 그 기준선을 누락에 어떻게 매길지는 아직 정해지지 않았다
                 # (docs/evaluation-adjudication-design.md).
                 "label_iou": f.label_iou,
+                # 무엇을 보는 작업인지 알아야 판정할 수 있다. **가림 대상이
+                # 아니다** — 가리는 것은 방법·점수·순위·세부 의심 유형이다.
+                "class_name": (config.CLASS_NAMES[f.class_id]
+                               if f.class_id is not None
+                               and f.class_id < len(config.CLASS_NAMES) else None),
             }
             for i, f in enumerate(ranked[:top_n])
         ],

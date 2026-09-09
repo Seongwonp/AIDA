@@ -21,6 +21,9 @@ export type BlindCandidate = {
   image: string;
   label_index: number | null;
   box: number[] | null;
+  // 무엇을 보는 작업인지. **가림 대상이 아니다** — 가리는 것은 방법·점수·
+  // 원래 순위·세부 의심 유형이다(docs/manual-timing-pilot.md).
+  class_name?: string | null;
   verdict: EvalVerdict | null;
   unique_error_id: string | null;
 };

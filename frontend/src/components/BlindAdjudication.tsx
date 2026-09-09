@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getBlindQueue, postActivity, putAdjudications } from "../api";
 import { makeActivityLogger, queueKey } from "./activityLog";
 import { API_BASE_URL } from "../api";
-import { BoxPreview } from "./BoxPreview";
+import { AdjudicationView } from "./AdjudicationView";
 import {
   ALL_JUDGED_MESSAGE,
   blockedIds,
@@ -276,14 +276,9 @@ export function BlindAdjudication({
   return (
     <section className="blind-adjudication">
       <h2>가림 판정</h2>
-      <p className="muted">
-        방법·점수·원래 순위·세부 의심 유형을 가린 채 판정합니다.{" "}
-        <strong>기존 라벨 검수인지 누락 객체 검수인지는 가리지 않습니다</strong>{" "}
-        — 판정 작업 자체가 달라 숨기면 판정할 수 없습니다.
-      </p>
-      <p className="muted">
-        <strong>판정자는 아직 개발자이며, 독립된 판정이 아닙니다.</strong>
-      </p>
+      {/* **머리글을 짧게 둔다.** 후보마다 스크롤해야 버튼이 보이면 시간이
+          늘고 엉뚱한 버튼을 누른다. 자세한 설명은 화면 아래에 있다. */}
+      <p className="muted">방법·점수·원래 순위·세부 의심 유형을 가립니다.</p>
 
       {damaged && <p className="warn" role="alert">{DAMAGED_MESSAGE}</p>}
       {conflict && <p className="error" role="alert">{HASH_CONFLICT_MESSAGE}</p>}
@@ -297,13 +292,21 @@ export function BlindAdjudication({
       {current && (
         <article key={current.canonical_candidate_id}>
           <p>{current.image}</p>
-          {current.box && (
-            <BoxPreview datasetId={datasetId} image={current.image} box={current.box} />
-          )}
+          <AdjudicationView
+            datasetId={datasetId}
+            image={current.image}
+            box={current.box}
+            labelIndex={current.label_index}
+          />
           <p>
             {current.label_index === null
-              ? "라벨이 없는 자리 — 빠진 객체인가?"
-              : `${current.label_index}번 라벨 — 이 라벨이 틀렸는가?`}
+              ? `여기 ${current.class_name ?? "객체"}가 있는데 라벨이 빠졌는가?`
+              : `이 ${current.class_name ?? "객체"} 라벨이 잘 감쌌는가?`}
+          </p>
+          <p className="muted">
+            {current.label_index === null
+              ? "실제 객체가 있는데 라벨이 없으면 오류였다, 객체가 아니거나 라벨 대상이 아니면 오류 아니었다, 가림·해상도 때문에 불명확하면 모르겠다."
+              : "실무상 고쳐야 할 만큼 어긋났으면 오류였다, 이대로 써도 되면 오류 아니었다, 경계가 애매하거나 객체를 확인할 수 없으면 모르겠다."}
           </p>
 
           {(["hit", "miss", "hold"] as const).map((v) => (
@@ -404,6 +407,12 @@ export function BlindAdjudication({
           다음 미판정 ({left})
         </button>
       </nav>
+
+      <p className="muted">
+        <strong>기존 라벨 검수인지 누락 객체 검수인지는 가리지 않습니다</strong>{" "}
+        — 판정 작업 자체가 달라 숨기면 판정할 수 없습니다.{" "}
+        <strong>판정자는 아직 개발자이며, 독립된 판정이 아닙니다.</strong>
+      </p>
 
       {blocked.length > 0 && (
         <p className="warn" role="alert">

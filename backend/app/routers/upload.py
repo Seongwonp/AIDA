@@ -19,6 +19,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Response, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
+from pydantic import BaseModel
 
 from app.config import EXPERIMENT_PYTHON, EXPERIMENT_ROOT, UPLOADS_DIR
 from app.models import (
@@ -1103,3 +1104,68 @@ def get_label_diagnosis(dataset_id: str) -> LabelDiagnosisResult:
 @router.get("/{dataset_id}/diagnosis", response_model=UploadDiagnosisResult)
 def get_dataset_diagnosis(dataset_id: str) -> UploadDiagnosisResult:
     return _load_diagnosis_json(dataset_id)
+
+
+class LabelBox(BaseModel):
+    """이미지 한 장에 붙은 라벨 하나. 좌표는 **정규화된 YOLO 형식 그대로**다."""
+    label_index: int
+    class_id: int
+    class_name: str | None = None
+    # cx, cy, w, h (0~1). 화면이 이미지 크기를 알고 있으므로 거기서 픽셀로 바꾼다.
+    box: list[float]
+
+
+class LabelBoxes(BaseModel):
+    image: str
+    labels: list[LabelBox] = []
+
+
+@router.get("/{dataset_id}/label-boxes/{name}", response_model=LabelBoxes)
+def get_label_boxes(dataset_id: str, name: str) -> LabelBoxes:
+    """이미지 한 장의 **기존 라벨 전부.**
+
+    가림 판정 화면이 "이 후보 말고 이 이미지에 무엇이 이미 라벨돼 있는가"를
+    보여주려면 이게 필요하다. **문맥이 없으면 판정할 수 없다** — 누락 후보가
+    가리키는 자리에 이미 라벨이 있는지, 기존 라벨이 옆 객체를 잘못 감쌌는지는
+    주변을 봐야 안다.
+
+    **정규화 좌표를 그대로 준다.** 픽셀로 바꾸려면 이미지 크기가 필요한데,
+    서버는 이미지를 열지 않는다(백엔드에 이미지 라이브러리가 없다). 화면은
+    이미 이미지를 띄우고 있어 크기를 안다.
+
+    **의심 유형이나 점수는 담기지 않는다.** 이건 데이터셋의 사실이지 우리
+    판단이 아니다.
+    """
+    dataset_dir = (UPLOADS_DIR / dataset_id).resolve()
+    labels_dir = (dataset_dir / "labels").resolve()
+    if not labels_dir.is_dir():
+        raise HTTPException(404, "데이터셋을 찾을 수 없습니다.")
+
+    safe = Path(name).name                      # ../ 같은 것을 떼어낸다
+    stem = Path(safe).stem
+    matches = [p for p in labels_dir.rglob(f"{stem}.txt") if p.is_file()]
+    if not matches:
+        # 라벨이 없는 이미지도 있다. **오류가 아니다** — 빈 목록이 사실이다.
+        return LabelBoxes(image=safe, labels=[])
+
+    path = matches[0].resolve()
+    if not path.is_relative_to(labels_dir):
+        raise HTTPException(400, "허용되지 않은 경로입니다.")
+
+    names = read_class_names(dataset_dir)
+    labels = []
+    for index, line in enumerate(path.read_text(encoding="utf-8").splitlines()):
+        parts = line.split()
+        if len(parts) < 5:
+            continue                            # 빈 줄이나 깨진 줄은 건너뛴다
+        try:
+            class_id = int(float(parts[0]))
+            box = [float(v) for v in parts[1:5]]
+        except ValueError:
+            continue
+        labels.append(LabelBox(
+            label_index=index, class_id=class_id,
+            class_name=(names[class_id]
+                        if names and 0 <= class_id < len(names) else None),
+            box=box))
+    return LabelBoxes(image=safe, labels=labels)

@@ -1,5 +1,9 @@
 """파일럿 작업 기록에서 시간 요약을 만든다 (docs/manual-timing-pilot.md).
 
+**자동 클릭으로 잰 시간은 N에 쓰지 않는다.** 사람이 이미지를 보고 판단한
+시간이어야 하고, 그렇지 않아 보이면 `implausible_for_human_judging`으로
+막는다. 통과했다고 사람이 한 것이 증명되지는 않는다 — 못 한 것만 걸러낸다.
+
 **성과는 보지 않는다.** 여기서 나오는 것은 "후보 하나에 얼마나 걸렸는가"뿐이고,
 AIDA가 기준선보다 나은지는 다루지 않는다 — 그건 다른 경로이고 아직 열면 안 된다.
 
@@ -57,7 +61,14 @@ def main() -> int:
     print()
     print(f"timing_usable = {summary.timing_usable}")
 
-    if plan["status"] != "ok":
+    if plan["status"] == "implausible_for_human_judging":
+        # **자동 클릭 시간이 N으로 흘러가면 안 된다.**
+        print()
+        print("  ！ 사람이 판정한 기록으로 보이지 않습니다. N을 계산하지 않습니다.")
+        for warning in plan["provenance_warnings"]:
+            print(f"    - {warning}")
+        print(f"  ({plan['basis']})")
+    elif plan["status"] != "ok":
         print(f"  → N을 계산하지 않습니다: {plan['reason']}")
         print(f"  최소 기준: 온전한 세션 {plan['minimum_sessions']}개, "
               f"판정 후보 {plan['minimum_candidates']}개")

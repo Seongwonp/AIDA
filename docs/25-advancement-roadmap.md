@@ -137,7 +137,7 @@
 
 ## 5. 사람이 실제로 더 잘 검수하는가
 
-- [ ] 개발자 자체 예비 평가로 시간 측정·기록지·판정 지침을 먼저 확인한다. **계측 계약과 도구는 준비됐다**([pilot-evaluation-plan.md](pilot-evaluation-plan.md), `experiment/evaluation/activity.py`)이고 **사람이 직접 판정할 절차도 준비됐다**([manual-timing-pilot.md](manual-timing-pilot.md), `experiment/make_timing_pilot.py`) — **실제 사람 판정은 아직이다.** 자동 클릭 시간은 사람의 검수 시간이 아니다.
+- [ ] 개발자 자체 예비 평가로 시간 측정·기록지·판정 지침을 먼저 확인한다. **계측 계약과 도구는 준비됐다**([pilot-evaluation-plan.md](pilot-evaluation-plan.md), `experiment/evaluation/activity.py`)이고 **사람이 직접 판정할 절차도 준비됐다**([manual-timing-pilot.md](manual-timing-pilot.md), `experiment/make_timing_pilot.py`) — **실제 사람 판정은 아직이다.** 자동 클릭 시간은 사람의 검수 시간이 아니고, 코드가 그런 기록을 `implausible_for_human_judging`으로 막는다. 파일럿 자료는 **개발 데이터의 실제 이미지**에 오류를 주입해 만든다 — 첫 판은 빈 회색 이미지에 난수 박스여서 판정 자체가 불가능했다.
 - [ ] 외부 참여자 3~5명은 **사용성 문제 탐색의 예상 규모**로만 둔다. 일반적 효과를 입증하는 표본 수로 취급하지 않는다.
 - [ ] 기억 효과를 줄이도록 서로 다른 데이터 묶음과 사용 순서를 균형 배치한다.
 - [ ] 활동 시간과 대기 시간을 나누고 고유 오류·보류·수정·저장 실패를 기록한다.

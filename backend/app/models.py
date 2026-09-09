@@ -314,6 +314,9 @@ class EvaluationCandidate(BaseModel):
     label_index: int | None
     suspicion: str
     box: list[float] | None = None
+    # 객체의 클래스 이름. **가림 대상이 아니다** — 무엇을 보는 작업인지
+    # 알아야 판정할 수 있다(docs/manual-timing-pilot.md).
+    class_name: str | None = None
     # 방법별 점수. 판정 화면에는 **보내지 않는다.**
     scores: dict[str, float] = {}
 
@@ -354,11 +357,12 @@ class EvaluationAdjudications(BaseModel):
 
 
 class BlindCandidate(BaseModel):
-    """판정 화면에 보내는 것. **점수·순위·진단 문구를 뺀다.**"""
+    """판정 화면에 보내는 것. **점수·순위·세부 의심 유형을 뺀다.**"""
     canonical_candidate_id: str
     image: str
     label_index: int | None
     box: list[float] | None = None
+    class_name: str | None = None
     verdict: str | None = None
     unique_error_id: str | None = None
 
