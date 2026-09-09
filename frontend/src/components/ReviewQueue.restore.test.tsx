@@ -135,6 +135,30 @@ describe("R3 복원의 의미", () => {
     expect(loadVerdicts(DS)[keyOf(ITEMS[0])]).toBe("hit");
   });
 
+  test("다시 진단해 후보가 달라지면 사라진 판정을 세어 말한다", async () => {
+    // 누락 후보는 키에 예측 좌표가 들어가 자가 바뀌면 어긋난다 (docs/25 R5).
+    const before = item({ label_index: null, suspicion: "missing", box: [10, 20, 60, 70] });
+    const after = item({ label_index: null, suspicion: "missing", box: [12, 22, 62, 72] });
+    localStorage.setItem(STORE(DS), JSON.stringify({ [keyOf(before)]: "hit" }));
+    getVerdicts.mockResolvedValue({ verdicts: {}, updated_at: null });
+
+    render(<ReviewQueue items={[after]} datasetId={DS} />);
+    await act(async () => { await Promise.resolve(); });
+
+    await waitFor(() => {
+      expect(screen.getByText(/판정 1건이 지금 목록의 후보를 가리키지 않습니다/)).toBeTruthy();
+    });
+    // 지워졌다고 오해하지 않게 말해야 한다.
+    expect(screen.getByText(/지워지지 않았고/)).toBeTruthy();
+  });
+
+  test("후보가 그대로면 아무 말도 안 한다", async () => {
+    localStorage.setItem(STORE(DS), JSON.stringify({ [keyOf(ITEMS[0])]: "hit" }));
+    getVerdicts.mockResolvedValue({ verdicts: {}, updated_at: null });
+    await openQueue();
+    expect(screen.queryByText(/가리키지 않습니다/)).toBeNull();
+  });
+
   test("서버에 못 닿으면 브라우저 것으로 이어간다", async () => {
     seedLocal();
     getVerdicts.mockRejectedValue(new Error("오프라인"));

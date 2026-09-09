@@ -194,3 +194,36 @@ def test_no_temp_file_is_left_behind(client, dataset, tmp_path, monkeypatch):
     leftovers = [p.name for p in (tmp_path / "uploads" / dataset).iterdir()
                  if p.name != upload.VERDICTS_FILE and "verdict" in p.name]
     assert leftovers == [], f"임시 파일이 남았다: {leftovers}"
+
+
+# --- 판정의 수명 (docs/25 R5) -------------------------------------------------
+#
+# 판정은 데이터셋 단위로만 묶인다. 그런데 같은 데이터셋을 **다른 자로 다시
+# 진단**할 수 있고, 그러면 후보 목록이 달라진다. 판정이 어느 진단 결과에 대한
+# 것이었는지는 아무 데도 안 남는다.
+#
+# 무엇이 계승되어야 하고 무엇이 무효가 되어야 하는지 먼저 확인한다.
+
+def test_rediagnosis_keeps_the_dataset_id(client, dataset, tmp_path):
+    """재진단해도 데이터셋 id가 그대로면 판정이 그대로 붙는다.
+
+    이게 이 절의 전제다 — id가 바뀌면 애초에 섞일 일이 없다.
+    """
+    client.put(f"/api/datasets/{dataset}/verdicts",
+               json={"verdicts": {"a.png#0#width": "hit"}})
+    # 라벨은 업로드 시점에 고정된다. 재진단이 바꾸는 것은 후보 목록뿐이다.
+    assert client.get(f"/api/datasets/{dataset}/verdicts").json()["verdicts"] == {
+        "a.png#0#width": "hit"}
+
+
+def test_verdicts_do_not_record_which_ruler(client, dataset):
+    """지금 판정은 **어느 자로 본 것인지** 안 남긴다.
+
+    라벨이 틀렸는지 아닌지는 자와 무관한 사실이므로 계승이 맞다. 다만 검수자가
+    무엇을 보고 판단했는지는 남아야 대조할 수 있다.
+    """
+    client.put(f"/api/datasets/{dataset}/verdicts",
+               json={"verdicts": {"a.png#0#width": "hit"}})
+    body = client.get(f"/api/datasets/{dataset}/verdicts").json()
+    assert "ruler" not in body and "diagnosis_run" not in body, \
+        "이 검사는 현재 상태를 고정한다 — 바뀌면 R5의 결정을 다시 적을 것"

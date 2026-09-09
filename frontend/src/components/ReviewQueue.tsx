@@ -10,6 +10,8 @@ import {
   otherTabChanged,
   OTHER_TAB_MESSAGE,
   shouldKeepLocalOnEmpty,
+  orphanReport,
+  orphanMessage,
   DAMAGED_MESSAGE,
   saveStatusMessage,
   saveVerdicts,
@@ -254,9 +256,16 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
   const precision = judged.length ? (hits / judged.length) * 100 : null;
 
   const saveMessage = saveStatusMessage(serverFailed, localFailed);
+  // 다시 진단하면 후보가 달라져 옛 판정이 화면에서 사라질 수 있다 (docs/25 R5).
+  // **지워진 것은 아니지만** 검수자는 잃은 줄 알기 쉬우므로 세어서 말한다.
+  const orphans = useMemo(() => orphanReport(verdicts, items), [verdicts, items]);
+  const orphanNote = orphanMessage(orphans.orphaned, orphans.movable);
 
   return (
     <>
+      {orphanNote && (
+        <p className="report-caveat" role="status">{orphanNote}</p>
+      )}
       {damaged && (
         <p className="error-banner" role="status">{DAMAGED_MESSAGE}</p>
       )}

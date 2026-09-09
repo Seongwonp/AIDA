@@ -285,3 +285,144 @@ export const DAMAGED_MESSAGE =
   "서버의 판정 저장 파일이 손상되어 읽지 못했습니다. 이 브라우저에 남은 판정으로 " +
   "이어서 검수하고 있으며, 다음 판정부터 서버에 다시 쌓입니다. 서버에 있던 판정 " +
   "일부가 사라졌을 수 있으니 내보낸 CSV가 있으면 대조하세요.";
+
+/** 겹침 비율(IoU). 두 박스가 같은 것을 가리키는지 볼 때 쓴다. */
+function iou(a: number[], b: number[]): number {
+  const x1 = Math.max(a[0], b[0]);
+  const y1 = Math.max(a[1], b[1]);
+  const x2 = Math.min(a[2], b[2]);
+  const y2 = Math.min(a[3], b[3]);
+  const inter = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
+  if (inter === 0) return 0;
+  const area = (box: number[]) => (box[2] - box[0]) * (box[3] - box[1]);
+  const union = area(a) + area(b) - inter;
+  return union > 0 ? inter / union : 0;
+}
+
+/** 같은 후보로 볼 겹침의 하한. 진단이 라벨과 예측을 짝지을 때 쓰는 값과 같다. */
+export const SAME_CANDIDATE_IOU = 0.5;
+
+/**
+ * 다시 진단한 뒤에도 **같은 후보**인가 (docs/25 R5).
+ *
+ * **판정은 라벨에 대한 사실이다.** "이 박스가 틀렸는가"는 어느 자로 봤든 답이
+ * 같다. 그래서 라벨을 가리키는 후보(`label_index`가 있는 것)는 자가 바뀌어도
+ * 같은 것이고, 키가 이미 그렇게 되어 있다 — 심각도·근거·순위가 달라져도
+ * 판정이 그대로 붙는다.
+ *
+ * **누락 후보는 다르다.** 가리킬 라벨이 없어 키에 예측 좌표가 들어가는데
+ * (docs/24 B1), 자가 바뀌면 예측이 조금씩 달라져 **키가 어긋난다.** 그러면
+ * 사람 눈에 같은 박스인데도 판정이 사라진다.
+ *
+ * 그래서 누락 후보는 **겹침으로** 알아본다. 좌표가 흔들려도 같은 자리를
+ * 가리키면 같은 후보다.
+ *
+ * **키를 겹침으로 바꾸지는 않는다.** 키는 저장의 주소라 안정적이어야 하고,
+ * 겹침은 대칭이지만 이행적이지 않다(A~B, B~C인데 A~C가 아닐 수 있다).
+ * 겹침은 **계승할 때만** 쓴다.
+ */
+export function sameCandidate(a: ReviewQueueItem, b: ReviewQueueItem): boolean {
+  if (a.image !== b.image || a.suspicion !== b.suspicion) return false;
+  if (a.label_index !== null && a.label_index !== undefined) {
+    return a.label_index === b.label_index;
+  }
+  if (b.label_index !== null && b.label_index !== undefined) return false;
+  if (!a.box || !b.box) return false;
+  return iou(a.box, b.box) >= SAME_CANDIDATE_IOU;
+}
+
+/**
+ * 다시 진단한 후보 목록에 옛 판정을 옮긴다 (docs/25 R5).
+ *
+ * 키가 그대로면 그대로 두고, 누락 후보처럼 키가 어긋난 것만 겹침으로 찾아
+ * 옮긴다. **옮기지 못한 판정은 버린다** — 가리킬 후보가 없어졌다는 뜻이다.
+ *
+ * 돌려주는 `moved`와 `dropped`는 화면에 말하기 위한 것이다. 판정이 조용히
+ * 사라지면 검수자는 잃은 줄도 모른다.
+ */
+export function carryOverVerdicts(
+  previous: Verdicts,
+  previousItems: ReviewQueueItem[],
+  currentItems: ReviewQueueItem[],
+): { verdicts: Verdicts; moved: number; dropped: number } {
+  const currentKeys = new Set(currentItems.map(keyOf));
+  const next: Verdicts = {};
+  let moved = 0;
+  let dropped = 0;
+
+  for (const [key, verdict] of Object.entries(previous)) {
+    if (currentKeys.has(key)) {            // 자리가 그대로다
+      next[key] = verdict;
+      continue;
+    }
+    const before = previousItems.find((i) => keyOf(i) === key);
+    const match = before && currentItems.find(
+      (i) => !next[keyOf(i)] && sameCandidate(before, i));
+    if (match) {
+      next[keyOf(match)] = verdict;
+      moved += 1;
+    } else {
+      dropped += 1;
+    }
+  }
+  return { verdicts: next, moved, dropped };
+}
+
+/**
+ * 저장된 판정 중 **지금 목록이 가리키지 않는 것**을 센다 (docs/25 R5).
+ *
+ * 다시 진단하면 후보가 달라진다. 라벨을 가리키는 후보는 키가 같아 판정이 그대로
+ * 붙지만, 누락 후보는 키에 예측 좌표가 들어가 **자가 바뀌면 어긋난다.** 그러면
+ * 판정이 저장소에 남은 채 화면에서만 사라진다 — **검수자는 잃은 줄도 모른다.**
+ *
+ * 옛 후보 목록이 없어도 된다. 누락 후보의 좌표는 **키 안에 들어 있다.**
+ *
+ * **자동으로 옮기지 않는다.** 겹침으로 짝을 찾는 규칙은 실제 재진단에서 재본 적이
+ * 없고, 잘못 옮기면 **사람이 안 본 후보에 판정이 붙는다** — docs/24 B1에서 고친
+ * 것과 같은 종류의 사고다. 세어서 말하고, 옮길지는 사람이 정한다.
+ */
+export function orphanReport(
+  verdicts: Verdicts,
+  currentItems: ReviewQueueItem[],
+): { orphaned: number; movable: number } {
+  const currentKeys = new Set(currentItems.map(keyOf));
+  const taken = new Set<string>();
+  let orphaned = 0;
+  let movable = 0;
+
+  for (const key of Object.keys(verdicts)) {
+    if (currentKeys.has(key)) continue;
+    orphaned += 1;
+    const old = itemFromKey(key);
+    if (!old) continue;
+    const match = currentItems.find(
+      (i) => !taken.has(keyOf(i)) && !verdicts[keyOf(i)] && sameCandidate(old, i));
+    if (match) {
+      taken.add(keyOf(match));
+      movable += 1;
+    }
+  }
+  return { orphaned, movable };
+}
+
+/** 키에서 후보의 자리를 되살린다. 겹침 비교에 필요한 것만 채운다. */
+function itemFromKey(key: string): ReviewQueueItem | null {
+  const [image, idx, suspicion, coords] = key.split("#");
+  if (!image || !suspicion) return null;
+  const box = coords ? coords.split(",").map(Number) : null;
+  return {
+    rank: 0, image, suspicion, label: "", severity: 0, detail: "",
+    label_index: idx === "none" ? null : Number(idx),
+    box: box && box.length === 4 && box.every((n) => !Number.isNaN(n)) ? box : null,
+  };
+}
+
+export function orphanMessage(orphaned: number, movable: number): string {
+  if (orphaned === 0) return "";
+  const tail = movable > 0
+    ? ` 그중 ${movable}건은 자리가 조금 달라진 같은 후보로 보입니다 — 다시 판정하시면 됩니다.`
+    : "";
+  return `이전에 내린 판정 ${orphaned}건이 지금 목록의 후보를 가리키지 않습니다. ` +
+         `다른 기준 모델로 다시 진단하면 누락 의심의 위치가 달라져 이렇게 됩니다. ` +
+         `판정은 지워지지 않았고 예전 목록에서는 그대로 보입니다.${tail}`;
+}
