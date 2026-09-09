@@ -22,8 +22,13 @@ const VIEW = 340;
 const PAD = 3.2;       // 후보 박스 크기의 몇 배까지 주변을 보여줄지
 const MIN_SPAN = 260;  // 너무 좁게 잘리지 않게 하는 최소 폭(원본 픽셀)
 
-export const CANDIDATE_COLOR = "#e11d48";   // 지금 판정하는 것
+export const CANDIDATE_COLOR = "#e11d48";   // 지금 보는 **기존 라벨**
 export const CONTEXT_COLOR = "#2563eb";     // 이미 라벨된 것
+// **누락은 색까지 다르게 한다.** timing1 리허설에서 누락 후보 4건 중 2건이
+// 겹치는 파란 박스도 없는데 빠르게 "오류 아니었다"로 판정됐다 — 빨간 점선을
+// "지금 보는 라벨"로 읽고 박스 품질을 답한 것으로 보인다. **표본 4건이라
+// 확인된 원인은 아니지만**, 두 질문을 색으로 갈라 두는 편이 안전하다.
+export const MISSING_COLOR = "#d97706";
 
 export function AdjudicationView({
   datasetId,
@@ -112,8 +117,25 @@ export function AdjudicationView({
           (ncx + nw / 2) * img.width, (ncy + nh / 2) * img.height,
         ], CONTEXT_COLOR, 2, false);
       });
-      stroke([x1, y1, x2, y2], CANDIDATE_COLOR, 3, labelIndex === null);
+      const missing = labelIndex === null;
+      stroke([x1, y1, x2, y2], missing ? MISSING_COLOR : CANDIDATE_COLOR, 3,
+             missing);
       ctx.setLineDash([]);
+
+      if (missing) {
+        // 박스 위에 무엇을 묻는지 적는다. 색과 점선만으로는 "지금 보는 라벨"과
+        // 헷갈릴 수 있다.
+        const [tx, ty] = toView(x1, y1);
+        const text = "라벨 없음?";
+        ctx.font = "bold 14px sans-serif";
+        const pad = 4;
+        const width = ctx.measureText(text).width + pad * 2;
+        const top = Math.max(0, ty - 20);
+        ctx.fillStyle = MISSING_COLOR;
+        ctx.fillRect(tx, top, width, 18);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(text, tx + pad, top + 13);
+      }
     };
     img.onerror = () => !cancelled && setFailed(true);
     img.src = `${API_BASE_URL}/api/datasets/${datasetId}/images/${encodeURIComponent(image)}`;
@@ -142,10 +164,17 @@ export function AdjudicationView({
         aria-label={`${image}의 판정 대상 박스와 주변 기존 라벨`}
       />
       <figcaption>
-        <span style={{ color: CANDIDATE_COLOR }}>
-          ▬ {labelIndex === null ? "빠졌다고 지목된 자리 (점선)" : "지금 보는 라벨"}
-        </span>{" "}
-        <span style={{ color: CONTEXT_COLOR }}>▬ 이미 붙어 있는 다른 라벨</span>
+        {labelIndex === null ? (
+          <span style={{ color: MISSING_COLOR }}>
+            ▬ 주황 점선 = <strong>여기 라벨이 빠졌는가</strong> (박스 품질을 보는
+            것이 아닙니다)
+          </span>
+        ) : (
+          <span style={{ color: CANDIDATE_COLOR }}>
+            ▬ 빨강 실선 = <strong>지금 보는 라벨</strong>
+          </span>
+        )}{" "}
+        <span style={{ color: CONTEXT_COLOR }}>▬ 파랑 = 이미 붙어 있는 다른 라벨</span>
       </figcaption>
     </figure>
   );

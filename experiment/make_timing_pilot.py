@@ -39,8 +39,12 @@ import config
 from error_injector import (apply_scale, apply_translation_x, apply_width,
                             pixel_to_yolo_line, yolo_to_pixel)
 
-# 임시 파일럿 전용 id. **사용자가 올린 데이터셋과 겹치지 않는 자리다.**
-PILOT_DATASET = "ffffffffff01"
+# 임시 파일럿 전용 id 대역. **사용자가 올린 데이터셋과 겹치지 않는 자리다.**
+DEFAULT_DATASET = "ffffffffff01"
+# 파일럿 실행마다 남기는 메타. **판정 방식은 밖에서 적는다** — 기록만 보고
+# 도움을 받았는지 알 수 없다(docs/manual-timing-pilot.md).
+PILOT_META_FILE = "pilot_meta.json"
+JUDGING_MODES = ("unaided_human", "assisted_rehearsal")
 
 # 판정할 수 있을 만큼 큰 객체만 쓴다. 너무 작으면 "모르겠다"밖에 답이 없고,
 # 그건 도구가 아니라 자료의 문제다.
@@ -78,12 +82,32 @@ def _read_size(path: Path) -> tuple[int, int] | None:
     return None
 
 
-def pick_images(images_dir: Path, labels_dir: Path, count: int,
-                seed: int) -> list[tuple[Path, Path, int, int]]:
-    """라벨이 충분히 있는 이미지를 고른다."""
+def used_images(dataset_id: str) -> set[str]:
+    """그 파일럿이 이미 쓴 이미지 이름들. 없으면 빈 집합.
+
+    **정답을 본 이미지는 다시 쓰지 않는다.** 한 번 본 이미지는 두 번째에
+    빨라지고, 그 시간은 판정 시간이 아니라 기억이다.
+    """
+    path = config.uploads_dir() / dataset_id / "label_diagnosis.json"
+    if not path.is_file():
+        return set()
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return set()
+    return {row.get("image") for row in data.get("review_queue", [])
+            if row.get("image")}
+
+
+def pick_images(images_dir: Path, labels_dir: Path, count: int, seed: int,
+                exclude: set[str] | None = None,
+                ) -> list[tuple[Path, Path, int, int]]:
+    """라벨이 충분히 있는 이미지를 고른다. `exclude`에 있는 것은 건너뛴다."""
     rng = random.Random(seed)
+    skip = exclude or set()
     pool = sorted(p for p in images_dir.iterdir()
-                  if p.suffix.lower() in (".png", ".jpg", ".jpeg"))
+                  if p.suffix.lower() in (".png", ".jpg", ".jpeg")
+                  and p.name not in skip)
     rng.shuffle(pool)
 
     chosen = []
@@ -104,18 +128,27 @@ def pick_images(images_dir: Path, labels_dir: Path, count: int,
 
 
 def build(images_dir: Path, labels_dir: Path, out: Path, candidates: int,
-          seed: int, class_names: list[str]) -> tuple[list[dict], list[dict]]:
+          seed: int, class_names: list[str],
+          exclude: set[str] | None = None,
+          ) -> tuple[list[dict], list[dict]]:
     """후보 목록과 **정답 열쇠**를 만든다.
 
     정답 열쇠는 진단 결과와 **다른 파일**에 쓴다. 가림 판정 화면은 진단 결과만
     읽으므로 열쇠가 새지 않는다. **판정 전에 열지 않는다.**
     """
     rng = random.Random(seed)
-    images = pick_images(images_dir, labels_dir, candidates, seed)
+    images = pick_images(images_dir, labels_dir, candidates, seed, exclude)
     if len(images) < candidates:
         raise SystemExit(
             f"쓸 만한 이미지가 모자랍니다: {len(images)}/{candidates}\n"
             f"{images_dir}를 확인하세요.")
+
+    # **겹치면 만들지 않는다.** 제외 목록을 넘겼는데도 겹쳤다면 거르는 쪽이
+    # 고장 난 것이고, 그대로 두면 기억으로 빨라진 시간을 판정 시간으로 센다.
+    overlap = {i[0].name for i in images} & (exclude or set())
+    if overlap:
+        raise SystemExit(
+            f"제외해야 할 이미지가 들어왔습니다: {sorted(overlap)[:5]}")
 
     (out / "images").mkdir(parents=True, exist_ok=True)
     (out / "labels").mkdir(parents=True, exist_ok=True)
@@ -182,7 +215,16 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="수동 파일럿 무대 만들기")
     parser.add_argument("--candidates", type=int, default=24,
                         help="후보 수 (권장 20~30)")
+    parser.add_argument("--dataset-id", default=DEFAULT_DATASET,
+                        help="파일럿 데이터셋 id (12자리 16진수)")
     parser.add_argument("--evaluation-id", default="timing1")
+    parser.add_argument("--exclude-from", action="append", default=[],
+                        metavar="DATASET_ID",
+                        help="그 파일럿이 쓴 이미지를 뺀다. 여러 번 줄 수 있다")
+    parser.add_argument("--judging-mode", choices=JUDGING_MODES,
+                        default="unaided_human",
+                        help="도움 없이 할 것인가, 연습인가. 기록만 보고는 "
+                             "알 수 없어 여기서 적는다")
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--split", default="val", choices=("train", "val"),
                         help="개발 데이터의 어느 분할에서 뽑을지")
@@ -199,7 +241,16 @@ def main() -> int:
             "이 스크립트는 이미 내려받아 둔 개발 데이터만 씁니다 — "
             "새로 내려받지 않습니다.")
 
-    root = config.uploads_dir() / PILOT_DATASET
+    if not __import__("re").fullmatch(r"[0-9a-f]{12}", args.dataset_id):
+        raise SystemExit(f"데이터셋 id 형식이 아닙니다: {args.dataset_id}")
+
+    # **이미 쓴 이미지를 뺀다.** 정답을 본 이미지는 두 번째에 빨라지고,
+    # 그 시간은 판정 시간이 아니라 기억이다.
+    exclude: set[str] = set()
+    for other in args.exclude_from:
+        exclude |= used_images(other)
+
+    root = config.uploads_dir() / args.dataset_id
     if root.exists():
         if not args.replace:
             print(f"이미 있습니다: {root}\n"
@@ -209,10 +260,10 @@ def main() -> int:
         shutil.rmtree(root)
 
     queue, answers = build(images_dir, labels_dir, root, args.candidates,
-                           args.seed, config.CLASS_NAMES)
+                           args.seed, config.CLASS_NAMES, exclude)
 
     (root / "label_diagnosis.json").write_text(json.dumps({
-        "dataset_id": PILOT_DATASET,
+        "dataset_id": args.dataset_id,
         "generated_at": "2026-09-09T00:00:00+00:00",
         "summary": {},
         "caveat": ("수동 시간 측정 파일럿용입니다. 후보는 개발 데이터의 실제 "
@@ -229,6 +280,22 @@ def main() -> int:
         "answers": answers,
     }, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    # **판정 방식을 파일에 적는다.** 나중에 보고서가 이걸 보고 계획값을
+    # 낼지 정한다 — 속도나 보류 비율로는 도움 여부를 알 수 없다.
+    (root / PILOT_META_FILE).write_text(json.dumps({
+        "dataset_id": args.dataset_id,
+        "evaluation_id": args.evaluation_id,
+        "seed": args.seed,
+        "split": args.split,
+        "judging_mode": args.judging_mode,
+        "excluded_from": args.exclude_from,
+        "excluded_images": sorted(exclude),
+        "images": sorted({row["image"] for row in queue}),
+        "note": ("judging_mode는 사람이 적는 값이다. 도움을 받았는지는 "
+                 "기록만 보고 알 수 없다 — 다른 도구에서 들여다본 시간은 "
+                 "판정 탭의 활동 시간에 안 들어간다."),
+    }, ensure_ascii=False, indent=2), encoding="utf-8")
+
     kinds = {k: sum(1 for a in answers if a["kind"] == k)
              for k in ("wrong", "clean", "missing")}
     print(f"임시 데이터셋을 만들었습니다: {root}")
@@ -236,22 +303,26 @@ def main() -> int:
     print(f"  틀린 라벨 {kinds['wrong']} / 멀쩡한 라벨 {kinds['clean']} "
           f"/ 누락 {kinds['missing']}")
     print(f"  클래스: {', '.join(config.CLASS_NAMES)}")
+    print(f"  판정 방식: {args.judging_mode}")
+    if exclude:
+        print(f"  제외한 이미지 {len(exclude)}장 "
+              f"({', '.join(args.exclude_from)}에서 쓴 것)")
     print()
     print("다음 두 단계는 사람이 합니다.")
     print()
     print("1) 평가 묶음을 만든다 (서버가 떠 있어야 합니다):")
-    print(f'   curl -s -X POST http://localhost:8000/api/datasets/{PILOT_DATASET}'
+    print(f'   curl -s -X POST http://localhost:8000/api/datasets/{args.dataset_id}'
           f'/evaluations -H "Content-Type: application/json" '
           f'-d \'{{"evaluation_id":"{args.evaluation_id}","shuffle_seed":{args.seed}}}\'')
     print()
     print("2) 브라우저에서 열고 **평소 속도로** 판정한다:")
-    print(f"   {args.frontend}/?evaluate={PILOT_DATASET}:{args.evaluation_id}")
+    print(f"   {args.frontend}/?evaluate={args.dataset_id}:{args.evaluation_id}")
     print()
     print("   판정 기준은 docs/manual-timing-pilot.md에 있습니다.")
     print("   최소 두 세션으로 나누세요 — 중간에 창을 닫았다가 다시 엽니다.")
     print()
     print("끝나면:")
-    print(f"   python experiment/timing_report.py --dataset {PILOT_DATASET} "
+    print(f"   python experiment/timing_report.py --dataset {args.dataset_id} "
           f"--evaluation {args.evaluation_id}")
     return 0
 

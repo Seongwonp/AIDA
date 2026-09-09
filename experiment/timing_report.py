@@ -30,6 +30,25 @@ def load(dataset_id: str, evaluation_id: str) -> list[dict]:
     return read_events(path.read_text(encoding="utf-8"))
 
 
+def judging_mode(dataset_id: str, override: str | None) -> str | None:
+    """이 파일럿을 어떻게 했는가. **기록만 보고는 알 수 없다.**
+
+    다른 도구에서 화면을 들여다본 시간은 판정 탭의 활동 시간에 안 들어가므로,
+    속도도 보류 비율도 멀쩡해 보인다. 그래서 `make_timing_pilot.py`가 적어 둔
+    값을 읽고, 없으면 **모르는 채로 둔다** — 모르는 것을 "도움 없이 했다"로
+    읽으면 실수 하나가 기준이 된다.
+    """
+    if override:
+        return override
+    path = config.uploads_dir() / dataset_id / "pilot_meta.json"
+    if not path.is_file():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8")).get("judging_mode")
+    except (OSError, ValueError):
+        return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="파일럿 시간 요약")
     parser.add_argument("--dataset", required=True)
@@ -41,14 +60,20 @@ def main() -> int:
                         help="최종 평가의 데이터셋 수 D (아직 미정이면 비워 둔다)")
     parser.add_argument("--total-minutes", type=float,
                         help="전체 활동 시간 상한 T, 분 (아직 미정이면 비워 둔다)")
+    parser.add_argument("--judging-mode", choices=("unaided_human",
+                                                   "assisted_rehearsal"),
+                        help="파일럿 메타에 적힌 값을 덮어쓴다")
     args = parser.parse_args()
 
+    mode = judging_mode(args.dataset, args.judging_mode)
     summary = summarise_activity(load(args.dataset, args.evaluation))
-    plan = plan_seconds_per_candidate(summary)
+    plan = plan_seconds_per_candidate(summary, judging_mode=mode)
     data = summary.as_dict()
 
+    print(f"판정 방식: {mode or '적혀 있지 않음'}")
     print(f"세션 {summary.sessions}개 "
-          f"(온전 {summary.complete_sessions}, 끊김 {summary.incomplete_sessions})")
+          f"(온전 {summary.complete_sessions}, 끊김 {summary.incomplete_sessions}, "
+          f"판정이 든 것 {summary.sessions_with_judgements})")
     print(f"판정한 후보 {summary.judged_candidates}개 "
           f"(보류 {summary.holds})")
     print(f"활동 {data['active_seconds']}초 / 대기 {data['wait_seconds']}초 "
@@ -61,7 +86,13 @@ def main() -> int:
     print()
     print(f"timing_usable = {summary.timing_usable}")
 
-    if plan["status"] == "implausible_for_human_judging":
+    if plan["status"] == "not_unaided_human":
+        # **속도로는 도움 여부를 알 수 없다.** 명시적으로 적힌 것만 믿는다.
+        print()
+        print("  ！ 계획값을 내지 않습니다: " + plan["reason"])
+        print(f"  ({plan['basis']})")
+        print("  이 기록은 계측·화면 흐름 확인용(진단)으로만 씁니다.")
+    elif plan["status"] == "implausible_for_human_judging":
         # **자동 클릭 시간이 N으로 흘러가면 안 된다.**
         print()
         print("  ！ 사람이 판정한 기록으로 보이지 않습니다. N을 계산하지 않습니다.")

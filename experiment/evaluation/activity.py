@@ -69,6 +69,19 @@ MIN_JUDGED_CANDIDATES = 10
 # 데 최소 이 정도는 걸린다"는 짐작이고, 통계적으로 유도한 값이 아니다.
 # 넘겼다고 사람이 한 것이 증명되지는 않는다 — **못 한 것만 걸러낸다.**
 MIN_HUMAN_MEDIAN_SECONDS = 2.0
+
+# ── 누가 어떻게 판정했는가 ───────────────────────────────────────────────────
+#
+# **속도와 보류 비율로는 알 수 없다.** timing1이 그 증거다 — 후보당 중앙값
+# 5.3초에 보류 0%로 자동 클릭 검사를 전부 통과했지만, 판정자가 화면을 다른
+# 도구에 보내 도움을 받았다. 그 도구에서 들여다본 시간은 판정 탭의 활동
+# 시간에 안 들어간다.
+#
+# 그래서 **밖에서 명시적으로 적어 준다.** 기록만 보고 알아낼 수 있는 척하지
+# 않는다.
+UNAIDED_HUMAN = "unaided_human"
+ASSISTED_REHEARSAL = "assisted_rehearsal"
+JUDGING_MODES = (UNAIDED_HUMAN, ASSISTED_REHEARSAL)
 # 전부 보류면 화면을 안 보고 눌렀을 수 있다. 판정을 못 할 자료였다는 뜻이기도
 # 하다 — 어느 쪽이든 그 시간으로 N을 정하면 안 된다.
 MAX_HOLD_RATE = 0.9
@@ -146,6 +159,8 @@ class ActivitySummary:
     sessions: int = 0
     complete_sessions: int = 0
     incomplete_sessions: int = 0
+    # 온전하면서 **판정이 실제로 들어 있는** 세션 수. 재표집 단위가 이것이다.
+    sessions_with_judgements: int = 0
     invalid_sessions: list[str] = field(default_factory=list)
     duplicate_events: int = 0
     missing_sequences: int = 0
@@ -176,6 +191,7 @@ class ActivitySummary:
             "sessions": self.sessions,
             "complete_sessions": self.complete_sessions,
             "incomplete_sessions": self.incomplete_sessions,
+            "sessions_with_judgements": self.sessions_with_judgements,
             "invalid_sessions": self.invalid_sessions,
             "duplicate_events": self.duplicate_events,
             "missing_sequences": self.missing_sequences,
@@ -477,13 +493,18 @@ def summarise_activity(events: list[dict],
 
     # **온전한 세션의 후보만 시간 통계에 넣는다.**
     good = {r.session_id for r in summary.session_reports if r.complete}
-    times = [c.active_seconds for c in judged if c.session_id in good]
+    usable = [c for c in judged if c.session_id in good]
+    times = [c.active_seconds for c in usable]
+    # **열고 닫기만 한 세션은 세지 않는다.** 재표집 단위는 "판정이 든 세션"이라,
+    # 빈 세션을 함께 세면 뽑을 것이 하나뿐인데도 구간이 나온 것처럼 보인다
+    # (timing1에서 실제로 그랬다 — 상한이 평균과 똑같이 나왔다).
+    summary.sessions_with_judgements = len({c.session_id for c in usable})
     summary.mean_seconds_per_candidate = ((sum(times) / len(times))
                                           if times else None)
     summary.median_seconds_per_candidate = _percentile(times, 0.5)
     summary.p75_seconds_per_candidate = _percentile(times, 0.75)
     summary.timing_usable = (
-        summary.complete_sessions >= MIN_COMPLETE_SESSIONS
+        summary.sessions_with_judgements >= MIN_COMPLETE_SESSIONS
         and len(times) >= MIN_JUDGED_CANDIDATES
         and summary.duplicate_events == 0
         and summary.missing_sequences == 0)
@@ -507,7 +528,9 @@ def bootstrap_mean_upper(summary: ActivitySummary, confidence: float = 0.95,
         if c.judged and c.session_id in good:
             by_session.setdefault(c.session_id, []).append(c.active_seconds)
     sessions = list(by_session.values())
-    if not sessions:
+    # **세션이 하나면 상한을 만들지 않는다.** 하나를 반복해 뽑으면 늘 그
+    # 세션의 평균이 나온다 — 값은 나오지만 구간이 아니다.
+    if len(sessions) < MIN_COMPLETE_SESSIONS:
         return None
 
     rng = random.Random(seed)
@@ -548,9 +571,10 @@ def provenance_warnings(summary: ActivitySummary) -> list[str]:
 
 def _why_unusable(summary: ActivitySummary) -> str:
     reasons = []
-    if summary.complete_sessions < MIN_COMPLETE_SESSIONS:
-        reasons.append(f"온전한 세션이 {summary.complete_sessions}개다 "
-                       f"(최소 {MIN_COMPLETE_SESSIONS})")
+    if summary.sessions_with_judgements < MIN_COMPLETE_SESSIONS:
+        reasons.append(f"판정이 든 세션이 {summary.sessions_with_judgements}개다 "
+                       f"(최소 {MIN_COMPLETE_SESSIONS}). 열고 닫기만 한 세션은 "
+                       "재표집할 것이 없다")
     if summary.judged_candidates < MIN_JUDGED_CANDIDATES:
         reasons.append(f"판정한 후보가 {summary.judged_candidates}개다 "
                        f"(최소 {MIN_JUDGED_CANDIDATES})")
@@ -561,7 +585,8 @@ def _why_unusable(summary: ActivitySummary) -> str:
     return "; ".join(reasons) or "알 수 없음"
 
 
-def plan_seconds_per_candidate(summary: ActivitySummary, seed: int = 0) -> dict:
+def plan_seconds_per_candidate(summary: ActivitySummary, seed: int = 0,
+                              judging_mode: str | None = None) -> dict:
     """N 계획에 쓸 후보당 시간값.
 
     **P75는 계획값이 아니다.** P75는 "후보 하나가 이보다 오래 걸릴 확률이 25%"를
@@ -578,7 +603,16 @@ def plan_seconds_per_candidate(summary: ActivitySummary, seed: int = 0) -> dict:
     확인할 수 없다. **보수적인 참고값**으로만 쓴다.
 
     표본이 모자라면 값을 만들지 않고 `insufficient_pilot_data`를 돌려준다.
+
+    `judging_mode`는 **밖에서 적어 준다.** 도움을 받았는지는 기록만 보고 알 수
+    없다 — 다른 도구에서 들여다본 시간은 이 탭의 활동 시간에 안 들어가므로
+    속도도 보류 비율도 멀쩡해 보인다. `unaided_human`만 계획값을 낸다.
     """
+    if judging_mode is not None and judging_mode not in JUDGING_MODES:
+        raise ValidationError(
+            f"모르는 판정 방식이다: {judging_mode!r} "
+            f"(아는 것은 {', '.join(JUDGING_MODES)})")
+
     warnings = provenance_warnings(summary)
     if warnings:
         # **표본이 충분해도 막는다.** 자동 클릭 시간은 많이 모아도 사람의
@@ -599,6 +633,7 @@ def plan_seconds_per_candidate(summary: ActivitySummary, seed: int = 0) -> dict:
             "status": "insufficient_pilot_data",
             "reason": _why_unusable(summary),
             "complete_sessions": summary.complete_sessions,
+            "sessions_with_judgements": summary.sessions_with_judgements,
             "judged_candidates": summary.judged_candidates,
             "minimum_sessions": MIN_COMPLETE_SESSIONS,
             "minimum_candidates": MIN_JUDGED_CANDIDATES,
@@ -607,6 +642,25 @@ def plan_seconds_per_candidate(summary: ActivitySummary, seed: int = 0) -> dict:
                 "'이보다 적으면 평균의 구간이 아무것도 말하지 않는다'는 짐작이다."),
             "s_plan_seconds": None,
         }
+
+    if judging_mode != UNAIDED_HUMAN:
+        # **도움을 받았거나, 받았는지 안 적혀 있다.** 둘 다 계획값을 못 낸다 —
+        # 안 적힌 것을 "안 받았다"로 읽으면 실수 하나가 기준이 된다.
+        return {
+            "status": "not_unaided_human",
+            "judging_mode": judging_mode,
+            "reason": (
+                "보조받은 리허설이라 N 산정에 쓰지 않습니다."
+                if judging_mode == ASSISTED_REHEARSAL else
+                "판정 방식이 적혀 있지 않습니다. 도움 없이 한 기록만 계획값을 "
+                "냅니다 — 안 적힌 것을 '안 받았다'로 읽지 않습니다."),
+            "s_plan_seconds": None,
+            "diagnostic_only": True,
+            "basis": ("도움을 받았는지는 기록만 보고 알 수 없다. 다른 도구에서 "
+                      "들여다본 시간은 이 탭의 활동 시간에 안 들어가므로 속도도 "
+                      "보류 비율도 멀쩡해 보인다."),
+        }
+
 
     return {
         "status": "ok",
@@ -620,7 +674,9 @@ def plan_seconds_per_candidate(summary: ActivitySummary, seed: int = 0) -> dict:
         "s_plan_basis": ("후보당 평균 시간의 부트스트랩 95% 상한(세션 단위 "
                          "재표집). 확률 보장이 아니라 보수적 참고값이다."),
         "complete_sessions": summary.complete_sessions,
+        "sessions_with_judgements": summary.sessions_with_judgements,
         "judged_candidates": summary.judged_candidates,
+        "judging_mode": judging_mode,
         "provenance_warnings": [],
     }
 

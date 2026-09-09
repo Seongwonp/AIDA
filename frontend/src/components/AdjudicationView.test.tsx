@@ -17,7 +17,8 @@ vi.mock("../api", () => ({
   API_BASE_URL: "http://backend",
 }));
 
-import { AdjudicationView, CANDIDATE_COLOR, CONTEXT_COLOR } from "./AdjudicationView";
+import { AdjudicationView, CANDIDATE_COLOR, CONTEXT_COLOR,
+         MISSING_COLOR } from "./AdjudicationView";
 
 /** 그려진 사각형을 색깔·점선과 함께 모은다. */
 type Drawn = { color: string; dashed: boolean; rect: number[] };
@@ -44,6 +45,11 @@ beforeEach(() => {
     },
     clearRect: () => undefined,
     drawImage: () => undefined,
+    fillStyle: "",
+    font: "",
+    fillRect: () => undefined,
+    fillText: () => undefined,
+    measureText: (text: string) => ({ width: text.length * 7 }),
   };
   vi.spyOn(HTMLCanvasElement.prototype, "getContext")
     .mockReturnValue(context as unknown as CanvasRenderingContext2D);
@@ -109,14 +115,17 @@ describe("무엇을 그리는가", () => {
     });
   });
 
-  test("누락 후보는 점선으로 그린다", async () => {
-    // "여기 있어야 한다"와 "여기 붙어 있다"는 다른 말이다.
+  test("누락 후보는 색도 다르고 점선이다", async () => {
+    // timing1에서 누락 4건 중 2건이 빠르게 "오류 아니었다"로 판정됐다 —
+    // 빨간 점선을 "지금 보는 라벨"로 읽고 박스 품질을 답한 것으로 보인다.
     show({ labelIndex: null });
     await waitFor(() => expect(loadImage).toBeTruthy());
     loadImage!();
 
-    const candidate = drawn.find((d) => d.color === CANDIDATE_COLOR);
+    const candidate = drawn.find((d) => d.color === MISSING_COLOR);
     expect(candidate?.dashed).toBe(true);
+    // 기존 라벨 색을 쓰지 않는다 — 두 질문을 색으로 가른다.
+    expect(drawn.find((d) => d.color === CANDIDATE_COLOR)).toBeUndefined();
   });
 
   test("기존 라벨 후보는 실선으로 그린다", async () => {
@@ -164,8 +173,9 @@ describe("범례", () => {
     expect(screen.getByText(/이미 붙어 있는 다른 라벨/)).toBeTruthy();
   });
 
-  test("누락 후보에는 다른 문구를 쓴다", async () => {
+  test("누락 후보에는 무엇을 묻는지 적는다", async () => {
     show({ labelIndex: null });
-    expect(screen.getByText(/빠졌다고 지목된 자리/)).toBeTruthy();
+    expect(screen.getByText(/여기 라벨이 빠졌는가/)).toBeTruthy();
+    expect(screen.getByText(/박스 품질을 보는/)).toBeTruthy();
   });
 });

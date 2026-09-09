@@ -571,7 +571,7 @@ def test_표본이_모자라면_계획값을_만들지_않는다():
 def test_계획값은_평균의_보수적_상한이다():
     """**P75가 아니다.** P75는 후보 난이도 분포의 기술 통계다."""
     summary = summarise_activity(_pilot(2, 6, seconds=10.0))
-    got = plan_seconds_per_candidate(summary)
+    got = plan_seconds_per_candidate(summary, judging_mode="unaided_human")
 
     assert got["status"] == "ok"
     assert got["mean_seconds"] == pytest.approx(10.0)
@@ -587,7 +587,7 @@ def test_변동이_크면_상한이_평균보다_높다():
     fast = _pilot(1, 6, seconds=5.0, prefix="fast")
     slow = _pilot(1, 6, seconds=25.0, prefix="slow")
     summary = summarise_activity(fast + slow)
-    got = plan_seconds_per_candidate(summary)
+    got = plan_seconds_per_candidate(summary, judging_mode="unaided_human")
     assert got["status"] == "ok"
     assert got["s_plan_seconds"] > got["mean_seconds"]
 
@@ -677,7 +677,8 @@ def test_전부_보류면_경고한다():
 
 
 def test_사람_속도이면_통과한다():
-    got = plan_seconds_per_candidate(summarise_activity(_pilot(2, 6, seconds=12.0)))
+    got = plan_seconds_per_candidate(summarise_activity(_pilot(2, 6, seconds=12.0)),
+                                     judging_mode="unaided_human")
     assert got["status"] == "ok"
     assert got["provenance_warnings"] == []
 
@@ -685,3 +686,87 @@ def test_사람_속도이면_통과한다():
 def test_경고를_따로도_볼_수_있다():
     assert provenance_warnings(summarise_activity(_pilot(2, 6, seconds=0.4)))
     assert provenance_warnings(summarise_activity(_pilot(2, 6, seconds=15.0))) == []
+
+
+# ── 재표집할 세션이 실제로 둘인가 ────────────────────────────────────────────
+#
+# timing1에서 잡혔다. 세 세션 중 판정이 든 것은 하나뿐인데 complete_sessions가
+# 2라서 timing_usable이 참이 됐고, 세션 하나를 반복해 뽑은 "95% 상한"이
+# 평균과 똑같이 나왔다. **구간이 아무것도 말하지 않는데 숫자는 나왔다.**
+
+def _empty_session(name):
+    """열고 닫기만 한 세션. 온전하지만 잰 시간이 없다."""
+    return session(
+        ev(0, "session_started"),
+        ev(0, "queue_load_started"),
+        ev(1, "queue_load_succeeded"),
+        ev(2, "session_ended"),
+        name=name)
+
+
+def test_판정이_든_세션이_하나면_시간을_못_쓴다():
+    rows = _pilot(1, 12, seconds=10.0, prefix="work") + _empty_session("empty")
+    got = summarise_activity(rows)
+
+    assert got.complete_sessions == 2          # 둘 다 온전하긴 하다
+    assert got.judged_candidates == 12
+    # **그래도 재표집할 것이 하나뿐이다.**
+    assert got.timing_usable is False
+
+
+def test_왜_못_쓰는지_말한다():
+    rows = _pilot(1, 12, seconds=10.0, prefix="work") + _empty_session("empty")
+    got = plan_seconds_per_candidate(summarise_activity(rows))
+    assert got["status"] == "insufficient_pilot_data"
+    assert "판정이 든 세션" in got["reason"]
+
+
+def test_세션이_하나면_상한을_만들지_않는다():
+    """세션 하나를 반복해 뽑으면 늘 그 세션의 평균이 나온다 — 구간이 아니다."""
+    summary = summarise_activity(_pilot(1, 12, seconds=10.0, prefix="solo"))
+    assert bootstrap_mean_upper(summary) is None
+
+
+def test_판정이_든_세션이_둘이면_쓴다():
+    got = summarise_activity(_pilot(2, 6, seconds=10.0, prefix="two"))
+    assert got.sessions_with_judgements == 2
+    assert got.timing_usable is True
+
+
+# ── 도움을 받았는가 — 기록만으로는 알 수 없다 ───────────────────────────────
+#
+# timing1이 증거다. 후보당 중앙값 5.3초에 보류 0%로 자동 클릭 검사를 전부
+# 통과했지만, 판정자가 화면을 다른 도구에 보내 도움을 받았다. 그 도구에서
+# 들여다본 시간은 판정 탭의 활동 시간에 안 들어간다.
+
+def test_보조받은_기록은_계획값을_안_낸다():
+    summary = summarise_activity(_pilot(2, 6, seconds=12.0, prefix="a"))
+    assert summary.timing_usable is True         # 표본도 속도도 멀쩡하다
+    got = plan_seconds_per_candidate(summary, judging_mode="assisted_rehearsal")
+    assert got["status"] == "not_unaided_human"
+    assert got["s_plan_seconds"] is None
+    assert got["diagnostic_only"] is True
+
+
+def test_안_적혀_있으면_안_받았다고_읽지_않는다():
+    """실수 하나가 기준이 되면 안 된다."""
+    got = plan_seconds_per_candidate(
+        summarise_activity(_pilot(2, 6, seconds=12.0, prefix="b")))
+    assert got["status"] == "not_unaided_human"
+    assert "적혀 있지 않습니다" in got["reason"]
+
+
+def test_도움_없이_한_기록만_계획값을_낸다():
+    got = plan_seconds_per_candidate(
+        summarise_activity(_pilot(2, 6, seconds=12.0, prefix="c")),
+        judging_mode="unaided_human")
+    assert got["status"] == "ok"
+    assert got["judging_mode"] == "unaided_human"
+    assert got["s_plan_seconds"] is not None
+
+
+def test_모르는_판정_방식은_거부한다():
+    with pytest.raises(ValidationError, match="판정 방식"):
+        plan_seconds_per_candidate(
+            summarise_activity(_pilot(2, 6, seconds=12.0, prefix="d")),
+            judging_mode="아무거나")
