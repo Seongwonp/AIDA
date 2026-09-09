@@ -14,16 +14,18 @@
 | 문서 | 무엇 |
 |---|---|
 | [../README.md](../README.md) | **여기부터.** 무엇이 되고 무엇이 안 되는지, 실행 방법, 환경변수 |
-| [24-development-plan.md](./24-development-plan.md) | **현재 실행 계획.** 연구 기준선 → 검수 안정화 → 독립 데이터·사용자 평가. 단계별 완료 조건과 작업 상태 |
-| [23-plan.md](./23-plan.md) | 이전 연구 계획. 완료된 실험과 미완료 과제의 배경은 보존하며, 이후 우선순위는 24번을 따른다 |
+| [25-advancement-roadmap.md](./25-advancement-roadmap.md) | **현재 실행 계획.** 저장 신뢰성 → 독립 평가 → 선택적 개선 → 사용자 검증. 다음 작업은 R1 |
+| [../CLAUDE.md](../CLAUDE.md) | 데스크탑 작업 인수인계. R1 재현 절차·검증·완료 보고 원칙 |
+| [24-development-plan.md](./24-development-plan.md) | 기존 장기 계획과 A·B·C 산출물 기록. 후속 검증과 우선순위는 25번을 따른다 |
+| [23-plan.md](./23-plan.md) | 이전 연구 계획. 실험 배경과 미완료 과제의 기록 |
 | [22-plan.md](./22-plan.md) | 앞 계획 (2026-09-05). 항목이 거의 다 닫혔다 — 무엇을 왜 했는지 남긴다 |
 | [testing-boundary.md](./testing-boundary.md) | **검사가 무엇을 잡고 무엇을 못 잡는가.** 가짜와 진짜 추론의 경계 (docs/24 B) |
-| [evaluation-protocol.md](./evaluation-protocol.md) | **평가 규약.** 결과를 보기 전에 고정한 지표·계산 규칙·성공/실패 기준 (docs/24 C2) |
+| [evaluation-protocol.md](./evaluation-protocol.md) | **평가 규약 초안.** 25번에 따른 독립성·통계·중단 기준 보완과 데이터 확정 후 최종 고정 필요 |
 | [evaluation-data.md](./evaluation-data.md) | **독립 평가 데이터 후보와 겹침 확인.** 무엇을 빼야 하고 겹침을 어떻게 재는가 (docs/24 C1) |
 | [review-model.md](./review-model.md) | **검수 판정의 식별·보관 규칙.** 무엇이 후보를 구분하고 서버/브라우저가 엇갈리면 누가 이기는가 (docs/24 B1) |
 | [reproduction.md](./reproduction.md) | **무엇이 저장소에 있고 무엇이 없는가.** 환경·명령·복원 불가 항목·대회와 개인 개발의 구분 (docs/24 A2) |
 | [current-evidence.md](./current-evidence.md) | **지금 유효한 주장과 근거 파일의 대응표.** 수치를 인용하기 전에 여기부터 본다 (docs/24 A1) |
-| [21-next-plan.md](./21-next-plan.md) | **실험 기록의 본체.** 절 54개, 결론이 뒤집힌 이력까지. 목차에 정정 표시가 있다 |
+| [21-next-plan.md](./21-next-plan.md) | **실험 기록의 본체.** 결론이 뒤집힌 이력과 정정 표시를 보존한다 |
 | [../CHANGELOG.md](../CHANGELOG.md) | 날짜별 변경 이력 |
 | [09-getting-started.md](./09-getting-started.md) | 새 세션·새 개발자용 진입점 |
 
@@ -32,7 +34,7 @@
 | 문서 | 무엇 | 주의 |
 |---|---|---|
 | [00-overview.md](./00-overview.md) | 프로젝트가 뭔지, 왜 하는지 | 2026-09 기준으로 갱신됨 |
-| [01-technology.md](./01-technology.md) | 핵심 기술 원리, 특허 연계 | 원리는 유효. **조건 수·수치는 21번이 최신** |
+| [01-technology.md](./01-technology.md) | 핵심 기술 원리, 특허 연계 | 현재 수치·한계는 current-evidence, 세부 이력은 21번 참고 |
 | [02-architecture.md](./02-architecture.md) | 시스템·코드 구조 | 큰 틀은 유효. 파일 목록은 늘었다 |
 | [05-glossary.md](./05-glossary.md) | 용어 사전 | 유효 |
 | [06-decisions.md](./06-decisions.md) | 주요 의사결정과 이유 (ADR) | 2026-07까지의 결정만 |
@@ -42,8 +44,8 @@
 
 | 문서 | 무엇 | 주의 |
 |---|---|---|
-| [03-experiment-design.md](./03-experiment-design.md) | 검증 실험 설계 | **7개 조건 시절.** 지금은 27개 |
-| [12-experiment-results.md](./12-experiment-results.md) | 13개 조건 실측 결과 | **13개 조건 시절.** 지금은 27개 + 시드 7개 |
+| [03-experiment-design.md](./03-experiment-design.md) | 검증 실험 설계 | **7개 조건 시절.** 현재 조건·시드 수는 실험마다 다름 |
+| [12-experiment-results.md](./12-experiment-results.md) | 13개 조건 실측 결과 | **13개 조건 시절.** 현재 수치는 current-evidence 참고 |
 | [16-obb-adoption-review.md](./16-obb-adoption-review.md) | OBB 도입 검토 | 유효 |
 
 ## 끝난 일의 기록 (고치지 않는다)
@@ -63,19 +65,17 @@
 | [17-professor-feedback-response.md](./17-professor-feedback-response.md) | 교수님 피드백 답변 + 통합 결과 보고서 |
 | [18-presentation-material-guide.md](./18-presentation-material-guide.md) | 발표자료 제작 가이드 |
 | [19-report-sections-6-12-draft.md](./19-report-sections-6-12-draft.md) | 보고서 6~12장 초안 |
-| [20-local-claude-handoff.md](./20-local-claude-handoff.md) | 원격↔로컬 작업 인수인계 방식 |
+| [20-local-claude-handoff.md](./20-local-claude-handoff.md) | 과거 OBB 작업 인수인계. 현재 지시는 루트 CLAUDE.md 참고 |
 
-## 후속 고도화 계획
+## 문서 관리 기준
 
-[25. 고도화 실행 계획](25-advancement-roadmap.md): 저장 신뢰성 → 재현성과 평가 준비 → 독립 효과 평가 → 병목 개선 → 사용자 검수 → 제한된 배포. 24번의 후속 우선순위와 단계 통과 기준이다.
+현재 작업 상태는 25번, 성능 주장은 current-evidence, 검사 범위는 testing-boundary에서 관리한다. 다른 문서는 해당 문서로 연결하고 테스트 수나 작업 상태를 중복 기재하지 않는다. 과거 실험과 대회 기록은 보존하며 정정은 날짜와 후속 근거를 붙인다.
 
-## 한 줄 요약
+## 프로젝트 요약
 
 AIDA는 국방과학연구소 특허(10-2664201) 기반으로, 참값 바운딩박스에 통제된 오류를
 주입해 만든 "가상 에러 데이터셋"으로 객체탐지 모델을 학습시키고, 그 성능 저하
 패턴을 고객 데이터셋의 성능과 비교해 라벨 오류 유형을 진단한다. 산출물은
 **재검수 우선순위 목록**이다.
 
-지금까지 확인된 가장 중요한 사실: **진단 품질을 정하는 건 알고리즘이 아니라
-기준 모델이 그 데이터에 맞는가**다. 같은 데이터를 자만 바꿔 진단하면 상위 10%
-정밀도가 94.0% ↔ 26.0%로 갈린다 (21번 AG·AI).
+현재 실험에서 **기준 모델의 적합성이 진단 품질에 큰 영향을 주었다.** COCO 평가에서는 자기 도메인 모델 82.4%, KITTI 모델 26.0%였다. KITTI 실험의 94.0%는 별도 조건의 결과이므로 직접 전후 비교하지 않는다. 조건과 한계는 [현재 근거표](current-evidence.md)를 따른다. 자연 오류와 실제 사용자 효과는 미검증이다.
