@@ -293,3 +293,80 @@ class VerdictMap(BaseModel):
     # 읽고 브라우저 사본을 살리는데(R3), 손상일 때 그러면 서버가 무엇을 갖고
     # 있는지 모르는 채로 덮어쓰게 된다.
     damaged: bool = False
+
+
+# ── 평가용 가림 판정 (docs/evaluation-adjudication-design.md) ──────────────────
+#
+# 제품의 재검수 판정과 **섞지 않는다.** 제품 판정은 순위와 의심 유형을 보고
+# 매기지만, 평가 판정은 그것을 가린 채 매겨야 결과가 안 휜다.
+
+EVALUATION_SCHEMA_VERSION = 1
+
+
+class EvaluationCandidate(BaseModel):
+    """평가 묶음에 얼린 후보 하나.
+
+    `canonical_candidate_id`는 **묶음을 만들 때 한 번 발급하고 그대로 쓴다.**
+    화면을 다시 열 때 새로 만들면 이미 내린 판정이 무엇을 가리키는지 잃는다.
+    """
+    canonical_candidate_id: str
+    image: str
+    label_index: int | None
+    suspicion: str
+    box: list[float] | None = None
+    # 방법별 점수. 판정 화면에는 **보내지 않는다.**
+    scores: dict[str, float] = {}
+
+
+class EvaluationSnapshot(BaseModel):
+    """평가를 시작한 순간의 후보 목록. **재진단해도 안 바뀐다.**"""
+    schema_version: int = EVALUATION_SCHEMA_VERSION
+    evaluation_id: str
+    dataset_id: str
+    created_at: str
+    diagnosis_generated_at: str | None = None
+    code_commit: str | None = None
+    ruler: RulerInfo | None = None
+    candidates: list[EvaluationCandidate] = []
+    candidate_set_hash: str = ""
+    # 판정 순서를 섞은 씨앗. 안 남기면 같은 순서를 다시 못 만든다.
+    shuffle_seed: int = 0
+
+
+class EvaluationAdjudication(BaseModel):
+    """후보 하나에 대한 **방법과 무관한** 사실."""
+    canonical_candidate_id: str
+    verdict: str | None = None          # hit | miss | hold | None
+    # 누락 객체는 판정자가 정한다. 기존 라벨은 서버가 자동으로 만든다.
+    unique_error_id: str | None = None
+
+
+class EvaluationAdjudications(BaseModel):
+    """한 평가의 판정 묶음."""
+    schema_version: int = EVALUATION_SCHEMA_VERSION
+    evaluation_id: str
+    # 어느 묶음에 붙은 판정인가. 안 맞으면 읽지 않는다.
+    candidate_set_hash: str = ""
+    adjudications: list[EvaluationAdjudication] = []
+    updated_at: str | None = None
+    # 저장 파일이 깨져 읽지 못했는가 (docs/25 R4와 같은 규칙).
+    damaged: bool = False
+
+
+class BlindCandidate(BaseModel):
+    """판정 화면에 보내는 것. **점수·순위·진단 문구를 뺀다.**"""
+    canonical_candidate_id: str
+    image: str
+    label_index: int | None
+    box: list[float] | None = None
+    verdict: str | None = None
+    unique_error_id: str | None = None
+
+
+class BlindQueue(BaseModel):
+    """가림 판정 화면의 목록. 순서는 고정 씨앗으로 섞여 있다."""
+    evaluation_id: str
+    dataset_id: str
+    candidate_set_hash: str
+    candidates: list[BlindCandidate] = []
+    damaged: bool = False

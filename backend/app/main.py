@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import CORS_ORIGINS
-from app.routers import report, upload
+from app.routers import evaluation, report, upload
 
 app = FastAPI(title="AIDA API", version="0.1.0")
 
@@ -20,6 +20,7 @@ app.add_middleware(
 
 app.include_router(report.router)
 app.include_router(upload.router)
+app.include_router(evaluation.router)
 
 
 @app.get("/api/health")

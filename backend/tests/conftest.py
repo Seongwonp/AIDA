@@ -1,9 +1,14 @@
 import os
+import sys
 from pathlib import Path
 
 import pytest
 
 TESTS_DIR = Path(__file__).resolve().parent
+# 집계 모듈(experiment/evaluation)은 표준 라이브러리만 쓰므로 backend venv에서도
+# 그대로 돌아간다. **뒤에** 붙인다 — 앞에 넣으면 experiment/config.py 같은
+# 이름이 backend 쪽을 가린다.
+sys.path.append(str(TESTS_DIR.parent.parent / "experiment"))
 FIXTURE_CSV = TESTS_DIR / "fixtures" / "metrics.csv"
 FIXTURE_IOU_CSV = TESTS_DIR / "fixtures" / "iou_table.csv"
 FIXTURE_AGG_CSV = TESTS_DIR / "fixtures" / "metrics_agg.csv"
