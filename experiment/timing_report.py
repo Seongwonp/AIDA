@@ -149,6 +149,10 @@ def main() -> int:
                         help="최종 평가의 데이터셋 수 D (아직 미정이면 비워 둔다)")
     parser.add_argument("--total-minutes", type=float,
                         help="전체 활동 시간 상한 T, 분 (아직 미정이면 비워 둔다)")
+    parser.add_argument("--reviewed", action="store_true",
+                        help="세션별 속도 변화와 anchor 결과를 사람이 "
+                             "보고 받아들였다는 표시. 이것 없이는 N을 "
+                             "내지 않는다")
     parser.add_argument("--safety-factor", type=float,
                         help="하한으로 잰 s_plan에 곱할 계수. **근거를 문서에 "
                              "적고** 결과 열람 전에 정한다")
@@ -224,6 +228,16 @@ def main() -> int:
             print("  ！ " + plan["adoption_note"])
 
         if args.datasets and args.total_minutes:
+            # **사람이 검토했다고 말하기 전에는 N을 내지 않는다.**
+            # 속도 증가와 정상 anchor 오탐은 기준이 사전 등록돼 있지 않아
+            # 자동으로 판정할 수 없다(docs/timing4-realistic-protocol.md).
+            if not args.reviewed:
+                print()
+                print("  N을 내지 않습니다 — 속도 변화와 anchor 결과를 사람이 "
+                      "검토해야 합니다.")
+                print("  위 세션별 평균과 anchor 줄을 보고, 받아들일 만하면 "
+                      "--reviewed 를 붙이세요.")
+                return 0
             factor = args.safety_factor
             if plan["adoption_blocked"] and not factor:
                 print()

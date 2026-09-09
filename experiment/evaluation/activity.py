@@ -92,8 +92,8 @@ JUDGING_MODES = (UNAIDED_HUMAN, ASSISTED_REHEARSAL)
 # **하한을 N에 넣으면 N이 과대해진다** — `N = (T/D)/s_plan`이라 분모가 작으면
 # 몫이 커지고, 보수적으로 잡으려던 시간 상한이 오히려 깨진다. 방향이 반대다.
 INJECTED_SYNTHETIC = "injected_synthetic"
-REAL_DIAGNOSIS = "real_diagnosis"
-CANDIDATE_SOURCES = (INJECTED_SYNTHETIC, REAL_DIAGNOSIS)
+ACTUAL_DIAGNOSIS = "actual_diagnosis"
+CANDIDATE_SOURCES = (INJECTED_SYNTHETIC, ACTUAL_DIAGNOSIS)
 # 전부 보류면 화면을 안 보고 눌렀을 수 있다. 판정을 못 할 자료였다는 뜻이기도
 # 하다 — 어느 쪽이든 그 시간으로 N을 정하면 안 된다.
 MAX_HOLD_RATE = 0.9
@@ -680,7 +680,7 @@ def plan_seconds_per_candidate(summary: ActivitySummary, seed: int = 0,
 
 
     # **주입한 오류로 잰 값은 하한이다.** 실제 후보는 더 미묘해 더 오래 걸린다.
-    lower_bound = candidate_source != REAL_DIAGNOSIS
+    lower_bound = candidate_source != ACTUAL_DIAGNOSIS
     return {
         "status": "ok",
         "candidate_source": candidate_source,

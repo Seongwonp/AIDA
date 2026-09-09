@@ -799,7 +799,7 @@ def test_출처를_안_적으면_하한으로_본다():
 def test_실제_진단_후보로_잰_값은_안_막는다():
     got = plan_seconds_per_candidate(
         summarise_activity(_pilot(2, 6, seconds=12.0, prefix="real")),
-        judging_mode="unaided_human", candidate_source="real_diagnosis")
+        judging_mode="unaided_human", candidate_source="actual_diagnosis")
     assert got["s_plan_bound"] == "estimate"
     assert got["adoption_blocked"] is False
 
