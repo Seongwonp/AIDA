@@ -461,3 +461,36 @@ def test_missing_takes_the_prediction_class():
                               pred_classes=[3], label_classes=[],
                               class_names=["Car", "Van", "Pedestrian", "Cyclist"])
     assert [f.class_id for f in findings] == [3]
+
+
+# ── 단순 불일치 기준선의 재료 ────────────────────────────────────────────────
+#
+# `label_iou`는 AIDA의 severity와 아무 관계가 없다. 비교군인 단순 불일치
+# 기준선이 같은 후보에 매길 점수의 재료다 (docs/evaluation-protocol.md 2절).
+
+def test_라벨_의심에는_가장_많이_겹치는_예측과의_iou가_붙는다():
+    label = apply_scale(PRED, -30)
+    findings = diagnose_image("a.png", predictions=[PRED], confidences=[0.9],
+                              labels=[label])
+    assert findings, "기하 의심이 나와야 이 검사가 뜻이 있다"
+    assert findings[0].label_iou == pytest.approx(iou(PRED, label), abs=1e-4)
+
+
+def test_누락_의심에는_iou가_없다():
+    """대조할 라벨이 없다. **0.0으로 채우면 "완전히 안 맞는 라벨"과 섞인다.**"""
+    findings = diagnose_image("a.png", predictions=[PRED], confidences=[0.9],
+                              labels=[])
+    assert findings[0].suspicion == "missing"
+    assert findings[0].label_iou is None
+
+
+def test_기준선은_유형을_모른다():
+    """같은 라벨에 걸린 의심은 유형이 달라도 같은 값을 받는다.
+
+    유형별로 다르게 계산하면 그건 이미 단순한 규칙이 아니다.
+    """
+    label = apply_scale(PRED, -30)
+    findings = diagnose_image("a.png", predictions=[PRED], confidences=[0.9],
+                              labels=[label])
+    values = {f.label_iou for f in findings if f.label_index is not None}
+    assert len(values) == 1

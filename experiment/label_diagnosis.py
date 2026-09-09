@@ -284,6 +284,18 @@ class BoxFinding:
     # 그 차이를 우선순위에 반영하려면 박스마다 클래스를 알아야 한다.
     class_id: int | None = None
 
+    # 이 라벨과 **가장 많이 겹치는 예측**과의 IoU. 라벨이 없는 의심(누락)은
+    # 대조할 라벨이 없어 None이다.
+    #
+    # AIDA의 severity와 **아무 관계가 없다.** 이것은 비교군인 단순 불일치
+    # 기준선의 재료다 — "라벨과 예측이 안 맞을수록 의심"이라는 한 줄짜리
+    # 규칙이 우리 순서보다 나은지 재려면, 같은 후보에 그 규칙의 점수가
+    # 붙어 있어야 한다(docs/evaluation-protocol.md 2절).
+    #
+    # **유형을 모르는 채로 매긴다.** 기준선이 유형별로 다르게 굴면 그건 이미
+    # 단순한 규칙이 아니다.
+    label_iou: float | None = None
+
 
 def _absolute_present_types(summary: dict) -> set[str]:
     """절대 문턱만으로 고른 계통적 유형들. present_types와 order_basis가 같이 쓴다."""
@@ -657,7 +669,29 @@ def diagnose_image(
             class_id=_class_at(pred_classes, pi),
         ))
 
-    return findings
+    return _with_label_iou(findings, predictions, labels)
+
+
+def _with_label_iou(findings: list[BoxFinding], predictions: list[Box],
+                    labels: list[Box]) -> list[BoxFinding]:
+    """라벨을 가리키는 의심마다 **가장 많이 겹치는 예측과의 IoU**를 적는다.
+
+    단순 불일치 기준선의 재료다. 유형별로 다르게 계산하지 않는다 — 규칙이
+    유형을 알면 그건 이미 단순한 규칙이 아니고, 우리 방법과 비교하는 뜻이
+    사라진다.
+
+    겹치는 예측이 하나도 없으면 0.0이다. 그 라벨은 자가 보기에 아무것도 없는
+    자리이고, 기준선의 눈으로는 가장 의심스러운 라벨이다.
+    """
+    out = []
+    for f in findings:
+        if f.label_index is None or f.label_index >= len(labels):
+            out.append(f)
+            continue
+        label = labels[f.label_index]
+        best = max((iou(p, label) for p in predictions), default=0.0)
+        out.append(replace(f, label_iou=round(best, 4)))
+    return out
 
 
 def summarize(findings: list[BoxFinding], total_labels: int) -> dict:

@@ -231,6 +231,10 @@ def build_result(name: str, findings: list[BoxFinding], total_labels: int,
                 # 쓴다. 누락 의심은 라벨이 없으므로 "있어야 할 자리"인 예측
                 # 박스가 들어간다 — 그게 그 지목을 가리키는 유일한 수단이다.
                 "box": [round(v, 1) for v in f.box],
+                # 단순 불일치 기준선의 재료. 라벨이 없는 의심(누락)은 None이다
+                # — 그 기준선을 누락에 어떻게 매길지는 아직 정해지지 않았다
+                # (docs/evaluation-adjudication-design.md).
+                "label_iou": f.label_iou,
             }
             for i, f in enumerate(ranked[:top_n])
         ],

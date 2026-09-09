@@ -27,8 +27,10 @@ def _queue(*items) -> dict:
         "caveat": "",
         "review_queue": [
             {"rank": i + 1, "image": im, "label_index": li, "suspicion": s,
-             "severity": sev, "detail": "", "box": [0.1, 0.1, 0.2, 0.2]}
-            for i, (im, li, s, sev) in enumerate(items)
+             "severity": sev, "detail": "", "box": [0.1, 0.1, 0.2, 0.2],
+             **({} if len(row) < 5 else {"label_iou": row[4]})}
+            for i, row in enumerate(items)
+            for im, li, s, sev in [row[:4]]
         ],
     }
 
@@ -413,3 +415,74 @@ def test_내보낸_JSON을_집계_모듈이_그대로_받는다(client, uploads)
     assert result.hit_candidates == 3
     # **판정 hit는 셋인데 고유 오류는 둘이다.**
     assert result.unique_error_yield == 2
+
+
+# ── 단순 불일치 기준선 ────────────────────────────────────────────────────────
+
+def test_기준선_점수는_안_맞을수록_높다(client, uploads):
+    """`1 - IoU`. 이 한 줄이 기준선의 전부다."""
+    write_diagnosis(uploads, _queue(("a.jpg", 0, "width", 0.9, 0.8),
+                                    ("a.jpg", 1, "scale", 0.2, 0.3)))
+    snap = start(client)
+    got = {c["canonical_candidate_id"]: c["scores"] for c in snap["candidates"]}
+    scores = sorted(s["iou_baseline"] for s in got.values())
+    assert scores == [0.2, 0.7]
+
+
+def test_기준선은_유형을_모른다(client, uploads):
+    """같은 라벨을 두 유형이 지목해도 기준선 점수는 같다.
+
+    유형별로 다르게 굴면 그건 이미 단순한 규칙이 아니고, 우리 방법과 비교하는
+    뜻이 사라진다.
+    """
+    write_diagnosis(uploads, _queue(("a.jpg", 3, "width", 0.9, 0.4),
+                                    ("a.jpg", 3, "scale", 0.2, 0.4)))
+    snap = start(client)
+    assert {c["scores"]["iou_baseline"] for c in snap["candidates"]} == {0.6}
+
+
+def test_기준선_점수가_없는_옛_진단은_내보내기를_막는다(client, uploads):
+    """옛 결과 파일에는 `label_iou`가 없다. 조용히 0점을 주지 않는다."""
+    write_diagnosis(uploads, _queue(("a.jpg", 0, "width", 0.9)))
+    start(client)
+    r = client.get(f"/api/datasets/{DATASET}/evaluations/e1/export"
+                   "?methods=aida,iou_baseline")
+    assert r.status_code == 409
+
+
+def test_누락_후보가_섞이면_기준선_비교를_막는다(client, uploads):
+    """누락 후보에 기준선을 어떻게 매길지가 **아직 미정**이다."""
+    write_diagnosis(uploads, _queue(("a.jpg", 0, "width", 0.9, 0.4),
+                                    ("a.jpg", None, "missing", 0.8)))
+    start(client)
+    r = client.get(f"/api/datasets/{DATASET}/evaluations/e1/export"
+                   "?methods=aida,iou_baseline")
+    assert r.status_code == 409
+    assert "누락 후보" in r.json()["detail"]
+
+
+def test_기존_라벨만이면_두_방법을_함께_내보낸다(client, uploads):
+    """설계 문서의 1안(기존 라벨 후보만으로 주 비교)이 실제로 도는지 본다.
+
+    **어느 안을 고른 것이 아니다** — 고를 수 있게 된 것이다.
+    """
+    write_diagnosis(uploads, _queue(("a.jpg", 0, "width", 0.9, 0.9),
+                                    ("a.jpg", 1, "width", 0.3, 0.1)))
+    snap = start(client)
+    ids = [c["canonical_candidate_id"] for c in snap["candidates"]]
+    put(client, snap, [{"canonical_candidate_id": i, "verdict": v}
+                       for i, v in zip(ids, ["miss", "hit"])])
+
+    export = client.get(f"/api/datasets/{DATASET}/evaluations/e1/export"
+                        "?methods=aida,iou_baseline").json()
+
+    from evaluation.importer import load_export
+    from evaluation.summary import summarise
+
+    adjudications, rankings = load_export(export)
+    # 예산 1건: AIDA는 severity가 높은 쪽(오류 아님)을, 기준선은 IoU가 낮은
+    # 쪽(오류)을 먼저 본다. **같은 후보 집합에서 순서만 다르다.**
+    aida = summarise(adjudications, rankings, "aida", budget=1)
+    base = summarise(adjudications, rankings, "iou_baseline", budget=1)
+    assert aida.unique_error_yield == 0
+    assert base.unique_error_yield == 1

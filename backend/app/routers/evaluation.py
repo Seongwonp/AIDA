@@ -118,6 +118,32 @@ def _code_commit() -> str | None:
         return None
 
 
+
+# 방법 이름. 기준선을 늘릴 때 이 자리에 붙인다.
+AIDA = "aida"
+IOU_BASELINE = "iou_baseline"
+
+
+def _scores(item: dict) -> dict[str, float]:
+    """이 후보에 각 방법이 매긴 점수.
+
+    **기준선 점수를 여기서 지어내지 않는다.** 진단이 `label_iou`를 적어 준
+    후보에만 붙는다 — 누락 후보에는 대조할 라벨이 없어 그 값이 없고, 그
+    자리에 임의 공식을 넣으면 그건 IoU 기준선이 아닌 다른 것을 재게 된다
+    (docs/evaluation-adjudication-design.md).
+
+    옛 진단 결과 파일에는 `label_iou`가 없다. 그때는 AIDA 점수만 붙고,
+    기준선을 넣어 내보내려 하면 `export_for_aggregation`이 막는다 — 조용히
+    0점을 주는 것보다 낫다.
+    """
+    scores = {AIDA: float(item.get("severity", 0.0))}
+    label_iou = item.get("label_iou")
+    if item.get("label_index") is not None and label_iou is not None:
+        # 안 맞을수록 의심. 이 한 줄이 기준선의 전부다.
+        scores[IOU_BASELINE] = round(1.0 - float(label_iou), 4)
+    return scores
+
+
 def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
                    ruler=None, shuffle_seed: int = 0) -> EvaluationSnapshot:
     """진단 결과를 얼려 평가 묶음을 만든다.
@@ -141,8 +167,7 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
             label_index=item.get("label_index"),
             suspicion=item.get("suspicion", ""),
             box=item.get("box"),
-            # AIDA 점수만 안다. 기준선은 아직 정의되지 않았다 — export를 볼 것.
-            scores={"aida": float(item.get("severity", 0.0))},
+            scores=_scores(item),
         )
         for item in queue
     ]
