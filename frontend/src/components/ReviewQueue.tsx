@@ -84,20 +84,41 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
   // 서버에 남은 판정을 우선한다 — 다른 기계에서 이어받는 게 목적이다.
   // 브라우저 저장을 없애지는 않는다: 서버가 죽어도 검수는 이어져야 하고,
   // localStorage가 막힌 환경에서는 서버 쪽이 유일한 보관소가 된다.
+  // 조회 응답이 오기 전에 사용자가 내린 판정. **이것이 서버 것보다 최신이다.**
+  //
+  // 예전에는 응답이 오면 setVerdicts(next)로 통째로 갈아끼웠다. 응답이 늦으면
+  // 그 사이에 내린 판정이 조용히 사라졌다 — 실제 화면 검사로 재현했다
+  // (docs/25 R1, ReviewQueue.race.test.tsx).
+  //
+  // **지운 것도 기록해야 한다.** 같은 값을 다시 누르면 판정이 지워지는데,
+  // 그 '지움'도 서버의 옛 상태보다 최신이다. 안 그러면 서버 것이 되살아난다.
+  const judgedWhileLoading = useRef<Record<string, Verdict | null>>({});
+
   useEffect(() => {
     let alive = true;
     getVerdicts(datasetId)
       .then((remote) => {
         if (!alive) return;
         const keys = Object.keys(remote.verdicts);
+        const local = judgedWhileLoading.current;
         if (keys.length === 0) return;      // 서버가 비었으면 브라우저 것을 쓴다
-        const next = remote.verdicts as Verdicts;
+        // 서버 것을 바탕으로 하되 **기다리는 동안 한 일을 위에 얹는다.**
+        // 사용자가 방금 한 일이 서버의 옛 상태보다 새롭다.
+        const next = { ...(remote.verdicts as Verdicts) };
+        for (const [k, v] of Object.entries(local)) {
+          if (v === null) delete next[k];   // 기다리는 동안 지운 것
+          else next[k] = v;
+        }
         setVerdicts(next);
-        saveVerdicts(datasetId, next);   // 서버 것을 브라우저에도 내려둔다
+        saveVerdicts(datasetId, next);   // 합친 것을 브라우저에도 내려둔다
+        // 합친 결과가 서버와 다르면 서버에도 올린다. 안 그러면 이 판정이
+        // 이 브라우저에만 남는다.
+        if (Object.keys(local).length > 0) putVerdicts(datasetId, next).catch(() => {});
       })
       .catch(() => {
         /* 서버가 없어도 브라우저 것으로 검수는 이어진다 */
-      });
+      })
+      .finally(() => { if (alive) judgedWhileLoading.current = {}; });
     return () => { alive = false; };
   }, [datasetId]);
 
@@ -107,6 +128,9 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
     if (next[k] === v) delete next[k];
     else next[k] = v;
     setVerdicts(next);
+    // 초기 조회가 아직 안 끝났으면 이 판정을 따로 들고 있는다 — 응답이
+    // 도착할 때 덮어쓰이지 않게 (docs/25 R1). **지움은 null로 남긴다.**
+    judgedWhileLoading.current[k] = next[k] ?? null;
     // 실패하면 이번 세션에는 반영되지만 새로고침하면 사라진다 — 화면에 말한다.
     setLocalFailed(!saveVerdicts(datasetId, next));
     // 서버에도 남긴다. 실패해도 검수를 막지 않되 **사실은 말한다.**
