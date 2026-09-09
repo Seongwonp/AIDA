@@ -105,3 +105,59 @@ export const putVerdicts = (datasetId: string, verdicts: Record<string, string>)
   client
     .put<VerdictMap>(`/api/datasets/${datasetId}/verdicts`, { verdicts })
     .then((res) => res.data);
+
+// ── 평가용 가림 판정 (docs/evaluation-adjudication-design.md) ────────────────
+//
+// **제품의 재검수 판정(`getVerdicts`/`putVerdicts`)과 다른 경로다.** 순위와
+// 의심 유형을 보고 매긴 판정으로는 그 순위를 평가할 수 없어, 파일도 API도
+// 나눠 둔다.
+
+export type BlindQueueResponse = {
+  evaluation_id: string;
+  dataset_id: string;
+  candidate_set_hash: string;
+  candidates: Array<{
+    canonical_candidate_id: string;
+    image: string;
+    label_index: number | null;
+    box: number[] | null;
+    verdict: "hit" | "miss" | "hold" | null;
+    unique_error_id: string | null;
+  }>;
+  damaged: boolean;
+};
+
+export type AdjudicationRow = {
+  canonical_candidate_id: string;
+  verdict: "hit" | "miss" | "hold" | null;
+  unique_error_id: string | null;
+};
+
+/** 평가를 시작한다 — 지금 후보 목록을 얼린다. 이미 있으면 409다. */
+export const startEvaluation = (datasetId: string, evaluationId: string, shuffleSeed = 0) =>
+  client
+    .post(`/api/datasets/${datasetId}/evaluations`, {
+      evaluation_id: evaluationId,
+      shuffle_seed: shuffleSeed,
+    })
+    .then((res) => res.data);
+
+export const getBlindQueue = (datasetId: string, evaluationId: string) =>
+  client
+    .get<BlindQueueResponse>(`/api/datasets/${datasetId}/evaluations/${evaluationId}/queue`)
+    .then((res) => res.data);
+
+// `candidateSetHash`를 함께 보낸다. 안 맞으면 서버가 저장하지 않는다 — 다른
+// 목록에 붙은 판정을 되살리면 무엇을 가리키는지 알 수 없다.
+export const putAdjudications = (
+  datasetId: string,
+  evaluationId: string,
+  candidateSetHash: string,
+  adjudications: AdjudicationRow[],
+) =>
+  client
+    .put(`/api/datasets/${datasetId}/evaluations/${evaluationId}/adjudications`, {
+      candidate_set_hash: candidateSetHash,
+      adjudications,
+    })
+    .then((res) => res.data);

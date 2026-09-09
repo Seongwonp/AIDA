@@ -183,3 +183,30 @@ ultralytics·torch를 얹지 않기 위해서다. 그래서 **GPU가 없는 기�
 `/{dataset_id}/...` 는 전부 두 조각이라 한 조각짜리 `/history`·`/upload`·
 `/reliability-profiles`와 서로 가리지 않는다. **한 조각짜리 `/{dataset_id}`를
 나중에 추가한다면 그때는 그 앞에 와야 한다.**
+
+## 평가용 가림 판정 (제품 아님)
+
+**우리가 만든 순서를 재려고 쓰는 경로다.** 고객 화면에는 안 나오고 주소로만
+연다(`?evaluate=<dataset_id>:<evaluation_id>`). 제품의 재검수 판정
+(`/verdicts`)과 **파일도 규칙도 다르다** — 순위와 의심 유형을 보고 매긴
+판정으로는 그 순위를 평가할 수 없기 때문이다.
+
+| 경로 | 하는 일 |
+|---|---|
+| `POST /api/datasets/{id}/evaluations` | 지금 후보 목록을 **얼린다.** 이미 있으면 409 |
+| `GET .../evaluations/{eid}/queue` | 점수·순위·의심 유형을 **뺀** 판정 목록 |
+| `PUT .../evaluations/{eid}/adjudications` | 판정 저장. `candidate_set_hash`가 안 맞으면 409 |
+| `GET .../evaluations/{eid}/export?methods=aida` | 집계 모듈에 그대로 넣는 JSON |
+
+규칙 몇 가지는 서버가 강제한다.
+
+- 재진단해도 얼린 목록은 안 바뀐다.
+- 기존 라벨의 `unique_error_id`는 서버가 `{image}/L{label_index}`로 정한다 —
+  `suspicion`이 달라도 같은 라벨이면 같은 오류다.
+- **누락을 오류로 판정하면서 어느 객체인지 안 정하면 저장을 거부한다.**
+  조용히 후보 id로 대신하면 겹친 후보가 서로 다른 오류로 세어진다.
+- 점수가 없는 방법을 `methods`에 넣으면 **내보내기를 거부한다.** 누락 후보의
+  단순 IoU 기준선 점수는 아직 정의되지 않았고, 임의 공식을 만들지 않는다
+  (docs/evaluation-adjudication-design.md).
+
+자세한 설계는 `docs/evaluation-adjudication-design.md`에 있다.

@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import { getAggregatedConditions, getConditions, getDiagnosis, getObbConditions, getReliabilityProfiles, getRoiEstimate, getSummary } from "./api";
 import { ConditionsTable } from "./components/ConditionsTable";
 import { DatasetUpload } from "./components/DatasetUpload";
 import { ErrorReportTable } from "./components/ErrorReportTable";
+import { BlindAdjudication } from "./components/BlindAdjudication";
 import { Landing } from "./components/Landing";
 import { MethodCard } from "./components/MethodCard";
 import { ObbComparisonChart } from "./components/ObbComparisonChart";
@@ -86,6 +87,27 @@ function App() {
     setClasses(next);
     load(next);
   };
+
+  const evaluating = useMemo(() => {
+    const raw = new URLSearchParams(window.location.search).get("evaluate");
+    if (!raw) return null;
+    const [datasetId, evaluationId] = raw.split(":");
+    return datasetId && evaluationId ? { datasetId, evaluationId } : null;
+  }, []);
+
+  // 가림 판정은 **평가 도구이지 제품 화면이 아니다.** 탭으로 올리면 고객이
+  // 쓰는 화면에 평가 절차가 섞이고, 무엇보다 이 판정은 우리가 우리 순서를
+  // 재려고 하는 것이라 제품 기능처럼 보이면 안 된다.
+  //
+  // 그래서 주소로만 연다: `?evaluate=<dataset_id>:<evaluation_id>`.
+  if (evaluating) {
+    return (
+      <div className="app">
+        <BlindAdjudication datasetId={evaluating.datasetId}
+                           evaluationId={evaluating.evaluationId} />
+      </div>
+    );
+  }
 
   return (
     <div className="app">
