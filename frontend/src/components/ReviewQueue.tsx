@@ -255,6 +255,11 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
   // 값이 아니라 이 데이터셋의 숫자다.
   const precision = judged.length ? (hits / judged.length) * 100 : null;
 
+  /** 서버 저장을 다시 시도한다. 지금 상태를 통째로 보낸다 — 전체 교체 API다. */
+  const retrySave = () => {
+    void sendToServer(verdicts).then((ok) => setServerFailed(!ok));
+  };
+
   const saveMessage = saveStatusMessage(serverFailed, localFailed);
   // 다시 진단하면 후보가 달라져 옛 판정이 화면에서 사라질 수 있다 (docs/25 R5).
   // **지워진 것은 아니지만** 검수자는 잃은 줄 알기 쉬우므로 세어서 말한다.
@@ -273,7 +278,16 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
         <p className="error-banner" role="status">{OTHER_TAB_MESSAGE}</p>
       )}
       {saveMessage && (
-        <p className="report-caveat" role="status">{saveMessage}</p>
+        <p className="report-caveat" role="status">
+          {saveMessage}{" "}
+          {serverFailed && (
+            // 다음 판정이 있으면 전체를 다시 보내므로 저절로 복구되지만,
+            // **판정을 멈춘 채 끝내면 영영 안 올라간다** (docs/25 R6).
+            <button type="button" className="link-button" onClick={retrySave}>
+              다시 시도
+            </button>
+          )}
+        </p>
       )}
       <div className="queue-toolbar">
         <div className="queue-progress" title={`${judged.length} / ${items.length}`}>
