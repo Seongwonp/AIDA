@@ -9,6 +9,9 @@ import { describe, expect, test, vi } from "vitest";
 
 import {
   blockedIds,
+  firstUnjudgedIndex,
+  nextUnjudgedIndex,
+  unjudgedCount,
   makeAdjudicationSender,
   missingName,
   missingObjects,
@@ -185,5 +188,60 @@ describe("저장 직렬화", () => {
       throw new Error("끊김");
     });
     await expect(sender("x")).resolves.toBe(false);
+  });
+});
+
+describe("어디서부터 다시 시작하는가", () => {
+  const cands = [
+    cand({ canonical_candidate_id: "A" }),
+    cand({ canonical_candidate_id: "B" }),
+    cand({ canonical_candidate_id: "C" }),
+  ];
+
+  test("아직 판정 안 한 첫 후보를 찾는다", () => {
+    // 두 번째 세션이 0번부터 시작하면 이미 판정한 후보를 넘기는 시간이
+    // 그 후보들의 판정 시간에 다시 쌓인다.
+    expect(firstUnjudgedIndex(cands, {})).toBe(0);
+    expect(firstUnjudgedIndex(cands, { A: { verdict: "hit" } })).toBe(1);
+    expect(firstUnjudgedIndex(cands, {
+      A: { verdict: "hit" }, B: { verdict: "hold" },
+    })).toBe(2);
+  });
+
+  test("보류도 판정이라 건너뛴다", () => {
+    // 사람이 시간을 썼고 결과를 남겼다. 다시 열 이유가 없다.
+    expect(firstUnjudgedIndex(cands, { A: { verdict: "hold" } })).toBe(1);
+  });
+
+  test("판정을 취소하면 다시 미판정이다", () => {
+    expect(firstUnjudgedIndex(cands, { A: { verdict: null } })).toBe(0);
+  });
+
+  test("전부 판정했으면 자리가 없다", () => {
+    // **0번을 다시 열면 안 된다.** 그 시간이 이미 판정한 후보에 쌓인다.
+    const all = {
+      A: { verdict: "hit" as const }, B: { verdict: "miss" as const },
+      C: { verdict: "hold" as const },
+    };
+    expect(firstUnjudgedIndex(cands, all)).toBeNull();
+    expect(unjudgedCount(cands, all)).toBe(0);
+  });
+
+  test("다음 미판정은 뒤에서 먼저 찾는다", () => {
+    expect(nextUnjudgedIndex(cands, { A: { verdict: "hit" } }, 0)).toBe(1);
+  });
+
+  test("뒤에 없으면 앞으로 감싸 돈다", () => {
+    // 보류로 미뤄 두고 넘어간 것이 앞쪽에 남아 있을 수 있다.
+    const j = { B: { verdict: "hit" as const }, C: { verdict: "hit" as const } };
+    expect(nextUnjudgedIndex(cands, j, 2)).toBe(0);
+  });
+
+  test("전부 판정했으면 다음도 없다", () => {
+    const all = {
+      A: { verdict: "hit" as const }, B: { verdict: "hit" as const },
+      C: { verdict: "hit" as const },
+    };
+    expect(nextUnjudgedIndex(cands, all, 0)).toBeNull();
   });
 });

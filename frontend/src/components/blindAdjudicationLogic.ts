@@ -197,3 +197,53 @@ export function saveMessage(state: "saving" | "saved" | "failed" | "idle"): stri
   if (state === "failed") return "저장하지 못했습니다. 다시 시도를 누르세요.";
   return "";
 }
+
+/**
+ * 아직 판정하지 않은 첫 후보의 자리. 전부 판정했으면 `null`.
+ *
+ * **두 번째 세션이 0번부터 시작하면 안 된다.** 이미 판정한 후보를 넘기는
+ * 시간이 그 후보들의 판정 시간에 다시 쌓여, 후보당 시간이 부풀고 N이 작아진다.
+ * (docs/pilot-evaluation-plan.md)
+ */
+export function firstUnjudgedIndex(
+  candidates: BlindCandidate[],
+  judgements: Judgements,
+): number | null {
+  const at = candidates.findIndex(
+    (c) => judgements[c.canonical_candidate_id]?.verdict == null,
+  );
+  return at === -1 ? null : at;
+}
+
+/**
+ * `from` 다음의 미판정 후보. 뒤에 없으면 앞에서 찾는다. 전부 판정했으면 `null`.
+ *
+ * 앞으로 감싸 도는 이유는 **건너뛴 후보를 되찾기 위해서다** — 보류로 미뤄 두고
+ * 넘어간 것이 앞쪽에 남아 있을 수 있다.
+ */
+export function nextUnjudgedIndex(
+  candidates: BlindCandidate[],
+  judgements: Judgements,
+  from: number,
+): number | null {
+  const unjudged = (c: BlindCandidate) =>
+    judgements[c.canonical_candidate_id]?.verdict == null;
+
+  const ahead = candidates.findIndex((c, i) => i > from && unjudged(c));
+  if (ahead !== -1) return ahead;
+  const behind = candidates.findIndex((c, i) => i <= from && unjudged(c));
+  return behind === -1 ? null : behind;
+}
+
+/** 남은 미판정 후보 수. 완료 화면을 보일지 정하는 데 쓴다. */
+export function unjudgedCount(
+  candidates: BlindCandidate[],
+  judgements: Judgements,
+): number {
+  return candidates.filter(
+    (c) => judgements[c.canonical_candidate_id]?.verdict == null,
+  ).length;
+}
+
+export const ALL_JUDGED_MESSAGE =
+  "이 묶음의 후보를 모두 판정했습니다. 다시 볼 것이 없으면 창을 닫으세요.";

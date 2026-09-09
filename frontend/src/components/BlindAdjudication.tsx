@@ -5,8 +5,11 @@ import { makeActivityLogger, queueKey } from "./activityLog";
 import { API_BASE_URL } from "../api";
 import { BoxPreview } from "./BoxPreview";
 import {
+  ALL_JUDGED_MESSAGE,
   blockedIds,
   DAMAGED_MESSAGE,
+  firstUnjudgedIndex,
+  nextUnjudgedIndex,
   HASH_CONFLICT_MESSAGE,
   MISSING_NEEDS_OBJECT,
   makeAdjudicationSender,
@@ -16,6 +19,7 @@ import {
   saveMessage,
   toJudgements,
   toRequest,
+  unjudgedCount,
   type BlindCandidate,
   type EvalVerdict,
   type Judgements,
@@ -63,7 +67,11 @@ export function BlindAdjudication({
   const [damaged, setDamaged] = useState(false);
   const [conflict, setConflict] = useState(false);
   const [save, setSave] = useState<"idle" | "saving" | "saved" | "failed">("idle");
-  const [cursor, setCursor] = useState(0);
+  // `null`은 **띄울 후보가 없다**는 뜻이다 — 아직 안 불러왔거나 전부
+  // 판정했거나. 0번으로 갈음하면 이미 판정한 후보에 시간이 쌓인다.
+  const [cursor, setCursor] = useState<number | null>(null);
+  // 후보를 화면에 띄운 순간. 후보별 시간은 여기서부터 잰다.
+  const openedRef = useRef<string | null>(null);
 
   // 작업 기록. **계산은 여기서 안 한다** — 무슨 일이 언제 있었는지만 남기고,
   // 시간 계산은 `experiment/evaluation/activity.py`가 나중에 한다
@@ -94,7 +102,8 @@ export function BlindAdjudication({
     // 따라오면, 멀쩡한 묶음을 두고 "바뀌었다"고 말하는 셈이다.
     setCandidates([]);
     setJudgements({});
-    setCursor(0);
+    setCursor(null);
+    openedRef.current = null;
     setHash("");
     setError(null);
     setConflict(false);
@@ -108,10 +117,15 @@ export function BlindAdjudication({
       .then((data) => {
         if (cancelled) return;
         log.record("queue_load_succeeded");
+        const restored = toJudgements(data.candidates);
         setCandidates(data.candidates);
         setHash(data.candidate_set_hash);
         setDamaged(data.damaged);
-        setJudgements(toJudgements(data.candidates));
+        setJudgements(restored);
+        // **아직 판정 안 한 첫 후보에서 이어 한다.** 0번부터 시작하면 두 번째
+        // 세션에서 이미 판정한 후보를 넘기는 시간이 그 후보들의 판정 시간에
+        // 다시 쌓여, 후보당 시간이 부풀고 N이 작아진다.
+        setCursor(firstUnjudgedIndex(data.candidates, restored));
       })
       .catch(() => {
         if (cancelled) return;
@@ -176,10 +190,12 @@ export function BlindAdjudication({
     };
   }, [log, datasetId, evaluationId]);
 
-  // 후보를 화면에 띄운 순간. 후보별 시간은 여기서부터 잰다.
-  const openedRef = useRef<string | null>(null);
   useEffect(() => {
-    const id = candidates[cursor]?.canonical_candidate_id ?? null;
+    // **실제로 띄운 후보만** 기록한다. 완료 화면에서는 아무것도 안 띄우므로
+    // `candidate_opened`도 안 남는다.
+    const id = cursor === null
+      ? null
+      : candidates[cursor]?.canonical_candidate_id ?? null;
     if (id && id !== openedRef.current) {
       openedRef.current = id;
       log.record("candidate_opened", id);
@@ -203,7 +219,9 @@ export function BlindAdjudication({
 
   const blocked = blockedIds(candidates, judgements);
   const stats = progress(candidates, judgements);
-  const current = candidates[cursor];
+  const current = cursor === null ? undefined : candidates[cursor];
+  const left = unjudgedCount(candidates, judgements);
+  const done = !loading && candidates.length > 0 && cursor === null;
 
   const persist = (next: Judgements, retry = false) => {
     if (blockedIds(candidates, next).length > 0) {
@@ -337,26 +355,53 @@ export function BlindAdjudication({
       {/* 저장 상태와 경고는 **판정 버튼 아래**에 둔다. 위에 두면 판정할 때마다
           문구가 생겨 버튼이 밀리고, 연달아 누르는 사람이 엉뚱한 버튼을 누른다
           — 실제로 브라우저 확인에서 그렇게 눌렸다. */}
+      {done && (
+        <p className="done" role="status">
+          {ALL_JUDGED_MESSAGE}{" "}
+          <button
+            type="button"
+            onClick={() => {
+              // **되돌아보는 것은 의도한 작업이다.** 그 시간은 그 후보의
+              // 판정 시간으로 기록된다 — 재개 시의 통과 시간과 다르다.
+              log.record("moved_previous");
+              setCursor(0);
+            }}
+          >
+            처음부터 다시 보기
+          </button>
+        </p>
+      )}
+
       <nav>
         <button
           type="button"
-          disabled={cursor === 0}
+          disabled={cursor === null || cursor === 0}
           onClick={() => {
             log.record("moved_previous");
-            setCursor(cursor - 1);
+            setCursor((cursor ?? 0) - 1);
           }}
         >
           이전
         </button>
         <button
           type="button"
-          disabled={cursor >= candidates.length - 1}
+          disabled={cursor === null || cursor >= candidates.length - 1}
           onClick={() => {
             log.record("moved_next");
-            setCursor(cursor + 1);
+            setCursor((cursor ?? 0) + 1);
           }}
         >
           다음
+        </button>
+        <button
+          type="button"
+          disabled={left === 0}
+          onClick={() => {
+            log.record("moved_next");
+            setCursor(nextUnjudgedIndex(candidates, judgements, cursor ?? -1));
+          }}
+        >
+          다음 미판정 ({left})
         </button>
       </nav>
 

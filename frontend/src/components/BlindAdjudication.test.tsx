@@ -169,6 +169,9 @@ describe("판정 저장", () => {
     // 안 보내면 서버에 옛 판정이 남아 화면과 어긋난다.
     getBlindQueue.mockResolvedValue(queue([cand({ verdict: "hit" })]));
     show();
+    // 전부 판정된 묶음이라 완료 화면부터 뜬다. 되돌아봐야 후보가 보인다.
+    await screen.findByText(/모두 판정했습니다/);
+    await click("처음부터 다시 보기");
     await screen.findByText("a.jpg");
 
     await click("판정 취소");
@@ -249,6 +252,8 @@ describe("누락 객체", () => {
                     verdict: "hit", unique_error_id: "a.jpg/M1" })]),
     );
     show();
+    await screen.findByText(/모두 판정했습니다/);
+    await click("처음부터 다시 보기");
     await screen.findByText("a.jpg");
 
     await click("오류 아니었다");
@@ -272,6 +277,8 @@ describe("조회와 판정이 겹칠 때", () => {
     await act(async () => {
       release(queue([cand({ verdict: "hold" })]));
     });
+    // 이미 판정된 묶음이라 완료 화면부터다.
+    await click("처음부터 다시 보기");
     await screen.findByText("a.jpg");
 
     // 서버가 준 판정이 화면에 살아 있다.
@@ -623,5 +630,95 @@ describe("종료와 대기 기록", () => {
     expect(postActivity).toHaveBeenCalled();
     Object.defineProperty(document, "visibilityState",
                           { value: "visible", configurable: true });
+  });
+});
+
+describe("두 번째 세션에서 어디부터 여는가", () => {
+  function logged() {
+    return postActivity.mock.calls.flatMap((call) => call[3] as Array<{
+      event: string; canonical_candidate_id: string | null;
+    }>);
+  }
+
+  /** 24개 중 앞의 `judged`개를 이미 판정한 목록. */
+  function partly(judged: number) {
+    return Array.from({ length: 24 }, (_, i) =>
+      cand({
+        canonical_candidate_id: `C${String(i).padStart(2, "0")}`,
+        image: `img${i}.jpg`,
+        verdict: i < judged ? "hit" : null,
+      }));
+  }
+
+  test("12개 판정 뒤 다시 열면 13번째부터 시작한다", async () => {
+    // 0번부터 시작하면 이미 판정한 12개를 넘기는 시간이 그 후보들의 판정
+    // 시간에 다시 쌓여, 후보당 시간이 부풀고 N이 작아진다.
+    getBlindQueue.mockResolvedValue(queue(partly(12)));
+    const { unmount } = show();
+
+    await screen.findByText("img12.jpg");
+    await act(async () => {
+      unmount();
+    });
+
+    // **이미 판정한 후보는 열지 않는다.**
+    const opened = logged()
+      .filter((e) => e.event === "candidate_opened")
+      .map((e) => e.canonical_candidate_id);
+    expect(opened).toEqual(["C12"]);
+  });
+
+  test("전부 판정한 뒤 다시 열면 후보를 안 띄운다", async () => {
+    getBlindQueue.mockResolvedValue(queue(partly(24)));
+    const { unmount } = show();
+
+    await screen.findByText(/모두 판정했습니다/);
+    expect(screen.queryByRole("button", { name: "오류였다" })).toBeNull();
+    await act(async () => {
+      unmount();
+    });
+
+    // `candidate_opened`가 하나도 없어야 한다 — 안 띄웠으니 잰 시간도 없다.
+    expect(logged().filter((e) => e.event === "candidate_opened")).toHaveLength(0);
+  });
+
+  test("되돌아보면 그때는 기록한다", async () => {
+    // 재개 시의 통과와 달리 **의도한 재검토**다. 그 시간은 그 후보의 것이다.
+    getBlindQueue.mockResolvedValue(queue(partly(24)));
+    const { unmount } = show();
+
+    await screen.findByText(/모두 판정했습니다/);
+    await click("처음부터 다시 보기");
+    await screen.findByText("img0.jpg");
+    await act(async () => {
+      unmount();
+    });
+
+    const opened = logged()
+      .filter((e) => e.event === "candidate_opened")
+      .map((e) => e.canonical_candidate_id);
+    expect(opened).toEqual(["C00"]);
+  });
+
+  test("다음 미판정으로 건너뛴다", async () => {
+    // 보류로 미뤄 두고 넘어간 것을 되찾는 길이다.
+    getBlindQueue.mockResolvedValue(queue([
+      cand({ canonical_candidate_id: "A", image: "a.jpg" }),
+      cand({ canonical_candidate_id: "B", image: "b.jpg", verdict: "hit" }),
+      cand({ canonical_candidate_id: "C", image: "c.jpg" }),
+    ]));
+    show();
+    await screen.findByText("a.jpg");
+
+    await click("오류였다");
+    await click("다음 미판정 (1)");
+    await screen.findByText("c.jpg");
+  });
+
+  test("남은 미판정 수를 보여준다", async () => {
+    // **판정 결과 요약이 아니다.** 몇 개 남았는지는 진행 상황이라 보여도 된다.
+    getBlindQueue.mockResolvedValue(queue(partly(20)));
+    show();
+    await screen.findByRole("button", { name: "다음 미판정 (4)" });
   });
 });
