@@ -17,6 +17,8 @@ import {
   loadSeen,
   saveStatusMessage,
   saveVerdicts,
+  makeVerdictSender,
+  type Verdicts,
   csvScopeNote,
   loadVerdicts,
   nextCursor,
@@ -341,3 +343,53 @@ describe("csvScopeNote — 전체인가 일부인가 (docs/24 B2)", () => {
     expect(m).toContain("전체 22건");
   });
 });
+
+describe("makeVerdictSender — 저장을 한 줄로 세운다 (docs/25 R2)", () => {
+  test("앞 요청이 끝나기 전에는 다음을 안 보낸다", async () => {
+    const sent: string[] = [];
+    let release!: () => void;
+    const send = (v: Verdicts) => {
+      sent.push(Object.keys(v).join(","));
+      return new Promise<void>((r) => { release = r; });
+    };
+    const put = makeVerdictSender(send);
+
+    void put({ a: "hit" });
+    void put({ a: "hit", b: "hit" });
+    expect(sent).toEqual(["a"]);          // 두 번째는 아직 안 나갔다
+
+    release();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(sent).toEqual(["a", "a,b"]);
+  });
+
+  test("기다리는 동안 쌓인 중간 상태는 건너뛴다", async () => {
+    // 전체 교체 API라 중간 것을 보낼 이유가 없다.
+    const sent: string[] = [];
+    let release!: () => void;
+    const send = (v: Verdicts) => {
+      sent.push(Object.keys(v).join(","));
+      return new Promise<void>((r) => { release = r; });
+    };
+    const put = makeVerdictSender(send);
+
+    void put({ a: "hit" });
+    void put({ a: "hit", b: "hit" });
+    void put({ a: "hit", b: "hit", c: "hit" });
+    release();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(sent).toEqual(["a", "a,b,c"]);   // 가운데는 안 보낸다
+  });
+
+  test("실패하면 false를 돌려주되 줄은 계속 흐른다", async () => {
+    let n = 0;
+    const put = makeVerdictSender(() => {
+      n += 1;
+      return n === 1 ? Promise.reject(new Error("끊김")) : Promise.resolve();
+    });
+    expect(await put({ a: "hit" })).toBe(false);
+    expect(await put({ a: "miss" })).toBe(true);
+  });
+})

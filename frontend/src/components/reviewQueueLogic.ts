@@ -174,3 +174,83 @@ export function csvScopeNote(shownCount: number, totalCount: number): string {
   if (shownCount >= totalCount) return `전체 ${totalCount}건을 내려받습니다.`;
   return `화면에 보이는 ${shownCount}건만 내려받습니다 (전체 ${totalCount}건).`;
 }
+
+/**
+ * 서버 저장을 **한 줄로 세운다** (docs/25 R2).
+ *
+ * 판정은 전체 교체 API로 올라간다. 그래서 두 요청이 순서 바뀌어 도착하면
+ * **먼저 보낸 옛 상태가 나중에 도착해 최신을 지운다.** 실제 화면 검사로
+ * 재현했다(`ReviewQueue.order.test.tsx`).
+ *
+ * 고치는 방법이 둘이었다.
+ *
+ *   1. 서버에 버전을 붙여 오래된 요청을 거절한다.
+ *   2. 클라이언트가 앞 요청이 끝난 뒤에 다음을 보낸다.
+ *
+ * **2를 골랐다.** 지금 동시성의 범위가 "한 사람이 한 자리에서" 이고(사용자
+ * 개념도 인증도 없다), 서버 버전 검사는 API와 파일 형식을 함께 바꿔야 한다.
+ * 작은 쪽으로 먼저 막는다.
+ *
+ * **중간 상태는 건너뛴다.** 기다리는 동안 판정이 세 번 더 오면 마지막 것만
+ * 보낸다 — 전체 교체 API라 중간 것을 보낼 이유가 없다.
+ *
+ * **한계.** 이것은 **한 탭 안의 순서**만 지킨다. 탭이 둘이면 서로의 순서를
+ * 모른다(docs/25 R2의 남은 항목).
+ */
+export function makeVerdictSender(
+  send: (verdicts: Verdicts) => Promise<unknown>,
+): (verdicts: Verdicts) => Promise<boolean> {
+  let inFlight = false;
+  let queued: Verdicts | null = null;
+  let waiters: Array<(ok: boolean) => void> = [];
+
+  const flush = async (): Promise<void> => {
+    while (queued !== null) {
+      const next = queued;
+      queued = null;
+      const settle = waiters;
+      waiters = [];
+      let ok = true;
+      try {
+        // no-await-in-loop 경고가 뜨지만 순차 실행이 이 함수의 목적이다.
+        // 병렬로 보내면 순서가 다시 뒤집힌다(docs/25 R2).
+        await send(next);
+      } catch {
+        ok = false;
+      }
+      settle.forEach((f) => f(ok));
+    }
+    inFlight = false;
+  };
+
+  return (verdicts: Verdicts) => {
+    queued = verdicts;                       // 중간 상태는 덮어쓴다
+    const done = new Promise<boolean>((resolve) => waiters.push(resolve));
+    if (!inFlight) {
+      inFlight = true;
+      void flush();
+    }
+    return done;
+  };
+}
+
+/**
+ * 다른 탭이 같은 데이터셋을 고쳤는가 (docs/25 R2).
+ *
+ * 저장 직렬화는 **한 탭 안의 순서**만 지킨다. 탭이 둘이면 서로의 요청을 모르고,
+ * 전체 교체 API라 나중 탭이 앞 탭의 판정을 통째로 지운다.
+ *
+ * **막지 않고 알린다.** 지금 동시성의 범위가 "한 사람"이라 잠금을 걸 상대가
+ * 없고, 검수를 멈추게 하는 쪽이 이 제품의 방침과 어긋난다(서버가 죽어도 검수는
+ * 이어진다). 대신 다른 탭이 고쳤다는 것을 화면에 말한다.
+ *
+ * `storage` 이벤트는 **다른 탭에서만** 온다 — 자기 탭의 setItem은 안 잡힌다.
+ * 그래서 별도 표시 없이 이것만으로 갈린다.
+ */
+export function otherTabChanged(event: StorageEvent, datasetId: string): boolean {
+  return event.key === STORE(datasetId) && event.newValue !== null;
+}
+
+export const OTHER_TAB_MESSAGE =
+  "다른 탭에서 같은 데이터셋의 판정을 바꿨습니다. 이 탭에서 계속 판정하면 " +
+  "그쪽 판정을 덮어쓸 수 있습니다. 새로고침해서 합친 상태를 먼저 확인하세요.";

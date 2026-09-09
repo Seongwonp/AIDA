@@ -6,6 +6,9 @@ import type { ReviewQueueItem } from "../types";
 import {
   keyOf,
   loadSeen,
+  makeVerdictSender,
+  otherTabChanged,
+  OTHER_TAB_MESSAGE,
   saveStatusMessage,
   saveVerdicts,
   csvScopeNote,
@@ -58,6 +61,22 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
   const [seenLegacy] = useState<Set<string>>(() => loadSeen(datasetId));
   // 저장 실패를 삼키지 않는다 (docs/24 B1의 완료 판정).
   const [serverFailed, setServerFailed] = useState(false);
+  // 서버 저장을 한 줄로 세운다 — 요청이 순서 바뀌어 도착하면 옛 상태가
+  // 최신을 지운다 (docs/25 R2). 데이터셋이 바뀌면 새로 만든다.
+  // 다른 탭이 같은 데이터셋을 고쳤는가 (docs/25 R2). 직렬화는 한 탭 안의
+  // 순서만 지킨다 — 탭 사이는 막지 않고 알린다.
+  const [otherTab, setOtherTab] = useState(false);
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (otherTabChanged(e, datasetId)) setOtherTab(true);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [datasetId]);
+
+  const sendToServer = useMemo(
+    () => makeVerdictSender((v) => putVerdicts(datasetId, v)),
+    [datasetId]);
   const [localFailed, setLocalFailed] = useState(false);
   const [onlyOpen, setOnlyOpen] = useState(false);
   // 미리보기는 이미지를 내려받으므로 기본으로 켜두면 목록이 큰 데이터셋에서
@@ -113,14 +132,14 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
         saveVerdicts(datasetId, next);   // 합친 것을 브라우저에도 내려둔다
         // 합친 결과가 서버와 다르면 서버에도 올린다. 안 그러면 이 판정이
         // 이 브라우저에만 남는다.
-        if (Object.keys(local).length > 0) putVerdicts(datasetId, next).catch(() => {});
+        if (Object.keys(local).length > 0) void sendToServer(next);
       })
       .catch(() => {
         /* 서버가 없어도 브라우저 것으로 검수는 이어진다 */
       })
       .finally(() => { if (alive) judgedWhileLoading.current = {}; });
     return () => { alive = false; };
-  }, [datasetId]);
+  }, [datasetId, sendToServer]);
 
   const setVerdict = (item: ReviewQueueItem, v: Verdict) => {
     const k = keyOf(item);
@@ -134,9 +153,7 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
     // 실패하면 이번 세션에는 반영되지만 새로고침하면 사라진다 — 화면에 말한다.
     setLocalFailed(!saveVerdicts(datasetId, next));
     // 서버에도 남긴다. 실패해도 검수를 막지 않되 **사실은 말한다.**
-    putVerdicts(datasetId, next)
-      .then(() => setServerFailed(false))
-      .catch(() => setServerFailed(true));
+    void sendToServer(next).then((ok) => setServerFailed(!ok));
   };
 
   const download = () => {
@@ -223,6 +240,9 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
 
   return (
     <>
+      {otherTab && (
+        <p className="error-banner" role="status">{OTHER_TAB_MESSAGE}</p>
+      )}
       {saveMessage && (
         <p className="report-caveat" role="status">{saveMessage}</p>
       )}
