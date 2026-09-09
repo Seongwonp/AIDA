@@ -538,3 +538,90 @@ describe("작업 기록", () => {
     await screen.findByText("저장됨");
   });
 });
+
+
+describe("종료와 대기 기록", () => {
+  function logged() {
+    return postActivity.mock.calls.flatMap((call) => call[3] as Array<{
+      event: string; sequence: number; event_id: string;
+    }>);
+  }
+
+  test("목록을 기다린 구간을 남긴다", async () => {
+    // 그 시간은 사람이 판정한 시간이 아니다 — 가려낼 수 있어야 한다.
+    getBlindQueue.mockResolvedValue(queue([cand()]));
+    const { unmount } = show();
+    await screen.findByText("a.jpg");
+    await act(async () => {
+      unmount();
+    });
+
+    const names = logged().map((e) => e.event);
+    expect(names).toContain("queue_load_started");
+    expect(names).toContain("queue_load_succeeded");
+  });
+
+  test("목록을 못 불러오면 실패도 남긴다", async () => {
+    getBlindQueue.mockRejectedValue(new Error("끊김"));
+    const { unmount } = show();
+    await screen.findByText(/불러오지 못했습니다/);
+    await act(async () => {
+      unmount();
+    });
+    expect(logged().map((e) => e.event)).toContain("queue_load_failed");
+  });
+
+  test("순번이 0부터 구멍 없이 이어진다", async () => {
+    // 구멍은 전송 유실을 뜻한다. 화면이 먼저 구멍을 내면 안 된다.
+    getBlindQueue.mockResolvedValue(queue([cand()]));
+    const { unmount } = show();
+    await screen.findByText("a.jpg");
+    await click("오류였다");
+    await act(async () => {
+      unmount();
+    });
+
+    const sequences = logged().map((e) => e.sequence);
+    expect(sequences).toEqual([...Array(sequences.length).keys()]);
+  });
+
+  test("창이 닫힐 때 sendBeacon으로 마저 보낸다", async () => {
+    // 이때는 보통의 요청이 취소된다.
+    const beacon = vi.fn().mockReturnValue(true);
+    vi.stubGlobal("navigator", { ...navigator, sendBeacon: beacon });
+    // 자동 전송을 막아 큐에 남긴다.
+    postActivity.mockRejectedValue(new Error("끊김"));
+
+    getBlindQueue.mockResolvedValue(queue([cand()]));
+    show();
+    await screen.findByText("a.jpg");
+    await click("오류였다");
+
+    await act(async () => {
+      window.dispatchEvent(new Event("pagehide"));
+    });
+
+    expect(beacon).toHaveBeenCalled();
+    const [url] = beacon.mock.calls[0];
+    expect(url).toContain(`/evaluations/${EVAL}/activity`);
+    vi.unstubAllGlobals();
+  });
+
+  test("탭이 숨으면 그때 바로 보낸다", async () => {
+    // 모바일은 여기서 페이지를 버린다 — 숨는 순간이 마지막 기회일 수 있다.
+    getBlindQueue.mockResolvedValue(queue([cand()]));
+    show();
+    await screen.findByText("a.jpg");
+    postActivity.mockClear();
+
+    await act(async () => {
+      Object.defineProperty(document, "visibilityState",
+                            { value: "hidden", configurable: true });
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+
+    expect(postActivity).toHaveBeenCalled();
+    Object.defineProperty(document, "visibilityState",
+                          { value: "visible", configurable: true });
+  });
+});

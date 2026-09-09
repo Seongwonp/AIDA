@@ -9,6 +9,7 @@
 """
 import hashlib
 import json
+import math
 import random
 import re
 import subprocess
@@ -651,6 +652,122 @@ class ActivityEvents(BaseModel):
     events: list[dict] = []
 
 
+# 아는 이벤트 이름. **모르는 이름을 받지 않는다** — 오타 하나가 조용히
+# 파일에 들어가면 나중에 그 구간이 무엇이었는지 알 수 없다.
+KNOWN_EVENTS = frozenset({
+    "session_started", "session_ended",
+    "queue_load_started", "queue_load_succeeded", "queue_load_failed",
+    "candidate_opened", "verdict_set", "verdict_cleared",
+    "missing_object_created", "missing_object_linked",
+    "moved_previous", "moved_next",
+    "save_started", "save_succeeded", "save_failed", "save_retried",
+    "visibility_changed", "focus_changed",
+})
+# 후보를 가리켜야 하는 이벤트.
+CANDIDATE_EVENTS = frozenset({
+    "candidate_opened", "verdict_set", "verdict_cleared",
+    "missing_object_created", "missing_object_linked",
+})
+ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+MAX_META_BYTES = 2000
+MAX_REQUEST_BYTES = 512 * 1024
+
+
+def _reject(index: int, why: str):
+    """**한 건이 잘못되면 요청 전체를 거부한다.**
+
+    일부만 저장하면 기록에 구멍이 남는데, 화면은 성공으로 알고 다시 안 보낸다 —
+    그 구멍은 순번으로만 드러나고 그때는 이미 늦다.
+    """
+    return HTTPException(400, f"{index}번째 이벤트가 규약을 어겼습니다: {why}")
+
+
+def validate_events(events: list[dict], snapshot: EvaluationSnapshot) -> None:
+    """이벤트가 규약을 지키는가 (docs/pilot-evaluation-plan.md)."""
+    known_candidates = {c.canonical_candidate_id for c in snapshot.candidates}
+    seen_ids: set[str] = set()
+
+    for i, e in enumerate(events):
+        if not isinstance(e, dict):
+            raise _reject(i, "사전이 아닙니다.")
+
+        name = e.get("event")
+        if name not in KNOWN_EVENTS:
+            raise _reject(i, f"모르는 이벤트 이름입니다: {name!r}")
+
+        event_id = e.get("event_id")
+        if not isinstance(event_id, str) or not ID_PATTERN.fullmatch(event_id):
+            raise _reject(i, f"event_id 형식이 아닙니다: {event_id!r}")
+        if event_id in seen_ids:
+            raise _reject(i, f"한 요청 안에 같은 event_id가 두 번: {event_id}")
+        seen_ids.add(event_id)
+
+        session_id = e.get("session_id")
+        if not isinstance(session_id, str) or not ID_PATTERN.fullmatch(session_id):
+            raise _reject(i, f"session_id 형식이 아닙니다: {session_id!r}")
+
+        sequence = e.get("sequence")
+        if not isinstance(sequence, int) or isinstance(sequence, bool) or sequence < 0:
+            raise _reject(i, f"sequence는 0 이상의 정수입니다: {sequence!r}")
+
+        elapsed = e.get("elapsed_ms")
+        if (not isinstance(elapsed, (int, float)) or isinstance(elapsed, bool)
+                or not math.isfinite(elapsed) or elapsed < 0):
+            raise _reject(i, f"elapsed_ms는 0 이상의 유한한 수입니다: {elapsed!r}")
+
+        at = e.get("at")
+        if not isinstance(at, str):
+            raise _reject(i, "at이 없습니다.")
+        try:
+            datetime.fromisoformat(at.replace("Z", "+00:00"))
+        except ValueError:
+            raise _reject(i, f"at을 읽을 수 없습니다: {at!r}") from None
+
+        meta = e.get("meta", {})
+        if not isinstance(meta, dict):
+            raise _reject(i, "meta가 사전이 아닙니다.")
+        if len(json.dumps(meta, ensure_ascii=False).encode("utf-8")) > MAX_META_BYTES:
+            raise _reject(i, f"meta가 {MAX_META_BYTES}바이트를 넘습니다.")
+
+        cid = e.get("canonical_candidate_id")
+        if name in CANDIDATE_EVENTS:
+            # **얼린 목록에 없는 후보의 시간은 어디에도 못 붙인다.**
+            if cid not in known_candidates:
+                raise _reject(i, f"이 묶음에 없는 후보입니다: {cid!r}")
+        elif cid is not None and cid not in known_candidates:
+            raise _reject(i, f"이 묶음에 없는 후보입니다: {cid!r}")
+
+        if name == "visibility_changed" and not isinstance(meta.get("visible"), bool):
+            raise _reject(i, "visibility_changed에는 visible(참·거짓)이 필요합니다.")
+        if name == "focus_changed" and not isinstance(meta.get("focused"), bool):
+            raise _reject(i, "focus_changed에는 focused(참·거짓)이 필요합니다.")
+        if name == "verdict_set" and meta.get("verdict") not in VALID_VERDICTS:
+            raise _reject(i, f"알 수 없는 판정입니다: {meta.get('verdict')!r}")
+
+
+def _stored_event_ids(path: Path) -> set[str]:
+    """이미 저장된 `event_id`들. 파일이 없으면 빈 집합.
+
+    깨진 줄은 여기서 넘긴다 — 중복을 가려내려는 것이지 파일을 검증하는
+    자리가 아니고, 읽기가 실패해서 **중복이 다시 들어가는 쪽이 더 나쁘다.**
+    깨진 줄은 요약 모듈이 읽을 때 드러난다.
+    """
+    if not path.exists():
+        return set()
+    ids: set[str] = set()
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            try:
+                ids.add(json.loads(line).get("event_id"))
+            except ValueError:
+                continue
+    except OSError:
+        return set()
+    return ids - {None}
+
+
 @router.post("/{dataset_id}/evaluations/{evaluation_id}/activity")
 def append_activity(dataset_id: str, evaluation_id: str,
                     body: ActivityEvents) -> dict:
@@ -661,6 +778,10 @@ def append_activity(dataset_id: str, evaluation_id: str,
 
     **판정 파일과 섞지 않는다.** 판정은 지금의 사실이고 기록은 지나간 사실이라,
     한 파일에 두면 판정을 고칠 때마다 기록까지 다시 써야 한다.
+
+    **이미 받은 `event_id`는 다시 넣지 않는다.** 응답이 유실되면 화면이 같은
+    묶음을 다시 보내는데, 그때 두 벌이 남으면 판정 횟수가 부풀고 순번이 겹쳐
+    그 세션이 손상으로 잡힌다. 몇 건을 걸렀는지 응답에 적는다.
 
     묶음이 다르면 받지 않는다 — 다른 후보 목록에서 잰 시간이다.
     """
@@ -673,10 +794,23 @@ def append_activity(dataset_id: str, evaluation_id: str,
         raise HTTPException(
             413, f"한 번에 {MAX_EVENTS_PER_REQUEST}건까지 받습니다 "
                  f"(받은 것 {len(body.events)}건).")
+    size = len(json.dumps(body.events, ensure_ascii=False).encode("utf-8"))
+    if size > MAX_REQUEST_BYTES:
+        raise HTTPException(
+            413, f"요청이 {MAX_REQUEST_BYTES}바이트를 넘습니다 ({size}).")
+
+    # **먼저 전부 검사한다.** 쓰다가 멈추면 기록에 구멍이 남는다.
+    validate_events(body.events, snapshot)
 
     path = eval_dir(dataset_id, evaluation_id) / ACTIVITY_FILE
+    already = _stored_event_ids(path)
     lines = []
+    deduplicated = 0
     for raw in body.events:
+        if raw["event_id"] in already:
+            deduplicated += 1
+            continue
+        already.add(raw["event_id"])
         # 서버가 아는 것은 서버가 채운다. 화면이 보낸 값을 그대로 믿지 않는다.
         lines.append(json.dumps({
             **raw,
@@ -685,10 +819,15 @@ def append_activity(dataset_id: str, evaluation_id: str,
             "candidate_set_hash": snapshot.candidate_set_hash,
         }, ensure_ascii=False))
 
-    path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        with path.open("a", encoding="utf-8") as handle:
-            handle.write("".join(line + chr(10) for line in lines))
-    except OSError as exc:
-        raise HTTPException(500, f"기록을 남기지 못했습니다: {exc}") from exc
-    return {"appended": len(lines)}
+    if lines:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with path.open("a", encoding="utf-8") as handle:
+                handle.write("".join(line + chr(10) for line in lines))
+        except OSError as exc:
+            raise HTTPException(500, f"기록을 남기지 못했습니다: {exc}") from exc
+
+    # **받은 것 전부를 확인해 준다.** 걸러낸 것도 이미 저장돼 있으므로 화면은
+    # 로컬 큐에서 지워도 된다 — 안 그러면 영영 다시 보낸다.
+    return {"appended": len(lines), "deduplicated": deduplicated,
+            "acknowledged": [e["event_id"] for e in body.events]}

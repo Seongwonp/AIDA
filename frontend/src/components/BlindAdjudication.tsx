@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { getBlindQueue, postActivity, putAdjudications } from "../api";
-import { makeActivityLogger } from "./activityLog";
+import { makeActivityLogger, queueKey } from "./activityLog";
+import { API_BASE_URL } from "../api";
 import { BoxPreview } from "./BoxPreview";
 import {
   blockedIds,
@@ -71,8 +72,11 @@ export function BlindAdjudication({
   hashRef.current = hash;
   const log = useMemo(
     () =>
-      makeActivityLogger((events) =>
-        postActivity(datasetId, evaluationId, hashRef.current, events),
+      makeActivityLogger(
+        (events) => postActivity(datasetId, evaluationId, hashRef.current, events),
+        // **평가마다 따로 둔다.** 한 키에 모으면 다른 평가의 이벤트가 섞여
+        // 묶음 해시가 안 맞아 통째로 거부당한다.
+        { storageKey: queueKey(datasetId, evaluationId) },
       ),
     [datasetId, evaluationId],
   );
@@ -97,16 +101,22 @@ export function BlindAdjudication({
     setDamaged(false);
     setSave("idle");
 
+    // 목록을 기다린 시간은 **사람이 판정한 시간이 아니다.** 그 구간을 가려낼
+    // 수 있게 조회의 시작과 끝을 남긴다.
+    log.record("queue_load_started");
     getBlindQueue(datasetId, evaluationId)
       .then((data) => {
         if (cancelled) return;
+        log.record("queue_load_succeeded");
         setCandidates(data.candidates);
         setHash(data.candidate_set_hash);
         setDamaged(data.damaged);
         setJudgements(toJudgements(data.candidates));
       })
       .catch(() => {
-        if (!cancelled) setError("판정 목록을 불러오지 못했습니다.");
+        if (cancelled) return;
+        log.record("queue_load_failed");
+        setError("판정 목록을 불러오지 못했습니다.");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -115,7 +125,7 @@ export function BlindAdjudication({
     return () => {
       cancelled = true;
     };
-  }, [datasetId, evaluationId]);
+  }, [datasetId, evaluationId, log]);
 
   useEffect(() => {
     // **여기서 새 세션을 시작하지 않는다.** 세션은 logger를 만들 때 하나
@@ -124,9 +134,12 @@ export function BlindAdjudication({
     // 잡힌다 — dry pilot에서 2회 방문이 4세션으로 나와 잡혔다.
     log.record("session_started");
 
-    const onVisibility = () =>
-      log.record("visibility_changed", null,
-                 { visible: document.visibilityState === "visible" });
+    const onVisibility = () => {
+      const visible = document.visibilityState === "visible";
+      log.record("visibility_changed", null, { visible });
+      // 숨는 순간이 마지막 기회일 수 있다 — 모바일은 여기서 페이지를 버린다.
+      if (!visible) void log.flush();
+    };
     const onFocus = () => log.record("focus_changed", null, { focused: true });
     const onBlur = () => log.record("focus_changed", null, { focused: false });
     document.addEventListener("visibilitychange", onVisibility);
@@ -137,15 +150,31 @@ export function BlindAdjudication({
     // 실패해도 판정은 이어져야 한다.
     const timer = window.setInterval(() => void log.flush(), 10_000);
 
+    // **창이 닫히는 중에는 보통의 요청이 취소된다.** 브라우저가 페이지를
+    // 버리면서 진행 중인 fetch도 같이 버린다. `pagehide`에서 `sendBeacon`으로
+    // 넘기면 문서가 사라진 뒤에도 마저 보내 준다.
+    //
+    // 응답을 못 받으므로 큐에서 지우지 않는다 — 서버가 이미 받았다면 다음
+    // 접속의 재전송이 `event_id`로 걸러진다.
+    const onPageHide = () => {
+      log.record("session_ended");
+      log.flushOnExit(
+        `${API_BASE_URL}/api/datasets/${datasetId}/evaluations/${evaluationId}/activity`,
+        (events) => ({ candidate_set_hash: hashRef.current, events }),
+      );
+    };
+    window.addEventListener("pagehide", onPageHide);
+
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("focus", onFocus);
       window.removeEventListener("blur", onBlur);
+      window.removeEventListener("pagehide", onPageHide);
       window.clearInterval(timer);
       log.record("session_ended");
       void log.flush();
     };
-  }, [log]);
+  }, [log, datasetId, evaluationId]);
 
   // 후보를 화면에 띄운 순간. 후보별 시간은 여기서부터 잰다.
   const openedRef = useRef<string | null>(null);

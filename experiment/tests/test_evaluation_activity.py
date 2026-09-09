@@ -6,27 +6,46 @@
 """
 import pytest
 
-from evaluation.activity import (IDLE_THRESHOLD_SECONDS, budget_from_pilot,
-                                 delta_scenarios, read_events,
-                                 summarise_activity)
+from evaluation.activity import (IDLE_THRESHOLD_SECONDS,
+                                 bootstrap_mean_upper,
+                                 budget_from_pilot, delta_scenarios,
+                                 plan_seconds_per_candidate,
+                                 read_events, summarise_activity)
 from evaluation.schema import ValidationError
 
 HASH = "h1"
 
 
-def ev(second, event, cid=None, session="s1", **meta):
-    """`second`는 세션 시작으로부터의 초. 손계산이 쉬우라고 초 단위로 쓴다."""
+_counter = {"n": 0}
+
+
+def ev(second, event, cid=None, session="s1", seq=None, event_id=None, **meta):
+    """`second`는 세션 시작으로부터의 초. 손계산이 쉬우라고 초 단위로 쓴다.
+
+    `seq`를 안 주면 부르는 순서대로 매긴다 — 검사마다 순번을 손으로 세지 않게.
+    """
+    _counter["n"] += 1
     return {
         "event_schema_version": 1,
         "evaluation_id": "e1",
         "candidate_set_hash": HASH,
         "session_id": session,
+        "event_id": event_id or f"ev{_counter['n']}",
+        "sequence": _counter["n"] - 1 if seq is None else seq,
         "event": event,
         "canonical_candidate_id": cid,
         "at": "2026-09-09T00:00:00+00:00",
         "elapsed_ms": int(second * 1000),
         "meta": meta,
     }
+
+
+def session(*events, name="s1"):
+    """한 세션의 이벤트에 0부터 순번을 다시 매긴다."""
+    out = []
+    for i, e in enumerate(events):
+        out.append({**e, "session_id": name, "sequence": i})
+    return out
 
 
 # ── 손계산 timeline ──────────────────────────────────────────────────────────
@@ -339,27 +358,264 @@ def test_기록이_없으면_빈_요약이다():
     assert got.p75_seconds_per_candidate is None
 
 
+# ── 중복 이벤트 ──────────────────────────────────────────────────────────────
+
+def test_같은_이벤트를_두_번_받아도_한_번만_센다():
+    """응답을 못 받은 묶음을 다시 보내면 서버에 두 벌이 남을 수 있다.
+
+    **활동 시간은 두 배가 안 된다** — 겹친 이벤트는 같은 순번·같은 시각이라
+    사이 간격이 0이다. 망가지는 것은 판정 횟수와 순번 무결성이다.
+    """
+    rows = session(
+        ev(0, "session_started"),
+        ev(0, "candidate_opened", "A"),
+        ev(10, "verdict_set", "A", verdict="hit"),
+        ev(10, "session_ended"),
+    )
+    doubled = rows + [dict(r) for r in rows[1:3]]     # 가운데 두 건을 재전송
+    got = summarise_activity(doubled)
+
+    assert got.duplicate_events == 2
+    assert got.active_seconds == 10.0
+    assert got.judged_candidates == 1
+    # 걸러내지 않으면 판정을 두 번 한 것으로 세고, 순번이 겹쳐 세션이 손상으로
+    # 잡힌다. 걸러내면 둘 다 멀쩡하다.
+    assert got.per_candidate[0].verdict_changes == 1
+    assert got.session_reports[0].duplicate_sequences == []
+    assert got.complete_sessions == 1
+
+
+def test_중복이_있으면_시간을_쓸_수_없다고_말한다():
+    """겹침이 있었다는 사실 자체가 기록의 상태를 말한다."""
+    rows = session(
+        ev(0, "session_started"),
+        ev(0, "candidate_opened", "A"),
+        ev(5, "verdict_set", "A", verdict="hit"),
+        ev(5, "session_ended"),
+    )
+    got = summarise_activity(rows + [dict(rows[2])])
+    assert got.duplicate_events == 1
+    assert got.timing_usable is False
+
+
+def test_event_id가_없으면_멈춘다():
+    """중복을 가려낼 수 없다."""
+    rows = session(ev(0, "session_started"))
+    del rows[0]["event_id"]
+    with pytest.raises(ValidationError, match="event_id"):
+        summarise_activity(rows)
+
+
+# ── 기록 완전성 ──────────────────────────────────────────────────────────────
+
+def test_끝을_못_본_세션은_불완전이다():
+    """브라우저가 죽으면 마지막 후보의 시간이 잘린 채 남는다."""
+    rows = session(
+        ev(0, "session_started"),
+        ev(0, "candidate_opened", "A"),
+        ev(3, "verdict_set", "A", verdict="hit"),
+    )
+    got = summarise_activity(rows)
+    assert got.complete_sessions == 0
+    assert got.incomplete_sessions == 1
+    assert got.invalid_sessions == ["s1"]
+    assert got.session_reports[0].ended is False
+    # **잘린 시간을 통계에 안 넣는다.**
+    assert got.mean_seconds_per_candidate is None
+    assert got.timing_usable is False
+
+
+def test_빠진_순번을_찾아낸다():
+    """전송이 통째로 유실되면 순번에 구멍이 난다."""
+    rows = session(
+        ev(0, "session_started"),
+        ev(1, "candidate_opened", "A"),
+        ev(4, "verdict_set", "A", verdict="hit"),
+        ev(4, "session_ended"),
+    )
+    del rows[2]                               # 2번 순번이 사라졌다
+    got = summarise_activity(rows)
+    assert got.missing_sequences == 1
+    assert got.session_reports[0].missing_sequences == [2]
+    assert got.timing_usable is False
+
+
+def test_순번이_겹치면_불완전이다():
+    rows = session(
+        ev(0, "session_started"),
+        ev(1, "candidate_opened", "A"),
+        ev(4, "verdict_set", "A", verdict="hit"),
+        ev(4, "session_ended"),
+    )
+    rows[2]["sequence"] = 1
+    got = summarise_activity(rows)
+    assert got.session_reports[0].duplicate_sequences == [1]
+    assert got.complete_sessions == 0
+
+
+def test_시간이_뒤로_가면_불완전이다():
+    rows = session(
+        ev(0, "session_started"),
+        ev(10, "candidate_opened", "A"),
+        ev(4, "verdict_set", "A", verdict="hit"),
+        ev(11, "session_ended"),
+    )
+    got = summarise_activity(rows)
+    assert got.session_reports[0].elapsed_regressions == 1
+    assert got.complete_sessions == 0
+
+
+def test_StrictMode의_시작_끝_시작을_손상으로_보지_않는다():
+    """개발 모드는 effect를 두 번 돌려 시작·끝·시작이 남을 수 있다.
+
+    **순번과 시각이 이어져 있으면 그건 한 세션이다.** 손상 기록과 갈라야 한다.
+    """
+    rows = session(
+        ev(0, "session_started"),
+        ev(0, "session_ended"),
+        ev(0, "session_started"),
+        ev(0, "candidate_opened", "A"),
+        ev(6, "verdict_set", "A", verdict="hit"),
+        ev(6, "session_ended"),
+    )
+    got = summarise_activity(rows)
+    assert got.complete_sessions == 1
+    assert got.incomplete_sessions == 0
+    assert got.session_reports[0].complete is True
+
+
+def test_한_세션이_끊겨도_다른_세션은_쓴다():
+    good = session(
+        ev(0, "session_started"),
+        ev(0, "candidate_opened", "A"),
+        ev(8, "verdict_set", "A", verdict="hit"),
+        ev(8, "session_ended"),
+        name="ok")
+    broken = session(
+        ev(0, "session_started"),
+        ev(0, "candidate_opened", "B"),
+        ev(1, "verdict_set", "B", verdict="hit"),
+        name="broken")
+    got = summarise_activity(good + broken)
+
+    assert got.complete_sessions == 1
+    assert got.incomplete_sessions == 1
+    # 끊긴 세션의 1초가 평균을 끌어내리지 않는다.
+    assert got.mean_seconds_per_candidate == 8.0
+
+
+# ── 목록 조회 대기 ───────────────────────────────────────────────────────────
+
+def test_목록을_기다린_시간은_판정_시간이_아니다():
+    rows = session(
+        ev(0, "session_started"),
+        ev(0, "queue_load_started"),
+        ev(9, "queue_load_succeeded"),
+        ev(9, "candidate_opened", "A"),
+        ev(14, "verdict_set", "A", verdict="hit"),
+        ev(14, "session_ended"),
+    )
+    got = summarise_activity(rows)
+    assert got.queue_load_seconds == 9.0
+    assert got.wait_seconds == 9.0
+    assert got.active_seconds == 5.0
+    assert got.per_candidate[0].active_seconds == 5.0
+
+
+def test_판정_시간에_첫_후보_이전의_시간이_안_들어간다():
+    """`adjudication_seconds`가 이름보다 넓은 값이면 안 된다.
+
+    예전에는 `active - missing_link`라서 첫 후보가 뜨기 전의 시간까지
+    "판정 시간"에 들어갔다.
+    """
+    rows = session(
+        ev(0, "session_started"),
+        ev(7, "candidate_opened", "A"),     # 뜨기 전 7초는 후보의 시간이 아니다
+        ev(12, "verdict_set", "A", verdict="hit"),
+        ev(12, "session_ended"),
+    )
+    got = summarise_activity(rows)
+    assert got.active_seconds == 12.0
+    assert got.adjudication_seconds == 5.0
+    assert got.unattributed_seconds == 7.0
+
+
+# ── 계획값 ───────────────────────────────────────────────────────────────────
+
+def _pilot(sessions_count=2, per_session=6, seconds=10.0, prefix="s"):
+    rows = []
+    for s_index in range(sessions_count):
+        events = [ev(0, "session_started")]
+        clock = 0.0
+        for c in range(per_session):
+            events.append(ev(clock, "candidate_opened", f"{prefix}{s_index}_{c}"))
+            clock += seconds
+            events.append(ev(clock, "verdict_set", f"{prefix}{s_index}_{c}",
+                             verdict="hit"))
+        events.append(ev(clock, "session_ended"))
+        rows += session(*events, name=f"{prefix}{s_index}")
+    return rows
+
+
+def test_표본이_모자라면_계획값을_만들지_않는다():
+    """숫자를 지어내는 대신 왜 못 만드는지 말한다."""
+    got = plan_seconds_per_candidate(summarise_activity(_pilot(1, 3)))
+    assert got["status"] == "insufficient_pilot_data"
+    assert got["s_plan_seconds"] is None
+    assert "온전한 세션" in got["reason"] or "판정한 후보" in got["reason"]
+    # 최소 기준이 근거가 약하다는 것을 결과에 적는다.
+    assert "짐작" in got["minimum_basis"]
+
+
+def test_계획값은_평균의_보수적_상한이다():
+    """**P75가 아니다.** P75는 후보 난이도 분포의 기술 통계다."""
+    summary = summarise_activity(_pilot(2, 6, seconds=10.0))
+    got = plan_seconds_per_candidate(summary)
+
+    assert got["status"] == "ok"
+    assert got["mean_seconds"] == pytest.approx(10.0)
+    assert got["s_plan_seconds"] >= got["mean_seconds"]
+    # P75도 함께 보고하되, 그것이 계획값이 아님을 적는다.
+    assert "p75_seconds" in got
+    assert "총 세션 시간" in got["p75_basis"]
+    assert "확률 보장이 아니라" in got["s_plan_basis"]
+
+
+def test_변동이_크면_상한이_평균보다_높다():
+    """세션마다 속도가 다르면 계획값이 더 보수적이어야 한다."""
+    fast = _pilot(1, 6, seconds=5.0, prefix="fast")
+    slow = _pilot(1, 6, seconds=25.0, prefix="slow")
+    summary = summarise_activity(fast + slow)
+    got = plan_seconds_per_candidate(summary)
+    assert got["status"] == "ok"
+    assert got["s_plan_seconds"] > got["mean_seconds"]
+
+
+def test_재표집은_세션_단위다():
+    """후보 단위로 뽑으면 같은 세션의 후보가 서로 독립인 척한다."""
+    summary = summarise_activity(_pilot(2, 6, seconds=10.0))
+    # 모든 세션이 똑같으면 재표집해도 평균이 안 흔들린다.
+    assert bootstrap_mean_upper(summary) == pytest.approx(10.0)
+
+
 # ── N 공식 ───────────────────────────────────────────────────────────────────
 
-def test_예산은_P75로_나눈_몫이다():
-    """N = floor((T / D) / P75)."""
-    # 3시간(10800초), 데이터셋 3개, 후보당 P75 12초 → 3600 / 12 = 300
+def test_예산은_계획값으로_나눈_몫이다():
+    """N = floor((T / D) / s_plan)."""
     assert budget_from_pilot(10800, 3, 12.0) == 300
 
 
 def test_입력이_없으면_숫자를_지어내지_않는다():
-    """D와 T는 사용자가 정하고 P75는 예비 평가에서 나온다."""
+    """D와 T는 사용자가 정하고 s_plan은 예비 평가에서 나온다."""
     assert budget_from_pilot(10800, 3, None) is None
     assert budget_from_pilot(10800, 0, 12.0) is None
     assert budget_from_pilot(0, 3, 12.0) is None
     assert budget_from_pilot(10800, 3, 0.0) is None
+    assert budget_from_pilot(10800, 3, float("inf")) is None
 
 
-def test_평균이_아니라_P75를_쓴다():
-    """평균으로 잡으면 절반의 경우 상한을 넘는다.
-
-    P75가 평균보다 크면 N이 더 작게 나온다 — 그게 보수적인 쪽이다.
-    """
+def test_계획값이_클수록_예산이_작다():
+    """보수적인 값을 넣으면 N이 작아진다 — 그게 보수적이라는 뜻이다."""
     assert budget_from_pilot(3600, 1, 20.0) < budget_from_pilot(3600, 1, 10.0)
 
 

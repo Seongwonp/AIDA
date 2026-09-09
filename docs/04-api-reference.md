@@ -229,8 +229,17 @@ ultralytics·torch를 얹지 않기 위해서다. 그래서 **GPU가 없는 기�
 
 `POST .../evaluations/{eid}/activity`는 판정 작업 기록을 **이어붙인다**
 (docs/pilot-evaluation-plan.md). 판정 파일과 별도이며 덮어쓰지 않는다 — 기록은
-지난 일이라 나중 것이 앞의 것을 무효로 만들지 않는다. 묶음 해시가 다르면
-받지 않고, 한 번에 500건까지 받는다. `event_schema_version`·`evaluation_id`·
-`candidate_set_hash`는 **서버가 채운다.**
+지난 일이라 나중 것이 앞의 것을 무효로 만들지 않는다.
+
+- 묶음 해시가 다르면 받지 않는다(409). 한 번에 500건·512KB까지.
+- `event_schema_version`·`evaluation_id`·`candidate_set_hash`는 **서버가 채운다.**
+- 이벤트 이름은 **whitelist**로 확인하고, 이벤트별 필수 `meta`(`visible`·
+  `focused`·`verdict`)와 `elapsed_ms`·`sequence`·`session_id`·`event_id`·`at`의
+  형식을 본다. **한 건이 틀리면 요청 전체를 거부한다**(400) — 일부만 저장하면
+  기록에 구멍이 남는데 화면은 성공으로 알고 다시 안 보낸다.
+- 이미 받은 `event_id`는 다시 넣지 않는다. 응답은
+  `{appended, deduplicated, acknowledged}`이고, `acknowledged`에는 **걸러낸
+  것도 포함된다** — 안 그러면 화면이 로컬 큐에서 못 지우고 영영 다시 보낸다.
+- 화면은 창이 닫힐 때 `sendBeacon`으로 같은 경로에 보낸다.
 
 자세한 설계는 `docs/evaluation-adjudication-design.md`에 있다.
