@@ -2,27 +2,56 @@
 
 **개별 구간의 겹침으로 판정하지 않는다.** 같은 이미지에서 두 방법을 다 재므로
 상관이 있고, 개별 구간은 그 상관을 버린다. 차이를 직접 계산한다.
+
+**두 방법이 같은 후보 집합을 봐야 한다.** 후보가 다르면 그것은 "정렬 효과"가
+아니라 "작업 전체 효과"이고, 규약이 둘을 갈라 적으라고 한 바로 그 구분이다.
 """
-from .schema import Judgement
+from .schema import Adjudication, Ranking, ValidationError
 from .summary import summarise
 
 
-def _rows_of(rows: list[Judgement], method: str) -> list[Judgement]:
-    return [r for r in rows if r.method == method]
+def _keys_of(rankings: list[Ranking], method: str) -> set[str]:
+    return {r.candidate_key for r in rankings if r.method == method}
 
 
-def paired_difference(rows: list[Judgement], method: str, baseline: str,
+def check_same_candidate_set(rankings: list[Ranking], method: str,
+                             baseline: str) -> None:
+    """두 방법이 같은 후보를 봤는가.
+
+    다르면 **거부한다.** 다른 후보 집합으로 낸 차이를 "정렬 효과"라고 부르면
+    순서가 아니라 후보 생성의 차이를 재게 된다.
+    """
+    if method == baseline:
+        raise ValidationError(f"같은 방법끼리 견줄 수 없다: {method!r}")
+
+    a, b = _keys_of(rankings, method), _keys_of(rankings, baseline)
+    if not a:
+        raise ValidationError(f"그 방법의 순위가 하나도 없다: {method!r}")
+    if not b:
+        raise ValidationError(f"기준선의 순위가 하나도 없다: {baseline!r}")
+    if a != b:
+        only_a, only_b = sorted(a - b)[:3], sorted(b - a)[:3]
+        raise ValidationError(
+            f"두 방법의 후보 집합이 다르다 ({method}만 {len(a - b)}개, "
+            f"{baseline}만 {len(b - a)}개). 정렬 효과는 같은 후보 안에서만 잰다 "
+            f"— 후보가 다르면 작업 전체 효과이므로 따로 재야 한다. "
+            f"예: {only_a} / {only_b}")
+
+
+def paired_difference(adjudications: list[Adjudication], rankings: list[Ranking],
+                      method: str, baseline: str,
                       budget: int | None = None) -> dict:
     """같은 후보 집합에서 두 방법의 성과 차이.
 
     주지표는 **고정 예산에서 찾은 고유 오류 수**다.
     """
-    a = summarise(_rows_of(rows, method), budget)
-    b = summarise(_rows_of(rows, baseline), budget)
+    check_same_candidate_set(rankings, method, baseline)
+    a = summarise(adjudications, rankings, method, budget)
+    b = summarise(adjudications, rankings, baseline, budget)
     return {
         "method": method, "baseline": baseline, "budget": budget,
-        "method_unique_errors": a.unique_errors,
-        "baseline_unique_errors": b.unique_errors,
-        "difference": a.unique_errors - b.unique_errors,
+        "method_unique_errors": a.unique_error_yield,
+        "baseline_unique_errors": b.unique_error_yield,
+        "difference": a.unique_error_yield - b.unique_error_yield,
         "method_summary": a.as_dict(), "baseline_summary": b.as_dict(),
     }
