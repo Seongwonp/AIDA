@@ -196,7 +196,20 @@ ultralytics·torch를 얹지 않기 위해서다. 그래서 **GPU가 없는 기�
 | `POST /api/datasets/{id}/evaluations` | 지금 후보 목록을 **얼린다.** 이미 있으면 409 |
 | `GET .../evaluations/{eid}/queue` | 점수·순위·의심 유형을 **뺀** 판정 목록 |
 | `PUT .../evaluations/{eid}/adjudications` | 판정 저장. `candidate_set_hash`가 안 맞으면 409 |
-| `GET .../evaluations/{eid}/export?methods=aida` | 집계 모듈에 그대로 넣는 JSON |
+| `GET .../evaluations/{eid}/export?methods=aida&scope=labelled_candidates` | 집계 모듈에 그대로 넣는 JSON |
+
+`scope`는 **평가 층**이다. 기존 라벨과 누락은 비교 조건이 달라 한 숫자로 합치지
+않는다(docs/evaluation-protocol.md 2-1절).
+
+| `scope` | 담기는 후보 | 방법 간 비교 |
+|---|---|---|
+| `labelled_candidates` (기본) | `label_index`가 있는 것 | **된다** — AIDA 대 `1 − label_iou` |
+| `missing_candidates` | 누락 후보 | **안 된다** — 비교군이 없다 |
+| `all_descriptive` | 전부 | **안 된다** — 현황 확인용 |
+
+결과에 `total_candidates`·`included_candidates`·`excluded_candidates`·
+`exclusion_reasons`·`comparison_allowed`·`comparison_limitation`·
+`descriptive_only`가 함께 담긴다. **거른 것을 조용히 넘기지 않는다.**
 
 규칙 몇 가지는 서버가 강제한다.
 
@@ -205,8 +218,13 @@ ultralytics·torch를 얹지 않기 위해서다. 그래서 **GPU가 없는 기�
   `suspicion`이 달라도 같은 라벨이면 같은 오류다.
 - **누락을 오류로 판정하면서 어느 객체인지 안 정하면 저장을 거부한다.**
   조용히 후보 id로 대신하면 겹친 후보가 서로 다른 오류로 세어진다.
-- 점수가 없는 방법을 `methods`에 넣으면 **내보내기를 거부한다.** 누락 후보의
-  단순 IoU 기준선 점수는 아직 정의되지 않았고, 임의 공식을 만들지 않는다
-  (docs/evaluation-adjudication-design.md).
+- 점수가 없는 방법을 `methods`에 넣으면 **내보내기를 거부한다.** 비교군이 없는
+  층에 기준선을 붙여 달라고 해도 거부한다 — 붙일 수 있게 두면 그 자체로
+  "견줄 수 있다"는 뜻이 된다.
+- **묶음 지문은 판정에 영향을 주는 것 전부를 덮는다** — 후보 이름·이미지·라벨
+  번호·유형·상자·방법별 점수·섞는 씨앗·자·진단 생성 시각. 실행할 때마다
+  달라지는 `created_at`은 뺀다.
+- 진단 결과에 **완전히 같은 후보가 두 번** 있으면 얼리기를 거부한다. 판정자가
+  둘을 구분할 수 없다.
 
 자세한 설계는 `docs/evaluation-adjudication-design.md`에 있다.

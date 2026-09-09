@@ -76,27 +76,46 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("가림", () => {
-  test("점수·순위·의심 유형이 화면에 없다", async () => {
+  test("방법·점수·순위·세부 유형이 후보 영역에 없다", async () => {
     // 후보 이름 자체가 유형을 담고 있던 적이 있다 — 서버에서 고쳤지만,
     // 화면이 다시 흘리지 않는지 여기서도 잡는다.
     getBlindQueue.mockResolvedValue(queue([cand()]));
     show();
     await screen.findByText("a.jpg");
 
-    // 안내 문구에는 "순위·점수를 가린다"는 설명이 있으므로 **후보 영역만** 본다.
+    // 안내 문구에는 "무엇을 가리는지"를 적으므로 **후보 영역만** 본다.
     const article = document.querySelector("article");
     expect(article?.textContent ?? "").not.toMatch(
-      /width|scale|missing|severity|순위|점수|\d+위/);
+      /width|scale|class_mismatch|duplicate|severity|iou_baseline|순위|점수|\d+위/);
   });
 
-  test("후보에 붙은 어떤 속성도 유형이나 점수를 담지 않는다", () => {
-    // 화면 문구를 지워도 DOM 속성이나 title로 새면 판정자가 보게 된다.
-    const cands = [cand()];
-    const fields = Object.keys(cands[0]);
-    expect(fields).not.toContain("suspicion");
-    expect(fields).not.toContain("severity");
-    expect(fields).not.toContain("rank");
-    expect(fields).not.toContain("detail");
+  test("후보 이름이 방법·점수·순위·세부 유형을 안 담는다", async () => {
+    getBlindQueue.mockResolvedValue(queue([
+      cand({ canonical_candidate_id: "L1a2b3c4d5e6f708" }),
+    ]));
+    show();
+    await screen.findByText("a.jpg");
+
+    // 이름은 React 키로만 쓰고 화면에는 안 찍는다. 그래도 속성이나 문구로
+    // 새는지 DOM 전체를 본다.
+    const html = document.body.innerHTML;
+    expect(html).not.toMatch(/width|scale|severity|aida|iou_baseline/);
+  });
+
+  test("기존 라벨인지 누락인지는 **가리지 않는다**", async () => {
+    // 판정 작업 자체가 다르다. 기존 라벨은 "이 라벨이 틀렸는가"이고 누락은
+    // "여기 객체가 빠졌는가"다. 이것까지 숨기면 판정을 할 수 없다.
+    getBlindQueue.mockResolvedValue(queue([cand({ label_index: null })]));
+    show();
+    await screen.findByText(/빠진 객체인가/);
+  });
+
+  test("안내 문구가 가리는 범위를 정확히 말한다", async () => {
+    // "의심 유형까지 완전히 가렸다"는 사실이 아니다 — 기존 라벨 검수인지
+    // 누락 검수인지는 화면에 그대로 드러난다.
+    getBlindQueue.mockResolvedValue(queue([cand()]));
+    show();
+    await screen.findByText(/기존 라벨 검수인지 누락 객체 검수인지는 가리지 않습니다/);
   });
 });
 
@@ -304,6 +323,83 @@ describe("파일과 묶음이 어긋날 때", () => {
 
     await click("오류였다");
     await screen.findByText(/후보 목록이 그 사이에 바뀌었습니다/);
+  });
+});
+
+describe("평가를 바꿀 때", () => {
+  test("실패한 평가에서 정상 평가로 옮기면 정상 화면이 나온다", async () => {
+    // 오류 화면이 남으면 다음 평가를 아예 못 연다.
+    getBlindQueue.mockRejectedValueOnce(new Error("끊김"));
+    const { rerender } = show();
+    await screen.findByText(/불러오지 못했습니다/);
+
+    getBlindQueue.mockResolvedValue(queue([cand({ image: "b.jpg" })]));
+    await act(async () => {
+      rerender(<BlindAdjudication datasetId={DS} evaluationId="e2" />);
+    });
+
+    await screen.findByText("b.jpg");
+    expect(screen.queryByText(/불러오지 못했습니다/)).toBeNull();
+  });
+
+  test("409 뒤에 다른 평가로 옮기면 경고가 사라진다", async () => {
+    getBlindQueue.mockResolvedValue(queue([cand()]));
+    putAdjudications.mockRejectedValue(
+      Object.assign(new Error("conflict"), { response: { status: 409 } }),
+    );
+    const { rerender } = show();
+    await screen.findByText("a.jpg");
+    await click("오류였다");
+    await screen.findByText(/후보 목록이 그 사이에 바뀌었습니다/);
+
+    putAdjudications.mockResolvedValue({});
+    getBlindQueue.mockResolvedValue(queue([cand({ image: "b.jpg" })],
+                                          { candidate_set_hash: "h2" }));
+    await act(async () => {
+      rerender(<BlindAdjudication datasetId={DS} evaluationId="e2" />);
+    });
+
+    await screen.findByText("b.jpg");
+    expect(screen.queryByText(/후보 목록이 그 사이에 바뀌었습니다/)).toBeNull();
+  });
+
+  test("손상 표시와 저장 상태도 따라오지 않는다", async () => {
+    getBlindQueue.mockResolvedValue(queue([cand()], { damaged: true }));
+    const { rerender } = show();
+    await screen.findByText(/읽지 못했습니다/);
+    await click("오류였다");
+    await screen.findByText("저장됨");
+
+    getBlindQueue.mockResolvedValue(queue([cand({ image: "b.jpg" })]));
+    await act(async () => {
+      rerender(<BlindAdjudication datasetId={DS} evaluationId="e2" />);
+    });
+
+    await screen.findByText("b.jpg");
+    expect(screen.queryByText(/읽지 못했습니다/)).toBeNull();
+    expect(screen.queryByText("저장됨")).toBeNull();
+  });
+
+  test("이전 평가의 늦은 응답이 새 평가를 덮지 않는다", async () => {
+    let releaseOld!: (value: unknown) => void;
+    getBlindQueue.mockReturnValueOnce(new Promise((r) => (releaseOld = r)));
+    const { rerender } = show();
+
+    getBlindQueue.mockResolvedValue(queue([cand({ image: "b.jpg" })],
+                                          { candidate_set_hash: "h2" }));
+    await act(async () => {
+      rerender(<BlindAdjudication datasetId={DS} evaluationId="e2" />);
+    });
+    await screen.findByText("b.jpg");
+
+    // 이제서야 옛 요청이 돌아온다.
+    await act(async () => {
+      releaseOld(queue([cand({ image: "a.jpg" })], { damaged: true }));
+    });
+
+    await screen.findByText("b.jpg");
+    expect(screen.queryByText("a.jpg")).toBeNull();
+    expect(screen.queryByText(/읽지 못했습니다/)).toBeNull();
   });
 });
 

@@ -5,12 +5,13 @@
 """
 import pytest
 
-from evaluation.importer import load_export, load_exports
+from evaluation.importer import check_scope, load_export, load_exports
 from evaluation.schema import ValidationError
 from evaluation.summary import summarise
 
 
-def export(*rows, dataset_id="d1", methods=("aida",), version=1):
+def export(*rows, dataset_id="d1", methods=("aida",), version=1,
+           scope="labelled_candidates", comparison_allowed=True):
     """`rows`는 (image, candidate_id, label_index, suspicion, verdict, uid, sev)."""
     return {
         "schema_version": version,
@@ -18,6 +19,14 @@ def export(*rows, dataset_id="d1", methods=("aida",), version=1):
         "dataset_id": dataset_id,
         "snapshot_hash": "h",
         "methods": list(methods),
+        "requested_scope": scope,
+        "total_candidates": len(rows),
+        "included_candidates": len(rows),
+        "excluded_candidates": 0,
+        "exclusion_reasons": {},
+        "comparison_allowed": comparison_allowed,
+        "comparison_limitation": "",
+        "descriptive_only": not comparison_allowed,
         "adjudications": [
             {"canonical_candidate_id": cid, "image": im, "label_index": li,
              "suspicion": s, "verdict": v, "unique_error_id": uid,
@@ -108,3 +117,51 @@ def test_다른_데이터셋의_같은_후보_이름이_한_후보로_안_섞인
     two = export(("a.jpg", "Laaa", 0, "width", "hit", "a.jpg/L0", 0.8))
     adjudications, _ = load_exports([one, two], ["kitti", "coco"])
     assert len({a.key for a in adjudications}) == 2
+
+
+# ── 평가 층 ──────────────────────────────────────────────────────────────────
+#
+# 집계가 층을 확인하지 않으면 계약이 있으나 마나다. 누락 층 자료로 성공 판정을
+# 만들면 "비교군이 없다"는 사실이 숫자 뒤로 사라진다.
+
+def test_층이_없거나_모르면_멈춘다():
+    data = export(("a.jpg", "Laaa", 0, "width", "hit", "a.jpg/L0", 0.9))
+    del data["requested_scope"]
+    with pytest.raises(ValidationError, match="평가 층"):
+        load_export(data)
+
+    with pytest.raises(ValidationError, match="평가 층"):
+        load_export(export(("a.jpg", "Laaa", 0, "width", "hit", "a.jpg/L0", 0.9),
+                           scope="아무거나"))
+
+
+def test_비교가_막힌_층을_비교로_읽으면_멈춘다():
+    data = export(("a.jpg", "Cxxx", None, "missing", "hit", "a.jpg/M1", 0.9),
+                  scope="missing_candidates", comparison_allowed=False)
+    # 기술 통계로 읽는 것은 된다.
+    adjudications, _ = load_export(data)
+    assert len(adjudications) == 1
+
+    # 비교로 읽는 것은 안 된다.
+    with pytest.raises(ValidationError, match="비교에 쓸 수 없다"):
+        load_export(data, require_comparison=True)
+
+
+def test_comparison_allowed가_참거짓이_아니면_멈춘다():
+    data = export(("a.jpg", "Laaa", 0, "width", "hit", "a.jpg/L0", 0.9))
+    data["comparison_allowed"] = "yes"
+    with pytest.raises(ValidationError, match="comparison_allowed"):
+        load_export(data)
+
+
+def test_층이_섞이면_합치지_않는다():
+    """재정렬 효과와 기술 통계는 비교 조건이 달라 한 숫자로 못 합친다."""
+    labelled = export(("a.jpg", "Laaa", 0, "width", "hit", "a.jpg/L0", 0.9))
+    missing = export(("b.jpg", "Cbbb", None, "missing", "hit", "b.jpg/M1", 0.8),
+                     scope="missing_candidates", comparison_allowed=False)
+    with pytest.raises(ValidationError, match="층이 섞였다"):
+        load_exports([labelled, missing], ["kitti", "coco"])
+
+
+def test_check_scope는_층_이름을_돌려준다():
+    assert check_scope(export(("a.jpg", "Laaa", 0, "w", None, None, 0.1)))         == "labelled_candidates"

@@ -13,6 +13,13 @@ from .schema import (Adjudication, Ranking, ValidationError,
 # 내보내기 형식의 판. 백엔드의 `EVALUATION_SCHEMA_VERSION`과 같은 값이다.
 SUPPORTED_EXPORT_VERSION = 1
 
+# 평가 층. **기존 라벨과 누락을 한 숫자로 합치지 않는다**
+# (docs/evaluation-protocol.md).
+LABELLED = "labelled_candidates"
+MISSING = "missing_candidates"
+ALL_DESCRIPTIVE = "all_descriptive"
+SCOPES = (LABELLED, MISSING, ALL_DESCRIPTIVE)
+
 
 def _require(data: dict, field: str):
     if field not in data:
@@ -20,13 +27,40 @@ def _require(data: dict, field: str):
     return data[field]
 
 
-def load_export(export: dict, dataset_id: str | None = None
+def check_scope(export: dict, *, require_comparison: bool = False) -> str:
+    """어느 층의 내보내기인가. 비교에 쓸 수 있는지도 여기서 본다.
+
+    **집계가 층을 확인하지 않으면 계약이 있으나 마나다.** 누락 층 자료로
+    성공 판정을 만들면, 비교군이 없다는 사실이 숫자 뒤로 사라진다.
+    """
+    scope = export.get("requested_scope")
+    if scope not in SCOPES:
+        raise ValidationError(
+            f"모르는 평가 층이다: {scope!r}. 아는 것은 {', '.join(SCOPES)}다.")
+
+    allowed = export.get("comparison_allowed")
+    if not isinstance(allowed, bool):
+        raise ValidationError(
+            f"comparison_allowed가 참·거짓이 아니다: {allowed!r}")
+
+    if require_comparison and not allowed:
+        raise ValidationError(
+            f"'{scope}' 층은 방법 간 비교에 쓸 수 없다: "
+            f"{export.get('comparison_limitation') or '비교군이 없다'}")
+    return scope
+
+
+def load_export(export: dict, dataset_id: str | None = None, *,
+                require_comparison: bool = False
                 ) -> tuple[list[Adjudication], list[Ranking]]:
     """내보내기 JSON → (사실, 점수).
 
     `dataset_id`를 주면 그 이름으로 덮어쓴다. 여러 데이터셋을 한 번에 집계할 때
     업로드 id 대신 읽을 수 있는 이름을 쓰려는 것이다. **안 주면 내보내기에 적힌
     것을 그대로 쓴다** — 어댑터가 이름을 지어내면 묶음 경계가 어긋난다.
+
+    `require_comparison=True`는 **두 방법을 견주려고 읽는다**는 뜻이다. 비교군이
+    없는 층이면 멈춘다.
 
     `group_id`는 연속 장면 묶음이다. 없으면 이미지 하나가 곧 묶음이다.
     """
@@ -36,6 +70,8 @@ def load_export(export: dict, dataset_id: str | None = None
         raise ValidationError(
             f"모르는 내보내기 판이다: {version} "
             f"(이 코드가 아는 것은 {SUPPORTED_EXPORT_VERSION})")
+
+    check_scope(export, require_comparison=require_comparison)
 
     name = dataset_id or _require(export, "dataset_id")
     if not isinstance(name, str) or not name.strip():
@@ -70,23 +106,34 @@ def load_export(export: dict, dataset_id: str | None = None
     return adjudications, rankings
 
 
-def load_exports(exports: list[dict], names: list[str] | None = None
+def load_exports(exports: list[dict], names: list[str] | None = None, *,
+                 require_comparison: bool = False
                  ) -> tuple[list[Adjudication], list[Ranking]]:
     """여러 평가를 합친다. **데이터셋 이름이 겹치면 거부한다.**
 
     같은 이름으로 두 번 들어오면 서로 다른 데이터셋의 묶음이 한 묶음으로
     합쳐져 재표집 단위가 틀린다(docs/evaluation-protocol.md).
+
+    **층이 섞이면 거부한다.** 기존 라벨의 재정렬 효과와 누락의 기술 통계는
+    비교 조건이 달라 한 숫자로 합칠 수 없다.
     """
     if names is not None and len(names) != len(exports):
         raise ValidationError(
             f"이름 수가 내보내기 수와 다르다: {len(names)} vs {len(exports)}")
+
+    scopes = {check_scope(e) for e in exports}
+    if len(scopes) > 1:
+        raise ValidationError(
+            f"층이 섞였다: {', '.join(sorted(scopes))}. 비교 조건이 달라 한 "
+            "숫자로 합치지 않는다.")
 
     all_adjudications: list[Adjudication] = []
     all_rankings: list[Ranking] = []
     seen: set[str] = set()
     for i, export in enumerate(exports):
         name = names[i] if names else export.get("dataset_id")
-        adjudications, rankings = load_export(export, name)
+        adjudications, rankings = load_export(
+            export, name, require_comparison=require_comparison)
         actual = adjudications[0].dataset_id if adjudications else name
         if actual in seen:
             raise ValidationError(f"데이터셋 이름이 겹친다: {actual}")

@@ -27,7 +27,11 @@ def _queue(*items) -> dict:
         "caveat": "",
         "review_queue": [
             {"rank": i + 1, "image": im, "label_index": li, "suspicion": s,
-             "severity": sev, "detail": "", "box": [0.1, 0.1, 0.2, 0.2],
+             # 상자는 줄마다 다르게 준다. 후보 이름이 (이미지, 라벨, 유형,
+             # 상자)의 요약이라 같은 상자를 주면 서로 다른 누락 객체가 같은
+             # 후보가 된다 — 현실에서는 있을 수 없는 입력이다.
+             "severity": sev, "detail": "",
+             "box": [10.0 + i, 10.0 + i, 60.0 + i, 60.0 + i],
              **({} if len(row) < 5 else {"label_iou": row[4]})}
             for i, row in enumerate(items)
             for im, li, s, sev in [row[:4]]
@@ -358,17 +362,17 @@ def test_같은_후보가_두_번_오면_거부한다(client, uploads):
 
 # ── 내보내기 ─────────────────────────────────────────────────────────────────
 
-def test_점수가_없는_방법을_넣으면_내보내기를_막는다(client, uploads):
+def test_비교군이_없는_층에_기준선을_붙이면_막는다(client, uploads):
     """누락 후보의 단순 IoU 기준선 점수는 **아직 정해지지 않았다.**
 
-    임의 공식을 만들면 그건 IoU 기준선이 아닌 다른 것을 재게 된다.
+    기준선을 붙일 수 있게 두면, 그 자체로 "견줄 수 있다"는 뜻이 되어 버린다.
     """
     write_diagnosis(uploads, _queue(("a.jpg", None, "missing", 0.9)))
-    snap = start(client)
+    start(client)
     r = client.get(f"/api/datasets/{DATASET}/evaluations/e1/export"
-                   "?methods=aida,iou_baseline")
+                   "?methods=aida,iou_baseline&scope=missing_candidates")
     assert r.status_code == 409
-    assert "정해지지 않" in r.json()["detail"]
+    assert "비교군이 없습니다" in r.json()["detail"]
 
 
 def test_후보_집합이_다르면_내보내기를_막는다(client, uploads):
@@ -409,7 +413,7 @@ def test_내보낸_JSON을_집계_모듈이_그대로_받는다(client, uploads)
     from evaluation.importer import load_export
     from evaluation.summary import summarise
 
-    adjudications, rankings = load_export(export)
+    adjudications, rankings = load_export(export, require_comparison=True)
     result = summarise(adjudications, rankings, "aida", budget=3)
     assert result.in_budget == 3
     assert result.hit_candidates == 3
@@ -450,15 +454,58 @@ def test_기준선_점수가_없는_옛_진단은_내보내기를_막는다(clie
     assert r.status_code == 409
 
 
-def test_누락_후보가_섞이면_기준선_비교를_막는다(client, uploads):
-    """누락 후보에 기준선을 어떻게 매길지가 **아직 미정**이다."""
+def test_누락_후보를_뺀_것을_결과에_적는다(client, uploads):
+    """**거른 것을 조용히 넘기지 않는다.**
+
+    안 적으면 나중에 그 숫자가 무엇을 뺀 값인지 아무도 모른다.
+    """
     write_diagnosis(uploads, _queue(("a.jpg", 0, "width", 0.9, 0.4),
                                     ("a.jpg", None, "missing", 0.8)))
     start(client)
+    got = client.get(f"/api/datasets/{DATASET}/evaluations/e1/export"
+                     "?methods=aida,iou_baseline").json()
+
+    assert got["requested_scope"] == "labelled_candidates"
+    assert got["total_candidates"] == 2
+    assert got["included_candidates"] == 1
+    assert got["excluded_candidates"] == 1
+    assert sum(got["exclusion_reasons"].values()) == 1
+    assert got["comparison_allowed"] is True
+    assert "조건부 재정렬 효과" in got["comparison_limitation"]
+
+
+def test_누락_층은_비교를_허용하지_않는다(client, uploads):
+    """AIDA 순위와 판정은 내보내되 **성공 판정은 만들지 않는다.**"""
+    write_diagnosis(uploads, _queue(("a.jpg", 0, "width", 0.9, 0.4),
+                                    ("a.jpg", None, "missing", 0.8)))
+    start(client)
+    got = client.get(f"/api/datasets/{DATASET}/evaluations/e1/export"
+                     "?scope=missing_candidates").json()
+
+    assert got["included_candidates"] == 1
+    assert got["comparison_allowed"] is False
+    assert got["descriptive_only"] is True
+    assert [a["label_index"] for a in got["adjudications"]] == [None]
+
+
+def test_전체_층은_현황용이고_비교에_안_쓴다(client, uploads):
+    write_diagnosis(uploads, _queue(("a.jpg", 0, "width", 0.9, 0.4),
+                                    ("a.jpg", None, "missing", 0.8)))
+    start(client)
+    got = client.get(f"/api/datasets/{DATASET}/evaluations/e1/export"
+                     "?scope=all_descriptive").json()
+
+    assert got["included_candidates"] == 2
+    assert got["excluded_candidates"] == 0
+    assert got["comparison_allowed"] is False
+
+
+def test_모르는_층은_거부한다(client, uploads):
+    write_diagnosis(uploads, _queue(("a.jpg", 0, "width", 0.9, 0.4)))
+    start(client)
     r = client.get(f"/api/datasets/{DATASET}/evaluations/e1/export"
-                   "?methods=aida,iou_baseline")
+                   "?scope=아무거나")
     assert r.status_code == 409
-    assert "누락 후보" in r.json()["detail"]
 
 
 def test_기존_라벨만이면_두_방법을_함께_내보낸다(client, uploads):
@@ -479,7 +526,8 @@ def test_기존_라벨만이면_두_방법을_함께_내보낸다(client, upload
     from evaluation.importer import load_export
     from evaluation.summary import summarise
 
-    adjudications, rankings = load_export(export)
+    # **비교로 읽는다** — 층이 비교를 허용하는지 집계가 직접 확인한다.
+    adjudications, rankings = load_export(export, require_comparison=True)
     # 예산 1건: AIDA는 severity가 높은 쪽(오류 아님)을, 기준선은 IoU가 낮은
     # 쪽(오류)을 먼저 본다. **같은 후보 집합에서 순서만 다르다.**
     aida = summarise(adjudications, rankings, "aida", budget=1)
