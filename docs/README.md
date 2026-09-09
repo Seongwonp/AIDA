@@ -20,6 +20,7 @@
 | [23-plan.md](./23-plan.md) | 이전 연구 계획. 실험 배경과 미완료 과제의 기록 |
 | [22-plan.md](./22-plan.md) | 앞 계획 (2026-09-05). 항목이 거의 다 닫혔다 — 무엇을 왜 했는지 남긴다 |
 | [testing-boundary.md](./testing-boundary.md) | **검사가 무엇을 잡고 무엇을 못 잡는가.** 가짜와 진짜 추론의 경계 (docs/24 B) |
+| [evaluation-methodology-sources.md](./evaluation-methodology-sources.md) | **평가 방법론의 근거 자료.** 각 결정이 무엇에 기댔고 무엇은 안 가져왔는가 |
 | [evaluation-protocol.md](./evaluation-protocol.md) | **평가 규약 초안.** 25번에 따른 독립성·통계·중단 기준 보완과 데이터 확정 후 최종 고정 필요 |
 | [evaluation-data.md](./evaluation-data.md) | **독립 평가 데이터 후보와 겹침 확인.** 무엇을 빼야 하고 겹침을 어떻게 재는가 (docs/24 C1) |
 | [review-model.md](./review-model.md) | **검수 판정의 식별·보관 규칙.** 무엇이 후보를 구분하고 서버/브라우저가 엇갈리면 누가 이기는가 (docs/24 B1) |
