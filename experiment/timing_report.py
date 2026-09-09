@@ -30,6 +30,26 @@ def load(dataset_id: str, evaluation_id: str) -> list[dict]:
     return read_events(path.read_text(encoding="utf-8"))
 
 
+def parse_pilots(args) -> list[tuple[str, str]]:
+    """어느 (데이터셋, 평가)들을 합쳐 볼 것인가.
+
+    **블록을 나눠 하면 세션도 나뉜다.** 주소가 여러 개면 페이지도 여러 번 뜨고,
+    그러면 세션 분리가 사람의 기억에 안 달린다 — timing1·timing2에서 두 번
+    다 한 세션으로 끝났다.
+    """
+    pairs = []
+    for raw in args.pilot or []:
+        if ":" not in raw:
+            raise SystemExit(f"--pilot은 '데이터셋:평가' 꼴입니다: {raw}")
+        dataset, evaluation = raw.split(":", 1)
+        pairs.append((dataset, evaluation))
+    if args.dataset and args.evaluation:
+        pairs.append((args.dataset, args.evaluation))
+    if not pairs:
+        raise SystemExit("--dataset/--evaluation 또는 --pilot을 주세요.")
+    return pairs
+
+
 def judging_mode(dataset_id: str, override: str | None) -> str | None:
     """이 파일럿을 어떻게 했는가. **기록만 보고는 알 수 없다.**
 
@@ -51,8 +71,10 @@ def judging_mode(dataset_id: str, override: str | None) -> str | None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="파일럿 시간 요약")
-    parser.add_argument("--dataset", required=True)
-    parser.add_argument("--evaluation", required=True)
+    parser.add_argument("--dataset")
+    parser.add_argument("--evaluation")
+    parser.add_argument("--pilot", action="append", metavar="DATASET:EVAL",
+                        help="블록을 나눠 했을 때. 여러 번 줄 수 있다")
     parser.add_argument("--out", help="요약 JSON을 저장할 경로")
     # D와 T를 주면 N을 계산해 본다. **주지 않으면 계산하지 않는다** — 값을
     # 지어내지 않는다.
@@ -65,11 +87,21 @@ def main() -> int:
                         help="파일럿 메타에 적힌 값을 덮어쓴다")
     args = parser.parse_args()
 
-    mode = judging_mode(args.dataset, args.judging_mode)
-    summary = summarise_activity(load(args.dataset, args.evaluation))
+    pilots = parse_pilots(args)
+    modes = {judging_mode(dataset, args.judging_mode) for dataset, _ in pilots}
+    if len(modes) > 1:
+        # **섞으면 안 된다.** 하나라도 보조받았으면 합친 값도 보조받은 것이다.
+        raise SystemExit(f"블록마다 판정 방식이 다릅니다: {sorted(map(str, modes))}")
+    mode = modes.pop()
+
+    events = []
+    for dataset, evaluation in pilots:
+        events += load(dataset, evaluation)
+    summary = summarise_activity(events)
     plan = plan_seconds_per_candidate(summary, judging_mode=mode)
     data = summary.as_dict()
 
+    print("블록: " + ", ".join(f"{d}:{e}" for d, e in pilots))
     print(f"판정 방식: {mode or '적혀 있지 않음'}")
     print(f"세션 {summary.sessions}개 "
           f"(온전 {summary.complete_sessions}, 끊김 {summary.incomplete_sessions}, "
@@ -127,8 +159,10 @@ def main() -> int:
 
     if args.out:
         Path(args.out).write_text(
-            json.dumps({"summary": data, "plan": plan}, ensure_ascii=False,
-                       indent=2), encoding="utf-8")
+            json.dumps({"pilots": [f"{d}:{e}" for d, e in pilots],
+                        "judging_mode": mode,
+                        "summary": data, "plan": plan},
+                       ensure_ascii=False, indent=2), encoding="utf-8")
         print()
         print(f"저장했습니다: {args.out}")
     return 0
