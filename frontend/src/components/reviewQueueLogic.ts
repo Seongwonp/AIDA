@@ -272,6 +272,16 @@ export const OTHER_TAB_MESSAGE =
  *
  * **기준 원본은 서버다.** 브라우저 사본은 서버가 아무 말도 못 할 때만 원본이 된다.
  */
-export function shouldKeepLocalOnEmpty(updatedAt: string | null | undefined): boolean {
-  return !updatedAt;
+export function shouldKeepLocalOnEmpty(
+  updatedAt: string | null | undefined,
+  damaged: boolean | undefined = false,
+): boolean {
+  // 손상은 '지웠다'가 아니다. 서버가 무엇을 갖고 있었는지 모르는 상태라
+  // 응답 실패와 같이 다룬다 (docs/25 R4).
+  return damaged || !updatedAt;
 }
+
+export const DAMAGED_MESSAGE =
+  "서버의 판정 저장 파일이 손상되어 읽지 못했습니다. 이 브라우저에 남은 판정으로 " +
+  "이어서 검수하고 있으며, 다음 판정부터 서버에 다시 쌓입니다. 서버에 있던 판정 " +
+  "일부가 사라졌을 수 있으니 내보낸 CSV가 있으면 대조하세요.";

@@ -286,3 +286,10 @@ class VerdictMap(BaseModel):
     """
     verdicts: dict[str, str] = {}
     updated_at: str | None = None
+    # 저장 파일이 깨져 읽지 못했는가 (docs/25 R4).
+    #
+    # 깨진 파일 때문에 검수를 막지는 않지만 **정상적인 빈 판정으로 숨기지도
+    # 않는다.** 화면은 "판정 없음 · updated_at 없음"을 "아직 저장 안 됨"으로
+    # 읽고 브라우저 사본을 살리는데(R3), 손상일 때 그러면 서버가 무엇을 갖고
+    # 있는지 모르는 채로 덮어쓰게 된다.
+    damaged: bool = False

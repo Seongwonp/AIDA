@@ -107,6 +107,34 @@ describe("R3 복원의 의미", () => {
     });
   });
 
+  test("서버 파일이 깨졌으면 브라우저 사본을 버리지 않는다", async () => {
+    // 손상은 '지웠다'가 아니다. 서버가 무엇을 갖고 있었는지 모르는 상태라
+    // 응답 실패와 같이 다뤄야 한다 (docs/25 R4).
+    seedLocal();
+    getVerdicts.mockResolvedValue({ verdicts: {}, updated_at: null, damaged: true });
+    await openQueue();
+    expect(loadVerdicts(DS)[keyOf(ITEMS[0])]).toBe("hit");
+  });
+
+  test("서버 파일이 깨졌으면 화면에 말한다", async () => {
+    seedLocal();
+    getVerdicts.mockResolvedValue({ verdicts: {}, updated_at: null, damaged: true });
+    await openQueue();
+    await waitFor(() => {
+      expect(screen.getByText(/저장 파일이 손상/)).toBeTruthy();
+    });
+  });
+
+  test("깨진 채로 저장된 것처럼 보여도 사본을 안 지운다", async () => {
+    // updated_at이 있는데 damaged이면 '지웠다'로 읽으면 안 된다.
+    seedLocal();
+    getVerdicts.mockResolvedValue({
+      verdicts: {}, updated_at: "2026-09-09T00:00:00+00:00", damaged: true,
+    });
+    await openQueue();
+    expect(loadVerdicts(DS)[keyOf(ITEMS[0])]).toBe("hit");
+  });
+
   test("서버에 못 닿으면 브라우저 것으로 이어간다", async () => {
     seedLocal();
     getVerdicts.mockRejectedValue(new Error("오프라인"));

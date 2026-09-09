@@ -1025,8 +1025,10 @@ def get_verdicts(dataset_id: str) -> VerdictMap:
     try:
         return VerdictMap(**json.loads(path.read_text(encoding="utf-8")))
     except (OSError, json.JSONDecodeError, ValueError):
-        # 깨진 파일 때문에 검수를 못 하게 되면 안 된다 — 빈 것으로 시작한다
-        return VerdictMap()
+        # 깨진 파일 때문에 검수를 못 하게 되면 안 된다 — 빈 것으로 시작하되
+        # **손상됐다는 사실은 말한다**(docs/25 R4). 조용히 빈 판정을 주면
+        # 화면이 "아직 저장 안 됨"으로 읽어 브라우저 사본으로 덮어쓴다.
+        return VerdictMap(damaged=True)
 
 
 @router.put("/{dataset_id}/verdicts", response_model=VerdictMap)
@@ -1045,8 +1047,21 @@ def put_verdicts(dataset_id: str, body: VerdictMap) -> VerdictMap:
 
     saved = VerdictMap(verdicts=body.verdicts,
                        updated_at=datetime.now(timezone.utc).isoformat())
-    _verdicts_path(dataset_id).write_text(saved.model_dump_json(indent=2),
-                                          encoding="utf-8")
+
+    # **원자적으로 바꾼다** (docs/25 R4). 예전에는 곧장 덮어썼는데, 여는 순간
+    # 파일이 잘리므로 쓰다 끊기면 **있던 판정까지 잃는다.** 같은 폴더에 임시
+    # 파일로 쓰고 한 번에 교체한다 — 같은 폴더여야 os.replace가 원자적이다.
+    #
+    # 실패하면 임시 파일을 치우고 **500으로 알린다.** 저장 실패를 성공으로
+    # 보고하면 화면이 "서버에 남았다"고 믿는다.
+    path = _verdicts_path(dataset_id)
+    tmp = path.with_name(path.name + ".tmp")
+    try:
+        tmp.write_text(saved.model_dump_json(indent=2), encoding="utf-8")
+        tmp.replace(path)
+    except OSError as exc:
+        tmp.unlink(missing_ok=True)
+        raise HTTPException(500, f"판정을 저장하지 못했습니다: {exc}") from exc
     return saved
 
 

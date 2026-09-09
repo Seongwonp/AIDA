@@ -5,6 +5,7 @@
 """
 import io
 import zipfile
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -125,3 +126,71 @@ def test_saved_empty_keeps_its_timestamp(client, dataset):
     assert body["verdicts"] == {}
     assert body["updated_at"] is not None, \
         "지운 뒤에도 시각이 있어야 '지웠다'와 '아직 없다'가 갈린다"
+
+
+# --- 파일이 깨지거나 쓰다 끊기면 (docs/25 R4) ---------------------------------
+#
+# 깨진 파일을 빈 판정으로 돌려주면 **검수는 이어지지만 손상이 정상으로
+# 위장된다.** R3에서 화면은 "판정 없음 · updated_at 없음"을 "아직 저장 안 됨"
+# 으로 읽기로 했다 — 그러면 깨진 서버 상태를 보고 브라우저 사본을 살린다.
+# 서버가 사실 무엇을 갖고 있는지 모르는 채로.
+#
+# 그리고 저장이 전체 덮어쓰기라, 쓰다 끊기면 **있던 판정까지 잃는다.**
+
+def test_broken_file_is_reported_as_damaged(client, dataset, tmp_path):
+    """검수는 막지 않되 **손상됐다고 말한다.**"""
+    (tmp_path / "uploads" / dataset / upload.VERDICTS_FILE).write_text(
+        "{깨진", encoding="utf-8")
+    body = client.get(f"/api/datasets/{dataset}/verdicts").json()
+    assert body["verdicts"] == {}           # 기존 계약: 막지 않는다
+    assert body["damaged"] is True, "손상을 정상적인 빈 판정으로 숨기면 안 된다"
+
+
+def test_healthy_file_is_not_damaged(client, dataset):
+    client.put(f"/api/datasets/{dataset}/verdicts", json={"verdicts": {"a#0#width": "hit"}})
+    assert client.get(f"/api/datasets/{dataset}/verdicts").json()["damaged"] is False
+
+
+def test_never_saved_is_not_damaged(client, dataset):
+    """파일이 없는 것은 손상이 아니다 — R3가 그 둘을 갈라 쓴다."""
+    body = client.get(f"/api/datasets/{dataset}/verdicts").json()
+    assert body["damaged"] is False
+    assert body["updated_at"] is None
+
+
+def test_failed_write_keeps_the_previous_verdicts(client, dataset, tmp_path, monkeypatch):
+    """쓰다 끊겨도 있던 판정은 살아야 한다.
+
+    예전에는 write_text로 곧장 덮어썼다. 여는 순간 잘리므로 **쓰기가 실패하면
+    있던 것까지 사라진다.**
+    """
+    client.put(f"/api/datasets/{dataset}/verdicts", json={"verdicts": {"a#0#width": "hit"}})
+
+    real = Path.replace
+
+    def boom(self, target):                 # 교체 직전에 끊긴다
+        raise OSError("디스크 꽉 참")
+
+    monkeypatch.setattr(Path, "replace", boom)
+    resp = client.put(f"/api/datasets/{dataset}/verdicts",
+                      json={"verdicts": {"b#1#height": "miss"}})
+    monkeypatch.setattr(Path, "replace", real)
+
+    assert resp.status_code >= 500, "저장 실패를 성공으로 보고하면 안 된다"
+    body = client.get(f"/api/datasets/{dataset}/verdicts").json()
+    assert body["verdicts"] == {"a#0#width": "hit"}, "있던 판정이 사라졌다"
+    assert body["damaged"] is False
+
+
+def test_no_temp_file_is_left_behind(client, dataset, tmp_path, monkeypatch):
+    """실패한 임시 파일이 남아 다음 읽기를 헷갈리게 하면 안 된다."""
+    def boom(self, target):
+        raise OSError("디스크 꽉 참")
+
+    monkeypatch.setattr(Path, "replace", boom)
+    client.put(f"/api/datasets/{dataset}/verdicts", json={"verdicts": {"a#0#width": "hit"}})
+    monkeypatch.undo()
+
+    leftovers = [p.name for p in (tmp_path / "uploads" / dataset).iterdir()
+                 if p.name != upload.VERDICTS_FILE and "verdict" in p.name]
+    assert leftovers == [], f"임시 파일이 남았다: {leftovers}"

@@ -10,6 +10,7 @@ import {
   otherTabChanged,
   OTHER_TAB_MESSAGE,
   shouldKeepLocalOnEmpty,
+  DAMAGED_MESSAGE,
   saveStatusMessage,
   saveVerdicts,
   csvScopeNote,
@@ -67,6 +68,8 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
   // 다른 탭이 같은 데이터셋을 고쳤는가 (docs/25 R2). 직렬화는 한 탭 안의
   // 순서만 지킨다 — 탭 사이는 막지 않고 알린다.
   const [otherTab, setOtherTab] = useState(false);
+  // 서버의 저장 파일이 깨졌는가 (docs/25 R4). 검수는 막지 않고 말한다.
+  const [damaged, setDamaged] = useState(false);
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       if (otherTabChanged(e, datasetId)) setOtherTab(true);
@@ -121,11 +124,12 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
         if (!alive) return;
         const keys = Object.keys(remote.verdicts);
         const local = judgedWhileLoading.current;
+        if (remote.damaged) setDamaged(true);
         if (keys.length === 0) {
           // **비었다고 다 같은 뜻이 아니다** (docs/25 R3). 한 번도 저장된 적이
           // 없으면 브라우저 것이 유일한 원본이라 살리고, 저장된 적이 있는데
           // 비었으면 **지운 것이므로 브라우저 사본도 버린다.**
-          if (shouldKeepLocalOnEmpty(remote.updated_at)) return;
+          if (shouldKeepLocalOnEmpty(remote.updated_at, remote.damaged)) return;
           const cleared = { ...local } as Verdicts;
           for (const k of Object.keys(cleared)) {
             if (local[k] === null) delete cleared[k];
@@ -253,6 +257,9 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
 
   return (
     <>
+      {damaged && (
+        <p className="error-banner" role="status">{DAMAGED_MESSAGE}</p>
+      )}
       {otherTab && (
         <p className="error-banner" role="status">{OTHER_TAB_MESSAGE}</p>
       )}

@@ -229,4 +229,6 @@ export interface DatasetHistoryItem {
 export interface VerdictMap {
   verdicts: Record<string, string>;
   updated_at: string | null;
+  // 서버의 저장 파일이 깨졌는가 (docs/25 R4). 예전 서버에는 없다.
+  damaged?: boolean;
 }
