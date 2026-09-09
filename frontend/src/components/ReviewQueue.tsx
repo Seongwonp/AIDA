@@ -9,6 +9,7 @@ import {
   makeVerdictSender,
   otherTabChanged,
   OTHER_TAB_MESSAGE,
+  shouldKeepLocalOnEmpty,
   saveStatusMessage,
   saveVerdicts,
   csvScopeNote,
@@ -120,7 +121,19 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
         if (!alive) return;
         const keys = Object.keys(remote.verdicts);
         const local = judgedWhileLoading.current;
-        if (keys.length === 0) return;      // 서버가 비었으면 브라우저 것을 쓴다
+        if (keys.length === 0) {
+          // **비었다고 다 같은 뜻이 아니다** (docs/25 R3). 한 번도 저장된 적이
+          // 없으면 브라우저 것이 유일한 원본이라 살리고, 저장된 적이 있는데
+          // 비었으면 **지운 것이므로 브라우저 사본도 버린다.**
+          if (shouldKeepLocalOnEmpty(remote.updated_at)) return;
+          const cleared = { ...local } as Verdicts;
+          for (const k of Object.keys(cleared)) {
+            if (local[k] === null) delete cleared[k];
+          }
+          setVerdicts(cleared);
+          saveVerdicts(datasetId, cleared);
+          return;
+        }
         // 서버 것을 바탕으로 하되 **기다리는 동안 한 일을 위에 얹는다.**
         // 사용자가 방금 한 일이 서버의 옛 상태보다 새롭다.
         const next = { ...(remote.verdicts as Verdicts) };

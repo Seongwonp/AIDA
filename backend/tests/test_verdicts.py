@@ -100,3 +100,28 @@ def test_deleting_the_dataset_removes_verdicts(client, dataset, tmp_path):
                json={"verdicts": {"a#0#width": "hit"}})
     assert client.delete(f"/api/datasets/{dataset}").status_code == 204
     assert not (tmp_path / "uploads" / dataset).exists()
+
+
+# --- 빈 판정의 세 가지 뜻 (docs/25 R3) ----------------------------------------
+#
+# 화면은 "서버가 비었으면 브라우저 것을 쓴다"였는데, 서버가 비는 이유가 셋이고
+# 뜻이 다르다. 지운 판정이 브라우저 사본으로 되살아나던 것이 그래서다.
+#
+# `updated_at`이 "한 번도 저장 안 됨"과 "저장했는데 비었다"를 가른다.
+# **그 계약을 여기서 고정한다** — 화면이 이것에 기대고 있다.
+
+def test_never_saved_has_no_timestamp(client, dataset):
+    body = client.get(f"/api/datasets/{dataset}/verdicts").json()
+    assert body["verdicts"] == {}
+    assert body["updated_at"] is None, "저장된 적 없음은 시각이 없어야 한다"
+
+
+def test_saved_empty_keeps_its_timestamp(client, dataset):
+    """전부 지운 것도 '저장'이다 — 그 사실이 남아야 한다."""
+    client.put(f"/api/datasets/{dataset}/verdicts", json={"verdicts": {"a#0#width": "hit"}})
+    client.put(f"/api/datasets/{dataset}/verdicts", json={"verdicts": {}})
+
+    body = client.get(f"/api/datasets/{dataset}/verdicts").json()
+    assert body["verdicts"] == {}
+    assert body["updated_at"] is not None, \
+        "지운 뒤에도 시각이 있어야 '지웠다'와 '아직 없다'가 갈린다"

@@ -254,3 +254,24 @@ export function otherTabChanged(event: StorageEvent, datasetId: string): boolean
 export const OTHER_TAB_MESSAGE =
   "다른 탭에서 같은 데이터셋의 판정을 바꿨습니다. 이 탭에서 계속 판정하면 " +
   "그쪽 판정을 덮어쓸 수 있습니다. 새로고침해서 합친 상태를 먼저 확인하세요.";
+
+/**
+ * 서버가 빈 판정을 줬을 때 브라우저 사본을 살릴 것인가 (docs/25 R3).
+ *
+ * **서버가 비는 이유가 셋이고 뜻이 다르다.**
+ *
+ * | 서버 응답 | 뜻 | 브라우저 사본 |
+ * |---|---|---|
+ * | 판정 없음 · `updated_at` 없음 | 아직 아무것도 저장 안 됨 | **살린다** — 유일한 원본이다 |
+ * | 판정 없음 · `updated_at` 있음 | **전부 지웠다** | **버린다** — 지운 것이 최신이다 |
+ * | 응답 자체가 실패 | 판단할 근거가 없다 | 살린다 (이어서 검수) |
+ *
+ * 가운데가 문제였다. 화면이 "비었으면 브라우저 것을 쓴다"로만 되어 있어
+ * **지운 판정이 되살아났다.** `updated_at`은 한 번이라도 저장하면 값이 생기므로
+ * 그것으로 갈린다.
+ *
+ * **기준 원본은 서버다.** 브라우저 사본은 서버가 아무 말도 못 할 때만 원본이 된다.
+ */
+export function shouldKeepLocalOnEmpty(updatedAt: string | null | undefined): boolean {
+  return !updatedAt;
+}
