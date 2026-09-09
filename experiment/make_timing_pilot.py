@@ -288,6 +288,9 @@ def main() -> int:
         "seed": args.seed,
         "split": args.split,
         "judging_mode": args.judging_mode,
+        # **주입한 오류다.** 실제 진단 후보보다 잘 보이므로 여기서 잰 시간은
+        # 하한이고, 그대로 N에 넣으면 N이 과대해진다.
+        "candidate_source": "injected_synthetic",
         "excluded_from": args.exclude_from,
         "excluded_images": sorted(exclude),
         "images": sorted({row["image"] for row in queue}),

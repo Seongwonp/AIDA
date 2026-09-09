@@ -82,6 +82,18 @@ MIN_HUMAN_MEDIAN_SECONDS = 2.0
 UNAIDED_HUMAN = "unaided_human"
 ASSISTED_REHEARSAL = "assisted_rehearsal"
 JUDGING_MODES = (UNAIDED_HUMAN, ASSISTED_REHEARSAL)
+
+# ── 후보가 얼마나 실제 같은가 ────────────────────────────────────────────────
+#
+# **주입한 오류로 잰 시간은 하한이다.** 파일럿 후보는 40% 늘리기·35% 줄이기·
+# 30% 옮기기 세 가지뿐이고 전부 눈에 띄게 크다. 실제 후보는 더 미묘하고 유형도
+# 섞여 있어 사람이 더 오래 본다.
+#
+# **하한을 N에 넣으면 N이 과대해진다** — `N = (T/D)/s_plan`이라 분모가 작으면
+# 몫이 커지고, 보수적으로 잡으려던 시간 상한이 오히려 깨진다. 방향이 반대다.
+INJECTED_SYNTHETIC = "injected_synthetic"
+REAL_DIAGNOSIS = "real_diagnosis"
+CANDIDATE_SOURCES = (INJECTED_SYNTHETIC, REAL_DIAGNOSIS)
 # 전부 보류면 화면을 안 보고 눌렀을 수 있다. 판정을 못 할 자료였다는 뜻이기도
 # 하다 — 어느 쪽이든 그 시간으로 N을 정하면 안 된다.
 MAX_HOLD_RATE = 0.9
@@ -586,7 +598,8 @@ def _why_unusable(summary: ActivitySummary) -> str:
 
 
 def plan_seconds_per_candidate(summary: ActivitySummary, seed: int = 0,
-                              judging_mode: str | None = None) -> dict:
+                              judging_mode: str | None = None,
+                              candidate_source: str | None = None) -> dict:
     """N 계획에 쓸 후보당 시간값.
 
     **P75는 계획값이 아니다.** P75는 "후보 하나가 이보다 오래 걸릴 확률이 25%"를
@@ -612,6 +625,10 @@ def plan_seconds_per_candidate(summary: ActivitySummary, seed: int = 0,
         raise ValidationError(
             f"모르는 판정 방식이다: {judging_mode!r} "
             f"(아는 것은 {', '.join(JUDGING_MODES)})")
+    if candidate_source is not None and candidate_source not in CANDIDATE_SOURCES:
+        raise ValidationError(
+            f"모르는 후보 출처다: {candidate_source!r} "
+            f"(아는 것은 {', '.join(CANDIDATE_SOURCES)})")
 
     warnings = provenance_warnings(summary)
     if warnings:
@@ -662,8 +679,20 @@ def plan_seconds_per_candidate(summary: ActivitySummary, seed: int = 0,
         }
 
 
+    # **주입한 오류로 잰 값은 하한이다.** 실제 후보는 더 미묘해 더 오래 걸린다.
+    lower_bound = candidate_source != REAL_DIAGNOSIS
     return {
         "status": "ok",
+        "candidate_source": candidate_source,
+        "s_plan_bound": "lower" if lower_bound else "estimate",
+        "adoption_blocked": lower_bound,
+        "adoption_note": (
+            "주입한 오류로 잰 값이라 **하한**입니다. 실제 후보는 더 미묘해 "
+            "사람이 더 오래 봅니다. N = (T/D)/s_plan이므로 하한을 넣으면 N이 "
+            "과대해져 시간 상한이 깨집니다 — 안전계수를 명시하거나 실제 후보로 "
+            "다시 재기 전에는 채택하지 않습니다."
+            if lower_bound else
+            "실제 진단 후보로 잰 값입니다."),
         "mean_seconds": summary.mean_seconds_per_candidate,
         "median_seconds": summary.median_seconds_per_candidate,
         # **함께 보고하되 N의 근거로 쓰지 않는다.** 난이도 분포를 보는 값이다.

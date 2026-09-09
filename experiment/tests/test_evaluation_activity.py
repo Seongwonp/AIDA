@@ -770,3 +770,42 @@ def test_모르는_판정_방식은_거부한다():
         plan_seconds_per_candidate(
             summarise_activity(_pilot(2, 6, seconds=12.0, prefix="d")),
             judging_mode="아무거나")
+
+
+# ── 후보가 얼마나 실제 같은가 ────────────────────────────────────────────────
+#
+# 주입한 오류는 크고 종류도 셋뿐이라 실제 후보보다 잘 보인다. 그렇게 잰 시간은
+# 하한이고, **하한을 N에 넣으면 N이 과대해져 시간 상한이 깨진다** — 방향이
+# 보수적인 쪽의 반대다.
+
+def test_주입한_오류로_잰_값은_하한이다():
+    got = plan_seconds_per_candidate(
+        summarise_activity(_pilot(2, 6, seconds=12.0, prefix="syn")),
+        judging_mode="unaided_human", candidate_source="injected_synthetic")
+    assert got["status"] == "ok"                 # 측정 자체는 유효하다
+    assert got["s_plan_bound"] == "lower"
+    assert got["adoption_blocked"] is True
+    assert "과대해져" in got["adoption_note"]
+
+
+def test_출처를_안_적으면_하한으로_본다():
+    """모르는 것을 '실제 후보였다'로 읽으면 실수 하나가 기준이 된다."""
+    got = plan_seconds_per_candidate(
+        summarise_activity(_pilot(2, 6, seconds=12.0, prefix="unk")),
+        judging_mode="unaided_human")
+    assert got["adoption_blocked"] is True
+
+
+def test_실제_진단_후보로_잰_값은_안_막는다():
+    got = plan_seconds_per_candidate(
+        summarise_activity(_pilot(2, 6, seconds=12.0, prefix="real")),
+        judging_mode="unaided_human", candidate_source="real_diagnosis")
+    assert got["s_plan_bound"] == "estimate"
+    assert got["adoption_blocked"] is False
+
+
+def test_모르는_후보_출처는_거부한다():
+    with pytest.raises(ValidationError, match="후보 출처"):
+        plan_seconds_per_candidate(
+            summarise_activity(_pilot(2, 6, seconds=12.0, prefix="bad")),
+            judging_mode="unaided_human", candidate_source="아무거나")

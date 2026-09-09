@@ -150,10 +150,19 @@ timing1은 후보당 중앙값 5.27초, 보류 0%로 **자동 클릭 검사를 �
 그래서 `judging_mode`를 **밖에서 적는다**(`pilot_meta.json`). `unaided_human`만
 계획값을 내고, 적혀 있지 않으면 **"안 받았다"로 읽지 않는다.**
 
-| 파일럿 | judging_mode | 쓰임 |
-|---|---|---|
-| `timing1` (ffffffffff01) | `assisted_rehearsal` | **N 산정 제외.** 계측·화면 확인용 |
-| `timing2` (ffffffffff02) | `unaided_human` | 아직 수행 전 |
+| 파일럿 | judging_mode | 결과 | 쓰임 |
+|---|---|---|---|
+| `timing1` | `assisted_rehearsal` | 24건, 한 세션 | **N 제외** — 외부 도움 |
+| `timing2` | `unaided_human` | 24건, 한 세션 | **N 제외** — 재표집할 세션 하나 |
+| `timing3a/b/c` | `unaided_human` | 24건, 세 세션, `timing_usable=True` | **하한으로만** |
+
+**timing3의 `s_plan = 3.05초`는 하한이다.** 후보가 주입한 오류(크고 세 종류뿐)
+이고 같은 과제를 세 번째 한 연습 효과가 있다(10.5 → 4.6 → 2.75초). 실제
+후보는 더 미묘해 더 오래 걸린다.
+
+`N = (T/D)/s_plan`이라 **하한을 넣으면 N이 과대해진다** — 보수적으로 잡으려던
+시간 상한이 오히려 깨진다. 그래서 `candidate_source: injected_synthetic`을
+적고, 안전계수를 명시하기 전에는 N을 내지 않는다.
 
 timing1에서 또 하나 잡혔다. **온전한 세션 수만 세느라** 열고 닫기만 한 세션이
 표본에 들어갔고, 재표집할 세션이 하나뿐인데 "95% 상한"이 평균과 똑같이 나왔다.

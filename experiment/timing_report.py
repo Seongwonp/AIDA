@@ -69,6 +69,21 @@ def judging_mode(dataset_id: str, override: str | None) -> str | None:
         return None
 
 
+def candidate_source(dataset_id: str) -> str | None:
+    """후보가 실제 진단에서 왔는가, 주입한 오류인가.
+
+    **안 적혀 있으면 모르는 채로 둔다.** 모르는 것을 "실제 후보였다"로 읽으면
+    하한을 계획값으로 쓰게 된다.
+    """
+    path = config.uploads_dir() / dataset_id / "pilot_meta.json"
+    if not path.is_file():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8")).get("candidate_source")
+    except (OSError, ValueError):
+        return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="파일럿 시간 요약")
     parser.add_argument("--dataset")
@@ -82,6 +97,9 @@ def main() -> int:
                         help="최종 평가의 데이터셋 수 D (아직 미정이면 비워 둔다)")
     parser.add_argument("--total-minutes", type=float,
                         help="전체 활동 시간 상한 T, 분 (아직 미정이면 비워 둔다)")
+    parser.add_argument("--safety-factor", type=float,
+                        help="하한으로 잰 s_plan에 곱할 계수. **근거를 문서에 "
+                             "적고** 결과 열람 전에 정한다")
     parser.add_argument("--judging-mode", choices=("unaided_human",
                                                    "assisted_rehearsal"),
                         help="파일럿 메타에 적힌 값을 덮어쓴다")
@@ -94,15 +112,22 @@ def main() -> int:
         raise SystemExit(f"블록마다 판정 방식이 다릅니다: {sorted(map(str, modes))}")
     mode = modes.pop()
 
+    sources = {candidate_source(dataset) for dataset, _ in pilots}
+    if len(sources) > 1:
+        raise SystemExit(f"블록마다 후보 출처가 다릅니다: {sorted(map(str, sources))}")
+    source = sources.pop()
+
     events = []
     for dataset, evaluation in pilots:
         events += load(dataset, evaluation)
     summary = summarise_activity(events)
-    plan = plan_seconds_per_candidate(summary, judging_mode=mode)
+    plan = plan_seconds_per_candidate(summary, judging_mode=mode,
+                                      candidate_source=source)
     data = summary.as_dict()
 
     print("블록: " + ", ".join(f"{d}:{e}" for d, e in pilots))
-    print(f"판정 방식: {mode or '적혀 있지 않음'}")
+    print(f"판정 방식: {mode or '적혀 있지 않음'} / "
+          f"후보 출처: {source or '적혀 있지 않음'}")
     print(f"세션 {summary.sessions}개 "
           f"(온전 {summary.complete_sessions}, 끊김 {summary.incomplete_sessions}, "
           f"판정이 든 것 {summary.sessions_with_judgements})")
@@ -142,9 +167,23 @@ def main() -> int:
         print(f"  P75 {plan['p75_seconds']:.2f}초 — {plan['p75_basis']}")
         print(f"  s_plan {plan['s_plan_seconds']:.2f}초 — {plan['s_plan_basis']}")
 
+        if plan["adoption_blocked"]:
+            print()
+            print("  ！ " + plan["adoption_note"])
+
         if args.datasets and args.total_minutes:
+            factor = args.safety_factor
+            if plan["adoption_blocked"] and not factor:
+                print()
+                print("  N을 내지 않습니다 — 하한을 그대로 넣으면 N이 과대해집니다.")
+                print("  --safety-factor 를 명시하면 s_plan × 계수로 계산합니다.")
+                return 0
+            planned = plan["s_plan_seconds"] * (factor or 1.0)
+            if factor:
+                print()
+                print(f"  안전계수 {factor}배 → 후보당 {planned:.2f}초로 계획")
             n = budget_from_pilot(args.total_minutes * 60, args.datasets,
-                                  plan["s_plan_seconds"])
+                                  planned)
             print()
             print(f"  D={args.datasets}, T={args.total_minutes}분 → N={n} "
                   f"(데이터셋마다, 총 {None if n is None else n * args.datasets}건)")
