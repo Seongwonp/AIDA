@@ -50,6 +50,58 @@ def parse_pilots(args) -> list[tuple[str, str]]:
     return pairs
 
 
+def anchor_report(dataset_id: str, evaluation_id: str) -> dict | None:
+    """anchor 판정 결과. **과속·무성의를 잡는 가드레일이지 정확도 증거가 아니다.**
+
+    실제 후보에는 정답이 없어 "빨라진 것이 숙련인지 무성의인지"를 못 가린다.
+    그래서 정답이 알려진 후보를 섞어 두었다.
+
+    **허용 기준은 사전 등록돼 있지 않다.** 결과를 보고 정하면 기준이 아니라
+    사후 설명이므로, 숫자를 만들지 않고 그대로 적기만 한다.
+    """
+    root = config.uploads_dir() / dataset_id
+    key_path = root / "pilot_answer_key.json"
+    adj_path = root / "evaluations" / evaluation_id / "adjudications.json"
+    snap_path = root / "evaluations" / evaluation_id / "snapshot.json"
+    if not (key_path.is_file() and adj_path.is_file() and snap_path.is_file()):
+        return None
+    try:
+        answers = {a["image"]: a for a in
+                   json.loads(key_path.read_text(encoding="utf-8"))["answers"]}
+        snapshot = json.loads(snap_path.read_text(encoding="utf-8"))
+        saved = json.loads(adj_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, KeyError):
+        return None
+
+    verdicts = {a["canonical_candidate_id"]: a["verdict"]
+                for a in saved.get("adjudications", [])}
+    rows = []
+    for candidate in snapshot.get("candidates", []):
+        answer = answers.get(candidate["image"])
+        if answer is None:
+            continue                     # 실제 후보 — 정답이 없다
+        expected = "hit" if answer["truth"] == "error" else "miss"
+        rows.append({"image": candidate["image"], "truth": answer["truth"],
+                     "expected": expected,
+                     "verdict": verdicts.get(candidate["canonical_candidate_id"]),
+                     "agrees": verdicts.get(
+                         candidate["canonical_candidate_id"]) == expected})
+    if not rows:
+        return None
+    clean = [r for r in rows if r["truth"] == "clean"]
+    error = [r for r in rows if r["truth"] == "error"]
+    return {
+        "status": "quality_threshold_not_preregistered",
+        "total": len(rows),
+        "clean_agree": sum(1 for r in clean if r["agrees"]), "clean": len(clean),
+        "error_agree": sum(1 for r in error if r["agrees"]), "error": len(error),
+        "rows": rows,
+        "note": ("과속·무성의 판정을 잡는 가드레일이다. AIDA의 효능이나 실제 "
+                 "후보의 판정 정확도가 아니다. 허용 기준은 사전 등록돼 있지 "
+                 "않으므로 사람이 보고 판단한다."),
+    }
+
+
 def judging_mode(dataset_id: str, override: str | None) -> str | None:
     """이 파일럿을 어떻게 했는가. **기록만 보고는 알 수 없다.**
 
@@ -196,11 +248,40 @@ def main() -> int:
             print("  D와 T를 주면 N을 계산합니다 "
                   "(--datasets, --total-minutes). 지금은 둘 다 미정입니다.")
 
+    # ── 세션별 속도와 anchor ────────────────────────────────────────────────
+    good = [r for r in summary.session_reports if r.complete]
+    if len(good) > 1:
+        print()
+        print("세션별 후보당 평균 (첫 세션 대 마지막 세션을 반드시 본다):")
+        means = []
+        for r in good:
+            times = [c.active_seconds for c in summary.per_candidate
+                     if c.session_id == r.session_id and c.judged]
+            if not times:
+                continue
+            mean = sum(times) / len(times)
+            means.append(mean)
+            print(f"  {r.session_id[:12]}: {len(times):2d}건, {mean:5.2f}초")
+        if len(means) > 1 and means[0]:
+            change = (means[-1] - means[0]) / means[0] * 100
+            print(f"  첫 세션 대비 마지막 세션: {change:+.0f}%")
+
+    anchors = anchor_report(pilots[-1][0], pilots[-1][1])
+    if anchors:
+        print()
+        print(f"anchor {anchors['total']}건 "
+              f"(정상 {anchors['clean_agree']}/{anchors['clean']}, "
+              f"오류 {anchors['error_agree']}/{anchors['error']})")
+        print(f"  status={anchors['status']}")
+        print(f"  {anchors['note']}")
+        print("  **실제 후보에는 정답이 없어 accuracy를 계산하지 않습니다.**")
+
     if args.out:
         Path(args.out).write_text(
             json.dumps({"pilots": [f"{d}:{e}" for d, e in pilots],
                         "judging_mode": mode,
-                        "summary": data, "plan": plan},
+                        "summary": data, "plan": plan,
+                        "anchors": anchors},
                        ensure_ascii=False, indent=2), encoding="utf-8")
         print()
         print(f"저장했습니다: {args.out}")
