@@ -49,7 +49,7 @@
 | `AIDA_CLASSES` | Car | 4클래스는 `Car,Van,Pedestrian,Cyclist` |
 | `AIDA_DATASET` | kitti | `coco`도 가능 |
 | `AIDA_FRAME_SELECT` | random | `cyclist_rich` · `broad` · `nested` |
-| `AIDA_ERROR_RATIO` | 0.3 | 기본값이 아니면 경로에 `_r10`처럼 붙는다 (2026-09-09부터) |
+| `AIDA_ERROR_RATIO` | 0.3 | 기본값이 아니면 경로에 `_r0p1`처럼 붙는다. 0 초과 1 이하만 받는다 |
 
 전체 목록은 `experiment/.env.example`과 README의 환경변수 표에 있다.
 
@@ -79,6 +79,30 @@ python run_manifest.py --runs runs_coco/clean --out manifests/coco.json
 
 **풀 파일이 없으면 "분할을 되살릴 수 없다"고 적는다** — 조용히 빈 목록을 남기면
 명세를 믿고 재현하려다 다른 분할을 얻는다.
+
+### 명세가 스스로 불완전함을 말한다
+
+| 항목 | 뜻 |
+|---|---|
+| `complete` | 분할의 **모든** 이미지 해시를 떴는가 |
+| `missing_images` | 못 찾은 것의 목록. 빈 채로 두지 않는다 |
+| `image_locations` | 각 이미지를 **어느 폴더에서** 찾았는가 |
+| `code.reproducible` | 작업 트리가 더러우면 `false` |
+| `weights[].source` | 어느 실행이 만들었는가. 모르면 `unknown` |
+| `manifest_schema_version` | 명세의 모양이 바뀌면 올린다 |
+
+**논리적 분할과 파일이 놓인 자리는 다르다.** 학습 목록의 프레임이
+`images/val`에 있기도 한다 — 물리적 배치는 내려받기 단계가 정하고 분할은 시드가
+정하기 때문이다. 처음엔 한쪽만 찾다가 COCO에서 **190장을 조용히 빠뜨렸고**,
+그때도 명세는 완전해 보였다.
+
+**더러운 작업 트리는 정확 재현이 안 된다.** 커밋되지 않은 변경의 해시를 남기지만
+**그것으로 재현할 수 있다는 뜻이 아니다** — diff 내용은 어디에도 안 남고, 추적
+안 되는 새 파일은 diff에 잡히지도 않는다. 나중에 같은 상태인지 **대조만** 할 수
+있다.
+
+**가중치 출처는 자동으로 모른다.** 실행 폴더 이름은 조건 이름이지 출처가 아니다.
+`--source runs_coco/clean=train_coco_rulers.sh`처럼 직접 준다.
 
 ### 경로 이름 규칙
 

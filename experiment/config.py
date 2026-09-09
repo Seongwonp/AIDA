@@ -4,6 +4,7 @@
 전체 목록·기본값은 .env.example 참고.
 """
 import os
+from decimal import Decimal, InvalidOperation
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -102,15 +103,44 @@ N_VAL = int(os.environ.get("AIDA_N_VAL", 120))  # 100~150장 범위 중간값
 # 평가셋도 같이 밀려서 서로 다른 데이터로 잰 mAP를 비교하게 된다.
 VAL_HOLDOUT = os.environ.get("AIDA_VAL_HOLDOUT", "0") == "1"
 
-_DEFAULT_ERROR_RATIO = 0.3
-ERROR_RATIO = float(os.environ.get("AIDA_ERROR_RATIO", _DEFAULT_ERROR_RATIO))
-# 라벨 중 오류를 주입할 비율. **경로에 들어간다** — 비율이 다르면 조건 폴더의
-# 내용이 다른데 이름이 같으면 기존 조건을 조용히 덮어쓰고, 그 폴더를 쓰는 앞
-# 절들의 수치가 다른 것이 된다(docs/21 AX에 위험으로만 적어뒀던 것).
-#
-# 깨끗한 라벨(labels_gt)은 비율과 무관하므로 _csuffix에는 안 붙인다.
-_rsuffix = ("" if ERROR_RATIO == _DEFAULT_ERROR_RATIO
-            else f"_r{round(ERROR_RATIO * 100)}")
+_DEFAULT_ERROR_RATIO = Decimal("0.3")
+
+
+def _read_error_ratio() -> tuple[float, str]:
+    """오류 주입 비율과 그 값이 만드는 경로 접미사.
+
+    **비율은 경로에 들어간다.** 비율이 다르면 조건 폴더의 내용이 다른데 이름이
+    같으면 기존 조건을 조용히 덮어쓰고, 그 폴더를 쓰는 앞 절들의 수치가 다른
+    것이 된다(docs/21 AX에 위험으로만 적어뒀던 것).
+
+    **`round(r * 100)`으로 이름을 만들면 안 된다.** 0.101과 0.104가 둘 다
+    `_r10`이 되어 서로 다른 실험이 같은 자리를 쓴다. 환경변수의 **원문**에서
+    `Decimal`을 만들어 값 그대로를 이름에 넣는다 — 0.10과 0.1은 같은 값이므로
+    정규화해 같은 자리를 쓴다.
+
+    말이 안 되는 값은 **거부한다.** 조용히 통과하면 그 값으로 만든 조건이
+    무엇인지 아무도 모른다.
+    """
+    raw = os.environ.get("AIDA_ERROR_RATIO")
+    if raw is None:
+        return float(_DEFAULT_ERROR_RATIO), ""
+    try:
+        value = Decimal(raw.strip())
+    except (InvalidOperation, AttributeError):
+        raise SystemExit(f"AIDA_ERROR_RATIO: 숫자가 아닙니다 ({raw!r})")
+    if not value.is_finite():
+        raise SystemExit(f"AIDA_ERROR_RATIO: 유한한 값이어야 합니다 ({raw!r})")
+    if not (Decimal(0) < value <= Decimal(1)):
+        raise SystemExit(f"AIDA_ERROR_RATIO: 0 초과 1 이하여야 합니다 ({raw!r})")
+    if value == _DEFAULT_ERROR_RATIO:
+        return float(value), ""            # 기본값은 기존 경로를 그대로 쓴다
+    # 값 그대로를 이름에 넣는다. 0.10 → "0.1"로 정규화해 같은 값이 같은 자리를
+    # 쓰게 하고, 소수점은 경로에 쓸 수 없어 'p'로 바꾼다.
+    text = format(value.normalize(), "f").rstrip("0").rstrip(".")
+    return float(value), "_r" + text.replace(".", "p").replace("-", "m")
+
+
+ERROR_RATIO, _rsuffix = _read_error_ratio()
 
 _csuffix = "" if CLASS_NAMES == ["Car"] else "_mc"
 if DATASET != "kitti":
@@ -140,12 +170,14 @@ METRICS_CSV = (EXPERIMENT_ROOT.parent / "backend" / "app" / "data"
 # 돌렸을 때 조건 이름이 같아서(width_m30 등) Car의 3-seed 결과를 덮어쓴다 —
 # (error_seed, condition)으로 병합하기 때문에 조용히 사라진다.
 MULTI_SEED_CSV = (EXPERIMENT_ROOT.parent / "backend" / "app" / "data"
-                  / f"metrics{_csuffix}_multi_seed.csv")
-OBB_MULTI_SEED_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metrics_obb_multi_seed.csv"
+                  / f"metrics{_csuffix}{_rsuffix}_multi_seed.csv")
+OBB_MULTI_SEED_CSV = (EXPERIMENT_ROOT.parent / "backend" / "app" / "data"
+                      / f"metrics_obb_multi_seed{_rsuffix}.csv")
 # 집계 CSV: aggregate_seeds.py가 mean/std를 계산해 여기 저장
 AGG_CSV = (EXPERIMENT_ROOT.parent / "backend" / "app" / "data"
-           / f"metrics{_csuffix}_agg.csv")
-OBB_AGG_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metrics_obb_agg.csv"
+           / f"metrics{_csuffix}{_rsuffix}_agg.csv")
+OBB_AGG_CSV = (EXPERIMENT_ROOT.parent / "backend" / "app" / "data"
+               / f"metrics_obb_agg{_rsuffix}.csv")
 
 # 스모크 테스트 시 AIDA_N_TRAIN=20 AIDA_N_VAL=10 AIDA_EPOCHS=1 처럼 .env나 환경변수로 오버라이드
 
@@ -344,7 +376,8 @@ OBB_LABELS_GT_VAL_DIR = PROCESSED_DIR / "labels_gt_obb" / "val"
 OBB_CONDITIONS_DIR = EXPERIMENT_ROOT / f"conditions_obb{_esuffix}"
 OBB_DATA_YAML_DIR = EXPERIMENT_ROOT / f"data_yaml_obb{_esuffix}"
 OBB_RUNS_DIR = EXPERIMENT_ROOT / f"runs_obb{_esuffix}"
-OBB_METRICS_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metrics_obb.csv"
+OBB_METRICS_CSV = (EXPERIMENT_ROOT.parent / "backend" / "app" / "data"
+                   / f"metrics_obb{_rsuffix}.csv")
 
 # 회전 오류에 집중: AABB의 rot_m15 ≈ rot_p15(방향 소실) vs OBB의 rot_m15 ≠ rot_p15(방향 보존)
 OBB_CONDITIONS: list[Condition] = [
