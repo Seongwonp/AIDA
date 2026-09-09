@@ -65,6 +65,10 @@
 | [19-report-sections-6-12-draft.md](./19-report-sections-6-12-draft.md) | 보고서 6~12장 초안 |
 | [20-local-claude-handoff.md](./20-local-claude-handoff.md) | 원격↔로컬 작업 인수인계 방식 |
 
+## 후속 고도화 계획
+
+[25. 고도화 실행 계획](25-advancement-roadmap.md): 저장 신뢰성 → 재현성과 평가 준비 → 독립 효과 평가 → 병목 개선 → 사용자 검수 → 제한된 배포. 24번의 후속 우선순위와 단계 통과 기준이다.
+
 ## 한 줄 요약
 
 AIDA는 국방과학연구소 특허(10-2664201) 기반으로, 참값 바운딩박스에 통제된 오류를
