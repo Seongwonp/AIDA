@@ -27,6 +27,11 @@ router = APIRouter(prefix="/api/datasets", tags=["evaluation"])
 
 SNAPSHOT_FILE = "snapshot.json"
 ADJUDICATIONS_FILE = "adjudications.json"
+# 작업 기록. **판정 결과와 섞지 않는다** — 수명도 쓰임도 다르다.
+ACTIVITY_FILE = "activity.jsonl"
+EVENT_SCHEMA_VERSION = 1
+# 한 번에 받는 이벤트 수. 화면이 폭주해도 파일이 무한정 커지지 않게.
+MAX_EVENTS_PER_REQUEST = 500
 VALID_VERDICTS = {"hit", "miss", "hold"}
 # 누락 객체의 이름. 판정자가 이미지 안에서 번호를 매긴다.
 MISSING_ID = re.compile(r"^M\d+$")
@@ -638,3 +643,52 @@ def get_export(dataset_id: str, evaluation_id: str,
             [m.strip() for m in methods.split(",") if m.strip()], scope)
     except ExportBlocked as exc:
         raise HTTPException(409, str(exc)) from exc
+
+
+class ActivityEvents(BaseModel):
+    """화면이 보내는 작업 기록 묶음."""
+    candidate_set_hash: str
+    events: list[dict] = []
+
+
+@router.post("/{dataset_id}/evaluations/{evaluation_id}/activity")
+def append_activity(dataset_id: str, evaluation_id: str,
+                    body: ActivityEvents) -> dict:
+    """작업 기록을 **이어붙인다.**
+
+    덮어쓰지 않는다 — 기록은 지난 일이라 나중 것이 앞의 것을 무효로 만들지
+    않는다. 이어붙이기만 하므로 중간이 깨져도 앞부분이 남는다.
+
+    **판정 파일과 섞지 않는다.** 판정은 지금의 사실이고 기록은 지나간 사실이라,
+    한 파일에 두면 판정을 고칠 때마다 기록까지 다시 써야 한다.
+
+    묶음이 다르면 받지 않는다 — 다른 후보 목록에서 잰 시간이다.
+    """
+    snapshot = load_snapshot(dataset_id, evaluation_id)
+    if body.candidate_set_hash != snapshot.candidate_set_hash:
+        raise HTTPException(
+            409, "후보 목록이 그 사이에 바뀌었습니다. 다른 목록에서 잰 시간이라 "
+                 "기록하지 않습니다.")
+    if len(body.events) > MAX_EVENTS_PER_REQUEST:
+        raise HTTPException(
+            413, f"한 번에 {MAX_EVENTS_PER_REQUEST}건까지 받습니다 "
+                 f"(받은 것 {len(body.events)}건).")
+
+    path = eval_dir(dataset_id, evaluation_id) / ACTIVITY_FILE
+    lines = []
+    for raw in body.events:
+        # 서버가 아는 것은 서버가 채운다. 화면이 보낸 값을 그대로 믿지 않는다.
+        lines.append(json.dumps({
+            **raw,
+            "event_schema_version": EVENT_SCHEMA_VERSION,
+            "evaluation_id": evaluation_id,
+            "candidate_set_hash": snapshot.candidate_set_hash,
+        }, ensure_ascii=False))
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write("".join(line + chr(10) for line in lines))
+    except OSError as exc:
+        raise HTTPException(500, f"기록을 남기지 못했습니다: {exc}") from exc
+    return {"appended": len(lines)}

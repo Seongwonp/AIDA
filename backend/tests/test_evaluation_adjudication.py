@@ -534,3 +534,105 @@ def test_기존_라벨만이면_두_방법을_함께_내보낸다(client, upload
     base = summarise(adjudications, rankings, "iou_baseline", budget=1)
     assert aida.unique_error_yield == 0
     assert base.unique_error_yield == 1
+
+
+# ── 작업 기록 (docs/pilot-evaluation-plan.md) ────────────────────────────────
+
+def _event(second, name, cid=None, session="s1", **meta):
+    return {"session_id": session, "event": name,
+            "canonical_candidate_id": cid,
+            "at": "2026-09-09T00:00:00+00:00",
+            "elapsed_ms": int(second * 1000), "meta": meta}
+
+
+def test_작업_기록은_이어붙인다(client, uploads):
+    """덮어쓰지 않는다 — 기록은 지난 일이라 나중 것이 앞의 것을 무효로 하지 않는다."""
+    write_diagnosis(uploads, _queue(("a.jpg", 0, "width", 0.9, 0.4)))
+    snap = start(client)
+    url = f"/api/datasets/{DATASET}/evaluations/e1/activity"
+
+    client.post(url, json={"candidate_set_hash": snap["candidate_set_hash"],
+                           "events": [_event(0, "session_started")]})
+    client.post(url, json={"candidate_set_hash": snap["candidate_set_hash"],
+                           "events": [_event(5, "verdict_set", "X",
+                                             verdict="hit")]})
+
+    path = uploads / DATASET / "evaluations" / "e1" / "activity.jsonl"
+    rows = [json.loads(line) for line in
+            path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    assert [r["event"] for r in rows] == ["session_started", "verdict_set"]
+
+
+def test_기록에_서버가_아는_것은_서버가_채운다(client, uploads):
+    """화면이 보낸 값을 그대로 믿지 않는다."""
+    write_diagnosis(uploads, _queue(("a.jpg", 0, "width", 0.9, 0.4)))
+    snap = start(client)
+    bogus = {**_event(0, "session_started"),
+             "evaluation_id": "다른평가", "candidate_set_hash": "다른묶음",
+             "event_schema_version": 99}
+    client.post(f"/api/datasets/{DATASET}/evaluations/e1/activity",
+                json={"candidate_set_hash": snap["candidate_set_hash"],
+                      "events": [bogus]})
+
+    path = uploads / DATASET / "evaluations" / "e1" / "activity.jsonl"
+    row = json.loads(path.read_text(encoding="utf-8").splitlines()[0])
+    assert row["evaluation_id"] == "e1"
+    assert row["candidate_set_hash"] == snap["candidate_set_hash"]
+    assert row["event_schema_version"] == 1
+
+
+def test_다른_묶음의_기록은_안_받는다(client, uploads):
+    """다른 후보 목록에서 잰 시간이다."""
+    write_diagnosis(uploads, _queue(("a.jpg", 0, "width", 0.9, 0.4)))
+    start(client)
+    r = client.post(f"/api/datasets/{DATASET}/evaluations/e1/activity",
+                    json={"candidate_set_hash": "옛것",
+                          "events": [_event(0, "session_started")]})
+    assert r.status_code == 409
+
+
+def test_기록이_판정_파일을_건드리지_않는다(client, uploads):
+    """수명도 쓰임도 다르다. 한 파일에 두면 판정을 고칠 때마다 기록도 다시 쓴다."""
+    write_diagnosis(uploads, _queue(("a.jpg", 0, "width", 0.9, 0.4)))
+    snap = start(client)
+    cid = snap["candidates"][0]["canonical_candidate_id"]
+    put(client, snap, [{"canonical_candidate_id": cid, "verdict": "hit"}])
+    before = (uploads / DATASET / "evaluations" / "e1"
+              / "adjudications.json").read_text(encoding="utf-8")
+
+    client.post(f"/api/datasets/{DATASET}/evaluations/e1/activity",
+                json={"candidate_set_hash": snap["candidate_set_hash"],
+                      "events": [_event(0, "session_started")]})
+
+    after = (uploads / DATASET / "evaluations" / "e1"
+             / "adjudications.json").read_text(encoding="utf-8")
+    assert before == after
+
+
+def test_기록이_한_번에_너무_많으면_거부한다(client, uploads):
+    write_diagnosis(uploads, _queue(("a.jpg", 0, "width", 0.9, 0.4)))
+    snap = start(client)
+    r = client.post(f"/api/datasets/{DATASET}/evaluations/e1/activity",
+                    json={"candidate_set_hash": snap["candidate_set_hash"],
+                          "events": [_event(i, "moved_next")
+                                     for i in range(501)]})
+    assert r.status_code == 413
+
+
+def test_기록을_집계_모듈이_그대로_읽는다(client, uploads):
+    """저장한 것과 계산하는 것이 같은 모양인지 본다."""
+    write_diagnosis(uploads, _queue(("a.jpg", 0, "width", 0.9, 0.4)))
+    snap = start(client)
+    cid = snap["candidates"][0]["canonical_candidate_id"]
+    client.post(f"/api/datasets/{DATASET}/evaluations/e1/activity",
+                json={"candidate_set_hash": snap["candidate_set_hash"],
+                      "events": [_event(0, "session_started"),
+                                 _event(0, "candidate_opened", cid),
+                                 _event(8, "verdict_set", cid, verdict="hit"),
+                                 _event(8, "session_ended")]})
+
+    from evaluation.activity import read_events, summarise_activity
+    path = uploads / DATASET / "evaluations" / "e1" / "activity.jsonl"
+    got = summarise_activity(read_events(path.read_text(encoding="utf-8")))
+    assert got.judged_candidates == 1
+    assert got.active_seconds == 8.0

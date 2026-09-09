@@ -161,3 +161,23 @@ export const putAdjudications = (
       adjudications,
     })
     .then((res) => res.data);
+
+/**
+ * 판정 작업 기록을 이어붙인다 (docs/pilot-evaluation-plan.md).
+ *
+ * **판정 저장(`putAdjudications`)과 별개의 경로다.** 판정은 지금의 사실이고
+ * 기록은 지나간 사실이라, 한 파일에 두면 판정을 고칠 때마다 기록도 다시 써야
+ * 한다.
+ */
+export const postActivity = (
+  datasetId: string,
+  evaluationId: string,
+  candidateSetHash: string,
+  events: unknown[],
+) =>
+  client
+    .post(`/api/datasets/${datasetId}/evaluations/${evaluationId}/activity`, {
+      candidate_set_hash: candidateSetHash,
+      events,
+    })
+    .then((res) => res.data);

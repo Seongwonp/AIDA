@@ -227,4 +227,10 @@ ultralytics·torch를 얹지 않기 위해서다. 그래서 **GPU가 없는 기�
 - 진단 결과에 **완전히 같은 후보가 두 번** 있으면 얼리기를 거부한다. 판정자가
   둘을 구분할 수 없다.
 
+`POST .../evaluations/{eid}/activity`는 판정 작업 기록을 **이어붙인다**
+(docs/pilot-evaluation-plan.md). 판정 파일과 별도이며 덮어쓰지 않는다 — 기록은
+지난 일이라 나중 것이 앞의 것을 무효로 만들지 않는다. 묶음 해시가 다르면
+받지 않고, 한 번에 500건까지 받는다. `event_schema_version`·`evaluation_id`·
+`candidate_set_hash`는 **서버가 채운다.**
+
 자세한 설계는 `docs/evaluation-adjudication-design.md`에 있다.

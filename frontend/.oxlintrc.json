@@ -31,5 +31,17 @@
   "ignorePatterns": [
     "dist",
     "node_modules"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "src/components/reviewQueueLogic.ts",
+        "src/components/blindAdjudicationLogic.ts",
+        "src/components/ReviewQueue.order.test.tsx"
+      ],
+      "rules": {
+        "no-await-in-loop": "off"
+      }
+    }
   ]
 }

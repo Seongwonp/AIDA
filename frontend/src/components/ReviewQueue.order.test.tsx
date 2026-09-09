@@ -59,8 +59,10 @@ function makeServer() {
       for (let round = 0; round < 10; round++) {
         const batch = pending.splice(0).reverse();
         if (batch.length === 0) break;
-        // no-await-in-loop 경고가 뜨지만 도착 순서를 라운드별로
-        // 통제하는 것이 이 검사의 목적이다.
+        // **도착 순서를 라운드별로 통제하는 것이 이 검사의 목적이다.**
+        // 한꺼번에 보내면 재현하려는 상황 자체가 안 만들어진다.
+        //
+        // `no-await-in-loop`는 overrides에서 이 파일만 끈다.
         await act(async () => {
           for (const fire of batch) fire();
           await Promise.resolve();

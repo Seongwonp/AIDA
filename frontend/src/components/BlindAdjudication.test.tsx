@@ -11,9 +11,11 @@ import { act } from "react";
 
 const getBlindQueue = vi.fn();
 const putAdjudications = vi.fn();
+const postActivity = vi.fn();
 vi.mock("../api", () => ({
   getBlindQueue: (...a: unknown[]) => getBlindQueue(...a),
   putAdjudications: (...a: unknown[]) => putAdjudications(...a),
+  postActivity: (...a: unknown[]) => postActivity(...a),
   API_BASE_URL: "",
 }));
 // 미리보기는 이 검사와 무관하고 이미지를 부른다.
@@ -71,6 +73,8 @@ beforeEach(() => {
   getBlindQueue.mockReset();
   putAdjudications.mockReset();
   putAdjudications.mockResolvedValue({});
+  postActivity.mockReset();
+  postActivity.mockResolvedValue({});
 });
 
 afterEach(cleanup);
@@ -414,5 +418,123 @@ describe("진행 상황", () => {
 
     await click("모르겠다");
     await screen.findByText("1 / 2 판정 (남은 1)");
+  });
+});
+
+
+describe("작업 기록", () => {
+  /** 지금까지 보낸 이벤트를 하나로 편다. */
+  function logged() {
+    return postActivity.mock.calls.flatMap((call) => call[3] as Array<{
+      event: string; canonical_candidate_id: string | null;
+      meta: Record<string, unknown>;
+    }>);
+  }
+
+  test("판정과 이동을 남긴다", async () => {
+    getBlindQueue.mockResolvedValue(queue([cand(), cand({ canonical_candidate_id: "B" })]));
+    const { unmount } = show();
+    await screen.findByText("a.jpg");
+
+    await click("오류였다");
+    await click("다음");
+    await click("모르겠다");
+    await act(async () => {
+      unmount();
+    });
+
+    const names = logged().map((e) => e.event);
+    expect(names).toContain("session_started");
+    expect(names).toContain("candidate_opened");
+    expect(names).toContain("verdict_set");
+    expect(names).toContain("moved_next");
+    expect(names).toContain("session_ended");
+  });
+
+  test("판정 유형은 기록에만 남고 화면에는 안 뜬다", async () => {
+    // 요약이 화면에 뜨면 판정자가 그걸 보고 다음 판단을 조절한다.
+    getBlindQueue.mockResolvedValue(queue([cand()]));
+    const { unmount } = show();
+    await screen.findByText("a.jpg");
+    await click("모르겠다");
+    await act(async () => {
+      unmount();
+    });
+
+    const verdicts = logged().filter((e) => e.event === "verdict_set");
+    expect(verdicts[0].meta).toMatchObject({ verdict: "hold" });
+    // 화면에는 hit·miss·hold 개수나 비율이 없다.
+    expect(document.body.textContent ?? "").not.toMatch(/정밀도|hit|hold 비율/);
+  });
+
+  test("저장 흐름을 남긴다 — 실패와 재시도를 가른다", async () => {
+    getBlindQueue.mockResolvedValue(queue([cand()]));
+    putAdjudications.mockRejectedValueOnce(new Error("끊김"));
+    const { unmount } = show();
+    await screen.findByText("a.jpg");
+
+    await click("오류였다");
+    await screen.findByText(/저장하지 못했습니다/);
+    await click("다시 시도");
+    await act(async () => {
+      unmount();
+    });
+
+    const names = logged().map((e) => e.event);
+    expect(names).toContain("save_started");
+    expect(names).toContain("save_failed");
+    expect(names).toContain("save_retried");
+    expect(names).toContain("save_succeeded");
+  });
+
+  test("누락 객체를 만든 것과 이은 것을 가른다", async () => {
+    // 이 작업만 유독 오래 걸리면 누락 층의 비용이 따로 보여야 한다.
+    getBlindQueue.mockResolvedValue(queue([
+      cand({ canonical_candidate_id: "Cm1", label_index: null }),
+      cand({ canonical_candidate_id: "Cm2", label_index: null }),
+    ]));
+    const { unmount } = show();
+    await screen.findByText("a.jpg");
+
+    await click("오류였다");
+    await click("새 객체");
+    await click("다음");
+    await click("오류였다");
+    await click("M1");
+    await act(async () => {
+      unmount();
+    });
+
+    const names = logged().map((e) => e.event);
+    expect(names).toContain("missing_object_created");
+    expect(names).toContain("missing_object_linked");
+  });
+
+  test("한 번 뜨는 동안 세션은 하나다", async () => {
+    // effect마다 새 세션을 시작하면 StrictMode가 두 번 돌려 세션 수가 두 배로
+    // 잡힌다 — dry pilot에서 2회 방문이 4세션으로 나왔다.
+    getBlindQueue.mockResolvedValue(queue([cand()]));
+    const { unmount } = show();
+    await screen.findByText("a.jpg");
+    await click("오류였다");
+    await act(async () => {
+      unmount();
+    });
+
+    const sessions = new Set(logged().map((e) =>
+      (e as unknown as { session_id: string }).session_id));
+    expect(sessions.size).toBe(1);
+  });
+
+  test("기록 전송이 실패해도 판정은 이어진다", async () => {
+    // 재는 쪽이 하는 일을 멈추면 안 된다.
+    getBlindQueue.mockResolvedValue(queue([cand()]));
+    postActivity.mockRejectedValue(new Error("끊김"));
+    show();
+    await screen.findByText("a.jpg");
+
+    await click("오류였다");
+    await waitFor(() => expect(putAdjudications).toHaveBeenCalled());
+    await screen.findByText("저장됨");
   });
 });

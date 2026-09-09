@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { getBlindQueue, putAdjudications } from "../api";
+import { getBlindQueue, postActivity, putAdjudications } from "../api";
+import { makeActivityLogger } from "./activityLog";
 import { BoxPreview } from "./BoxPreview";
 import {
   blockedIds,
@@ -63,6 +64,19 @@ export function BlindAdjudication({
   const [save, setSave] = useState<"idle" | "saving" | "saved" | "failed">("idle");
   const [cursor, setCursor] = useState(0);
 
+  // 작업 기록. **계산은 여기서 안 한다** — 무슨 일이 언제 있었는지만 남기고,
+  // 시간 계산은 `experiment/evaluation/activity.py`가 나중에 한다
+  // (docs/pilot-evaluation-plan.md).
+  const hashRef = useRef("");
+  hashRef.current = hash;
+  const log = useMemo(
+    () =>
+      makeActivityLogger((events) =>
+        postActivity(datasetId, evaluationId, hashRef.current, events),
+      ),
+    [datasetId, evaluationId],
+  );
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -103,6 +117,46 @@ export function BlindAdjudication({
     };
   }, [datasetId, evaluationId]);
 
+  useEffect(() => {
+    // **여기서 새 세션을 시작하지 않는다.** 세션은 logger를 만들 때 하나
+    // 생기고, 그건 페이지 한 번 뜰 때 한 번이다. effect마다 새로 시작하면
+    // 개발 모드의 StrictMode가 effect를 두 번 돌려 **세션 수가 두 배로**
+    // 잡힌다 — dry pilot에서 2회 방문이 4세션으로 나와 잡혔다.
+    log.record("session_started");
+
+    const onVisibility = () =>
+      log.record("visibility_changed", null,
+                 { visible: document.visibilityState === "visible" });
+    const onFocus = () => log.record("focus_changed", null, { focused: true });
+    const onBlur = () => log.record("focus_changed", null, { focused: false });
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("blur", onBlur);
+
+    // 기록을 주기적으로 보낸다. 판정 흐름과 엮지 않는다 — 기록 전송이
+    // 실패해도 판정은 이어져야 한다.
+    const timer = window.setInterval(() => void log.flush(), 10_000);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("blur", onBlur);
+      window.clearInterval(timer);
+      log.record("session_ended");
+      void log.flush();
+    };
+  }, [log]);
+
+  // 후보를 화면에 띄운 순간. 후보별 시간은 여기서부터 잰다.
+  const openedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const id = candidates[cursor]?.canonical_candidate_id ?? null;
+    if (id && id !== openedRef.current) {
+      openedRef.current = id;
+      log.record("candidate_opened", id);
+    }
+  }, [candidates, cursor, log]);
+
   const sendToServer = useMemo(
     () =>
       makeAdjudicationSender(async (rows: ReturnType<typeof toRequest>) => {
@@ -122,16 +176,19 @@ export function BlindAdjudication({
   const stats = progress(candidates, judgements);
   const current = candidates[cursor];
 
-  const persist = (next: Judgements) => {
+  const persist = (next: Judgements, retry = false) => {
     if (blockedIds(candidates, next).length > 0) {
       // 누락 hit인데 어느 객체인지 안 정했다. **보내지 않는다.**
       setSave("idle");
       return;
     }
     setSave("saving");
-    void sendToServer(toRequest(candidates, next)).then((ok) =>
-      setSave(ok ? "saved" : "failed"),
-    );
+    if (retry) log.record("save_retried");
+    log.record("save_started");
+    void sendToServer(toRequest(candidates, next)).then((ok) => {
+      log.record(ok ? "save_succeeded" : "save_failed");
+      setSave(ok ? "saved" : "failed");
+    });
   };
 
   // **상태 갱신 함수 안에서 저장하지 않는다.** 갱신 함수는 React가 두 번 부를
@@ -146,17 +203,26 @@ export function BlindAdjudication({
     // 오류가 아니라고 바꾸면 붙여 둔 누락 객체도 뗀다 — 남겨 두면 판정과
     // 이름이 어긋난 채로 저장된다.
     const missingObject = verdict === "hit" ? before.missingObject ?? null : null;
+    // **판정 유형을 기록에 남긴다.** 화면에는 안 띄운다 — 요약이 뜨면
+    // 판정자가 그걸 보고 다음 판단을 조절한다.
+    if (verdict === null) log.record("verdict_cleared", id);
+    else log.record("verdict_set", id, { verdict });
     apply({ ...judgements, [id]: { verdict, missingObject } });
   };
 
   const link = (id: string, name: string) => {
+    const known = missingObjects(candidates, judgements,
+                                 candidates.find((c) =>
+                                   c.canonical_candidate_id === id)?.image ?? "");
+    log.record(known.includes(name) ? "missing_object_linked"
+                                    : "missing_object_created", id, { name });
     apply({
       ...judgements,
       [id]: { verdict: judgements[id]?.verdict ?? "hit", missingObject: name },
     });
   };
 
-  const retry = () => persist(judgements);
+  const retry = () => persist(judgements, true);
 
   if (error) return <p className="error">{error}</p>;
 
@@ -243,13 +309,23 @@ export function BlindAdjudication({
           문구가 생겨 버튼이 밀리고, 연달아 누르는 사람이 엉뚱한 버튼을 누른다
           — 실제로 브라우저 확인에서 그렇게 눌렸다. */}
       <nav>
-        <button type="button" disabled={cursor === 0} onClick={() => setCursor(cursor - 1)}>
+        <button
+          type="button"
+          disabled={cursor === 0}
+          onClick={() => {
+            log.record("moved_previous");
+            setCursor(cursor - 1);
+          }}
+        >
           이전
         </button>
         <button
           type="button"
           disabled={cursor >= candidates.length - 1}
-          onClick={() => setCursor(cursor + 1)}
+          onClick={() => {
+            log.record("moved_next");
+            setCursor(cursor + 1);
+          }}
         >
           다음
         </button>

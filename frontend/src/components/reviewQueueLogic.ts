@@ -212,8 +212,12 @@ export function makeVerdictSender(
       waiters = [];
       let ok = true;
       try {
-        // no-await-in-loop 경고가 뜨지만 순차 실행이 이 함수의 목적이다.
-        // 병렬로 보내면 순서가 다시 뒤집힌다(docs/25 R2).
+        // **순차 실행이 이 함수의 목적이다.** 병렬로 보내면 늦게 출발한
+        // 요청이 먼저 도착해 옛 판정이 최종본이 된다(docs/25 R2).
+        //
+        // `no-await-in-loop`는 `.oxlintrc.json`의 overrides에서 **이 파일만**
+        // 끈다 — 전역 규칙은 켜 둔다. oxlint 1.73은 줄 단위 disable 주석을
+        // 읽지 않아 파일 단위가 지금 할 수 있는 가장 좁은 범위다.
         await send(next);
       } catch {
         ok = false;

@@ -165,7 +165,11 @@ export function makeAdjudicationSender<T>(
       waiters = [];
       let ok = true;
       try {
-        // 순차 실행이 이 함수의 목적이다. 병렬로 보내면 순서가 뒤집힌다.
+        // **순차 실행이 이 함수의 목적이다.** 병렬로 보내면 순서가 뒤집혀
+        // 옛 판정이 최종본이 된다.
+        //
+        // `no-await-in-loop`는 `.oxlintrc.json`의 overrides에서 이 파일만
+        // 끈다 — 전역 규칙은 켜 둔다.
         await send(next);
       } catch {
         ok = false;
