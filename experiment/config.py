@@ -102,6 +102,16 @@ N_VAL = int(os.environ.get("AIDA_N_VAL", 120))  # 100~150장 범위 중간값
 # 평가셋도 같이 밀려서 서로 다른 데이터로 잰 mAP를 비교하게 된다.
 VAL_HOLDOUT = os.environ.get("AIDA_VAL_HOLDOUT", "0") == "1"
 
+_DEFAULT_ERROR_RATIO = 0.3
+ERROR_RATIO = float(os.environ.get("AIDA_ERROR_RATIO", _DEFAULT_ERROR_RATIO))
+# 라벨 중 오류를 주입할 비율. **경로에 들어간다** — 비율이 다르면 조건 폴더의
+# 내용이 다른데 이름이 같으면 기존 조건을 조용히 덮어쓰고, 그 폴더를 쓰는 앞
+# 절들의 수치가 다른 것이 된다(docs/21 AX에 위험으로만 적어뒀던 것).
+#
+# 깨끗한 라벨(labels_gt)은 비율과 무관하므로 _csuffix에는 안 붙인다.
+_rsuffix = ("" if ERROR_RATIO == _DEFAULT_ERROR_RATIO
+            else f"_r{round(ERROR_RATIO * 100)}")
+
 _csuffix = "" if CLASS_NAMES == ["Car"] else "_mc"
 if DATASET != "kitti":
     # 데이터셋이 다르면 라벨도 가중치도 지표도 전부 다른 실험이다.
@@ -114,7 +124,7 @@ if N_TRAIN != _DEFAULT_N_TRAIN:
     # 학습 규모가 다르면 모델도 지표도 달라진다. 접미사가 없으면 800장 실험이
     # 400장 결과를 덮는다 — check_consistency.py가 잡는 바로 그 유형이다.
     _csuffix += f"_n{N_TRAIN}"
-_esuffix = _csuffix + _esuffix
+_esuffix = _csuffix + _rsuffix + _esuffix
 
 LABELS_GT_TRAIN_DIR = PROCESSED_DIR / f"labels_gt{_csuffix}" / "train"
 LABELS_GT_VAL_DIR = PROCESSED_DIR / f"labels_gt{_csuffix}" / "val"
@@ -122,7 +132,8 @@ LABELS_GT_VAL_DIR = PROCESSED_DIR / f"labels_gt{_csuffix}" / "val"
 CONDITIONS_DIR = EXPERIMENT_ROOT / f"conditions{_esuffix}"
 DATA_YAML_DIR = EXPERIMENT_ROOT / f"data_yaml{_esuffix}"
 RUNS_DIR = EXPERIMENT_ROOT / f"runs{_esuffix}"
-METRICS_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / f"metrics{_csuffix}.csv"
+METRICS_CSV = (EXPERIMENT_ROOT.parent / "backend" / "app" / "data"
+               / f"metrics{_csuffix}{_rsuffix}.csv")
 
 # 다중 seed 실험용 누적 CSV (모든 seed 결과 포함, error_seed 컬럼 추가)
 # 클래스 구성이 다르면 다른 실험이다. 접미사가 없으면 다중 클래스로 3-seed를
@@ -138,7 +149,6 @@ OBB_AGG_CSV = EXPERIMENT_ROOT.parent / "backend" / "app" / "data" / "metrics_obb
 
 # 스모크 테스트 시 AIDA_N_TRAIN=20 AIDA_N_VAL=10 AIDA_EPOCHS=1 처럼 .env나 환경변수로 오버라이드
 
-ERROR_RATIO = float(os.environ.get("AIDA_ERROR_RATIO", 0.3))  # 라벨 중 오류를 주입할 비율
 
 # 유형 신뢰도 보정 프로파일(JSON) 경로. 지정하면 label_diagnosis의 기본 상수
 # 위에 덮어쓴다. 기본 상수는 KITTI Car 단일 클래스 실측값이고, 도메인이

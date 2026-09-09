@@ -49,16 +49,36 @@
 | `AIDA_CLASSES` | Car | 4클래스는 `Car,Van,Pedestrian,Cyclist` |
 | `AIDA_DATASET` | kitti | `coco`도 가능 |
 | `AIDA_FRAME_SELECT` | random | `cyclist_rich` · `broad` · `nested` |
-| `AIDA_ERROR_RATIO` | 0.3 | **주의: 조건 폴더 이름이 안 바뀌어 기존 조건을 덮어쓴다**(docs/21 AX) |
+| `AIDA_ERROR_RATIO` | 0.3 | 기본값이 아니면 경로에 `_r10`처럼 붙는다 (2026-09-09부터) |
 
 전체 목록은 `experiment/.env.example`과 README의 환경변수 표에 있다.
 
-### 분할 목록 파일이 없는 이유
+### ~~분할 목록 파일이 없는 이유~~ — 정정 (2026-09-09, docs/25 2단계)
 
-프레임 분할은 `AIDA_SEED`로 **결정론적**이다(`data_loader.py` — 프레임 id를
-정렬한 뒤 `random.Random(SEED)`로 섞는다). 그래서 목록을 따로 저장하지 않아도
-같은 시드로 같은 분할이 나온다. **다만 원본 데이터가 바뀌면 달라진다** —
-KITTI·COCO는 고정된 공개 데이터라 실질적으로 안 바뀐다.
+처음엔 이렇게 적었다: "분할은 `AIDA_SEED`로 결정론적이라 목록을 따로 저장하지
+않아도 된다."
+
+**시드만으로는 부족하다.** 시드는 **같은 프레임 풀**을 전제한다. 풀
+(`data/raw/selected_frames*.txt`)은 저장소에 없고, 원본 데이터가 달라지면 같은
+시드로도 다른 분할이 나온다. 같은 이름의 다른 그림이면 목록조차 같아 보인다.
+
+그래서 **실행 명세**를 남긴다 — `experiment/run_manifest.py`.
+
+```bash
+python run_manifest.py --runs runs_coco/clean --out manifests/coco.json
+```
+
+| 담기는 것 | 왜 |
+|---|---|
+| 학습·평가 프레임 id **전부**와 목록 해시 | 시드를 대신한다 |
+| 분할에 든 이미지의 **내용 해시** | 같은 이름의 다른 그림을 잡는다 |
+| `best.pt`의 sha256과 학습 설정 | 어느 가중치였는지 |
+| git 커밋과 **작업 트리가 깨끗한지** | 커밋만 적으면 없는 상태를 재현하려 하게 된다 |
+| python·torch·ultralytics 판 | 없는 것은 **없다고** 적는다 |
+| 클래스·데이터셋·프레임 선택·규모·에폭·비율·시드 | 설정 전부 |
+
+**풀 파일이 없으면 "분할을 되살릴 수 없다"고 적는다** — 조용히 빈 목록을 남기면
+명세를 믿고 재현하려다 다른 분할을 얻는다.
 
 ### 경로 이름 규칙
 
