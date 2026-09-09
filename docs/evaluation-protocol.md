@@ -33,6 +33,15 @@
 
 근거로 삼은 자료는 [evaluation-methodology-sources.md](./evaluation-methodology-sources.md).
 
+## 판정 데이터는 누가 만드는가
+
+이 규약은 집계가 **무엇을 받는가**를 정한다. 그것을 **만드는 경로**는
+[evaluation-adjudication-design.md](evaluation-adjudication-design.md)에 있다 —
+후보 고정, 가림 판정 화면, `unique_error_id` 발급, 집계 어댑터.
+
+**그 경로가 생겼다고 이 규약이 요구하는 판정이 확보된 것은 아니다.** 판정자는
+아직 개발자이고, 실제 판정 데이터는 없다.
+
 ## 0. 무엇을 묻는가
 
 > **우리 순서를 따라 상위 N건을 검수하면, 같은 노력으로 더 많은 진짜 오류를

@@ -135,6 +135,43 @@ def test_판정_화면에_점수와_유형이_안_간다(client, uploads):
     assert "suspicion" not in body and "width" not in body
 
 
+def test_같은_씨앗이면_판정_순서가_같다(client, uploads):
+    """순서를 다시 만들 수 있어야 한다 — 그래서 씨앗을 묶음에 적는다.
+
+    순위대로 주면 그 순서가 곧 힌트라 섞는데, 섞은 결과를 재현하지 못하면
+    "어떤 순서로 판정했는가"를 나중에 말할 수 없다.
+    """
+    write_diagnosis(uploads, _queue(*[("a.jpg", i, "width", 1 - i / 10)
+                                      for i in range(8)]))
+    client.post(f"/api/datasets/{DATASET}/evaluations",
+                json={"evaluation_id": "s1", "shuffle_seed": 7})
+    first = client.get(f"/api/datasets/{DATASET}/evaluations/s1/queue").json()
+    again = client.get(f"/api/datasets/{DATASET}/evaluations/s1/queue").json()
+    assert [c["canonical_candidate_id"] for c in first["candidates"]] ==            [c["canonical_candidate_id"] for c in again["candidates"]]
+
+
+def test_판정_순서가_진단_순위와_다르다(client, uploads):
+    """순위대로 주면 그것이 곧 힌트다."""
+    write_diagnosis(uploads, _queue(*[("a.jpg", i, "width", 1 - i / 20)
+                                      for i in range(12)]))
+    snap = start(client, "s2")
+    queue = client.get(f"/api/datasets/{DATASET}/evaluations/s2/queue").json()
+    assert [c["canonical_candidate_id"] for c in queue["candidates"]] !=            [c["canonical_candidate_id"] for c in snap["candidates"]]
+
+
+def test_데이터셋을_지우면_평가_파일도_지워진다(client, uploads):
+    """고객 데이터가 무기한 남으면 안 된다 — 평가 파일도 같은 규칙이다."""
+    write_diagnosis(uploads, _queue(("a.jpg", 0, "width", 0.9)))
+    snap = start(client)
+    put(client, snap, [{"canonical_candidate_id":
+                        snap["candidates"][0]["canonical_candidate_id"],
+                        "verdict": "hit"}])
+    assert (uploads / DATASET / "evaluations").is_dir()
+
+    client.delete(f"/api/datasets/{DATASET}")
+    assert not (uploads / DATASET).exists()
+
+
 # ── unique_error_id ──────────────────────────────────────────────────────────
 
 def test_기존_라벨의_오류_id는_서버가_정한다(client, uploads):
