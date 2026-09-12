@@ -778,16 +778,24 @@ def _run_experiment_script(dataset_id: str, script_name: str, extra_args: list[s
         proc = subprocess.run(
             [str(EXPERIMENT_PYTHON), str(script), *extra_args],
             capture_output=True,
-            text=True,
+            # **양쪽이 같은 인코딩을 쓰게 못 박는다.** `text=True`만 주면 부모는
+            # OS 로캘(윈도우에서 cp949)로 푸는데, 자식이 UTF-8로 쓰면 읽는
+            # 스레드가 `UnicodeDecodeError`로 죽고 `proc.stderr`가 **None**이
+            # 된다. 그러면 아래 `[-2000:]`이 TypeError로 터지면서 **실패
+            # 이유가 통째로 사라진다** — 이 함수가 제일 하면 안 되는 일이다.
+            encoding="utf-8",
+            errors="replace",
             timeout=DIAGNOSE_TIMEOUT_SEC,
             cwd=str(EXPERIMENT_ROOT),
-            env={**os.environ, **(env_extra or {})},
+            env={**os.environ, "PYTHONIOENCODING": "utf-8",
+                 **(env_extra or {})},
         )
     except subprocess.TimeoutExpired:
         raise HTTPException(504, f"진단이 {DIAGNOSE_TIMEOUT_SEC}초 안에 끝나지 않았습니다.")
 
     if proc.returncode != 0:
-        raise HTTPException(500, f"진단 실패: {proc.stderr[-2000:]}")
+        # 못 읽는 글자가 있어도 `errors="replace"`라 None이 되지 않는다.
+        raise HTTPException(500, f"진단 실패: {(proc.stderr or '')[-2000:]}")
 
 
 @router.post("/{dataset_id}/diagnose", response_model=UploadDiagnosisResult)

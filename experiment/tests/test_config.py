@@ -37,18 +37,32 @@ _PROBE = (
     "'labels': c.LABELS_GT_TRAIN_DIR.parent.name, 'ratio': str(c.ERROR_RATIO)}))")
 
 
+def _run(code: str, env: dict) -> subprocess.CompletedProcess:
+    """자식과 부모가 **같은 인코딩을 쓰게** 못 박고 돌린다.
+
+    `text=True`만 주면 부모는 OS 로캘(윈도우에서 cp949)로 푼다. 자식이 UTF-8로
+    쓰면(`PYTHONIOENCODING`이 켜져 있는 셸이 그렇다) 읽는 스레드가
+    `UnicodeDecodeError`로 죽고 `stderr`가 **None**이 된다. 그러면 검사는
+    "거부 메시지가 없다"가 아니라 **`TypeError`로** 떨어져 무엇이 틀렸는지
+    알아보기 어렵다. 실제로 그렇게 한 번 헤맸다.
+    """
+    return subprocess.run(
+        [sys.executable, "-c", code], cwd=str(EXPERIMENT), capture_output=True,
+        encoding="utf-8", errors="replace",
+        env={**os.environ, "PYTHONIOENCODING": "utf-8", **env})
+
+
 def probe(**env) -> dict:
-    out = subprocess.run([sys.executable, "-c", _PROBE], cwd=str(EXPERIMENT),
-                         capture_output=True, text=True, env={**os.environ, **env})
+    out = _run(_PROBE, env)
     assert out.returncode == 0, out.stderr
     return json.loads(out.stdout.strip().splitlines()[-1])
 
 
 def rejected(**env) -> str:
     """설정이 거부되는가. 거부되면 stderr를 돌려준다."""
-    out = subprocess.run([sys.executable, "-c", "import config"], cwd=str(EXPERIMENT),
-                         capture_output=True, text=True, env={**os.environ, **env})
+    out = _run("import config", env)
     assert out.returncode != 0, "거부돼야 하는 설정이 통과했다"
+    assert out.stderr is not None, "stderr를 못 읽었다 — 인코딩이 어긋났다"
     return out.stderr
 
 

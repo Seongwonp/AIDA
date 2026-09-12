@@ -44,6 +44,12 @@ def paired_difference(adjudications: list[Adjudication], rankings: list[Ranking]
     """같은 후보 집합에서 두 방법의 성과 차이.
 
     주지표는 **고정 예산에서 찾은 고유 오류 수**다.
+
+    여기서 `budget`은 **"각 방법이 상위 몇 건까지 검수하는가"** 로, 평가에
+    들어가는 입력이다. `activity.capacity_from_blocks`가 내는
+    `N_capacity`(시간 예산으로 처리 가능한 후보 수)와 **다른 것이다** —
+    시간이 되니까 그 숫자를 여기에 넣으면 표본 크기를 일정이 정하게 된다.
+    docs/capacity-vs-sample-size.md를 보고 `N_final`이 정해진 뒤에 넣는다.
     """
     check_same_candidate_set(rankings, method, baseline)
     a = summarise(adjudications, rankings, method, budget)

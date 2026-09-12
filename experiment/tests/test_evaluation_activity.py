@@ -11,7 +11,10 @@ from evaluation.activity import (IDLE_THRESHOLD_SECONDS,
                                  budget_from_pilot, delta_scenarios,
                                  plan_seconds_per_candidate,
                                  provenance_warnings,
-                                 block_budget,
+                                 capacity_from_blocks, capacity_table,
+                                 evidence_range,
+                                 OBSERVED_TOTAL_BLOCKS,
+                                 STRONG_EXTRAPOLATION_TOTAL_BLOCKS,
                                  bootstrap_mean_upper_by_interval,
                                  interval_reports, judged_in_order,
                                  sustained_plan, missing_plan_keys,
@@ -985,34 +988,203 @@ def test_조건을_다_채우면_구간_상한을_낸다():
     assert "구간" in got["s_plan_basis"]
 
 
-# ── 블록 구조 예산 ───────────────────────────────────────────────────────────
+# ── N_capacity — 처리 용량이지 표본 크기가 아니다 ──────────────────────────
+#
+# 여기서 재는 것은 **시간 예산으로 처리 가능한 후보 수**다. `N_required`(필요
+# 표본)와 `N_final`(최종 검수량)은 다른 것이고 아직 없다.
 
 def test_블록을_반복하는_것만_외삽한다():
     """**한 시간을 쉬지 않고 간다고 가정하지 않는다.**
 
     3시간·3데이터셋, 100건을 이어서 판정했고 후보당 4초라면
-    블록당 400초, 데이터셋당 3600초 → 9블록 → N=900.
+    블록당 400초, 데이터셋당 3600초 → 9블록 → N_capacity=900.
     """
-    got = block_budget(10800, 3, 100, 4.0)
+    got = capacity_from_blocks(10800, 3, 100, 4.0)
     assert got["status"] == "ok"
     assert got["seconds_per_block"] == 400.0
     assert got["blocks_per_dataset"] == 9
-    assert got["budget"] == 900
+    assert got["n_capacity"] == 900
 
 
 def test_블록_수가_결과에_드러난다():
     """20블록이 필요하다면 그것이 현실적인지 사람이 보고 판단한다."""
-    got = block_budget(10800, 3, 25, 5.0)
+    got = capacity_from_blocks(10800, 3, 25, 5.0)
     assert got["blocks_per_dataset"] == 28
-    assert got["budget"] == 700
+    assert got["n_capacity"] == 700
+    assert got["blocks_total"] == 84
 
 
-def test_입력이_없으면_예산을_안_만든다():
-    assert block_budget(10800, 3, 100, None)["budget"] is None
-    assert block_budget(10800, 3, 0, 4.0)["budget"] is None
-    assert block_budget(0, 3, 100, 4.0)["budget"] is None
-    assert block_budget(10800, 0, 100, 4.0)["budget"] is None
-    assert block_budget(10800, 3, 100, float("inf"))["budget"] is None
+def test_필요_표본과_최종_검수량은_여기서_안_나온다():
+    """**시간이 된다는 것이 표본이 충분하다는 뜻은 아니다.**"""
+    got = capacity_from_blocks(10800, 3, 100, 4.0)
+    assert got["n_required"] is None
+    assert got["n_final"] is None
+    assert got["n_required_status"] == "undetermined"
+    assert got["n_final_status"] == "undetermined"
+
+
+# ── 블록 반올림의 경계 ───────────────────────────────────────────────────────
+#
+# **여기가 이 함수에서 제일 위험한 자리다.** 한 블록도 못 채우는 조합에서 한
+# 블록으로 올림하면 시간 상한을 말없이 넘는다.
+
+def test_한_블록도_못_채우면_올림하지_않는다():
+    # 블록 120건 × 5초 = 600초가 필요한데 데이터셋당 500초뿐이다.
+    got = capacity_from_blocks(500, 1, 120, 5.0)
+    assert got["status"] == "infeasible"
+    assert got["n_capacity"] == 0        # **120이 아니다**
+    assert got["adoption_blocked"] is True
+
+
+def test_아슬아슬하게_모자라도_올림하지_않는다():
+    got = capacity_from_blocks(599.9, 1, 120, 5.0)
+    assert got["n_capacity"] == 0
+    assert got["status"] == "infeasible"
+
+
+def test_정확히_블록_경계면_그_블록까지_쓴다():
+    got = capacity_from_blocks(1200, 1, 120, 5.0)   # 정확히 2블록
+    assert got["blocks_per_dataset"] == 2
+    assert got["n_capacity"] == 240
+    assert got["expected_active_seconds"] == 1200.0
+    assert got["unallocated_buffer_seconds"] == 0.0
+
+
+def test_데이터셋이_여럿일_때도_경계가_맞는다():
+    got = capacity_from_blocks(1800, 3, 120, 5.0)   # 데이터셋당 600초 = 1블록
+    assert got["blocks_per_dataset"] == 1
+    assert got["n_capacity"] == 120
+    assert got["blocks_total"] == 3
+    assert got["expected_active_seconds"] == 1800.0
+
+
+@pytest.mark.parametrize("total,datasets,block,s_plan", [
+    (500, 1, 120, 5.0), (599.9, 1, 120, 5.0), (1200, 1, 120, 5.0),
+    (1800, 3, 120, 5.0), (10800, 3, 120, 5.02), (10800, 3, 100, 4.0),
+    (3600, 7, 13, 0.1), (7231.7, 3, 120, 5.0231), (60, 1, 1, 0.7),
+    (1e9, 3, 120, 5.02), (1e12, 11, 250, 3.33),
+    (123456.789, 5, 37, 1.0000001), (600, 1, 120, 5.0),
+])
+def test_시간_상한을_절대_넘지_않는다(total, datasets, block, s_plan):
+    """**부등식 하나가 이 함수의 계약이다.**
+
+        N_capacity × D × s_plan <= T
+
+    내림 한 번으로 끝난 줄 알았는데, 부동소수 나눗셈은 정확히 경계인 조합에서
+    한 블록을 더 세기도 한다. 그래서 계산 뒤에 부등식으로 직접 되돌린다.
+    """
+    got = capacity_from_blocks(total, datasets, block, s_plan)
+    n = got["n_capacity"]
+    assert n is not None and n >= 0
+    assert n * datasets * s_plan <= total
+    # 블록 단위로 떨어진다.
+    assert n % block == 0
+    # 한 블록을 더 넣으면 반드시 넘는다 — 필요 이상으로 깎지도 않았다.
+    assert (n + block) * datasets * s_plan > total
+
+
+def test_아주_큰_값에서도_부등식이_유지된다():
+    got = capacity_from_blocks(1e15, 3, 120, 5.02)
+    n = got["n_capacity"]
+    assert n * 3 * 5.02 <= 1e15
+    assert got["evidence"] == "strongly_extrapolated"
+
+
+def test_잘못된_입력은_용량을_안_만든다():
+    """NaN·무한대·0·음수·참거짓을 한자리에서 막는다."""
+    for bad in (None, 0, -1.0, float("nan"), float("inf"), float("-inf"),
+                "5", True):
+        assert capacity_from_blocks(10800, 3, 120, bad)["n_capacity"] is None
+    for total in (0, -1, float("nan"), float("inf")):
+        assert capacity_from_blocks(total, 3, 120, 5.0)["n_capacity"] is None
+    for datasets in (0, -3):
+        assert capacity_from_blocks(10800, datasets, 120, 5.0)["n_capacity"] is None
+    for block in (0, -120):
+        assert capacity_from_blocks(10800, 3, block, 5.0)["n_capacity"] is None
+
+
+def test_입력이_모자라도_같은_열쇠로_읽힌다():
+    """보고서가 없는 열쇠를 꺼내 판정 직후에 죽은 일이 여러 번 있었다."""
+    ok = capacity_from_blocks(10800, 3, 120, 5.0)
+    for bad in (capacity_from_blocks(10800, 3, 120, None),
+                capacity_from_blocks(0, 3, 120, 5.0)):
+        assert set(ok) - set(bad) == set()
+
+
+# ── 근거 범위 표시 ───────────────────────────────────────────────────────────
+
+def test_전체_한_블록만_관측_범위다():
+    assert evidence_range(0) == "observed"
+    assert evidence_range(OBSERVED_TOTAL_BLOCKS) == "observed"
+    assert evidence_range(2) == "extrapolated"
+    assert evidence_range(9) == "extrapolated"
+    assert evidence_range(STRONG_EXTRAPOLATION_TOTAL_BLOCKS) == "strongly_extrapolated"
+    assert evidence_range(15) == "strongly_extrapolated"
+
+
+def test_T180_D3은_15블록이라_채택_불가다():
+    """사용자가 지목한 조합. **시간이 된다는 것과 채택 가능은 다르다.**"""
+    got = capacity_from_blocks(180 * 60, 3, 120, 5.02)
+    assert got["n_capacity"] == 600
+    assert got["blocks_total"] == 15
+    assert got["evidence"] == "strongly_extrapolated"
+    assert got["adoption_blocked"] is True
+
+
+def test_데이터셋당_한_블록은_데이터셋_기준으로_관측_범위다():
+    """다만 **전체로는 외삽이 남는다** — 데이터셋 간 난이도 차이는 못 봤다."""
+    got = capacity_from_blocks(60 * 60, 3, 120, 5.02)
+    assert got["blocks_per_dataset"] == 1
+    assert got["n_capacity"] == 120
+    assert got["per_dataset_evidence"] == "observed"
+    assert got["evidence"] == "extrapolated"      # 전체 3블록
+    assert got["adoption_blocked"] is False
+    assert "외삽이 남아" in got["adoption_note"]
+
+
+# ── 활동 시간과 일정은 다르다 ────────────────────────────────────────────────
+
+def test_활동_시간과_남는_시간을_따로_낸다():
+    got = capacity_from_blocks(3600, 1, 120, 5.0)     # 6블록 = 3600초
+    assert got["expected_active_minutes"] == 60.0
+    assert got["unallocated_buffer_minutes"] == 0.0
+
+    got = capacity_from_blocks(3900, 1, 120, 5.0)     # 6블록 + 300초
+    assert got["expected_active_minutes"] == 60.0
+    assert got["unallocated_buffer_minutes"] == 5.0
+
+
+def test_남는_시간을_후보로_재할당하지_않는다():
+    """5분이 남아도 **후보를 더 얹지 않는다** — 블록이 안 차기 때문이다."""
+    a = capacity_from_blocks(3600, 1, 120, 5.0)
+    b = capacity_from_blocks(3900, 1, 120, 5.0)
+    assert a["n_capacity"] == b["n_capacity"] == 720
+
+
+def test_휴식과_준비_시간은_들어_있지_않다고_적는다():
+    got = capacity_from_blocks(3600, 1, 120, 5.0)
+    assert "활동 판정 시간" in got["time_basis"]
+    assert "휴식" in got["time_basis"]
+    assert "wall-clock" in got["time_basis"]
+
+
+# ── 표 ───────────────────────────────────────────────────────────────────────
+
+def test_표의_모든_칸이_부등식을_지킨다():
+    rows = capacity_table((10, 15, 60, 180), (1, 2, 3), 120, 5.02)
+    assert len(rows) == 12
+    for row in rows:
+        n = row["n_capacity"]
+        assert n * row["datasets"] * 5.02 <= row["total_minutes"] * 60
+
+
+def test_표에_근거_범위가_같이_들어간다():
+    """숫자만 떼어 옮기면 15블록짜리가 1블록짜리와 같아 보인다."""
+    rows = capacity_table((15, 180), (1, 3), 120, 5.02)
+    found = {(r["total_minutes"], r["datasets"]): r for r in rows}
+    assert found[(15, 1)]["evidence"] == "observed"
+    assert found[(15, 3)]["status"] == "infeasible"
+    assert found[(180, 3)]["evidence"] == "strongly_extrapolated"
 
 
 def test_지속_계획값이_보고에_필요한_항목을_다_준다():

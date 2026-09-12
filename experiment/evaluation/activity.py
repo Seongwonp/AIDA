@@ -1002,36 +1002,184 @@ def sustained_plan(events: list[dict], summary: ActivitySummary,
     }
 
 
-def block_budget(total_seconds: float, datasets: int,
-                 sustained_candidates: int,
-                 s_plan_seconds: float | None) -> dict:
-    """**1시간 외삽을 하지 않는 N.**
+# ── 처리 용량과 표본 크기는 다른 것이다 ──────────────────────────────────────
+#
+# 아래 계산이 내는 것은 **`N_capacity`(시간 예산으로 처리 가능한 후보 수)**이지
+# 통계적으로 필요한 표본 크기가 아니다. 셋을 구분한다:
+#
+#   N_capacity  주어진 T·D·s_plan으로 **처리할 수 있는** 후보 수 ← 여기서 나온다
+#   N_required  Δ와 검정력·정밀도 기준으로 **필요한** 후보 수    ← 미정
+#   N_final     `N_required <= N_capacity`를 확인한 뒤 사전 등록하는 최종 검수량
+#
+# **시간이 남는다는 이유로 N을 정하지 않는다.** `N_required`가 없으면 `N_final`도
+# 없다 — 필요한 것은 docs/capacity-vs-sample-size.md에 적어 두었다.
+N_REQUIRED_STATUS = "undetermined"
+N_FINAL_STATUS = "undetermined"
+
+# 관측한 지속 블록은 timing5의 120건 **1회**뿐이다. 블록을 몇 번 반복한다고
+# 가정하는지가 곧 근거에서 얼마나 멀어지는가다.
+OBSERVED_TOTAL_BLOCKS = 1
+STRONG_EXTRAPOLATION_TOTAL_BLOCKS = 10
+
+# `s_plan`을 확률 보장이나 SLA로 읽지 않기 위한 목록. **보고서가 이것을 같이
+# 찍는다** — 숫자만 옮겨 적히는 것을 막으려는 것이다.
+S_PLAN_BASIS_LIMITS = (
+    "판정자가 한 명이고, 그 한 명은 이 화면을 다섯 번째 쓰는 숙련자다.",
+    "지속 판정은 120건 1회만 관측했다. 반복 블록 간 분산은 관측하지 않았다.",
+    "다른 날의 분산(컨디션·시간대)은 관측하지 않았다.",
+    "신규 사용자 속도로 일반화할 근거가 없다.",
+    "후반 피로와 정상 라벨 오탐 변화는 반복 관측이 없어 추세라 말할 수 없다.",
+    "확률적 상한이나 SLA가 아니다. **현재 판정자의 관측 기반 계획값**이다.",
+)
+
+# `s_plan`은 **활동(active) 판정 시간**만 잰다. 아래는 들어 있지 않다.
+TIME_BASIS_EXCLUDES = (
+    "블록 사이 휴식", "탭 전환", "저장 대기", "데이터셋 교체", "준비·설명 시간",
+)
+
+
+def evidence_range(total_blocks: int) -> str:
+    """전체 블록 수 → 근거 범위 표시. **성공/실패 판정이 아니다.**
+
+    관측한 것은 블록 1회다. 그보다 많이 반복한다고 가정할수록 근거에서 멀어진다.
+    """
+    if total_blocks <= OBSERVED_TOTAL_BLOCKS:
+        return "observed"
+    if total_blocks >= STRONG_EXTRAPOLATION_TOTAL_BLOCKS:
+        return "strongly_extrapolated"
+    return "extrapolated"
+
+
+def _positive_finite(value) -> bool:
+    """NaN·무한대·문자열·음수를 한자리에서 막는다."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return False
+    return math.isfinite(value) and value > 0
+
+
+def capacity_from_blocks(total_seconds: float, datasets: int,
+                         block_size: int,
+                         s_plan_seconds: float | None) -> dict:
+    """`N_capacity` — 시간 예산으로 **처리 가능한** 데이터셋당 후보 수.
 
         블록당 소요 = B × s_plan        (B = 실제로 이어서 판정한 건수)
         블록 수     = floor((T/D) / 블록당 소요)
-        N           = 블록 수 × B
+        N_capacity  = 블록 수 × B
 
     산술적으로는 `(T/D)/s_plan`과 같지만 **가정이 다르다.** 외삽하는 것은
     "관측한 블록을 반복한다"뿐이고, "한 시간을 쉬지 않고 같은 속도로 간다"가
-    아니다. 블록 사이에는 쉰다 — 세션 간 회복은 timing1~4에서 관측했다.
+    아니다.
 
-    **블록 수가 결과에 드러난다.** 20블록이 필요하다면 그것이 현실적인지 사람이
-    보고 판단할 수 있다. 나눗셈 한 번으로 감춰지지 않는다.
+    **한 블록을 채울 시간도 없으면 0을 돌려준다.** 120으로 올림하면 시간 상한을
+    말없이 넘는다 — 그 자리가 이 함수에서 제일 위험한 곳이다.
+
+    **`T`는 활동 판정 시간 상한이지 일정(wall-clock)이 아니다.** 휴식·탭 전환·
+    저장 대기·데이터셋 교체는 `s_plan`에 없으므로 `T`에도 없다. 남는 시간
+    (`unallocated_buffer_minutes`)을 **더 많은 후보에 자동으로 재할당하지 않는다.**
     """
-    if (not s_plan_seconds or s_plan_seconds <= 0
-            or not math.isfinite(s_plan_seconds)):
-        return {"status": "no_plan_value", "budget": None}
-    if datasets <= 0 or total_seconds <= 0 or sustained_candidates <= 0:
-        return {"status": "missing_input", "budget": None}
+    if not _positive_finite(s_plan_seconds):
+        return {"status": "no_plan_value", "n_capacity": None,
+                **_capacity_unknowns()}
+    if not (_positive_finite(total_seconds) and _positive_finite(datasets)
+            and _positive_finite(block_size)):
+        return {"status": "missing_input", "n_capacity": None,
+                **_capacity_unknowns()}
 
-    per_block = sustained_candidates * s_plan_seconds
+    per_block = block_size * s_plan_seconds
     blocks = int((total_seconds / datasets) // per_block)
-    return {
-        "status": "ok",
-        "sustained_block": sustained_candidates,
+    # **내림했다고 끝난 게 아니다.** 부동소수 나눗셈은 정확히 경계인 조합에서
+    # 한 블록을 더 세기도 한다. 부등식으로 직접 되돌린다 —
+    # `N_capacity × D × s_plan <= T`는 어떤 입력에서도 깨지면 안 된다.
+    while blocks > 0 and blocks * block_size * datasets * s_plan_seconds > total_seconds:
+        blocks -= 1
+
+    n_capacity = blocks * block_size
+    active_seconds = n_capacity * datasets * s_plan_seconds
+    blocks_total = blocks * datasets
+    common = {
+        "block_size": block_size,
         "seconds_per_block": round(per_block, 1),
+        "minutes_per_block": round(per_block / 60, 1),
         "blocks_per_dataset": blocks,
-        "budget": blocks * sustained_candidates,
-        "note": ("관측한 블록을 반복한다는 가정이다. 블록 사이에는 쉰다. "
-                 "블록 수가 현실적인지는 사람이 판단한다."),
+        "blocks_total": blocks_total,
+        "n_capacity": n_capacity,
+        "total_candidates": n_capacity * datasets,
+        "expected_active_seconds": round(active_seconds, 1),
+        "expected_active_minutes": round(active_seconds / 60, 1),
+        "unallocated_buffer_seconds": round(total_seconds - active_seconds, 1),
+        "unallocated_buffer_minutes": round((total_seconds - active_seconds) / 60, 1),
+        "time_basis": ("T와 아래 수치는 **활동 판정 시간**이다. "
+                       + "·".join(TIME_BASIS_EXCLUDES)
+                       + "은 포함되지 않는다. wall-clock 완료 시각을 "
+                         "이 표로 보장하지 않는다."),
+        "n_required": None,
+        "n_required_status": N_REQUIRED_STATUS,
+        "n_final": None,
+        "n_final_status": N_FINAL_STATUS,
     }
+
+    if blocks == 0:
+        return {**common, "status": "infeasible",
+                "evidence": "none",
+                "per_dataset_evidence": "none",
+                "adoption_blocked": True,
+                "adoption_note": (
+                    f"데이터셋당 {total_seconds / datasets / 60:.1f}분으로는 "
+                    f"{block_size}건 한 블록({per_block / 60:.1f}분)도 못 채운다. "
+                    "블록을 채우지 못하면 올림하지 않고 0이다 — 올림하면 시간 "
+                    "상한을 말없이 넘는다."),
+                "note": "T를 늘리거나 D를 줄이거나 블록을 작게 다시 관측해야 한다."}
+
+    evidence = evidence_range(blocks_total)
+    per_dataset = "observed" if blocks <= OBSERVED_TOTAL_BLOCKS else evidence
+    blocked = blocks > OBSERVED_TOTAL_BLOCKS
+    if blocked:
+        note = (f"데이터셋당 {blocks}블록을 가정한다. 관측한 것은 블록 1회뿐이라 "
+                f"반복 블록 간 분산 근거가 없다 → {evidence}. 채택하려면 여러 "
+                "날에 걸친 반복 지속 블록이나 추가 판정자 자료가 필요하다.")
+    else:
+        note = ("데이터셋당 1블록 — 관측한 범위다. 다만 전체로는 "
+                f"{blocks_total}블록이라 '다른 데이터셋에서도 같은 블록이 된다'는 "
+                "외삽이 남아 있다. 데이터셋 간 난이도 차이는 관측하지 않았다.")
+
+    return {**common, "status": "ok", "evidence": evidence,
+            "per_dataset_evidence": per_dataset,
+            "adoption_blocked": blocked, "adoption_note": note,
+            "note": ("관측한 블록을 반복한다는 가정이다. 블록 사이에는 쉰다. "
+                     "블록 수가 현실적인지는 사람이 판단한다.")}
+
+
+def _capacity_unknowns() -> dict:
+    """입력이 모자랄 때도 **호출부가 같은 열쇠로 읽게 한다.**
+
+    보고서가 없는 열쇠를 꺼내 판정 직후에 죽은 일이 여러 번 있었다.
+    """
+    return {
+        "block_size": None, "seconds_per_block": None, "minutes_per_block": None,
+        "blocks_per_dataset": None, "blocks_total": None,
+        "total_candidates": None,
+        "expected_active_seconds": None, "expected_active_minutes": None,
+        "unallocated_buffer_seconds": None, "unallocated_buffer_minutes": None,
+        "evidence": "none", "per_dataset_evidence": "none",
+        "adoption_blocked": True,
+        "adoption_note": "입력이 모자라 용량을 계산하지 않는다.",
+        "time_basis": "T는 활동 판정 시간 상한이다.",
+        "note": "", "n_required": None, "n_required_status": N_REQUIRED_STATUS,
+        "n_final": None, "n_final_status": N_FINAL_STATUS,
+    }
+
+
+def capacity_table(total_minutes_options, dataset_options, block_size,
+                   s_plan_seconds) -> list[dict]:
+    """**시간 예산별 처리 용량 예시.** "N 표"가 아니다 — 표본 크기가 아니다.
+
+    각 칸에 블록 수와 근거 범위를 같이 담는다. 숫자만 떼어 옮기면 15블록짜리
+    조합이 1블록짜리와 같아 보인다.
+    """
+    rows = []
+    for minutes in total_minutes_options:
+        for datasets in dataset_options:
+            got = capacity_from_blocks(minutes * 60, datasets, block_size,
+                                       s_plan_seconds)
+            rows.append({"total_minutes": minutes, "datasets": datasets, **got})
+    return rows

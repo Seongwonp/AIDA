@@ -15,9 +15,16 @@ import json
 import sys
 from pathlib import Path
 
+# 콘솔이 UTF-8이 아니면(윈도우 cp949, 파일로 리다이렉션) 설명문의 `—` 한 글자에
+# **판정을 끝낸 직후** 보고서가 죽는다. 이 자리에서 죽은 것이 네 번째다.
+# UTF-8 콘솔에서는 바뀔 것이 없고, 아닌 콘솔에서는 글자가 `?`로 나오지만 산다.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(errors="replace")
+
 import config
-from evaluation.activity import (INTERVAL_SIZE, block_budget,
-                                 budget_from_pilot, delta_scenarios,
+from evaluation.activity import (INTERVAL_SIZE, S_PLAN_BASIS_LIMITS,
+                                 budget_from_pilot, capacity_from_blocks,
+                                 capacity_table, delta_scenarios,
                                  plan_seconds_per_candidate, read_events,
                                  summarise_activity, sustained_plan)
 
@@ -137,6 +144,87 @@ def candidate_source(dataset_id: str) -> str | None:
         return None
 
 
+EVIDENCE_LABEL = {
+    "observed": "observed        (관측한 범위)",
+    "extrapolated": "extrapolated    (관측 밖 — 블록 반복을 가정)",
+    "strongly_extrapolated": "strongly_extrapolated (관측에서 멀다 — 채택 불가)",
+    "none": "none",
+}
+
+
+def print_capacity(got: dict, datasets: int, total_minutes: float) -> None:
+    """`N_capacity` 한 칸을 **근거 범위와 같이** 찍는다.
+
+    숫자만 떼어 옮기면 15블록짜리 조합이 1블록짜리와 똑같아 보인다. 그래서
+    블록 수·활동 시간·남는 시간·근거 범위를 한 덩어리로 붙여 찍는다.
+    """
+    print()
+    if got["status"] == "no_plan_value":
+        print("  N_capacity를 내지 않습니다 — 계획값이 없습니다.")
+        return
+    if got["status"] == "missing_input":
+        print("  N_capacity를 내지 않습니다 — D·T·블록 크기가 모자랍니다.")
+        return
+
+    print(f"  D={datasets}, T={total_minutes}분 (활동 판정 시간 상한)")
+    print(f"    블록 {got['block_size']}건 = {got['minutes_per_block']}분")
+    if got["status"] == "infeasible":
+        print("    N_capacity = 0  (infeasible)")
+        print(f"    ！ {got['adoption_note']}")
+        print(f"    {got['note']}")
+        return
+
+    print(f"    데이터셋당 블록 수      {got['blocks_per_dataset']}")
+    print(f"    전체 블록 수            {got['blocks_total']}")
+    print(f"    N_capacity              {got['n_capacity']}  (데이터셋당 후보 수)")
+    print(f"    전체 후보 수            {got['total_candidates']}")
+    print(f"    expected_active         {got['expected_active_minutes']}분")
+    print(f"    unallocated_buffer      {got['unallocated_buffer_minutes']}분")
+    print(f"    근거 범위               {EVIDENCE_LABEL[got['evidence']]}")
+    print(f"    N_required              미정 ({got['n_required_status']})")
+    print(f"    N_final                 미정 ({got['n_final_status']})")
+    print(f"    {got['time_basis']}")
+    print("    남는 시간을 더 많은 후보로 자동 재할당하지 않는다.")
+    print(f"    {got['adoption_note']}")
+
+
+def print_capacity_table(block_size: int, s_plan: float) -> None:
+    """**시간 예산별 처리 용량 예시.** "N 표"가 아니다."""
+    print()
+    print(f"시간 예산별 처리 용량 예시 (블록 {block_size}건, "
+          f"s_plan {s_plan:.2f}초)")
+    print("  **이 표의 수는 처리 가능량(N_capacity)이지 통계적 표본 크기가 "
+          "아닙니다.**")
+    print("  N_required(필요량)와 N_final(최종 검수량)은 아직 미정입니다.")
+    print()
+    print(f"  {'T(분)':>6} {'D':>3} {'N_cap':>7} {'블록/DS':>8} "
+          f"{'전체블록':>8} {'active(분)':>11} {'남는(분)':>9}  근거 범위")
+    # 10분·30분을 넣어 두는 이유는 **observed 한 줄과 infeasible 한 줄을
+    # 표에서 직접 보게 하려는 것**이다. 큰 값만 늘어놓으면 모든 줄이
+    # 외삽이라 구분이 눈에 안 들어온다.
+    for row in capacity_table((10, 15, 30, 60, 120, 180, 300), (1, 2, 3, 4),
+                              block_size, s_plan):
+        if row["status"] == "infeasible":
+            print(f"  {row['total_minutes']:>6} {row['datasets']:>3} "
+                  f"{'0':>7} {'0':>8} {'0':>8} {'-':>11} {'-':>9}  infeasible "
+                  "(한 블록도 못 채운다)")
+            continue
+        print(f"  {row['total_minutes']:>6} {row['datasets']:>3} "
+              f"{row['n_capacity']:>7} {row['blocks_per_dataset']:>8} "
+              f"{row['blocks_total']:>8} "
+              f"{row['expected_active_minutes']:>11} "
+              f"{row['unallocated_buffer_minutes']:>9}  {row['evidence']}")
+    print()
+    print("  observed = 전체 1블록. 그보다 많으면 관측 밖이고, 전체 10블록 "
+          "이상은 strongly_extrapolated다.")
+    print("  이 표시는 성공 판정이 아니라 **근거가 어디까지인지**를 보여주는 "
+          "경고다.")
+    print()
+    print("  s_plan의 근거 한계:")
+    for line in S_PLAN_BASIS_LIMITS:
+        print(f"    - {line}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="파일럿 시간 요약")
     parser.add_argument("--dataset")
@@ -165,6 +253,9 @@ def main() -> int:
     parser.add_argument("--safety-factor", type=float,
                         help="하한으로 잰 s_plan에 곱할 계수. **근거를 문서에 "
                              "적고** 결과 열람 전에 정한다")
+    parser.add_argument("--capacity-table", action="store_true",
+                        help="시간 예산별 처리 용량 예시를 찍는다. **표본 "
+                             "크기가 아니다** — 근거 범위 표시를 같이 본다")
     parser.add_argument("--judging-mode", choices=("unaided_human",
                                                    "assisted_rehearsal"),
                         help="파일럿 메타에 적힌 값을 덮어쓴다")
@@ -287,28 +378,44 @@ def main() -> int:
             if args.sustained and args.sustained_block:
                 # **블록을 반복하는 것만 외삽한다.** 한 시간을 쉬지 않고
                 # 같은 속도로 간다고 가정하지 않는다.
-                got = block_budget(args.total_minutes * 60, args.datasets,
-                                   args.sustained_block, planned)
-                print()
-                print(f"  블록 {got['sustained_block']}건 × "
-                      f"{got['seconds_per_block']}초 → 데이터셋당 "
-                      f"{got['blocks_per_dataset']}블록")
-                print(f"  {got['note']}")
-                n = got["budget"]
+                got = capacity_from_blocks(args.total_minutes * 60,
+                                           args.datasets,
+                                           args.sustained_block, planned)
+                print_capacity(got, args.datasets, args.total_minutes)
+                n = got["n_capacity"]
+                if got["adoption_blocked"]:
+                    # **여기서 멈춘다.** 시간이 된다는 것과 채택해도 된다는
+                    # 것은 다른 말이다.
+                    print()
+                    print("  이 조합은 지금 채택할 수 없습니다. Δ 선택지도 "
+                          "내지 않습니다 —")
+                    print("  Δ는 N_required를 정하려고 고르는 것이지 "
+                          "N_capacity에 맞추는 것이 아닙니다.")
+                    return 0
             else:
                 n = budget_from_pilot(args.total_minutes * 60, args.datasets,
                                       planned)
+                print()
+                print(f"  D={args.datasets}, T={args.total_minutes}분 → "
+                      f"N_capacity={n} (데이터셋마다, 총 "
+                      f"{None if n is None else n * args.datasets}건)")
             print()
-            print(f"  D={args.datasets}, T={args.total_minutes}분 → N={n} "
-                  f"(데이터셋마다, 총 {None if n is None else n * args.datasets}건)")
-            print("  Δ 선택지 — **고르는 것은 사용자다**:")
+            print("  Δ 선택지 — **고르는 것은 사용자다**. 아래 수는 "
+                  "N_capacity에 맞춘 예시일 뿐이고,")
+            print("  Δ를 정하는 근거는 사업적 최소 기준이지 처리 용량이 아니다:")
             for row in delta_scenarios(n):
                 print(f"    {row['name']}: {row['rule']} → {row['delta']} "
                       f"({row['note']})")
         else:
             print()
-            print("  D와 T를 주면 N을 계산합니다 "
+            print("  D와 T를 주면 N_capacity를 계산합니다 "
                   "(--datasets, --total-minutes). 지금은 둘 다 미정입니다.")
+            print("  **N_capacity는 처리 가능량이지 필요한 표본 크기가 "
+                  "아닙니다** (docs/capacity-vs-sample-size.md).")
+
+        if args.capacity_table and args.sustained_block:
+            print_capacity_table(args.sustained_block,
+                                 plan["s_plan_seconds"])
 
     if args.sustained and plan.get("intervals"):
         print()
