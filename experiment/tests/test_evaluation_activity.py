@@ -14,7 +14,8 @@ from evaluation.activity import (IDLE_THRESHOLD_SECONDS,
                                  block_budget,
                                  bootstrap_mean_upper_by_interval,
                                  interval_reports, judged_in_order,
-                                 sustained_plan,
+                                 sustained_plan, missing_plan_keys,
+                                 PLAN_KEYS,
                                  read_events, summarise_activity)
 from evaluation.schema import ValidationError
 
@@ -1034,3 +1035,46 @@ def test_지속_판정은_세션_하나여도_표본이_된다():
     assert summary.timing_usable is False        # 세션이 하나
     assert sustained_plan(rows, summary, judging_mode="unaided_human",
                           candidate_source="actual_diagnosis")["status"] == "ok"
+
+
+# ── 보고서 계약 ──────────────────────────────────────────────────────────────
+#
+# **사람이 판정을 끝낸 직후에 보고서가 죽는 일이 두 번 있었다.** 상태마다
+# 담기는 항목이 다른데 보고서가 없는 키를 꺼냈다. 계약을 여기서 고정한다.
+
+def _plan_states():
+    """계획값 함수가 낼 수 있는 상태를 하나씩 만든다."""
+    ok = summarise_activity(_pilot(2, 6, seconds=12.0, prefix="ka"))
+    fast = summarise_activity(_pilot(2, 6, seconds=0.3, prefix="kb"))
+    thin = summarise_activity(_pilot(1, 3, seconds=12.0, prefix="kc"))
+    sustained_ok = _sustained([4.0] * 75, prefix="kd")
+    sustained_thin = _sustained([4.0] * 50, prefix="ke")
+    return [
+        plan_seconds_per_candidate(ok, judging_mode="unaided_human",
+                                   candidate_source="actual_diagnosis"),
+        plan_seconds_per_candidate(fast, judging_mode="unaided_human"),
+        plan_seconds_per_candidate(thin, judging_mode="unaided_human"),
+        plan_seconds_per_candidate(ok, judging_mode="assisted_rehearsal"),
+        sustained_plan(sustained_ok, summarise_activity(sustained_ok),
+                       judging_mode="unaided_human",
+                       candidate_source="actual_diagnosis"),
+        sustained_plan(sustained_thin, summarise_activity(sustained_thin),
+                       judging_mode="unaided_human",
+                       candidate_source="actual_diagnosis"),
+    ]
+
+
+def test_모든_상태가_계약대로_항목을_담는다():
+    seen = set()
+    for plan in _plan_states():
+        seen.add(plan["status"])
+        assert missing_plan_keys(plan) == [], (plan["status"],
+                                              missing_plan_keys(plan))
+    # 계약에 적힌 상태를 전부 만들어 봤는가 — 빠뜨리면 검사가 무의미하다.
+    assert seen == set(PLAN_KEYS), seen ^ set(PLAN_KEYS)
+
+
+def test_모르는_상태는_계약이_비어_있다():
+    """계약에 없는 상태를 만들면 검사가 조용히 통과하면 안 된다."""
+    assert missing_plan_keys({"status": "없는상태"}) == []
+    assert "없는상태" not in PLAN_KEYS

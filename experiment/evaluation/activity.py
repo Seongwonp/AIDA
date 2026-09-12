@@ -581,6 +581,30 @@ def provenance_warnings(summary: ActivitySummary) -> list[str]:
     return warnings
 
 
+# ── 보고서가 읽는 항목 (docs/sustained-pilot-protocol.md) ──────────────────
+#
+# **상태마다 담기는 것이 다르다.** 보고서가 없는 키를 꺼내면 사람이 판정을
+# 끝낸 **직후에** 죽는다 — 실제로 두 번 그랬다(timing4 이름 불일치, timing5
+# `p75_basis` 누락). 보고서는 `.get`으로 읽고, 계약은 여기서 검사로 고정한다.
+PLAN_KEYS = {
+    "ok": ("mean_seconds", "median_seconds", "p75_seconds", "p75_basis",
+           "s_plan_seconds", "s_plan_basis", "s_plan_bound",
+           "adoption_blocked", "adoption_note", "judging_mode",
+           "judged_candidates"),
+    "insufficient_pilot_data": ("reason", "minimum_sessions",
+                                "minimum_candidates", "minimum_basis"),
+    "implausible_for_human_judging": ("reason", "provenance_warnings", "basis"),
+    "not_unaided_human": ("reason", "judging_mode", "basis", "diagnostic_only"),
+    "insufficient_intervals": ("reason", "minimum_intervals", "minimum_basis",
+                               "intervals", "complete_intervals"),
+}
+
+
+def missing_plan_keys(plan: dict) -> list[str]:
+    """계약에 적힌 항목 중 빠진 것. **비어 있어야 한다.**"""
+    return [k for k in PLAN_KEYS.get(plan.get("status"), ()) if k not in plan]
+
+
 def usable_times(summary: ActivitySummary) -> list[float]:
     """시간 통계에 쓰는 값들 — **온전한 세션에서 판정을 끝낸 후보**의 활동 시간."""
     good = {r.session_id for r in summary.session_reports if r.complete}
@@ -948,6 +972,7 @@ def sustained_plan(events: list[dict], summary: ActivitySummary,
 
     if len(complete) < MIN_COMPLETE_INTERVALS:
         return {**base, "status": "insufficient_intervals",
+                "minimum_basis": base["minimum_basis"],
                 "reason": (f"완성된 구간이 {len(complete)}개다 "
                            f"(최소 {MIN_COMPLETE_INTERVALS}). 구간이 모자라면 "
                            "재표집이 변동을 못 담는다."),

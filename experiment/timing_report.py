@@ -231,7 +231,7 @@ def main() -> int:
         # **속도로는 도움 여부를 알 수 없다.** 명시적으로 적힌 것만 믿는다.
         print()
         print("  ！ 계획값을 내지 않습니다: " + plan["reason"])
-        print(f"  ({plan['basis']})")
+        print(f"  ({plan.get('basis', '')})")
         print("  이 기록은 계측·화면 흐름 확인용(진단)으로만 씁니다.")
     elif plan["status"] == "implausible_for_human_judging":
         # **자동 클릭 시간이 N으로 흘러가면 안 된다.**
@@ -239,17 +239,25 @@ def main() -> int:
         print("  ！ 사람이 판정한 기록으로 보이지 않습니다. N을 계산하지 않습니다.")
         for warning in plan["provenance_warnings"]:
             print(f"    - {warning}")
-        print(f"  ({plan['basis']})")
+        print(f"  ({plan.get('basis', '')})")
     elif plan["status"] != "ok":
-        print(f"  → N을 계산하지 않습니다: {plan['reason']}")
-        print(f"  최소 기준: 온전한 세션 {plan['minimum_sessions']}개, "
-              f"판정 후보 {plan['minimum_candidates']}개")
-        print(f"  ({plan['minimum_basis']})")
+        print(f"  → N을 계산하지 않습니다: {plan.get('reason', plan['status'])}")
+        # **`.get`으로 읽는다.** 상태마다 담기는 항목이 달라, 없는 키를 꺼내면
+        # 사람이 판정을 끝낸 **직후에** 보고서가 죽는다. 실제로 두 번 그랬다
+        # (timing4 이름 불일치, timing5 `p75_basis` 누락).
+        if plan.get("minimum_sessions") is not None:
+            print(f"  최소 기준: 온전한 세션 {plan['minimum_sessions']}개, "
+                  f"판정 후보 {plan['minimum_candidates']}개")
+        if plan.get("minimum_intervals") is not None:
+            print(f"  최소 기준: 완성된 구간 {plan['minimum_intervals']}개")
+        if plan.get("minimum_basis"):
+            print(f"  ({plan['minimum_basis']})")
     else:
         print(f"  평균 {plan['mean_seconds']:.2f}초 / "
               f"중앙값 {plan['median_seconds']:.2f}초")
-        print(f"  P75 {plan['p75_seconds']:.2f}초 — {plan['p75_basis']}")
-        print(f"  s_plan {plan['s_plan_seconds']:.2f}초 — {plan['s_plan_basis']}")
+        print(f"  P75 {plan['p75_seconds']:.2f}초 — {plan.get('p75_basis', '')}")
+        print(f"  s_plan {plan['s_plan_seconds']:.2f}초 — "
+              f"{plan.get('s_plan_basis', '')}")
 
         if plan["adoption_blocked"]:
             print()
@@ -314,8 +322,8 @@ def main() -> int:
                   f"  {row['first']:>3}~{row['last']:<3} 판정 없음{mark}")
         if "change_pct" in plan:
             print(f"  첫 구간 대비 마지막 구간: {plan['change_pct']:+.1f}%")
-        print(f"  완성된 구간 {plan['complete_intervals']}개 "
-              f"(최소 {plan['minimum_intervals']})")
+        print(f"  완성된 구간 {plan.get('complete_intervals', 0)}개 "
+              f"(최소 {plan.get('minimum_intervals', '?')})")
 
     # ── 세션별 속도와 anchor ────────────────────────────────────────────────
     good = [r for r in summary.session_reports if r.complete]
