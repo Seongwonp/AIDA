@@ -219,7 +219,13 @@ def main() -> int:
     print(f"중복 이벤트 {summary.duplicate_events}건, "
           f"빠진 순번 {summary.missing_sequences}개")
     print()
-    print(f"timing_usable = {summary.timing_usable}")
+    if args.sustained:
+        # **세션 기준 판정을 그대로 찍으면 틀린 말이 된다.** 지속 판정은 세션이
+        # 하나인 것이 정상이고, 표본 조건은 구간이 본다.
+        print(f"표본 조건(구간 기준) = {plan.get('sample_ok', False)}"
+              f"  — 세션 기준 timing_usable은 지속 판정에 안 쓴다")
+    else:
+        print(f"timing_usable = {summary.timing_usable}")
 
     if plan["status"] == "not_unaided_human":
         # **속도로는 도움 여부를 알 수 없다.** 명시적으로 적힌 것만 믿는다.

@@ -1012,3 +1012,25 @@ def test_입력이_없으면_예산을_안_만든다():
     assert block_budget(0, 3, 100, 4.0)["budget"] is None
     assert block_budget(10800, 0, 100, 4.0)["budget"] is None
     assert block_budget(10800, 3, 100, float("inf"))["budget"] is None
+
+
+def test_지속_계획값이_보고에_필요한_항목을_다_준다():
+    """보고서가 KeyError로 죽었던 자리. **판정 직후에 터졌다.**"""
+    rows = _sustained([4.0] * 75, prefix="p")
+    got = sustained_plan(rows, summarise_activity(rows),
+                         judging_mode="unaided_human",
+                         candidate_source="actual_diagnosis")
+    for key in ("mean_seconds", "median_seconds", "p75_seconds", "p75_basis",
+                "s_plan_seconds", "s_plan_basis", "s_plan_bound",
+                "adoption_blocked", "adoption_note", "judged_candidates",
+                "sample_ok", "intervals", "complete_intervals"):
+        assert key in got, key
+
+
+def test_지속_판정은_세션_하나여도_표본이_된다():
+    """세션 기준 timing_usable은 거짓이지만 구간 기준으로는 충분하다."""
+    rows = _sustained([4.0] * 75, prefix="q")
+    summary = summarise_activity(rows)
+    assert summary.timing_usable is False        # 세션이 하나
+    assert sustained_plan(rows, summary, judging_mode="unaided_human",
+                          candidate_source="actual_diagnosis")["status"] == "ok"

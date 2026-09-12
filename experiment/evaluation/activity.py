@@ -961,6 +961,12 @@ def sustained_plan(events: list[dict], summary: ActivitySummary,
         "mean_seconds": gate["mean_seconds"],
         "median_seconds": gate["median_seconds"],
         "p75_seconds": gate["p75_seconds"],
+        "p75_basis": gate["p75_basis"],
+        "s_plan_bound": gate["s_plan_bound"],
+        # **지속 판정의 표본 조건은 세션이 아니라 구간이다.** `timing_usable`은
+        # 세션 기준이라 여기서는 틀린 말을 한다.
+        "sample_ok": True,
+        "judged_candidates": gate["judged_candidates"],
         "s_plan_seconds": bootstrap_mean_upper_by_interval(
             reports, seed=seed, confidence=0.95),
         "s_plan_basis": ("후보당 평균 시간의 부트스트랩 95% 상한(**구간** 단위 "
