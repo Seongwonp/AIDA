@@ -1,50 +1,102 @@
 # AIDA 작업 안내
 
-## 현재 인수인계 — 2026-09-09
+## 현재 상태 — 2026-09-12
 
-사용자는 데스크탑에서 고도화 작업을 진행하고, 완료 후 별도로 재평가받을 예정이다. 현재 계획은 `docs/25-advancement-roadmap.md`이며 **R1부터 구현·검증한다.** 계획 커밋은 `9c02a9f`다. 이후 변경이 있으면 실제 코드와 진행 상태를 먼저 확인하고 이미 끝난 작업을 반복하지 않는다.
+> **`git pull` 직후 이것부터 읽는다.** 자세한 것은
+> [`docs/HANDOFF_2026-09-12.md`](docs/HANDOFF_2026-09-12.md).
 
-루트 CLAUDE.md는 이번 인수인계에서 새로 만들었다. `docs/20-local-claude-handoff.md`는 과거 OBB 작업 기록이므로 현재 실행 지시로 사용하지 않는다.
+**시간 파일럿 다섯 번(timing1~5)을 끝냈고, 남은 것은 사용자가 `D`·`T`를 정해
+N을 확정하는 것뿐이다.**
+
+| | |
+|---|---|
+| 마지막 커밋 | `053c02a3` |
+| 계획값 | `s_plan = 5.02초` (timing5, 120건 연속 판정) |
+| **미정** | **`D`(데이터셋 수) · `T`(시간 상한) · `N` · `Δ`** |
+
+### 노트북에서 이어받을 때 — **먼저 알아야 할 것**
+
+**`backend/app/data/uploads/`는 `.gitignore` 대상이라 `git pull`로 안 따라온다.**
+파일럿 기록(timing1~5)과 사용자 데이터셋 5개가 전부 거기 있다.
+
+| 하려는 것 | 되는가 |
+|---|---|
+| 문서 읽기, 코드 수정, 검사 실행 | **된다** |
+| timing5 기록으로 N 계산 | **안 된다** — 데스크탑에서 하거나 폴더를 옮겨야 한다 |
+| 새 파일럿 만들기 | 개발 데이터(`experiment/data/`)와 가중치(`experiment/runs/`)도 gitignore라 **안 된다** |
+
+즉 **노트북에서는 문서·코드 작업만** 하고, 파일럿 실행과 N 계산은 데스크탑에서
+한다.
+
+### 지금 할 일
+
+1. 사용자에게 **`D`(최종 평가 데이터셋 수)와 `T`(전체 활동 시간 상한, 분)** 를
+   받는다.
+2. 데스크탑에서 아래를 돌린다. **`3`과 `180` 자리에 받은 숫자를 넣는다** —
+   PowerShell에서 `<D>` 같은 꺾쇠를 그대로 두면 파서 오류가 난다.
+
+```
+./experiment/venv/Scripts/python.exe experiment/timing_report.py --dataset ffffffffff07 --evaluation timing5 --sustained --sustained-block 120 --datasets 3 --total-minutes 180 --reviewed
+```
+
+3. **`--reviewed`는 확인 버튼이 아니다.** 구간별 속도와 anchor 결과를 사람이
+   보고 받아들였다는 표시다.
+4. N이 나오면 **Δ를 사용자가 고르고**, `D`·`T`·`N`·`Δ`를 **최종 평가 결과
+   열람 전에 별도 커밋으로 고정**한다.
+
+### 넘지 말아야 할 선
+
+- **관측한 지속 한계는 120건이다.** 1000건을 이어서 할 수 있다는 근거가 아니다.
+- **실제 후보에는 정답이 없다.** accuracy를 계산하지 않는다.
+- anchor는 **주의력 가드레일**이지 AIDA의 효능이 아니다.
+- **품질 허용 기준은 사전 등록돼 있지 않다.** 결과를 보고 만들지 않는다.
+- 판정자가 한 명이고 다섯 번째다. **외부 사용자 속도로 일반화하지 않는다.**
+- `s_plan`은 **보수적 참고값**이지 확률 보장이 아니다.
+
+### 파일럿 원본을 지우거나 고치지 않는다
+
+`uploads/ffffffffff01`~`07`의 snapshot·adjudications·activity·metadata·
+answer key. 44개 파일의 SHA-256이 인계 문서에 있다.
 
 ## 먼저 읽을 문서
 
-1. `docs/25-advancement-roadmap.md` — 최신 우선순위, 단계별 완료·중단 조건
-2. `docs/review-model.md` — 기존 판정 키·저장·복원 규약
-3. `docs/testing-boundary.md` — 실제 검사 범위와 미검증 경계
-4. `docs/current-evidence.md` — 주장과 결과 근거
+1. [`docs/HANDOFF_2026-09-12.md`](docs/HANDOFF_2026-09-12.md) — **현재 상태와 다음 작업**
+2. `docs/sustained-pilot-protocol.md` — timing5 규약과 결과
+3. `docs/pilot-evaluation-plan.md` — 계측 계약, N·Δ 결정 절차
+4. `docs/testing-boundary.md` — 검사 경계와 미검증 항목
+5. `docs/21-next-plan.md` — BC~BN 절에 최근 경위
+6. `docs/25-advancement-roadmap.md` — 단계별 상태
 
-24번의 기존 A·B 완료 표시는 모든 저장 경로의 안정성을 증명하지 않는다. 최신 계획에서 추가 검증을 요구한다. 자연 발생 오류·외부 사용자 효과·실제 시간 절감도 아직 미검증이다.
-
-## 지금 할 일: R1 초기 조회에 의한 판정 덮어쓰기
-
-정적 검토에서 발견한 **위험 후보이며 아직 실행 재현하지 않았다.**
-
-- `frontend/src/components/ReviewQueue.tsx`: 초기 `getVerdicts(datasetId)` 응답이 도착하면 `setVerdicts(next)`를 실행한다. 응답 전에 사용자가 판정했을 때 신규 입력이 유지되는지 확인한다.
-- 실제 React 컴포넌트를 사용하는 검사에서 서버 조회를 지연시키고 사용자 판정 후 이전 응답을 돌려준다. 순수 함수만 호출하는 검사로 대체하지 않는다.
-- 결함이 재현되면 먼저 실패하는 검사를 확보한 뒤 최소 수정한다. 초기 로딩 중 판정 제한 또는 변경 버전 확인 등 기존 동작에 맞는 방식을 선택하고 이유를 기록한다.
-- 조회 성공·실패, 지연 중 입력, 새로고침 후 복원과 CSV의 판정 일치를 확인한다. 재현되지 않으면 조건과 결과를 기록하고 결함을 만들어내지 않는다.
-
-R1 완료 후 최신 계획 순서대로 R2(연속 저장 순서), R3~R5(복원·파일 손상·재진단 수명), R6(실제 화면 흐름 CI)을 진행한다. 작업 단위별로 마무리하고, 장기 계획 전체를 한 번에 구현하지 않는다. 비용이나 필수 정보 때문에 막히면 완료된 범위와 다음 작업을 명확히 남긴다.
-
-후속 검토 위치:
-
-- `frontend/src/components/reviewQueueLogic.ts`
-- `frontend/src/components/reviewQueueLogic.test.ts`
-- `frontend/src/api.ts`
-- `backend/app/routers/upload.py`의 판정 GET/PUT
-- `backend/tests/test_verdicts.py`
-
-현재 PUT은 판정 전체를 파일에 덮어쓴다. 요청 순서 역전, 빈 서버 응답과 오래된 로컬 사본, 파일 손상을 각각 구분해 검사한다. 원자적 파일 교체만으로 요청 순서 문제까지 해결됐다고 판단하지 않는다.
+`docs/20-local-claude-handoff.md`는 과거 OBB 작업 기록이므로 **현재 실행 지시로
+쓰지 않는다.** R1~R6(docs/25 1단계)은 **전부 끝났다** — 그 절을 지금 할 일로
+읽지 않는다.
 
 ## 환경과 검증
 
 먼저 `git status`와 현재 브랜치를 확인한다. 사용자의 미커밋 변경은 보존한다. 최신 변경 수신은 `git pull --ff-only`를 사용하며 충돌을 강제 덮어쓰지 않는다.
 
-데스크탑의 실제 환경을 확인한다. 문서상 Python 환경은 `backend/venv`와 `experiment/venv`로 분리되어 있다. 경로나 설치 여부를 추측하지 않는다. 이번 계획 작성 환경에서는 프로젝트 가상환경과 npm을 찾지 못해 테스트를 재실행하지 못했다. 문서의 테스트 수를 이번 실행 결과로 보고하지 않는다.
+Python 환경은 **둘로 나뉘어 있다.** 섞으면 없는 패키지를 찾게 된다.
+
+| | 무엇이 있나 |
+|---|---|
+| `backend/venv` | FastAPI. **torch 없음** |
+| `experiment/venv` | torch·ultralytics. **FastAPI 없음** |
+
+`experiment/`의 스크립트와 `evaluation/` 모듈은 `experiment/venv`로 돌린다.
+경로나 설치 여부를 추측하지 않고 먼저 확인한다. **문서에 적힌 검사 수를 이번
+실행 결과로 보고하지 않는다** — 직접 돌려 보고 그 숫자를 쓴다.
+
+데스크탑 기준 최근 통과 수는 experiment 256 · backend 252 · frontend 176이다.
 
 프론트 변경 시 `frontend`에서 관련 검사와 `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`를 실행한다. 백엔드 변경 시 해당 가상환경으로 `backend`의 pytest를 실행한다. 화면 통합 검사 도구가 없으면 기존 구성을 확인한 뒤 필요한 최소 구성을 추가한다. 실제 브라우저 확인과 자동 테스트 결과를 구분한다.
 
-R1~R6는 무거운 모델 학습이 필요 없는 작업이다. 가짜 진단 결과로 검사한 것을 실제 모델 추론 검증으로 표현하지 않는다.
+**가짜 진단 결과로 검사한 것을 실제 모델 추론 검증으로 표현하지 않는다.**
+파일럿 후보에는 두 종류가 있고 섞어 읽으면 안 된다 — `injected_synthetic`(라벨에
+오류를 주입한 것, 시간이 **하한**으로 나온다)과 `actual_diagnosis`(자를 돌려 나온
+실제 후보). 코드가 `candidate_source`로 구분하고 하한이면 N 채택을 막는다.
+
+**GPU는 파일럿 후보를 만들 때만 쓴다**(추론 1분 미만, 학습 없음). 그 외에는
+필요 없다.
 
 ## 사용자 작업 원칙
 
