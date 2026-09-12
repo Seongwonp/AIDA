@@ -16,9 +16,10 @@ import sys
 from pathlib import Path
 
 import config
-from evaluation.activity import (budget_from_pilot, delta_scenarios,
+from evaluation.activity import (INTERVAL_SIZE, block_budget,
+                                 budget_from_pilot, delta_scenarios,
                                  plan_seconds_per_candidate, read_events,
-                                 summarise_activity)
+                                 summarise_activity, sustained_plan)
 
 
 def load(dataset_id: str, evaluation_id: str) -> list[dict]:
@@ -149,6 +150,14 @@ def main() -> int:
                         help="최종 평가의 데이터셋 수 D (아직 미정이면 비워 둔다)")
     parser.add_argument("--total-minutes", type=float,
                         help="전체 활동 시간 상한 T, 분 (아직 미정이면 비워 둔다)")
+    parser.add_argument("--sustained", action="store_true",
+                        help="지속 판정 기록으로 읽는다. 재표집 단위가 "
+                             "세션이 아니라 구간이 된다")
+    parser.add_argument("--interval", type=int, default=INTERVAL_SIZE,
+                        help="구간 크기. **실행 전에 고정한다**")
+    parser.add_argument("--sustained-block", type=int,
+                        help="실제로 끊김 없이 판정한 건수 B. 주면 "
+                             "블록 반복 방식으로 N을 낸다")
     parser.add_argument("--reviewed", action="store_true",
                         help="세션별 속도 변화와 anchor 결과를 사람이 "
                              "보고 받아들였다는 표시. 이것 없이는 N을 "
@@ -177,8 +186,21 @@ def main() -> int:
     for dataset, evaluation in pilots:
         events += load(dataset, evaluation)
     summary = summarise_activity(events)
-    plan = plan_seconds_per_candidate(summary, judging_mode=mode,
-                                      candidate_source=source)
+    if args.sustained:
+        # **지속 판정은 세션이 하나인 것이 정상이다.** 재표집 단위가 구간으로
+        # 바뀐다(docs/sustained-pilot-protocol.md).
+        holds = {}
+        for e in events:
+            if e.get("event") == "verdict_set":
+                cid = e.get("canonical_candidate_id")
+                if cid:
+                    holds[cid] = e.get("meta", {}).get("verdict")
+        plan = sustained_plan(events, summary, judging_mode=mode,
+                              candidate_source=source, size=args.interval,
+                              holds_by_candidate=holds)
+    else:
+        plan = plan_seconds_per_candidate(summary, judging_mode=mode,
+                                          candidate_source=source)
     data = summary.as_dict()
 
     print("블록: " + ", ".join(f"{d}:{e}" for d, e in pilots))
@@ -248,8 +270,20 @@ def main() -> int:
             if factor:
                 print()
                 print(f"  안전계수 {factor}배 → 후보당 {planned:.2f}초로 계획")
-            n = budget_from_pilot(args.total_minutes * 60, args.datasets,
-                                  planned)
+            if args.sustained and args.sustained_block:
+                # **블록을 반복하는 것만 외삽한다.** 한 시간을 쉬지 않고
+                # 같은 속도로 간다고 가정하지 않는다.
+                got = block_budget(args.total_minutes * 60, args.datasets,
+                                   args.sustained_block, planned)
+                print()
+                print(f"  블록 {got['sustained_block']}건 × "
+                      f"{got['seconds_per_block']}초 → 데이터셋당 "
+                      f"{got['blocks_per_dataset']}블록")
+                print(f"  {got['note']}")
+                n = got["budget"]
+            else:
+                n = budget_from_pilot(args.total_minutes * 60, args.datasets,
+                                      planned)
             print()
             print(f"  D={args.datasets}, T={args.total_minutes}분 → N={n} "
                   f"(데이터셋마다, 총 {None if n is None else n * args.datasets}건)")
@@ -261,6 +295,21 @@ def main() -> int:
             print()
             print("  D와 T를 주면 N을 계산합니다 "
                   "(--datasets, --total-minutes). 지금은 둘 다 미정입니다.")
+
+    if args.sustained and plan.get("intervals"):
+        print()
+        print(f"구간별 ({plan['interval_size']}건씩, 판정 순서로 끊음):")
+        for row in plan["intervals"]:
+            mark = "" if row["complete"] else "  ← 반쪽 구간, 비교에서 뺌"
+            mean = row["mean_seconds"]
+            print(f"  {row['first']:>3}~{row['last']:<3} {row['judged']:>3}건  "
+                  f"{mean:5.2f}초  보류 {row['holds']}{mark}"
+                  if mean is not None else
+                  f"  {row['first']:>3}~{row['last']:<3} 판정 없음{mark}")
+        if "change_pct" in plan:
+            print(f"  첫 구간 대비 마지막 구간: {plan['change_pct']:+.1f}%")
+        print(f"  완성된 구간 {plan['complete_intervals']}개 "
+              f"(최소 {plan['minimum_intervals']})")
 
     # ── 세션별 속도와 anchor ────────────────────────────────────────────────
     good = [r for r in summary.session_reports if r.complete]

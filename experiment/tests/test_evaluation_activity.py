@@ -11,6 +11,10 @@ from evaluation.activity import (IDLE_THRESHOLD_SECONDS,
                                  budget_from_pilot, delta_scenarios,
                                  plan_seconds_per_candidate,
                                  provenance_warnings,
+                                 block_budget,
+                                 bootstrap_mean_upper_by_interval,
+                                 interval_reports, judged_in_order,
+                                 sustained_plan,
                                  read_events, summarise_activity)
 from evaluation.schema import ValidationError
 
@@ -809,3 +813,202 @@ def test_모르는_후보_출처는_거부한다():
         plan_seconds_per_candidate(
             summarise_activity(_pilot(2, 6, seconds=12.0, prefix="bad")),
             judging_mode="unaided_human", candidate_source="아무거나")
+
+
+# ── 지속 판정의 구간 분석 (docs/sustained-pilot-protocol.md) ────────────────
+#
+# **데이터를 만들기 전에 고정한다.** 구간을 어떻게 끊고 무엇을 재는지가 결과를
+# 본 뒤에 정해지면 그건 기준이 아니라 사후 설명이다.
+
+def _sustained(times, prefix="s", name="one"):
+    """한 세션에서 순서대로 판정한 기록. `times`는 후보당 초."""
+    events = [ev(0, "session_started")]
+    clock = 0.0
+    for i, seconds in enumerate(times):
+        events.append(ev(clock, "candidate_opened", f"{prefix}{i:03d}"))
+        clock += seconds
+        events.append(ev(clock, "verdict_set", f"{prefix}{i:03d}", verdict="hit"))
+    events.append(ev(clock, "session_ended"))
+    return session(*events, name=name)
+
+
+def test_판정_순서대로_구간을_끊는다():
+    """**시계가 아니라 작업량으로 끊는다** — 피로는 몇 번째 후보인가를 따라온다."""
+    rows = _sustained([2.0] * 60, prefix="a")
+    got = interval_reports(rows, summarise_activity(rows), size=25)
+
+    assert [r.index for r in got] == [1, 2, 3]
+    assert [(r.first, r.last) for r in got] == [(1, 25), (26, 50), (51, 60)]
+    assert [r.complete for r in got] == [True, True, False]
+
+
+def test_마지막_반쪽_구간은_비교에_안_쓴다():
+    """25건과 10건의 평균을 나란히 놓으면 뒤가 흔들려 보인다."""
+    rows = _sustained([2.0] * 25 + [9.0] * 10, prefix="b")
+    reports = interval_reports(rows, summarise_activity(rows), size=25)
+
+    assert reports[-1].complete is False
+    # 반쪽 구간이 느려도 상한 계산에서 빠진다.
+    assert bootstrap_mean_upper_by_interval(reports) is None   # 완성 구간 1개
+
+
+def test_구간별_손계산과_맞는다():
+    """1~25는 2초, 26~50은 6초, 51~75는 4초."""
+    rows = _sustained([2.0] * 25 + [6.0] * 25 + [4.0] * 25, prefix="c")
+    got = interval_reports(rows, summarise_activity(rows), size=25)
+
+    assert [round(r.mean_seconds, 2) for r in got] == [2.0, 6.0, 4.0]
+    assert all(r.judged == 25 and r.complete for r in got)
+
+
+def test_되돌아본_판정은_처음_자리로_센다():
+    """같은 후보를 다시 판정해도 순서가 밀리면 안 된다."""
+    events = [ev(0, "session_started")]
+    for i in range(3):
+        events.append(ev(i * 2.0, "candidate_opened", f"d{i}"))
+        events.append(ev(i * 2.0 + 2.0, "verdict_set", f"d{i}", verdict="hit"))
+    # 0번으로 되돌아가 다시 판정한다.
+    events.append(ev(7.0, "candidate_opened", "d0"))
+    events.append(ev(8.0, "verdict_set", "d0", verdict="miss"))
+    events.append(ev(8.0, "session_ended"))
+    rows = session(*events, name="back")
+
+    order = [c.canonical_candidate_id
+             for c in judged_in_order(rows, summarise_activity(rows))]
+    assert order == ["d0", "d1", "d2"]
+
+
+def test_보류를_구간별로_센다():
+    """판단을 미루는 빈도가 느는지 보려는 것이다."""
+    rows = _sustained([2.0] * 50, prefix="e")
+    summary = summarise_activity(rows)
+    holds = {f"e{i:03d}": "hold" for i in (30, 31, 32)}
+    got = interval_reports(rows, summary, size=25, holds_by_candidate=holds)
+
+    assert got[0].holds == 0
+    assert got[1].holds == 3
+    assert got[1].hold_rate == pytest.approx(3 / 25)
+
+
+# ── 구간 단위 재표집 ─────────────────────────────────────────────────────────
+
+def test_구간이_모자라면_상한을_안_만든다():
+    """둘이면 재표집 결과가 셋뿐이라 아무것도 말하지 않는다."""
+    rows = _sustained([2.0] * 50, prefix="f")
+    reports = interval_reports(rows, summarise_activity(rows), size=25)
+    assert len([r for r in reports if r.complete]) == 2
+    assert bootstrap_mean_upper_by_interval(reports) is None
+
+
+def test_구간이_셋이면_상한이_나온다():
+    rows = _sustained([3.0] * 75, prefix="g")
+    reports = interval_reports(rows, summarise_activity(rows), size=25)
+    # 모든 구간이 똑같으면 재표집해도 평균이 안 흔들린다.
+    assert bootstrap_mean_upper_by_interval(reports) == pytest.approx(3.0)
+
+
+def test_후반이_느려지면_상한이_평균보다_크다():
+    """피로. **임의 문턱 없이 변동이 값에 반영된다.**"""
+    rows = _sustained([2.0] * 25 + [4.0] * 25 + [8.0] * 25, prefix="h")
+    summary = summarise_activity(rows)
+    reports = interval_reports(rows, summary, size=25)
+
+    upper = bootstrap_mean_upper_by_interval(reports)
+    assert upper > summary.mean_seconds_per_candidate
+
+
+def test_후반이_빨라져도_상한이_평균보다_크다():
+    """숙련. 초반 느린 구간이 상한에 남는다 — 어느 방향이든 보수적이다."""
+    rows = _sustained([8.0] * 25 + [4.0] * 25 + [2.0] * 25, prefix="i")
+    summary = summarise_activity(rows)
+    reports = interval_reports(rows, summary, size=25)
+
+    upper = bootstrap_mean_upper_by_interval(reports)
+    assert upper > summary.mean_seconds_per_candidate
+
+
+def test_변동이_클수록_상한이_커진다():
+    steady = _sustained([4.0] * 75, prefix="j")
+    swingy = _sustained([1.0] * 25 + [4.0] * 25 + [7.0] * 25, prefix="k")
+    # 평균은 둘 다 4초다.
+    a = bootstrap_mean_upper_by_interval(
+        interval_reports(steady, summarise_activity(steady), size=25))
+    b = bootstrap_mean_upper_by_interval(
+        interval_reports(swingy, summarise_activity(swingy), size=25))
+    assert b > a
+
+
+# ── 관문 ─────────────────────────────────────────────────────────────────────
+
+def test_지속_계획값도_판정_방식_관문을_지난다():
+    rows = _sustained([4.0] * 75, prefix="l")
+    got = sustained_plan(rows, summarise_activity(rows),
+                         judging_mode="assisted_rehearsal",
+                         candidate_source="actual_diagnosis")
+    assert got["status"] == "not_unaided_human"
+    assert got["s_plan_seconds"] is None
+    # 구간 정보는 진단용으로 그대로 준다.
+    assert got["complete_intervals"] == 3
+
+
+def test_주입_후보면_채택을_막는다():
+    rows = _sustained([4.0] * 75, prefix="m")
+    got = sustained_plan(rows, summarise_activity(rows),
+                         judging_mode="unaided_human",
+                         candidate_source="injected_synthetic")
+    assert got["adoption_blocked"] is True
+
+
+def test_구간이_모자라면_이유를_말한다():
+    rows = _sustained([4.0] * 50, prefix="n")
+    got = sustained_plan(rows, summarise_activity(rows),
+                         judging_mode="unaided_human",
+                         candidate_source="actual_diagnosis")
+    assert got["status"] == "insufficient_intervals"
+    assert "완성된 구간이 2개" in got["reason"]
+    assert got["s_plan_seconds"] is None
+
+
+def test_조건을_다_채우면_구간_상한을_낸다():
+    rows = _sustained([2.0] * 25 + [4.0] * 25 + [6.0] * 25, prefix="o")
+    summary = summarise_activity(rows)
+    got = sustained_plan(rows, summary, judging_mode="unaided_human",
+                         candidate_source="actual_diagnosis")
+
+    assert got["status"] == "ok"
+    assert got["adoption_blocked"] is False
+    assert got["s_plan_seconds"] > got["mean_seconds"]
+    assert got["first_interval_mean"] == pytest.approx(2.0)
+    assert got["last_interval_mean"] == pytest.approx(6.0)
+    assert got["change_pct"] == pytest.approx(200.0)
+    assert "구간" in got["s_plan_basis"]
+
+
+# ── 블록 구조 예산 ───────────────────────────────────────────────────────────
+
+def test_블록을_반복하는_것만_외삽한다():
+    """**한 시간을 쉬지 않고 간다고 가정하지 않는다.**
+
+    3시간·3데이터셋, 100건을 이어서 판정했고 후보당 4초라면
+    블록당 400초, 데이터셋당 3600초 → 9블록 → N=900.
+    """
+    got = block_budget(10800, 3, 100, 4.0)
+    assert got["status"] == "ok"
+    assert got["seconds_per_block"] == 400.0
+    assert got["blocks_per_dataset"] == 9
+    assert got["budget"] == 900
+
+
+def test_블록_수가_결과에_드러난다():
+    """20블록이 필요하다면 그것이 현실적인지 사람이 보고 판단한다."""
+    got = block_budget(10800, 3, 25, 5.0)
+    assert got["blocks_per_dataset"] == 28
+    assert got["budget"] == 700
+
+
+def test_입력이_없으면_예산을_안_만든다():
+    assert block_budget(10800, 3, 100, None)["budget"] is None
+    assert block_budget(10800, 3, 0, 4.0)["budget"] is None
+    assert block_budget(0, 3, 100, 4.0)["budget"] is None
+    assert block_budget(10800, 0, 100, 4.0)["budget"] is None
+    assert block_budget(10800, 3, 100, float("inf"))["budget"] is None

@@ -91,8 +91,10 @@ GPU 수치를 CI에서 못 재는 대신, **그 수치를 만든 규칙이 조�
   검사하지만(jsdom + Testing Library) `DatasetUpload`·`RulerCard`·`MethodCard`는
   아직 순수 함수와 눈으로 본 것뿐이다.
 
-> **시간 파일럿의 현재 상태와 다음 작업**:
-> [HANDOFF_2026-09-10.md](HANDOFF_2026-09-10.md).
+> **시간 파일럿의 현재 상태**: [HANDOFF_2026-09-10.md](HANDOFF_2026-09-10.md).
+> **다음 작업(지속 판정)의 규약**:
+> [sustained-pilot-protocol.md](sustained-pilot-protocol.md) — 성공 기준과
+> 분석법을 데이터 만들기 전에 고정했다.
 
 ## 가림 판정이 아직 아닌 것
 

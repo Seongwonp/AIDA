@@ -581,13 +581,37 @@ def provenance_warnings(summary: ActivitySummary) -> list[str]:
     return warnings
 
 
-def _why_unusable(summary: ActivitySummary) -> str:
+def usable_times(summary: ActivitySummary) -> list[float]:
+    """시간 통계에 쓰는 값들 — **온전한 세션에서 판정을 끝낸 후보**의 활동 시간."""
+    good = {r.session_id for r in summary.session_reports if r.complete}
+    return [c.active_seconds for c in summary.per_candidate
+            if c.judged and c.session_id in good]
+
+
+def sample_ok(summary: ActivitySummary, *, require_sessions: bool = True) -> bool:
+    """표본이 시간 통계를 낼 만한가.
+
+    `require_sessions`는 **재표집 단위가 세션일 때만** 참이다. 지속 판정은
+    세션이 하나인 것이 정상이고(끊지 않고 이어서 하는 것이 측정 대상), 거기서는
+    구간이 재표집 단위가 된다(docs/sustained-pilot-protocol.md).
+    """
+    ok = (len(usable_times(summary)) >= MIN_JUDGED_CANDIDATES
+          and summary.duplicate_events == 0
+          and summary.missing_sequences == 0)
+    if require_sessions:
+        ok = ok and summary.sessions_with_judgements >= MIN_COMPLETE_SESSIONS
+    return ok
+
+
+def _why_unusable(summary: ActivitySummary,
+                  require_sessions: bool = True) -> str:
     reasons = []
-    if summary.sessions_with_judgements < MIN_COMPLETE_SESSIONS:
+    if (require_sessions
+            and summary.sessions_with_judgements < MIN_COMPLETE_SESSIONS):
         reasons.append(f"판정이 든 세션이 {summary.sessions_with_judgements}개다 "
                        f"(최소 {MIN_COMPLETE_SESSIONS}). 열고 닫기만 한 세션은 "
                        "재표집할 것이 없다")
-    if summary.judged_candidates < MIN_JUDGED_CANDIDATES:
+    if len(usable_times(summary)) < MIN_JUDGED_CANDIDATES:
         reasons.append(f"판정한 후보가 {summary.judged_candidates}개다 "
                        f"(최소 {MIN_JUDGED_CANDIDATES})")
     if summary.duplicate_events:
@@ -599,7 +623,8 @@ def _why_unusable(summary: ActivitySummary) -> str:
 
 def plan_seconds_per_candidate(summary: ActivitySummary, seed: int = 0,
                               judging_mode: str | None = None,
-                              candidate_source: str | None = None) -> dict:
+                              candidate_source: str | None = None,
+                              require_sessions: bool = True) -> dict:
     """N 계획에 쓸 후보당 시간값.
 
     **P75는 계획값이 아니다.** P75는 "후보 하나가 이보다 오래 걸릴 확률이 25%"를
@@ -645,10 +670,10 @@ def plan_seconds_per_candidate(summary: ActivitySummary, seed: int = 0,
                       "증명되지는 않는다 — 못 한 것만 걸러낸다."),
         }
 
-    if not summary.timing_usable:
+    if not sample_ok(summary, require_sessions=require_sessions):
         return {
             "status": "insufficient_pilot_data",
-            "reason": _why_unusable(summary),
+            "reason": _why_unusable(summary, require_sessions),
             "complete_sessions": summary.complete_sessions,
             "sessions_with_judgements": summary.sessions_with_judgements,
             "judged_candidates": summary.judged_candidates,
@@ -757,3 +782,225 @@ def delta_scenarios(budget: int | None) -> list[dict]:
         {"name": "D", "rule": "ROI 환산 최소 기준", "delta": None,
          "note": "검수 인건비와 오류 누락 비용이 있어야 계산된다 — 둘 다 없다"},
     ]
+
+
+# ── 지속 판정의 구간 분석 (docs/sustained-pilot-protocol.md) ────────────────
+#
+# timing1~4는 짧은 묶음이라 **세션**을 재표집 단위로 썼다. 지속 판정은 세션이
+# 하나이므로 그 방식을 못 쓴다. 대신 **판정 순서를 25건씩 끊어** 그 구간을
+# 단위로 삼는다.
+#
+# **순서로 끊는 이유**는 피로가 시계가 아니라 작업량을 따라오기 때문이다.
+# 화면을 열어 둔 시간이 아니라 "몇 번째 후보인가"가 기준이다.
+INTERVAL_SIZE = 25
+# 구간이 둘이면 재표집 결과가 셋뿐이라 아무것도 말하지 않는다(timing2에서
+# 세션으로 겪은 것과 같은 문제). **근거가 약한 운영 기준이다.**
+MIN_COMPLETE_INTERVALS = 3
+
+
+@dataclass
+class IntervalReport:
+    """판정 순서 한 구간. **끝까지 찬 구간만 비교에 쓴다.**"""
+    index: int                  # 1부터
+    first: int                  # 이 구간의 첫 후보 순번 (1부터)
+    last: int
+    judged: int
+    complete: bool              # 구간이 `INTERVAL_SIZE`만큼 찼는가
+    mean_seconds: float | None = None
+    median_seconds: float | None = None
+    holds: int = 0
+    hold_rate: float | None = None
+    seconds: list[float] = field(default_factory=list)
+
+    def as_dict(self) -> dict:
+        return {
+            "index": self.index, "first": self.first, "last": self.last,
+            "judged": self.judged, "complete": self.complete,
+            "mean_seconds": self.mean_seconds,
+            "median_seconds": self.median_seconds,
+            "holds": self.holds, "hold_rate": self.hold_rate,
+        }
+
+
+def judged_in_order(events: list[dict], summary: ActivitySummary) -> list[CandidateTime]:
+    """판정을 끝낸 후보를 **판정한 순서대로**.
+
+    `per_candidate`는 이름순이라 순서 정보가 없다. 구간은 순서로 끊으므로
+    기록에서 순서를 되살린다 — 같은 후보를 여러 번 판정했으면 **처음 판정한
+    자리**로 센다(그 뒤는 되돌아본 것이다).
+    """
+    seen: set[str] = set()
+    order: list[str] = []
+    for session in _sessions(dedupe(events)[0]):
+        for event in session:
+            if event.get("event") != "verdict_set":
+                continue
+            cid = event.get("canonical_candidate_id")
+            if cid and cid not in seen:
+                seen.add(cid)
+                order.append(cid)
+
+    by_id = {c.canonical_candidate_id: c for c in summary.per_candidate
+             if c.judged}
+    return [by_id[cid] for cid in order if cid in by_id]
+
+
+def interval_reports(events: list[dict], summary: ActivitySummary,
+                     size: int = INTERVAL_SIZE,
+                     holds_by_candidate: dict[str, str] | None = None,
+                     ) -> list[IntervalReport]:
+    """판정 순서를 `size`건씩 끊어 구간별로 잰다.
+
+    **마지막 반쪽 구간은 `complete=False`로 남긴다.** 보고는 하되 비교에는
+    쓰지 않는다 — 25건과 7건의 평균을 나란히 놓으면 뒤가 흔들려 보인다.
+    """
+    rows = judged_in_order(events, summary)
+    holds = holds_by_candidate or {}
+    reports = []
+    for start in range(0, len(rows), size):
+        chunk = rows[start:start + size]
+        seconds = [c.active_seconds for c in chunk]
+        held = sum(1 for c in chunk
+                   if holds.get(c.canonical_candidate_id) == "hold")
+        reports.append(IntervalReport(
+            index=start // size + 1,
+            first=start + 1, last=start + len(chunk),
+            judged=len(chunk), complete=len(chunk) == size,
+            mean_seconds=(sum(seconds) / len(seconds)) if seconds else None,
+            median_seconds=_percentile(seconds, 0.5),
+            holds=held,
+            hold_rate=(held / len(chunk)) if chunk else None,
+            seconds=seconds,
+        ))
+    return reports
+
+
+def bootstrap_mean_upper_by_interval(reports: list[IntervalReport],
+                                     confidence: float = 0.95,
+                                     iterations: int = 2000,
+                                     seed: int = 0) -> float | None:
+    """후보당 평균 시간의 보수적 상한. **재표집 단위가 구간이다.**
+
+    **임의 문턱이 필요 없다는 것이 이 방식의 요점이다.**
+
+    - 후반이 느려지면(피로) 느린 구간이 상한을 밀어 올린다 → 보수적
+    - 후반이 빨라지면(숙련) 초반 느린 구간이 상한에 남는다 → 보수적
+
+    어느 쪽이든 **변동이 클수록 계획값이 커진다.** "몇 % 이상 변하면 실패"를
+    정하지 않아도 변동이 값에 반영된다.
+
+    **확률 보장은 아니다.** 구간이 몇 개뿐이라 재표집 분포가 거칠고, 부트스트랩이
+    가정하는 "구간이 서로 교환 가능하다"는 것도 피로가 있으면 틀린다.
+    """
+    usable = [r.seconds for r in reports if r.complete and r.seconds]
+    if len(usable) < MIN_COMPLETE_INTERVALS:
+        return None
+
+    rng = random.Random(seed)
+    means = []
+    for _ in range(iterations):
+        drawn: list[float] = []
+        for _ in range(len(usable)):
+            drawn += rng.choice(usable)
+        if drawn:
+            means.append(sum(drawn) / len(drawn))
+    return _percentile(means, confidence)
+
+
+def sustained_plan(events: list[dict], summary: ActivitySummary,
+                   judging_mode: str | None = None,
+                   candidate_source: str | None = None,
+                   size: int = INTERVAL_SIZE, seed: int = 0,
+                   holds_by_candidate: dict[str, str] | None = None) -> dict:
+    """지속 판정 기록 → 구간별 결과와 계획값.
+
+    `plan_seconds_per_candidate`와 **관문은 같다**(판정 방식·후보 출처·중복·
+    순번). 다른 것은 재표집 단위와, **완성된 구간이 셋 이상이어야 한다**는
+    조건뿐이다.
+    """
+    reports = interval_reports(events, summary, size, holds_by_candidate)
+    complete = [r for r in reports if r.complete]
+    base = {
+        "intervals": [r.as_dict() for r in reports],
+        "complete_intervals": len(complete),
+        "interval_size": size,
+        "minimum_intervals": MIN_COMPLETE_INTERVALS,
+        "minimum_basis": ("근거가 약한 운영 기준이다. 구간이 둘이면 재표집 "
+                          "결과가 셋뿐이라 아무것도 말하지 않는다."),
+    }
+    if complete:
+        base["first_interval_mean"] = complete[0].mean_seconds
+        base["last_interval_mean"] = complete[-1].mean_seconds
+        if len(complete) > 1 and complete[0].mean_seconds:
+            base["change_pct"] = round(
+                (complete[-1].mean_seconds - complete[0].mean_seconds)
+                / complete[0].mean_seconds * 100, 1)
+
+    # 판정 방식·후보 출처·표본 관문은 기존 함수가 그대로 본다.
+    # **세션 조건은 안 건다.** 지속 판정은 세션이 하나인 것이 정상이고,
+    # 재표집 단위는 구간이다.
+    gate = plan_seconds_per_candidate(summary, seed=seed,
+                                      judging_mode=judging_mode,
+                                      candidate_source=candidate_source,
+                                      require_sessions=False)
+    if gate["status"] != "ok":
+        return {**base, **gate, "s_plan_seconds": None}
+
+    if len(complete) < MIN_COMPLETE_INTERVALS:
+        return {**base, "status": "insufficient_intervals",
+                "reason": (f"완성된 구간이 {len(complete)}개다 "
+                           f"(최소 {MIN_COMPLETE_INTERVALS}). 구간이 모자라면 "
+                           "재표집이 변동을 못 담는다."),
+                "s_plan_seconds": None}
+
+    return {
+        **base,
+        "status": "ok",
+        "judging_mode": judging_mode,
+        "candidate_source": candidate_source,
+        "mean_seconds": gate["mean_seconds"],
+        "median_seconds": gate["median_seconds"],
+        "p75_seconds": gate["p75_seconds"],
+        "s_plan_seconds": bootstrap_mean_upper_by_interval(
+            reports, seed=seed, confidence=0.95),
+        "s_plan_basis": ("후보당 평균 시간의 부트스트랩 95% 상한(**구간** 단위 "
+                         "재표집). 변동이 클수록 값이 커진다 — 임의 문턱 대신 "
+                         "변동을 값에 담는다. 확률 보장은 아니다."),
+        "adoption_blocked": gate["adoption_blocked"],
+        "adoption_note": gate["adoption_note"],
+    }
+
+
+def block_budget(total_seconds: float, datasets: int,
+                 sustained_candidates: int,
+                 s_plan_seconds: float | None) -> dict:
+    """**1시간 외삽을 하지 않는 N.**
+
+        블록당 소요 = B × s_plan        (B = 실제로 이어서 판정한 건수)
+        블록 수     = floor((T/D) / 블록당 소요)
+        N           = 블록 수 × B
+
+    산술적으로는 `(T/D)/s_plan`과 같지만 **가정이 다르다.** 외삽하는 것은
+    "관측한 블록을 반복한다"뿐이고, "한 시간을 쉬지 않고 같은 속도로 간다"가
+    아니다. 블록 사이에는 쉰다 — 세션 간 회복은 timing1~4에서 관측했다.
+
+    **블록 수가 결과에 드러난다.** 20블록이 필요하다면 그것이 현실적인지 사람이
+    보고 판단할 수 있다. 나눗셈 한 번으로 감춰지지 않는다.
+    """
+    if (not s_plan_seconds or s_plan_seconds <= 0
+            or not math.isfinite(s_plan_seconds)):
+        return {"status": "no_plan_value", "budget": None}
+    if datasets <= 0 or total_seconds <= 0 or sustained_candidates <= 0:
+        return {"status": "missing_input", "budget": None}
+
+    per_block = sustained_candidates * s_plan_seconds
+    blocks = int((total_seconds / datasets) // per_block)
+    return {
+        "status": "ok",
+        "sustained_block": sustained_candidates,
+        "seconds_per_block": round(per_block, 1),
+        "blocks_per_dataset": blocks,
+        "budget": blocks * sustained_candidates,
+        "note": ("관측한 블록을 반복한다는 가정이다. 블록 사이에는 쉰다. "
+                 "블록 수가 현실적인지는 사람이 판단한다."),
+    }
