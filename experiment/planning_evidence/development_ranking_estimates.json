@@ -1,0 +1,2777 @@
+{
+  "generator": "experiment/estimate_planning_inputs.py",
+  "truth": "injected (conditions/<condition>/injection_record.json)",
+  "scope": "KITTI 개발 데이터, 주입 오류 조건. 자연 오류 추정이 아니다.",
+  "layer": "기존 라벨 층(누락 후보 제외)",
+  "candidate_set": "AIDA가 지목한 후보만 — 못 잡은 주입 오류는 포함되지 않는다",
+  "pooling": "조건·구성을 건너 합치지 않는다",
+  "files": [
+    {
+      "file": "box_accuracy_verdicts.json",
+      "sha256": "96cda4abd8d1b9b3a291a041334490bc3bf407474511ad6d150ea4a0f8f13a1a",
+      "bytes": 11972,
+      "modified": "2026-08-31T18:05",
+      "nearest_commit_before_modified": "f5f654dc",
+      "configuration_tag": "(없음)",
+      "configuration": {
+        "classes": "Car (단일 클래스)",
+        "frames": "기본",
+        "ruler": "같은 구성의 clean 자",
+        "use_for_planning": "제한적 — 캐시에 조건 1개(width_m30)만 남아 있다"
+      },
+      "truth": "injected",
+      "dataset": "KITTI (개발)",
+      "conditions": 1,
+      "aida_auc_by_review_order_across_conditions": {
+        "n": 1,
+        "min": 0.9442,
+        "median": 0.9442,
+        "max": 0.9442
+      },
+      "aida_auc_by_severity_across_conditions": {
+        "n": 1,
+        "min": 0.9442,
+        "median": 0.9442,
+        "max": 0.9442
+      },
+      "class_id_order": "config.CLASS_NAMES 순서 (4클래스면 0=Car, 1=Van, 2=Pedestrian, 3=Cyclist)",
+      "aida_auc_by_class_within_condition": {},
+      "class_auc_min_per_side": 10,
+      "per_condition": {
+        "width_m30": {
+          "injected_type": "width",
+          "magnitude": -30,
+          "labelled_candidates": 148,
+          "injected_true": 107,
+          "hit_rate_against_injected_truth": 0.723,
+          "hit_rate_wilson95": [
+            0.6459,
+            0.7887
+          ],
+          "aida_auc_by_review_order": 0.9442,
+          "aida_auc_by_severity": 0.9442,
+          "missing_candidates_excluded": 1
+        }
+      }
+    },
+    {
+      "file": "box_accuracy_verdicts_mc.json",
+      "sha256": "da2ba077f4f6f8d2e4ccdd0302b92dab09d70c356608fadcd16c55d42504af66",
+      "bytes": 363485,
+      "modified": "2026-08-31T14:22",
+      "nearest_commit_before_modified": "92167510",
+      "configuration_tag": "_mc",
+      "configuration": {
+        "classes": "Car·Van·Pedestrian·Cyclist",
+        "frames": "기본",
+        "ruler": "같은 구성의 clean 자",
+        "use_for_planning": "참고 가능 — 제품과 같은 구성의 자"
+      },
+      "truth": "injected",
+      "dataset": "KITTI (개발)",
+      "conditions": 29,
+      "aida_auc_by_review_order_across_conditions": {
+        "n": 26,
+        "min": 0.7207,
+        "median": 0.8881,
+        "max": 1.0
+      },
+      "aida_auc_by_severity_across_conditions": {
+        "n": 26,
+        "min": 0.777,
+        "median": 0.9301,
+        "max": 1.0
+      },
+      "class_id_order": "config.CLASS_NAMES 순서 (4클래스면 0=Car, 1=Van, 2=Pedestrian, 3=Cyclist)",
+      "aida_auc_by_class_within_condition": {
+        "0": {
+          "n": 23,
+          "min": 0.8159,
+          "median": 0.9289,
+          "max": 0.9788
+        }
+      },
+      "class_auc_min_per_side": 10,
+      "per_condition": {
+        "width_m30": {
+          "injected_type": "width",
+          "magnitude": -30,
+          "labelled_candidates": 179,
+          "injected_true": 125,
+          "hit_rate_against_injected_truth": 0.6983,
+          "hit_rate_wilson95": [
+            0.6275,
+            0.7608
+          ],
+          "aida_auc_by_review_order": 0.8859,
+          "aida_auc_by_severity": 0.9417,
+          "missing_candidates_excluded": 3
+        },
+        "width_p30": {
+          "injected_type": "width",
+          "magnitude": 30,
+          "labelled_candidates": 188,
+          "injected_true": 128,
+          "hit_rate_against_injected_truth": 0.6809,
+          "hit_rate_wilson95": [
+            0.6112,
+            0.7433
+          ],
+          "aida_auc_by_review_order": 0.8266,
+          "aida_auc_by_severity": 0.9146,
+          "missing_candidates_excluded": 2
+        },
+        "height_m30": {
+          "injected_type": "height",
+          "magnitude": -30,
+          "labelled_candidates": 158,
+          "injected_true": 107,
+          "hit_rate_against_injected_truth": 0.6772,
+          "hit_rate_wilson95": [
+            0.6009,
+            0.7452
+          ],
+          "aida_auc_by_review_order": 0.9069,
+          "aida_auc_by_severity": 0.9522,
+          "missing_candidates_excluded": 4
+        },
+        "height_p30": {
+          "injected_type": "height",
+          "magnitude": 30,
+          "labelled_candidates": 163,
+          "injected_true": 105,
+          "hit_rate_against_injected_truth": 0.6442,
+          "hit_rate_wilson95": [
+            0.5681,
+            0.7136
+          ],
+          "aida_auc_by_review_order": 0.9051,
+          "aida_auc_by_severity": 0.9539,
+          "missing_candidates_excluded": 2
+        },
+        "rot_m15": {
+          "injected_type": "rotation",
+          "magnitude": -15,
+          "labelled_candidates": 171,
+          "injected_true": 123,
+          "hit_rate_against_injected_truth": 0.7193,
+          "hit_rate_wilson95": [
+            0.6477,
+            0.7813
+          ],
+          "aida_auc_by_review_order": 0.905,
+          "aida_auc_by_severity": 0.9281,
+          "missing_candidates_excluded": 2
+        },
+        "rot_p15": {
+          "injected_type": "rotation",
+          "magnitude": 15,
+          "labelled_candidates": 166,
+          "injected_true": 110,
+          "hit_rate_against_injected_truth": 0.6627,
+          "hit_rate_wilson95": [
+            0.5878,
+            0.7302
+          ],
+          "aida_auc_by_review_order": 0.869,
+          "aida_auc_by_severity": 0.9342,
+          "missing_candidates_excluded": 2
+        },
+        "width_m15": {
+          "injected_type": "width",
+          "magnitude": -15,
+          "labelled_candidates": 161,
+          "injected_true": 102,
+          "hit_rate_against_injected_truth": 0.6335,
+          "hit_rate_wilson95": [
+            0.5568,
+            0.704
+          ],
+          "aida_auc_by_review_order": 0.7207,
+          "aida_auc_by_severity": 0.777,
+          "missing_candidates_excluded": 2
+        },
+        "width_p15": {
+          "injected_type": "width",
+          "magnitude": 15,
+          "labelled_candidates": 154,
+          "injected_true": 96,
+          "hit_rate_against_injected_truth": 0.6234,
+          "hit_rate_wilson95": [
+            0.5447,
+            0.696
+          ],
+          "aida_auc_by_review_order": 0.762,
+          "aida_auc_by_severity": 0.8471,
+          "missing_candidates_excluded": 1
+        },
+        "height_m15": {
+          "injected_type": "height",
+          "magnitude": -15,
+          "labelled_candidates": 154,
+          "injected_true": 97,
+          "hit_rate_against_injected_truth": 0.6299,
+          "hit_rate_wilson95": [
+            0.5513,
+            0.7021
+          ],
+          "aida_auc_by_review_order": 0.8213,
+          "aida_auc_by_severity": 0.8914,
+          "missing_candidates_excluded": 2
+        },
+        "height_p15": {
+          "injected_type": "height",
+          "magnitude": 15,
+          "labelled_candidates": 163,
+          "injected_true": 114,
+          "hit_rate_against_injected_truth": 0.6994,
+          "hit_rate_wilson95": [
+            0.6251,
+            0.7645
+          ],
+          "aida_auc_by_review_order": 0.7966,
+          "aida_auc_by_severity": 0.8654,
+          "missing_candidates_excluded": 2
+        },
+        "rot_m7_5": {
+          "injected_type": "rotation",
+          "magnitude": -7.5,
+          "labelled_candidates": 165,
+          "injected_true": 113,
+          "hit_rate_against_injected_truth": 0.6848,
+          "hit_rate_wilson95": [
+            0.6104,
+            0.7508
+          ],
+          "aida_auc_by_review_order": 0.869,
+          "aida_auc_by_severity": 0.8764,
+          "missing_candidates_excluded": 2
+        },
+        "rot_p7_5": {
+          "injected_type": "rotation",
+          "magnitude": 7.5,
+          "labelled_candidates": 171,
+          "injected_true": 119,
+          "hit_rate_against_injected_truth": 0.6959,
+          "hit_rate_wilson95": [
+            0.6233,
+            0.7599
+          ],
+          "aida_auc_by_review_order": 0.8061,
+          "aida_auc_by_severity": 0.87,
+          "missing_candidates_excluded": 2
+        },
+        "trans_x_m15": {
+          "injected_type": "translation_x",
+          "magnitude": -15,
+          "labelled_candidates": 154,
+          "injected_true": 91,
+          "hit_rate_against_injected_truth": 0.5909,
+          "hit_rate_wilson95": [
+            0.512,
+            0.6654
+          ],
+          "aida_auc_by_review_order": 0.8857,
+          "aida_auc_by_severity": 0.9321,
+          "missing_candidates_excluded": 2
+        },
+        "trans_x_p15": {
+          "injected_type": "translation_x",
+          "magnitude": 15,
+          "labelled_candidates": 160,
+          "injected_true": 113,
+          "hit_rate_against_injected_truth": 0.7063,
+          "hit_rate_wilson95": [
+            0.6315,
+            0.7713
+          ],
+          "aida_auc_by_review_order": 0.8108,
+          "aida_auc_by_severity": 0.8927,
+          "missing_candidates_excluded": 2
+        },
+        "trans_y_m15": {
+          "injected_type": "translation_y",
+          "magnitude": -15,
+          "labelled_candidates": 183,
+          "injected_true": 130,
+          "hit_rate_against_injected_truth": 0.7104,
+          "hit_rate_wilson95": [
+            0.6409,
+            0.7712
+          ],
+          "aida_auc_by_review_order": 0.8994,
+          "aida_auc_by_severity": 0.9329,
+          "missing_candidates_excluded": 2
+        },
+        "trans_y_p15": {
+          "injected_type": "translation_y",
+          "magnitude": 15,
+          "labelled_candidates": 177,
+          "injected_true": 121,
+          "hit_rate_against_injected_truth": 0.6836,
+          "hit_rate_wilson95": [
+            0.6118,
+            0.7476
+          ],
+          "aida_auc_by_review_order": 0.8957,
+          "aida_auc_by_severity": 0.9388,
+          "missing_candidates_excluded": 2
+        },
+        "scale_m15": {
+          "injected_type": "scale",
+          "magnitude": -15,
+          "labelled_candidates": 150,
+          "injected_true": 92,
+          "hit_rate_against_injected_truth": 0.6133,
+          "hit_rate_wilson95": [
+            0.5335,
+            0.6875
+          ],
+          "aida_auc_by_review_order": 0.7841,
+          "aida_auc_by_severity": 0.858,
+          "missing_candidates_excluded": 2
+        },
+        "scale_p15": {
+          "injected_type": "scale",
+          "magnitude": 15,
+          "labelled_candidates": 158,
+          "injected_true": 106,
+          "hit_rate_against_injected_truth": 0.6709,
+          "hit_rate_wilson95": [
+            0.5943,
+            0.7393
+          ],
+          "aida_auc_by_review_order": 0.7669,
+          "aida_auc_by_severity": 0.8287,
+          "missing_candidates_excluded": 2
+        },
+        "scale_m30": {
+          "injected_type": "scale",
+          "magnitude": -30,
+          "labelled_candidates": 156,
+          "injected_true": 101,
+          "hit_rate_against_injected_truth": 0.6474,
+          "hit_rate_wilson95": [
+            0.5697,
+            0.718
+          ],
+          "aida_auc_by_review_order": 0.9642,
+          "aida_auc_by_severity": 0.9768,
+          "missing_candidates_excluded": 2
+        },
+        "scale_p30": {
+          "injected_type": "scale",
+          "magnitude": 30,
+          "labelled_candidates": 180,
+          "injected_true": 122,
+          "hit_rate_against_injected_truth": 0.6778,
+          "hit_rate_wilson95": [
+            0.6064,
+            0.7417
+          ],
+          "aida_auc_by_review_order": 0.9552,
+          "aida_auc_by_severity": 0.98,
+          "missing_candidates_excluded": 2
+        },
+        "missing_10": {
+          "injected_type": "missing",
+          "magnitude": 10,
+          "labelled_candidates": 70,
+          "injected_true": 0,
+          "hit_rate_against_injected_truth": 0.0,
+          "hit_rate_wilson95": [
+            0.0,
+            0.052
+          ],
+          "aida_auc_by_review_order": null,
+          "aida_auc_by_severity": null,
+          "missing_candidates_excluded": 18
+        },
+        "missing_20": {
+          "injected_type": "missing",
+          "magnitude": 20,
+          "labelled_candidates": 65,
+          "injected_true": 0,
+          "hit_rate_against_injected_truth": 0.0,
+          "hit_rate_wilson95": [
+            0.0,
+            0.0558
+          ],
+          "aida_auc_by_review_order": null,
+          "aida_auc_by_severity": null,
+          "missing_candidates_excluded": 55
+        },
+        "missing_30": {
+          "injected_type": "missing",
+          "magnitude": 30,
+          "labelled_candidates": 60,
+          "injected_true": 0,
+          "hit_rate_against_injected_truth": 0.0,
+          "hit_rate_wilson95": [
+            0.0,
+            0.0602
+          ],
+          "aida_auc_by_review_order": null,
+          "aida_auc_by_severity": null,
+          "missing_candidates_excluded": 79
+        },
+        "duplicate_10": {
+          "injected_type": "duplicate",
+          "magnitude": 10,
+          "labelled_candidates": 119,
+          "injected_true": 45,
+          "hit_rate_against_injected_truth": 0.3782,
+          "hit_rate_wilson95": [
+            0.2961,
+            0.4678
+          ],
+          "aida_auc_by_review_order": 0.9354,
+          "aida_auc_by_severity": 0.9459,
+          "missing_candidates_excluded": 2
+        },
+        "duplicate_20": {
+          "injected_type": "duplicate",
+          "magnitude": 20,
+          "labelled_candidates": 150,
+          "injected_true": 86,
+          "hit_rate_against_injected_truth": 0.5733,
+          "hit_rate_wilson95": [
+            0.4933,
+            0.6497
+          ],
+          "aida_auc_by_review_order": 0.9099,
+          "aida_auc_by_severity": 0.9186,
+          "missing_candidates_excluded": 2
+        },
+        "duplicate_30": {
+          "injected_type": "duplicate",
+          "magnitude": 30,
+          "labelled_candidates": 184,
+          "injected_true": 121,
+          "hit_rate_against_injected_truth": 0.6576,
+          "hit_rate_wilson95": [
+            0.5865,
+            0.7223
+          ],
+          "aida_auc_by_review_order": 0.8902,
+          "aida_auc_by_severity": 0.9015,
+          "missing_candidates_excluded": 2
+        },
+        "class_swap_10": {
+          "injected_type": "class_swap",
+          "magnitude": 10,
+          "labelled_candidates": 101,
+          "injected_true": 32,
+          "hit_rate_against_injected_truth": 0.3168,
+          "hit_rate_wilson95": [
+            0.2342,
+            0.4129
+          ],
+          "aida_auc_by_review_order": 0.9995,
+          "aida_auc_by_severity": 1.0,
+          "missing_candidates_excluded": 2
+        },
+        "class_swap_20": {
+          "injected_type": "class_swap",
+          "magnitude": 20,
+          "labelled_candidates": 134,
+          "injected_true": 70,
+          "hit_rate_against_injected_truth": 0.5224,
+          "hit_rate_wilson95": [
+            0.4384,
+            0.6052
+          ],
+          "aida_auc_by_review_order": 1.0,
+          "aida_auc_by_severity": 1.0,
+          "missing_candidates_excluded": 2
+        },
+        "class_swap_30": {
+          "injected_type": "class_swap",
+          "magnitude": 30,
+          "labelled_candidates": 170,
+          "injected_true": 104,
+          "hit_rate_against_injected_truth": 0.6118,
+          "hit_rate_wilson95": [
+            0.5368,
+            0.6818
+          ],
+          "aida_auc_by_review_order": 1.0,
+          "aida_auc_by_severity": 1.0,
+          "missing_candidates_excluded": 2
+        }
+      }
+    },
+    {
+      "file": "box_accuracy_verdicts_mc_cyclist_rich.json",
+      "sha256": "8e84147cc953d97192a10db7a9e3b2f605c08bb0a3035ad82cc6d26abd0e90b4",
+      "bytes": 450451,
+      "modified": "2026-09-03T10:07",
+      "nearest_commit_before_modified": "5a4fc27d",
+      "configuration_tag": "_mc_cyclist_rich",
+      "configuration": {
+        "classes": "Car·Van·Pedestrian·Cyclist",
+        "frames": "cyclist_rich",
+        "ruler": "같은 구성의 clean 자",
+        "use_for_planning": "참고 가능 — 제품과 같은 구성의 자"
+      },
+      "truth": "injected",
+      "dataset": "KITTI (개발)",
+      "conditions": 29,
+      "aida_auc_by_review_order_across_conditions": {
+        "n": 26,
+        "min": 0.7559,
+        "median": 0.8833,
+        "max": 1.0
+      },
+      "aida_auc_by_severity_across_conditions": {
+        "n": 26,
+        "min": 0.7558,
+        "median": 0.8833,
+        "max": 1.0
+      },
+      "class_id_order": "config.CLASS_NAMES 순서 (4클래스면 0=Car, 1=Van, 2=Pedestrian, 3=Cyclist)",
+      "aida_auc_by_class_within_condition": {
+        "0": {
+          "n": 24,
+          "min": 0.7546,
+          "median": 0.892,
+          "max": 1.0
+        },
+        "2": {
+          "n": 22,
+          "min": 0.6486,
+          "median": 0.7991,
+          "max": 1.0
+        },
+        "3": {
+          "n": 26,
+          "min": 0.6576,
+          "median": 0.8896,
+          "max": 1.0
+        }
+      },
+      "class_auc_min_per_side": 10,
+      "per_condition": {
+        "width_m30": {
+          "injected_type": "width",
+          "magnitude": -30,
+          "labelled_candidates": 220,
+          "injected_true": 147,
+          "hit_rate_against_injected_truth": 0.6682,
+          "hit_rate_wilson95": [
+            0.6035,
+            0.727
+          ],
+          "aida_auc_by_review_order": 0.9255,
+          "aida_auc_by_severity": 0.9255,
+          "missing_candidates_excluded": 1
+        },
+        "width_p30": {
+          "injected_type": "width",
+          "magnitude": 30,
+          "labelled_candidates": 226,
+          "injected_true": 144,
+          "hit_rate_against_injected_truth": 0.6372,
+          "hit_rate_wilson95": [
+            0.5727,
+            0.6971
+          ],
+          "aida_auc_by_review_order": 0.893,
+          "aida_auc_by_severity": 0.8928,
+          "missing_candidates_excluded": 1
+        },
+        "height_m30": {
+          "injected_type": "height",
+          "magnitude": -30,
+          "labelled_candidates": 197,
+          "injected_true": 122,
+          "hit_rate_against_injected_truth": 0.6193,
+          "hit_rate_wilson95": [
+            0.5498,
+            0.6842
+          ],
+          "aida_auc_by_review_order": 0.9296,
+          "aida_auc_by_severity": 0.9296,
+          "missing_candidates_excluded": 2
+        },
+        "height_p30": {
+          "injected_type": "height",
+          "magnitude": 30,
+          "labelled_candidates": 205,
+          "injected_true": 127,
+          "hit_rate_against_injected_truth": 0.6195,
+          "hit_rate_wilson95": [
+            0.5514,
+            0.6832
+          ],
+          "aida_auc_by_review_order": 0.9331,
+          "aida_auc_by_severity": 0.9331,
+          "missing_candidates_excluded": 1
+        },
+        "rot_m15": {
+          "injected_type": "rotation",
+          "magnitude": -15,
+          "labelled_candidates": 217,
+          "injected_true": 143,
+          "hit_rate_against_injected_truth": 0.659,
+          "hit_rate_wilson95": [
+            0.5936,
+            0.7188
+          ],
+          "aida_auc_by_review_order": 0.9018,
+          "aida_auc_by_severity": 0.9018,
+          "missing_candidates_excluded": 1
+        },
+        "rot_p15": {
+          "injected_type": "rotation",
+          "magnitude": 15,
+          "labelled_candidates": 212,
+          "injected_true": 132,
+          "hit_rate_against_injected_truth": 0.6226,
+          "hit_rate_wilson95": [
+            0.5558,
+            0.6852
+          ],
+          "aida_auc_by_review_order": 0.8774,
+          "aida_auc_by_severity": 0.8774,
+          "missing_candidates_excluded": 1
+        },
+        "width_m15": {
+          "injected_type": "width",
+          "magnitude": -15,
+          "labelled_candidates": 200,
+          "injected_true": 122,
+          "hit_rate_against_injected_truth": 0.61,
+          "hit_rate_wilson95": [
+            0.5409,
+            0.6749
+          ],
+          "aida_auc_by_review_order": 0.8198,
+          "aida_auc_by_severity": 0.8198,
+          "missing_candidates_excluded": 1
+        },
+        "width_p15": {
+          "injected_type": "width",
+          "magnitude": 15,
+          "labelled_candidates": 181,
+          "injected_true": 107,
+          "hit_rate_against_injected_truth": 0.5912,
+          "hit_rate_wilson95": [
+            0.5184,
+            0.6602
+          ],
+          "aida_auc_by_review_order": 0.8104,
+          "aida_auc_by_severity": 0.8104,
+          "missing_candidates_excluded": 1
+        },
+        "height_m15": {
+          "injected_type": "height",
+          "magnitude": -15,
+          "labelled_candidates": 196,
+          "injected_true": 123,
+          "hit_rate_against_injected_truth": 0.6276,
+          "hit_rate_wilson95": [
+            0.558,
+            0.6922
+          ],
+          "aida_auc_by_review_order": 0.8798,
+          "aida_auc_by_severity": 0.8798,
+          "missing_candidates_excluded": 1
+        },
+        "height_p15": {
+          "injected_type": "height",
+          "magnitude": 15,
+          "labelled_candidates": 193,
+          "injected_true": 135,
+          "hit_rate_against_injected_truth": 0.6995,
+          "hit_rate_wilson95": [
+            0.6314,
+            0.7598
+          ],
+          "aida_auc_by_review_order": 0.8148,
+          "aida_auc_by_severity": 0.8147,
+          "missing_candidates_excluded": 1
+        },
+        "rot_m7_5": {
+          "injected_type": "rotation",
+          "magnitude": -7.5,
+          "labelled_candidates": 214,
+          "injected_true": 141,
+          "hit_rate_against_injected_truth": 0.6589,
+          "hit_rate_wilson95": [
+            0.5931,
+            0.7191
+          ],
+          "aida_auc_by_review_order": 0.7559,
+          "aida_auc_by_severity": 0.7558,
+          "missing_candidates_excluded": 1
+        },
+        "rot_p7_5": {
+          "injected_type": "rotation",
+          "magnitude": 7.5,
+          "labelled_candidates": 219,
+          "injected_true": 148,
+          "hit_rate_against_injected_truth": 0.6758,
+          "hit_rate_wilson95": [
+            0.6112,
+            0.7343
+          ],
+          "aida_auc_by_review_order": 0.8124,
+          "aida_auc_by_severity": 0.8125,
+          "missing_candidates_excluded": 1
+        },
+        "trans_x_m15": {
+          "injected_type": "translation_x",
+          "magnitude": -15,
+          "labelled_candidates": 187,
+          "injected_true": 109,
+          "hit_rate_against_injected_truth": 0.5829,
+          "hit_rate_wilson95": [
+            0.5112,
+            0.6512
+          ],
+          "aida_auc_by_review_order": 0.8651,
+          "aida_auc_by_severity": 0.8651,
+          "missing_candidates_excluded": 1
+        },
+        "trans_x_p15": {
+          "injected_type": "translation_x",
+          "magnitude": 15,
+          "labelled_candidates": 207,
+          "injected_true": 140,
+          "hit_rate_against_injected_truth": 0.6763,
+          "hit_rate_wilson95": [
+            0.6099,
+            0.7364
+          ],
+          "aida_auc_by_review_order": 0.8882,
+          "aida_auc_by_severity": 0.8882,
+          "missing_candidates_excluded": 1
+        },
+        "trans_y_m15": {
+          "injected_type": "translation_y",
+          "magnitude": -15,
+          "labelled_candidates": 221,
+          "injected_true": 155,
+          "hit_rate_against_injected_truth": 0.7014,
+          "hit_rate_wilson95": [
+            0.638,
+            0.7578
+          ],
+          "aida_auc_by_review_order": 0.8772,
+          "aida_auc_by_severity": 0.8772,
+          "missing_candidates_excluded": 1
+        },
+        "trans_y_p15": {
+          "injected_type": "translation_y",
+          "magnitude": 15,
+          "labelled_candidates": 205,
+          "injected_true": 135,
+          "hit_rate_against_injected_truth": 0.6585,
+          "hit_rate_wilson95": [
+            0.5912,
+            0.72
+          ],
+          "aida_auc_by_review_order": 0.8625,
+          "aida_auc_by_severity": 0.8626,
+          "missing_candidates_excluded": 1
+        },
+        "scale_m15": {
+          "injected_type": "scale",
+          "magnitude": -15,
+          "labelled_candidates": 184,
+          "injected_true": 105,
+          "hit_rate_against_injected_truth": 0.5707,
+          "hit_rate_wilson95": [
+            0.4984,
+            0.64
+          ],
+          "aida_auc_by_review_order": 0.7898,
+          "aida_auc_by_severity": 0.7898,
+          "missing_candidates_excluded": 2
+        },
+        "scale_p15": {
+          "injected_type": "scale",
+          "magnitude": 15,
+          "labelled_candidates": 202,
+          "injected_true": 123,
+          "hit_rate_against_injected_truth": 0.6089,
+          "hit_rate_wilson95": [
+            0.5402,
+            0.6736
+          ],
+          "aida_auc_by_review_order": 0.8045,
+          "aida_auc_by_severity": 0.8044,
+          "missing_candidates_excluded": 1
+        },
+        "scale_m30": {
+          "injected_type": "scale",
+          "magnitude": -30,
+          "labelled_candidates": 192,
+          "injected_true": 112,
+          "hit_rate_against_injected_truth": 0.5833,
+          "hit_rate_wilson95": [
+            0.5126,
+            0.6508
+          ],
+          "aida_auc_by_review_order": 0.9692,
+          "aida_auc_by_severity": 0.9691,
+          "missing_candidates_excluded": 9
+        },
+        "scale_p30": {
+          "injected_type": "scale",
+          "magnitude": 30,
+          "labelled_candidates": 225,
+          "injected_true": 152,
+          "hit_rate_against_injected_truth": 0.6756,
+          "hit_rate_wilson95": [
+            0.6119,
+            0.7333
+          ],
+          "aida_auc_by_review_order": 0.9404,
+          "aida_auc_by_severity": 0.9404,
+          "missing_candidates_excluded": 1
+        },
+        "missing_10": {
+          "injected_type": "missing",
+          "magnitude": 10,
+          "labelled_candidates": 96,
+          "injected_true": 0,
+          "hit_rate_against_injected_truth": 0.0,
+          "hit_rate_wilson95": [
+            0.0,
+            0.0385
+          ],
+          "aida_auc_by_review_order": null,
+          "aida_auc_by_severity": null,
+          "missing_candidates_excluded": 34
+        },
+        "missing_20": {
+          "injected_type": "missing",
+          "magnitude": 20,
+          "labelled_candidates": 88,
+          "injected_true": 0,
+          "hit_rate_against_injected_truth": 0.0,
+          "hit_rate_wilson95": [
+            0.0,
+            0.0418
+          ],
+          "aida_auc_by_review_order": null,
+          "aida_auc_by_severity": null,
+          "missing_candidates_excluded": 70
+        },
+        "missing_30": {
+          "injected_type": "missing",
+          "magnitude": 30,
+          "labelled_candidates": 74,
+          "injected_true": 0,
+          "hit_rate_against_injected_truth": 0.0,
+          "hit_rate_wilson95": [
+            0.0,
+            0.0493
+          ],
+          "aida_auc_by_review_order": null,
+          "aida_auc_by_severity": null,
+          "missing_candidates_excluded": 102
+        },
+        "duplicate_10": {
+          "injected_type": "duplicate",
+          "magnitude": 10,
+          "labelled_candidates": 147,
+          "injected_true": 52,
+          "hit_rate_against_injected_truth": 0.3537,
+          "hit_rate_wilson95": [
+            0.2811,
+            0.4339
+          ],
+          "aida_auc_by_review_order": 0.9045,
+          "aida_auc_by_severity": 0.9043,
+          "missing_candidates_excluded": 1
+        },
+        "duplicate_20": {
+          "injected_type": "duplicate",
+          "magnitude": 20,
+          "labelled_candidates": 197,
+          "injected_true": 118,
+          "hit_rate_against_injected_truth": 0.599,
+          "hit_rate_wilson95": [
+            0.5293,
+            0.6649
+          ],
+          "aida_auc_by_review_order": 0.8596,
+          "aida_auc_by_severity": 0.8596,
+          "missing_candidates_excluded": 1
+        },
+        "duplicate_30": {
+          "injected_type": "duplicate",
+          "magnitude": 30,
+          "labelled_candidates": 241,
+          "injected_true": 173,
+          "hit_rate_against_injected_truth": 0.7178,
+          "hit_rate_wilson95": [
+            0.6579,
+            0.7709
+          ],
+          "aida_auc_by_review_order": 0.8868,
+          "aida_auc_by_severity": 0.8868,
+          "missing_candidates_excluded": 1
+        },
+        "class_swap_10": {
+          "injected_type": "class_swap",
+          "magnitude": 10,
+          "labelled_candidates": 134,
+          "injected_true": 39,
+          "hit_rate_against_injected_truth": 0.291,
+          "hit_rate_wilson95": [
+            0.2208,
+            0.3729
+          ],
+          "aida_auc_by_review_order": 1.0,
+          "aida_auc_by_severity": 1.0,
+          "missing_candidates_excluded": 1
+        },
+        "class_swap_20": {
+          "injected_type": "class_swap",
+          "magnitude": 20,
+          "labelled_candidates": 170,
+          "injected_true": 82,
+          "hit_rate_against_injected_truth": 0.4824,
+          "hit_rate_wilson95": [
+            0.4085,
+            0.557
+          ],
+          "aida_auc_by_review_order": 0.9915,
+          "aida_auc_by_severity": 0.9915,
+          "missing_candidates_excluded": 1
+        },
+        "class_swap_30": {
+          "injected_type": "class_swap",
+          "magnitude": 30,
+          "labelled_candidates": 184,
+          "injected_true": 111,
+          "hit_rate_against_injected_truth": 0.6033,
+          "hit_rate_wilson95": [
+            0.5312,
+            0.6711
+          ],
+          "aida_auc_by_review_order": 0.9996,
+          "aida_auc_by_severity": 0.9996,
+          "missing_candidates_excluded": 1
+        }
+      }
+    },
+    {
+      "file": "box_accuracy_verdicts_mc_cyclist_rich_ruler_runs.json",
+      "sha256": "18179b5ab865b01d79c4e7352932d22673d5a1c76887dc5063d86f64fb5cc40c",
+      "bytes": 324122,
+      "modified": "2026-09-03T10:07",
+      "nearest_commit_before_modified": "5a4fc27d",
+      "configuration_tag": "_mc_cyclist_rich_ruler_runs",
+      "configuration": {
+        "classes": "Car·Van·Pedestrian·Cyclist",
+        "frames": "cyclist_rich",
+        "ruler": "runs/ 의 자(단일 클래스 Car)",
+        "use_for_planning": "쓰지 않는다 — 자와 데이터의 클래스 구성이 다르다"
+      },
+      "truth": "injected",
+      "dataset": "KITTI (개발)",
+      "conditions": 29,
+      "aida_auc_by_review_order_across_conditions": {
+        "n": 26,
+        "min": 0.4952,
+        "median": 0.8221,
+        "max": 0.9559
+      },
+      "aida_auc_by_severity_across_conditions": {
+        "n": 26,
+        "min": 0.4959,
+        "median": 0.8222,
+        "max": 0.9559
+      },
+      "class_id_order": "config.CLASS_NAMES 순서 (4클래스면 0=Car, 1=Van, 2=Pedestrian, 3=Cyclist)",
+      "aida_auc_by_class_within_condition": {},
+      "class_auc_min_per_side": 10,
+      "per_condition": {
+        "width_m30": {
+          "injected_type": "width",
+          "magnitude": -30,
+          "labelled_candidates": 148,
+          "injected_true": 92,
+          "hit_rate_against_injected_truth": 0.6216,
+          "hit_rate_wilson95": [
+            0.5413,
+            0.6957
+          ],
+          "aida_auc_by_review_order": 0.8952,
+          "aida_auc_by_severity": 0.8952,
+          "missing_candidates_excluded": 3
+        },
+        "width_p30": {
+          "injected_type": "width",
+          "magnitude": 30,
+          "labelled_candidates": 148,
+          "injected_true": 94,
+          "hit_rate_against_injected_truth": 0.6351,
+          "hit_rate_wilson95": [
+            0.5551,
+            0.7084
+          ],
+          "aida_auc_by_review_order": 0.8418,
+          "aida_auc_by_severity": 0.8419,
+          "missing_candidates_excluded": 3
+        },
+        "height_m30": {
+          "injected_type": "height",
+          "magnitude": -30,
+          "labelled_candidates": 145,
+          "injected_true": 82,
+          "hit_rate_against_injected_truth": 0.5655,
+          "hit_rate_wilson95": [
+            0.4842,
+            0.6435
+          ],
+          "aida_auc_by_review_order": 0.9218,
+          "aida_auc_by_severity": 0.9219,
+          "missing_candidates_excluded": 4
+        },
+        "height_p30": {
+          "injected_type": "height",
+          "magnitude": 30,
+          "labelled_candidates": 139,
+          "injected_true": 74,
+          "hit_rate_against_injected_truth": 0.5324,
+          "hit_rate_wilson95": [
+            0.4497,
+            0.6133
+          ],
+          "aida_auc_by_review_order": 0.8651,
+          "aida_auc_by_severity": 0.8653,
+          "missing_candidates_excluded": 3
+        },
+        "rot_m15": {
+          "injected_type": "rotation",
+          "magnitude": -15,
+          "labelled_candidates": 152,
+          "injected_true": 91,
+          "hit_rate_against_injected_truth": 0.5987,
+          "hit_rate_wilson95": [
+            0.5193,
+            0.6732
+          ],
+          "aida_auc_by_review_order": 0.9456,
+          "aida_auc_by_severity": 0.9456,
+          "missing_candidates_excluded": 3
+        },
+        "rot_p15": {
+          "injected_type": "rotation",
+          "magnitude": 15,
+          "labelled_candidates": 155,
+          "injected_true": 87,
+          "hit_rate_against_injected_truth": 0.5613,
+          "hit_rate_wilson95": [
+            0.4826,
+            0.637
+          ],
+          "aida_auc_by_review_order": 0.9202,
+          "aida_auc_by_severity": 0.9205,
+          "missing_candidates_excluded": 3
+        },
+        "width_m15": {
+          "injected_type": "width",
+          "magnitude": -15,
+          "labelled_candidates": 136,
+          "injected_true": 76,
+          "hit_rate_against_injected_truth": 0.5588,
+          "hit_rate_wilson95": [
+            0.4749,
+            0.6395
+          ],
+          "aida_auc_by_review_order": 0.7035,
+          "aida_auc_by_severity": 0.7036,
+          "missing_candidates_excluded": 3
+        },
+        "width_p15": {
+          "injected_type": "width",
+          "magnitude": 15,
+          "labelled_candidates": 125,
+          "injected_true": 66,
+          "hit_rate_against_injected_truth": 0.528,
+          "hit_rate_wilson95": [
+            0.441,
+            0.6134
+          ],
+          "aida_auc_by_review_order": 0.7316,
+          "aida_auc_by_severity": 0.7316,
+          "missing_candidates_excluded": 3
+        },
+        "height_m15": {
+          "injected_type": "height",
+          "magnitude": -15,
+          "labelled_candidates": 137,
+          "injected_true": 80,
+          "hit_rate_against_injected_truth": 0.5839,
+          "hit_rate_wilson95": [
+            0.5002,
+            0.6631
+          ],
+          "aida_auc_by_review_order": 0.7919,
+          "aida_auc_by_severity": 0.7919,
+          "missing_candidates_excluded": 3
+        },
+        "height_p15": {
+          "injected_type": "height",
+          "magnitude": 15,
+          "labelled_candidates": 128,
+          "injected_true": 66,
+          "hit_rate_against_injected_truth": 0.5156,
+          "hit_rate_wilson95": [
+            0.4299,
+            0.6005
+          ],
+          "aida_auc_by_review_order": 0.7791,
+          "aida_auc_by_severity": 0.7791,
+          "missing_candidates_excluded": 3
+        },
+        "rot_m7_5": {
+          "injected_type": "rotation",
+          "magnitude": -7.5,
+          "labelled_candidates": 136,
+          "injected_true": 72,
+          "hit_rate_against_injected_truth": 0.5294,
+          "hit_rate_wilson95": [
+            0.4459,
+            0.6113
+          ],
+          "aida_auc_by_review_order": 0.8021,
+          "aida_auc_by_severity": 0.8021,
+          "missing_candidates_excluded": 3
+        },
+        "rot_p7_5": {
+          "injected_type": "rotation",
+          "magnitude": 7.5,
+          "labelled_candidates": 142,
+          "injected_true": 82,
+          "hit_rate_against_injected_truth": 0.5775,
+          "hit_rate_wilson95": [
+            0.4952,
+            0.6556
+          ],
+          "aida_auc_by_review_order": 0.8382,
+          "aida_auc_by_severity": 0.8382,
+          "missing_candidates_excluded": 3
+        },
+        "trans_x_m15": {
+          "injected_type": "translation_x",
+          "magnitude": -15,
+          "labelled_candidates": 134,
+          "injected_true": 70,
+          "hit_rate_against_injected_truth": 0.5224,
+          "hit_rate_wilson95": [
+            0.4384,
+            0.6052
+          ],
+          "aida_auc_by_review_order": 0.5203,
+          "aida_auc_by_severity": 0.5204,
+          "missing_candidates_excluded": 3
+        },
+        "trans_x_p15": {
+          "injected_type": "translation_x",
+          "magnitude": 15,
+          "labelled_candidates": 141,
+          "injected_true": 82,
+          "hit_rate_against_injected_truth": 0.5816,
+          "hit_rate_wilson95": [
+            0.499,
+            0.6598
+          ],
+          "aida_auc_by_review_order": 0.9026,
+          "aida_auc_by_severity": 0.9025,
+          "missing_candidates_excluded": 4
+        },
+        "trans_y_m15": {
+          "injected_type": "translation_y",
+          "magnitude": -15,
+          "labelled_candidates": 154,
+          "injected_true": 102,
+          "hit_rate_against_injected_truth": 0.6623,
+          "hit_rate_wilson95": [
+            0.5845,
+            0.7323
+          ],
+          "aida_auc_by_review_order": 0.8367,
+          "aida_auc_by_severity": 0.8367,
+          "missing_candidates_excluded": 3
+        },
+        "trans_y_p15": {
+          "injected_type": "translation_y",
+          "magnitude": 15,
+          "labelled_candidates": 140,
+          "injected_true": 84,
+          "hit_rate_against_injected_truth": 0.6,
+          "hit_rate_wilson95": [
+            0.5172,
+            0.6774
+          ],
+          "aida_auc_by_review_order": 0.8029,
+          "aida_auc_by_severity": 0.8028,
+          "missing_candidates_excluded": 3
+        },
+        "scale_m15": {
+          "injected_type": "scale",
+          "magnitude": -15,
+          "labelled_candidates": 126,
+          "injected_true": 62,
+          "hit_rate_against_injected_truth": 0.4921,
+          "hit_rate_wilson95": [
+            0.4063,
+            0.5783
+          ],
+          "aida_auc_by_review_order": 0.747,
+          "aida_auc_by_severity": 0.7471,
+          "missing_candidates_excluded": 4
+        },
+        "scale_p15": {
+          "injected_type": "scale",
+          "magnitude": 15,
+          "labelled_candidates": 134,
+          "injected_true": 77,
+          "hit_rate_against_injected_truth": 0.5746,
+          "hit_rate_wilson95": [
+            0.49,
+            0.6551
+          ],
+          "aida_auc_by_review_order": 0.7307,
+          "aida_auc_by_severity": 0.7307,
+          "missing_candidates_excluded": 3
+        },
+        "scale_m30": {
+          "injected_type": "scale",
+          "magnitude": -30,
+          "labelled_candidates": 133,
+          "injected_true": 75,
+          "hit_rate_against_injected_truth": 0.5639,
+          "hit_rate_wilson95": [
+            0.479,
+            0.6452
+          ],
+          "aida_auc_by_review_order": 0.9559,
+          "aida_auc_by_severity": 0.9559,
+          "missing_candidates_excluded": 8
+        },
+        "scale_p30": {
+          "injected_type": "scale",
+          "magnitude": 30,
+          "labelled_candidates": 153,
+          "injected_true": 101,
+          "hit_rate_against_injected_truth": 0.6601,
+          "hit_rate_wilson95": [
+            0.582,
+            0.7304
+          ],
+          "aida_auc_by_review_order": 0.928,
+          "aida_auc_by_severity": 0.928,
+          "missing_candidates_excluded": 3
+        },
+        "missing_10": {
+          "injected_type": "missing",
+          "magnitude": 10,
+          "labelled_candidates": 79,
+          "injected_true": 0,
+          "hit_rate_against_injected_truth": 0.0,
+          "hit_rate_wilson95": [
+            0.0,
+            0.0464
+          ],
+          "aida_auc_by_review_order": null,
+          "aida_auc_by_severity": null,
+          "missing_candidates_excluded": 21
+        },
+        "missing_20": {
+          "injected_type": "missing",
+          "magnitude": 20,
+          "labelled_candidates": 71,
+          "injected_true": 0,
+          "hit_rate_against_injected_truth": 0.0,
+          "hit_rate_wilson95": [
+            0.0,
+            0.0513
+          ],
+          "aida_auc_by_review_order": null,
+          "aida_auc_by_severity": null,
+          "missing_candidates_excluded": 49
+        },
+        "missing_30": {
+          "injected_type": "missing",
+          "magnitude": 30,
+          "labelled_candidates": 60,
+          "injected_true": 0,
+          "hit_rate_against_injected_truth": 0.0,
+          "hit_rate_wilson95": [
+            0.0,
+            0.0602
+          ],
+          "aida_auc_by_review_order": null,
+          "aida_auc_by_severity": null,
+          "missing_candidates_excluded": 67
+        },
+        "duplicate_10": {
+          "injected_type": "duplicate",
+          "magnitude": 10,
+          "labelled_candidates": 117,
+          "injected_true": 36,
+          "hit_rate_against_injected_truth": 0.3077,
+          "hit_rate_wilson95": [
+            0.2313,
+            0.3963
+          ],
+          "aida_auc_by_review_order": 0.8248,
+          "aida_auc_by_severity": 0.8249,
+          "missing_candidates_excluded": 3
+        },
+        "duplicate_20": {
+          "injected_type": "duplicate",
+          "magnitude": 20,
+          "labelled_candidates": 135,
+          "injected_true": 64,
+          "hit_rate_against_injected_truth": 0.4741,
+          "hit_rate_wilson95": [
+            0.3917,
+            0.5579
+          ],
+          "aida_auc_by_review_order": 0.8195,
+          "aida_auc_by_severity": 0.8195,
+          "missing_candidates_excluded": 3
+        },
+        "duplicate_30": {
+          "injected_type": "duplicate",
+          "magnitude": 30,
+          "labelled_candidates": 173,
+          "injected_true": 112,
+          "hit_rate_against_injected_truth": 0.6474,
+          "hit_rate_wilson95": [
+            0.5737,
+            0.7147
+          ],
+          "aida_auc_by_review_order": 0.8563,
+          "aida_auc_by_severity": 0.8564,
+          "missing_candidates_excluded": 3
+        },
+        "class_swap_10": {
+          "injected_type": "class_swap",
+          "magnitude": 10,
+          "labelled_candidates": 87,
+          "injected_true": 7,
+          "hit_rate_against_injected_truth": 0.0805,
+          "hit_rate_wilson95": [
+            0.0395,
+            0.1569
+          ],
+          "aida_auc_by_review_order": 0.6714,
+          "aida_auc_by_severity": 0.6714,
+          "missing_candidates_excluded": 3
+        },
+        "class_swap_20": {
+          "injected_type": "class_swap",
+          "magnitude": 20,
+          "labelled_candidates": 87,
+          "injected_true": 15,
+          "hit_rate_against_injected_truth": 0.1724,
+          "hit_rate_wilson95": [
+            0.1074,
+            0.2652
+          ],
+          "aida_auc_by_review_order": 0.5472,
+          "aida_auc_by_severity": 0.5463,
+          "missing_candidates_excluded": 3
+        },
+        "class_swap_30": {
+          "injected_type": "class_swap",
+          "magnitude": 30,
+          "labelled_candidates": 87,
+          "injected_true": 23,
+          "hit_rate_against_injected_truth": 0.2644,
+          "hit_rate_wilson95": [
+            0.1831,
+            0.3656
+          ],
+          "aida_auc_by_review_order": 0.4952,
+          "aida_auc_by_severity": 0.4959,
+          "missing_candidates_excluded": 3
+        }
+      }
+    },
+    {
+      "file": "box_accuracy_verdicts_mc_cyclist_rich_ruler_runs_mc.json",
+      "sha256": "a222de1c6c83403ed09e6f1052ab51b965931fff3e9b80e1514035a0309d3aa5",
+      "bytes": 480004,
+      "modified": "2026-09-03T10:07",
+      "nearest_commit_before_modified": "5a4fc27d",
+      "configuration_tag": "_mc_cyclist_rich_ruler_runs_mc",
+      "configuration": {
+        "classes": "Car·Van·Pedestrian·Cyclist",
+        "frames": "cyclist_rich",
+        "ruler": "runs_mc/ 의 자(다른 프레임으로 학습한 4클래스)",
+        "use_for_planning": "도메인 이동 참고 — 자를 다른 장면에서 학습"
+      },
+      "truth": "injected",
+      "dataset": "KITTI (개발)",
+      "conditions": 29,
+      "aida_auc_by_review_order_across_conditions": {
+        "n": 26,
+        "min": 0.4444,
+        "median": 0.7604,
+        "max": 0.9798
+      },
+      "aida_auc_by_severity_across_conditions": {
+        "n": 26,
+        "min": 0.4444,
+        "median": 0.7604,
+        "max": 0.9798
+      },
+      "class_id_order": "config.CLASS_NAMES 순서 (4클래스면 0=Car, 1=Van, 2=Pedestrian, 3=Cyclist)",
+      "aida_auc_by_class_within_condition": {
+        "0": {
+          "n": 23,
+          "min": 0.5007,
+          "median": 0.7796,
+          "max": 0.8977
+        },
+        "2": {
+          "n": 13,
+          "min": 0.3769,
+          "median": 0.6061,
+          "max": 1.0
+        },
+        "3": {
+          "n": 24,
+          "min": 0.3773,
+          "median": 0.7251,
+          "max": 1.0
+        }
+      },
+      "class_auc_min_per_side": 10,
+      "per_condition": {
+        "width_m30": {
+          "injected_type": "width",
+          "magnitude": -30,
+          "labelled_candidates": 222,
+          "injected_true": 122,
+          "hit_rate_against_injected_truth": 0.5495,
+          "hit_rate_wilson95": [
+            0.4838,
+            0.6136
+          ],
+          "aida_auc_by_review_order": 0.7944,
+          "aida_auc_by_severity": 0.7946,
+          "missing_candidates_excluded": 10
+        },
+        "width_p30": {
+          "injected_type": "width",
+          "magnitude": 30,
+          "labelled_candidates": 213,
+          "injected_true": 112,
+          "hit_rate_against_injected_truth": 0.5258,
+          "hit_rate_wilson95": [
+            0.4589,
+            0.5918
+          ],
+          "aida_auc_by_review_order": 0.7692,
+          "aida_auc_by_severity": 0.7689,
+          "missing_candidates_excluded": 6
+        },
+        "height_m30": {
+          "injected_type": "height",
+          "magnitude": -30,
+          "labelled_candidates": 211,
+          "injected_true": 101,
+          "hit_rate_against_injected_truth": 0.4787,
+          "hit_rate_wilson95": [
+            0.4123,
+            0.5459
+          ],
+          "aida_auc_by_review_order": 0.8756,
+          "aida_auc_by_severity": 0.8756,
+          "missing_candidates_excluded": 8
+        },
+        "height_p30": {
+          "injected_type": "height",
+          "magnitude": 30,
+          "labelled_candidates": 206,
+          "injected_true": 108,
+          "hit_rate_against_injected_truth": 0.5243,
+          "hit_rate_wilson95": [
+            0.4563,
+            0.5914
+          ],
+          "aida_auc_by_review_order": 0.8327,
+          "aida_auc_by_severity": 0.8327,
+          "missing_candidates_excluded": 7
+        },
+        "rot_m15": {
+          "injected_type": "rotation",
+          "magnitude": -15,
+          "labelled_candidates": 221,
+          "injected_true": 119,
+          "hit_rate_against_injected_truth": 0.5385,
+          "hit_rate_wilson95": [
+            0.4726,
+            0.603
+          ],
+          "aida_auc_by_review_order": 0.7065,
+          "aida_auc_by_severity": 0.7065,
+          "missing_candidates_excluded": 7
+        },
+        "rot_p15": {
+          "injected_type": "rotation",
+          "magnitude": 15,
+          "labelled_candidates": 213,
+          "injected_true": 109,
+          "hit_rate_against_injected_truth": 0.5117,
+          "hit_rate_wilson95": [
+            0.445,
+            0.5781
+          ],
+          "aida_auc_by_review_order": 0.7647,
+          "aida_auc_by_severity": 0.7647,
+          "missing_candidates_excluded": 5
+        },
+        "width_m15": {
+          "injected_type": "width",
+          "magnitude": -15,
+          "labelled_candidates": 195,
+          "injected_true": 98,
+          "hit_rate_against_injected_truth": 0.5026,
+          "hit_rate_wilson95": [
+            0.433,
+            0.572
+          ],
+          "aida_auc_by_review_order": 0.6442,
+          "aida_auc_by_severity": 0.6441,
+          "missing_candidates_excluded": 8
+        },
+        "width_p15": {
+          "injected_type": "width",
+          "magnitude": 15,
+          "labelled_candidates": 192,
+          "injected_true": 97,
+          "hit_rate_against_injected_truth": 0.5052,
+          "hit_rate_wilson95": [
+            0.4351,
+            0.5751
+          ],
+          "aida_auc_by_review_order": 0.7295,
+          "aida_auc_by_severity": 0.7294,
+          "missing_candidates_excluded": 7
+        },
+        "height_m15": {
+          "injected_type": "height",
+          "magnitude": -15,
+          "labelled_candidates": 201,
+          "injected_true": 97,
+          "hit_rate_against_injected_truth": 0.4826,
+          "hit_rate_wilson95": [
+            0.4145,
+            0.5513
+          ],
+          "aida_auc_by_review_order": 0.6687,
+          "aida_auc_by_severity": 0.6687,
+          "missing_candidates_excluded": 7
+        },
+        "height_p15": {
+          "injected_type": "height",
+          "magnitude": 15,
+          "labelled_candidates": 194,
+          "injected_true": 96,
+          "hit_rate_against_injected_truth": 0.4948,
+          "hit_rate_wilson95": [
+            0.4253,
+            0.5646
+          ],
+          "aida_auc_by_review_order": 0.7561,
+          "aida_auc_by_severity": 0.756,
+          "missing_candidates_excluded": 7
+        },
+        "rot_m7_5": {
+          "injected_type": "rotation",
+          "magnitude": -7.5,
+          "labelled_candidates": 205,
+          "injected_true": 105,
+          "hit_rate_against_injected_truth": 0.5122,
+          "hit_rate_wilson95": [
+            0.4442,
+            0.5798
+          ],
+          "aida_auc_by_review_order": 0.73,
+          "aida_auc_by_severity": 0.73,
+          "missing_candidates_excluded": 6
+        },
+        "rot_p7_5": {
+          "injected_type": "rotation",
+          "magnitude": 7.5,
+          "labelled_candidates": 211,
+          "injected_true": 112,
+          "hit_rate_against_injected_truth": 0.5308,
+          "hit_rate_wilson95": [
+            0.4635,
+            0.597
+          ],
+          "aida_auc_by_review_order": 0.6178,
+          "aida_auc_by_severity": 0.6177,
+          "missing_candidates_excluded": 7
+        },
+        "trans_x_m15": {
+          "injected_type": "translation_x",
+          "magnitude": -15,
+          "labelled_candidates": 201,
+          "injected_true": 93,
+          "hit_rate_against_injected_truth": 0.4627,
+          "hit_rate_wilson95": [
+            0.3951,
+            0.5317
+          ],
+          "aida_auc_by_review_order": 0.6945,
+          "aida_auc_by_severity": 0.6945,
+          "missing_candidates_excluded": 7
+        },
+        "trans_x_p15": {
+          "injected_type": "translation_x",
+          "magnitude": 15,
+          "labelled_candidates": 208,
+          "injected_true": 115,
+          "hit_rate_against_injected_truth": 0.5529,
+          "hit_rate_wilson95": [
+            0.485,
+            0.6189
+          ],
+          "aida_auc_by_review_order": 0.7009,
+          "aida_auc_by_severity": 0.7009,
+          "missing_candidates_excluded": 7
+        },
+        "trans_y_m15": {
+          "injected_type": "translation_y",
+          "magnitude": -15,
+          "labelled_candidates": 230,
+          "injected_true": 129,
+          "hit_rate_against_injected_truth": 0.5609,
+          "hit_rate_wilson95": [
+            0.4963,
+            0.6235
+          ],
+          "aida_auc_by_review_order": 0.6951,
+          "aida_auc_by_severity": 0.6952,
+          "missing_candidates_excluded": 8
+        },
+        "trans_y_p15": {
+          "injected_type": "translation_y",
+          "magnitude": 15,
+          "labelled_candidates": 208,
+          "injected_true": 105,
+          "hit_rate_against_injected_truth": 0.5048,
+          "hit_rate_wilson95": [
+            0.4374,
+            0.572
+          ],
+          "aida_auc_by_review_order": 0.7252,
+          "aida_auc_by_severity": 0.7252,
+          "missing_candidates_excluded": 8
+        },
+        "scale_m15": {
+          "injected_type": "scale",
+          "magnitude": -15,
+          "labelled_candidates": 191,
+          "injected_true": 86,
+          "hit_rate_against_injected_truth": 0.4503,
+          "hit_rate_wilson95": [
+            0.3814,
+            0.5211
+          ],
+          "aida_auc_by_review_order": 0.4444,
+          "aida_auc_by_severity": 0.4444,
+          "missing_candidates_excluded": 7
+        },
+        "scale_p15": {
+          "injected_type": "scale",
+          "magnitude": 15,
+          "labelled_candidates": 205,
+          "injected_true": 106,
+          "hit_rate_against_injected_truth": 0.5171,
+          "hit_rate_wilson95": [
+            0.449,
+            0.5845
+          ],
+          "aida_auc_by_review_order": 0.5941,
+          "aida_auc_by_severity": 0.5941,
+          "missing_candidates_excluded": 7
+        },
+        "scale_m30": {
+          "injected_type": "scale",
+          "magnitude": -30,
+          "labelled_candidates": 196,
+          "injected_true": 87,
+          "hit_rate_against_injected_truth": 0.4439,
+          "hit_rate_wilson95": [
+            0.3761,
+            0.5138
+          ],
+          "aida_auc_by_review_order": 0.8942,
+          "aida_auc_by_severity": 0.8942,
+          "missing_candidates_excluded": 15
+        },
+        "scale_p30": {
+          "injected_type": "scale",
+          "magnitude": 30,
+          "labelled_candidates": 218,
+          "injected_true": 126,
+          "hit_rate_against_injected_truth": 0.578,
+          "hit_rate_wilson95": [
+            0.5116,
+            0.6416
+          ],
+          "aida_auc_by_review_order": 0.8649,
+          "aida_auc_by_severity": 0.8649,
+          "missing_candidates_excluded": 5
+        },
+        "missing_10": {
+          "injected_type": "missing",
+          "magnitude": 10,
+          "labelled_candidates": 129,
+          "injected_true": 0,
+          "hit_rate_against_injected_truth": 0.0,
+          "hit_rate_wilson95": [
+            0.0,
+            0.0289
+          ],
+          "aida_auc_by_review_order": null,
+          "aida_auc_by_severity": null,
+          "missing_candidates_excluded": 32
+        },
+        "missing_20": {
+          "injected_type": "missing",
+          "magnitude": 20,
+          "labelled_candidates": 114,
+          "injected_true": 0,
+          "hit_rate_against_injected_truth": 0.0,
+          "hit_rate_wilson95": [
+            0.0,
+            0.0326
+          ],
+          "aida_auc_by_review_order": null,
+          "aida_auc_by_severity": null,
+          "missing_candidates_excluded": 61
+        },
+        "missing_30": {
+          "injected_type": "missing",
+          "magnitude": 30,
+          "labelled_candidates": 99,
+          "injected_true": 0,
+          "hit_rate_against_injected_truth": 0.0,
+          "hit_rate_wilson95": [
+            0.0,
+            0.0374
+          ],
+          "aida_auc_by_review_order": null,
+          "aida_auc_by_severity": null,
+          "missing_candidates_excluded": 94
+        },
+        "duplicate_10": {
+          "injected_type": "duplicate",
+          "magnitude": 10,
+          "labelled_candidates": 182,
+          "injected_true": 53,
+          "hit_rate_against_injected_truth": 0.2912,
+          "hit_rate_wilson95": [
+            0.2301,
+            0.361
+          ],
+          "aida_auc_by_review_order": 0.7714,
+          "aida_auc_by_severity": 0.7713,
+          "missing_candidates_excluded": 7
+        },
+        "duplicate_20": {
+          "injected_type": "duplicate",
+          "magnitude": 20,
+          "labelled_candidates": 214,
+          "injected_true": 98,
+          "hit_rate_against_injected_truth": 0.4579,
+          "hit_rate_wilson95": [
+            0.3925,
+            0.5249
+          ],
+          "aida_auc_by_review_order": 0.7853,
+          "aida_auc_by_severity": 0.7853,
+          "missing_candidates_excluded": 7
+        },
+        "duplicate_30": {
+          "injected_type": "duplicate",
+          "magnitude": 30,
+          "labelled_candidates": 254,
+          "injected_true": 151,
+          "hit_rate_against_injected_truth": 0.5945,
+          "hit_rate_wilson95": [
+            0.5331,
+            0.653
+          ],
+          "aida_auc_by_review_order": 0.8116,
+          "aida_auc_by_severity": 0.8117,
+          "missing_candidates_excluded": 7
+        },
+        "class_swap_10": {
+          "injected_type": "class_swap",
+          "magnitude": 10,
+          "labelled_candidates": 168,
+          "injected_true": 37,
+          "hit_rate_against_injected_truth": 0.2202,
+          "hit_rate_wilson95": [
+            0.1642,
+            0.2888
+          ],
+          "aida_auc_by_review_order": 0.9686,
+          "aida_auc_by_severity": 0.9686,
+          "missing_candidates_excluded": 7
+        },
+        "class_swap_20": {
+          "injected_type": "class_swap",
+          "magnitude": 20,
+          "labelled_candidates": 188,
+          "injected_true": 70,
+          "hit_rate_against_injected_truth": 0.3723,
+          "hit_rate_wilson95": [
+            0.3064,
+            0.4434
+          ],
+          "aida_auc_by_review_order": 0.9738,
+          "aida_auc_by_severity": 0.9738,
+          "missing_candidates_excluded": 7
+        },
+        "class_swap_30": {
+          "injected_type": "class_swap",
+          "magnitude": 30,
+          "labelled_candidates": 198,
+          "injected_true": 88,
+          "hit_rate_against_injected_truth": 0.4444,
+          "hit_rate_wilson95": [
+            0.3769,
+            0.5141
+          ],
+          "aida_auc_by_review_order": 0.9798,
+          "aida_auc_by_severity": 0.9798,
+          "missing_candidates_excluded": 7
+        }
+      }
+    },
+    {
+      "file": "box_accuracy_verdicts_mc_cyclist_rich_ruler_runs_mc_broad_n800.json",
+      "sha256": "3c271119684567afbd05a03ec45b0562dc1654b4ef30b9cdd03b304784dfcf07",
+      "bytes": 445490,
+      "modified": "2026-09-03T10:07",
+      "nearest_commit_before_modified": "5a4fc27d",
+      "configuration_tag": "_mc_cyclist_rich_ruler_runs_mc_broad_n800",
+      "configuration": {
+        "classes": "Car·Van·Pedestrian·Cyclist",
+        "frames": "cyclist_rich",
+        "ruler": "runs_mc_broad_n800/ 의 자(broad 800장)",
+        "use_for_planning": "도메인 이동 참고"
+      },
+      "truth": "injected",
+      "dataset": "KITTI (개발)",
+      "conditions": 29,
+      "aida_auc_by_review_order_across_conditions": {
+        "n": 26,
+        "min": 0.5229,
+        "median": 0.7985,
+        "max": 0.9868
+      },
+      "aida_auc_by_severity_across_conditions": {
+        "n": 26,
+        "min": 0.5228,
+        "median": 0.7984,
+        "max": 0.9868
+      },
+      "class_id_order": "config.CLASS_NAMES 순서 (4클래스면 0=Car, 1=Van, 2=Pedestrian, 3=Cyclist)",
+      "aida_auc_by_class_within_condition": {
+        "0": {
+          "n": 23,
+          "min": 0.6246,
+          "median": 0.8644,
+          "max": 0.9471
+        },
+        "2": {
+          "n": 9,
+          "min": 0.6503,
+          "median": 0.7467,
+          "max": 1.0
+        },
+        "3": {
+          "n": 17,
+          "min": 0.3125,
+          "median": 0.6898,
+          "max": 0.9938
+        }
+      },
+      "class_auc_min_per_side": 10,
+      "per_condition": {
+        "width_m30": {
+          "injected_type": "width",
+          "magnitude": -30,
+          "labelled_candidates": 208,
+          "injected_true": 116,
+          "hit_rate_against_injected_truth": 0.5577,
+          "hit_rate_wilson95": [
+            0.4898,
+            0.6235
+          ],
+          "aida_auc_by_review_order": 0.8269,
+          "aida_auc_by_severity": 0.8269,
+          "missing_candidates_excluded": 6
+        },
+        "width_p30": {
+          "injected_type": "width",
+          "magnitude": 30,
+          "labelled_candidates": 201,
+          "injected_true": 114,
+          "hit_rate_against_injected_truth": 0.5672,
+          "hit_rate_wilson95": [
+            0.498,
+            0.6338
+          ],
+          "aida_auc_by_review_order": 0.7914,
+          "aida_auc_by_severity": 0.7912,
+          "missing_candidates_excluded": 6
+        },
+        "height_m30": {
+          "injected_type": "height",
+          "magnitude": -30,
+          "labelled_candidates": 188,
+          "injected_true": 93,
+          "hit_rate_against_injected_truth": 0.4947,
+          "hit_rate_wilson95": [
+            0.424,
+            0.5655
+          ],
+          "aida_auc_by_review_order": 0.8654,
+          "aida_auc_by_severity": 0.8654,
+          "missing_candidates_excluded": 6
+        },
+        "height_p30": {
+          "injected_type": "height",
+          "magnitude": 30,
+          "labelled_candidates": 191,
+          "injected_true": 100,
+          "hit_rate_against_injected_truth": 0.5236,
+          "hit_rate_wilson95": [
+            0.453,
+            0.5932
+          ],
+          "aida_auc_by_review_order": 0.8425,
+          "aida_auc_by_severity": 0.8425,
+          "missing_candidates_excluded": 6
+        },
+        "rot_m15": {
+          "injected_type": "rotation",
+          "magnitude": -15,
+          "labelled_candidates": 208,
+          "injected_true": 115,
+          "hit_rate_against_injected_truth": 0.5529,
+          "hit_rate_wilson95": [
+            0.485,
+            0.6189
+          ],
+          "aida_auc_by_review_order": 0.818,
+          "aida_auc_by_severity": 0.8178,
+          "missing_candidates_excluded": 6
+        },
+        "rot_p15": {
+          "injected_type": "rotation",
+          "magnitude": 15,
+          "labelled_candidates": 203,
+          "injected_true": 106,
+          "hit_rate_against_injected_truth": 0.5222,
+          "hit_rate_wilson95": [
+            0.4537,
+            0.5898
+          ],
+          "aida_auc_by_review_order": 0.8216,
+          "aida_auc_by_severity": 0.8215,
+          "missing_candidates_excluded": 6
+        },
+        "width_m15": {
+          "injected_type": "width",
+          "magnitude": -15,
+          "labelled_candidates": 185,
+          "injected_true": 101,
+          "hit_rate_against_injected_truth": 0.5459,
+          "hit_rate_wilson95": [
+            0.474,
+            0.616
+          ],
+          "aida_auc_by_review_order": 0.6583,
+          "aida_auc_by_severity": 0.6582,
+          "missing_candidates_excluded": 6
+        },
+        "width_p15": {
+          "injected_type": "width",
+          "magnitude": 15,
+          "labelled_candidates": 186,
+          "injected_true": 91,
+          "hit_rate_against_injected_truth": 0.4892,
+          "hit_rate_wilson95": [
+            0.4184,
+            0.5606
+          ],
+          "aida_auc_by_review_order": 0.6932,
+          "aida_auc_by_severity": 0.6931,
+          "missing_candidates_excluded": 6
+        },
+        "height_m15": {
+          "injected_type": "height",
+          "magnitude": -15,
+          "labelled_candidates": 188,
+          "injected_true": 94,
+          "hit_rate_against_injected_truth": 0.5,
+          "hit_rate_wilson95": [
+            0.4292,
+            0.5708
+          ],
+          "aida_auc_by_review_order": 0.7727,
+          "aida_auc_by_severity": 0.7727,
+          "missing_candidates_excluded": 6
+        },
+        "height_p15": {
+          "injected_type": "height",
+          "magnitude": 15,
+          "labelled_candidates": 173,
+          "injected_true": 85,
+          "hit_rate_against_injected_truth": 0.4913,
+          "hit_rate_wilson95": [
+            0.4178,
+            0.5652
+          ],
+          "aida_auc_by_review_order": 0.7755,
+          "aida_auc_by_severity": 0.7755,
+          "missing_candidates_excluded": 6
+        },
+        "rot_m7_5": {
+          "injected_type": "rotation",
+          "magnitude": -7.5,
+          "labelled_candidates": 193,
+          "injected_true": 102,
+          "hit_rate_against_injected_truth": 0.5285,
+          "hit_rate_wilson95": [
+            0.4582,
+            0.5977
+          ],
+          "aida_auc_by_review_order": 0.7136,
+          "aida_auc_by_severity": 0.7135,
+          "missing_candidates_excluded": 6
+        },
+        "rot_p7_5": {
+          "injected_type": "rotation",
+          "magnitude": 7.5,
+          "labelled_candidates": 198,
+          "injected_true": 104,
+          "hit_rate_against_injected_truth": 0.5253,
+          "hit_rate_wilson95": [
+            0.4559,
+            0.5937
+          ],
+          "aida_auc_by_review_order": 0.778,
+          "aida_auc_by_severity": 0.7779,
+          "missing_candidates_excluded": 6
+        },
+        "trans_x_m15": {
+          "injected_type": "translation_x",
+          "magnitude": -15,
+          "labelled_candidates": 185,
+          "injected_true": 85,
+          "hit_rate_against_injected_truth": 0.4595,
+          "hit_rate_wilson95": [
+            0.3892,
+            0.5314
+          ],
+          "aida_auc_by_review_order": 0.7781,
+          "aida_auc_by_severity": 0.7781,
+          "missing_candidates_excluded": 6
+        },
+        "trans_x_p15": {
+          "injected_type": "translation_x",
+          "magnitude": 15,
+          "labelled_candidates": 193,
+          "injected_true": 106,
+          "hit_rate_against_injected_truth": 0.5492,
+          "hit_rate_wilson95": [
+            0.4787,
+            0.6178
+          ],
+          "aida_auc_by_review_order": 0.8099,
+          "aida_auc_by_severity": 0.8101,
+          "missing_candidates_excluded": 6
+        },
+        "trans_y_m15": {
+          "injected_type": "translation_y",
+          "magnitude": -15,
+          "labelled_candidates": 211,
+          "injected_true": 123,
+          "hit_rate_against_injected_truth": 0.5829,
+          "hit_rate_wilson95": [
+            0.5155,
+            0.6474
+          ],
+          "aida_auc_by_review_order": 0.7785,
+          "aida_auc_by_severity": 0.7785,
+          "missing_candidates_excluded": 6
+        },
+        "trans_y_p15": {
+          "injected_type": "translation_y",
+          "magnitude": 15,
+          "labelled_candidates": 193,
+          "injected_true": 104,
+          "hit_rate_against_injected_truth": 0.5389,
+          "hit_rate_wilson95": [
+            0.4685,
+            0.6077
+          ],
+          "aida_auc_by_review_order": 0.7592,
+          "aida_auc_by_severity": 0.7593,
+          "missing_candidates_excluded": 6
+        },
+        "scale_m15": {
+          "injected_type": "scale",
+          "magnitude": -15,
+          "labelled_candidates": 175,
+          "injected_true": 84,
+          "hit_rate_against_injected_truth": 0.48,
+          "hit_rate_wilson95": [
+            0.4072,
+            0.5537
+          ],
+          "aida_auc_by_review_order": 0.7424,
+          "aida_auc_by_severity": 0.7424,
+          "missing_candidates_excluded": 7
+        },
+        "scale_p15": {
+          "injected_type": "scale",
+          "magnitude": 15,
+          "labelled_candidates": 188,
+          "injected_true": 98,
+          "hit_rate_against_injected_truth": 0.5213,
+          "hit_rate_wilson95": [
+            0.4502,
+            0.5915
+          ],
+          "aida_auc_by_review_order": 0.5229,
+          "aida_auc_by_severity": 0.5228,
+          "missing_candidates_excluded": 6
+        },
+        "scale_m30": {
+          "injected_type": "scale",
+          "magnitude": -30,
+          "labelled_candidates": 185,
+          "injected_true": 87,
+          "hit_rate_against_injected_truth": 0.4703,
+          "hit_rate_wilson95": [
+            0.3997,
+            0.5421
+          ],
+          "aida_auc_by_review_order": 0.8949,
+          "aida_auc_by_severity": 0.8949,
+          "missing_candidates_excluded": 12
+        },
+        "scale_p30": {
+          "injected_type": "scale",
+          "magnitude": 30,
+          "labelled_candidates": 209,
+          "injected_true": 124,
+          "hit_rate_against_injected_truth": 0.5933,
+          "hit_rate_wilson95": [
+            0.5256,
+            0.6576
+          ],
+          "aida_auc_by_review_order": 0.8956,
+          "aida_auc_by_severity": 0.8956,
+          "missing_candidates_excluded": 6
+        },
+        "missing_10": {
+          "injected_type": "missing",
+          "magnitude": 10,
+          "labelled_candidates": 117,
+          "injected_true": 0,
+          "hit_rate_against_injected_truth": 0.0,
+          "hit_rate_wilson95": [
+            0.0,
+            0.0318
+          ],
+          "aida_auc_by_review_order": null,
+          "aida_auc_by_severity": null,
+          "missing_candidates_excluded": 28
+        },
+        "missing_20": {
+          "injected_type": "missing",
+          "magnitude": 20,
+          "labelled_candidates": 103,
+          "injected_true": 0,
+          "hit_rate_against_injected_truth": 0.0,
+          "hit_rate_wilson95": [
+            0.0,
+            0.036
+          ],
+          "aida_auc_by_review_order": null,
+          "aida_auc_by_severity": null,
+          "missing_candidates_excluded": 59
+        },
+        "missing_30": {
+          "injected_type": "missing",
+          "magnitude": 30,
+          "labelled_candidates": 91,
+          "injected_true": 0,
+          "hit_rate_against_injected_truth": 0.0,
+          "hit_rate_wilson95": [
+            0.0,
+            0.0405
+          ],
+          "aida_auc_by_review_order": null,
+          "aida_auc_by_severity": null,
+          "missing_candidates_excluded": 81
+        },
+        "duplicate_10": {
+          "injected_type": "duplicate",
+          "magnitude": 10,
+          "labelled_candidates": 162,
+          "injected_true": 45,
+          "hit_rate_against_injected_truth": 0.2778,
+          "hit_rate_wilson95": [
+            0.2146,
+            0.3513
+          ],
+          "aida_auc_by_review_order": 0.8289,
+          "aida_auc_by_severity": 0.8288,
+          "missing_candidates_excluded": 6
+        },
+        "duplicate_20": {
+          "injected_type": "duplicate",
+          "magnitude": 20,
+          "labelled_candidates": 193,
+          "injected_true": 91,
+          "hit_rate_against_injected_truth": 0.4715,
+          "hit_rate_wilson95": [
+            0.4023,
+            0.5418
+          ],
+          "aida_auc_by_review_order": 0.7717,
+          "aida_auc_by_severity": 0.7719,
+          "missing_candidates_excluded": 6
+        },
+        "duplicate_30": {
+          "injected_type": "duplicate",
+          "magnitude": 30,
+          "labelled_candidates": 234,
+          "injected_true": 141,
+          "hit_rate_against_injected_truth": 0.6026,
+          "hit_rate_wilson95": [
+            0.5387,
+            0.6631
+          ],
+          "aida_auc_by_review_order": 0.8056,
+          "aida_auc_by_severity": 0.8056,
+          "missing_candidates_excluded": 6
+        },
+        "class_swap_10": {
+          "injected_type": "class_swap",
+          "magnitude": 10,
+          "labelled_candidates": 156,
+          "injected_true": 34,
+          "hit_rate_against_injected_truth": 0.2179,
+          "hit_rate_wilson95": [
+            0.1604,
+            0.2891
+          ],
+          "aida_auc_by_review_order": 0.9795,
+          "aida_auc_by_severity": 0.9795,
+          "missing_candidates_excluded": 6
+        },
+        "class_swap_20": {
+          "injected_type": "class_swap",
+          "magnitude": 20,
+          "labelled_candidates": 166,
+          "injected_true": 64,
+          "hit_rate_against_injected_truth": 0.3855,
+          "hit_rate_wilson95": [
+            0.3149,
+            0.4614
+          ],
+          "aida_auc_by_review_order": 0.9626,
+          "aida_auc_by_severity": 0.9626,
+          "missing_candidates_excluded": 6
+        },
+        "class_swap_30": {
+          "injected_type": "class_swap",
+          "magnitude": 30,
+          "labelled_candidates": 184,
+          "injected_true": 86,
+          "hit_rate_against_injected_truth": 0.4674,
+          "hit_rate_wilson95": [
+            0.3967,
+            0.5394
+          ],
+          "aida_auc_by_review_order": 0.9868,
+          "aida_auc_by_severity": 0.9868,
+          "missing_candidates_excluded": 6
+        }
+      }
+    },
+    {
+      "file": "box_accuracy_verdicts_mc_ruler_self.json",
+      "sha256": "619dea8030afae5bb6ba8e411910d62b473ec93fe20872f684dc5345700b2713",
+      "bytes": 290888,
+      "modified": "2026-09-03T10:07",
+      "nearest_commit_before_modified": "5a4fc27d",
+      "configuration_tag": "_mc_ruler_self",
+      "configuration": {
+        "classes": "Car·Van·Pedestrian·Cyclist",
+        "frames": "기본",
+        "ruler": "조건 자신의 데이터로 학습한 자(오염된 자)",
+        "use_for_planning": "쓰지 않는다 — 오류가 섞인 데이터로 학습한 자"
+      },
+      "truth": "injected",
+      "dataset": "KITTI (개발)",
+      "conditions": 29,
+      "aida_auc_by_review_order_across_conditions": {
+        "n": 26,
+        "min": 0.4631,
+        "median": 0.7823,
+        "max": 0.9835
+      },
+      "aida_auc_by_severity_across_conditions": {
+        "n": 26,
+        "min": 0.4629,
+        "median": 0.7824,
+        "max": 0.9835
+      },
+      "class_id_order": "config.CLASS_NAMES 순서 (4클래스면 0=Car, 1=Van, 2=Pedestrian, 3=Cyclist)",
+      "aida_auc_by_class_within_condition": {
+        "0": {
+          "n": 23,
+          "min": 0.4459,
+          "median": 0.7633,
+          "max": 0.9174
+        }
+      },
+      "class_auc_min_per_side": 10,
+      "per_condition": {
+        "width_m30": {
+          "injected_type": "width",
+          "magnitude": -30,
+          "labelled_candidates": 181,
+          "injected_true": 114,
+          "hit_rate_against_injected_truth": 0.6298,
+          "hit_rate_wilson95": [
+            0.5575,
+            0.6968
+          ],
+          "aida_auc_by_review_order": 0.8188,
+          "aida_auc_by_severity": 0.8185,
+          "missing_candidates_excluded": 1
+        },
+        "width_p30": {
+          "injected_type": "width",
+          "magnitude": 30,
+          "labelled_candidates": 126,
+          "injected_true": 74,
+          "hit_rate_against_injected_truth": 0.5873,
+          "hit_rate_wilson95": [
+            0.5,
+            0.6694
+          ],
+          "aida_auc_by_review_order": 0.7685,
+          "aida_auc_by_severity": 0.7685,
+          "missing_candidates_excluded": 0
+        },
+        "height_m30": {
+          "injected_type": "height",
+          "magnitude": -30,
+          "labelled_candidates": 154,
+          "injected_true": 89,
+          "hit_rate_against_injected_truth": 0.5779,
+          "hit_rate_wilson95": [
+            0.499,
+            0.6531
+          ],
+          "aida_auc_by_review_order": 0.8532,
+          "aida_auc_by_severity": 0.8532,
+          "missing_candidates_excluded": 2
+        },
+        "height_p30": {
+          "injected_type": "height",
+          "magnitude": 30,
+          "labelled_candidates": 153,
+          "injected_true": 89,
+          "hit_rate_against_injected_truth": 0.5817,
+          "hit_rate_wilson95": [
+            0.5025,
+            0.6569
+          ],
+          "aida_auc_by_review_order": 0.8615,
+          "aida_auc_by_severity": 0.8613,
+          "missing_candidates_excluded": 0
+        },
+        "rot_m15": {
+          "injected_type": "rotation",
+          "magnitude": -15,
+          "labelled_candidates": 171,
+          "injected_true": 86,
+          "hit_rate_against_injected_truth": 0.5029,
+          "hit_rate_wilson95": [
+            0.4287,
+            0.577
+          ],
+          "aida_auc_by_review_order": 0.7256,
+          "aida_auc_by_severity": 0.7256,
+          "missing_candidates_excluded": 2
+        },
+        "rot_p15": {
+          "injected_type": "rotation",
+          "magnitude": 15,
+          "labelled_candidates": 128,
+          "injected_true": 63,
+          "hit_rate_against_injected_truth": 0.4922,
+          "hit_rate_wilson95": [
+            0.4071,
+            0.5778
+          ],
+          "aida_auc_by_review_order": 0.7961,
+          "aida_auc_by_severity": 0.7963,
+          "missing_candidates_excluded": 0
+        },
+        "width_m15": {
+          "injected_type": "width",
+          "magnitude": -15,
+          "labelled_candidates": 112,
+          "injected_true": 43,
+          "hit_rate_against_injected_truth": 0.3839,
+          "hit_rate_wilson95": [
+            0.2991,
+            0.4764
+          ],
+          "aida_auc_by_review_order": 0.7105,
+          "aida_auc_by_severity": 0.7105,
+          "missing_candidates_excluded": 3
+        },
+        "width_p15": {
+          "injected_type": "width",
+          "magnitude": 15,
+          "labelled_candidates": 100,
+          "injected_true": 38,
+          "hit_rate_against_injected_truth": 0.38,
+          "hit_rate_wilson95": [
+            0.291,
+            0.4779
+          ],
+          "aida_auc_by_review_order": 0.4631,
+          "aida_auc_by_severity": 0.4629,
+          "missing_candidates_excluded": 3
+        },
+        "height_m15": {
+          "injected_type": "height",
+          "magnitude": -15,
+          "labelled_candidates": 110,
+          "injected_true": 50,
+          "hit_rate_against_injected_truth": 0.4545,
+          "hit_rate_wilson95": [
+            0.3646,
+            0.5476
+          ],
+          "aida_auc_by_review_order": 0.741,
+          "aida_auc_by_severity": 0.7408,
+          "missing_candidates_excluded": 1
+        },
+        "height_p15": {
+          "injected_type": "height",
+          "magnitude": 15,
+          "labelled_candidates": 91,
+          "injected_true": 46,
+          "hit_rate_against_injected_truth": 0.5055,
+          "hit_rate_wilson95": [
+            0.4046,
+            0.6059
+          ],
+          "aida_auc_by_review_order": 0.5754,
+          "aida_auc_by_severity": 0.5754,
+          "missing_candidates_excluded": 1
+        },
+        "rot_m7_5": {
+          "injected_type": "rotation",
+          "magnitude": -7.5,
+          "labelled_candidates": 120,
+          "injected_true": 56,
+          "hit_rate_against_injected_truth": 0.4667,
+          "hit_rate_wilson95": [
+            0.3798,
+            0.5556
+          ],
+          "aida_auc_by_review_order": 0.6694,
+          "aida_auc_by_severity": 0.6694,
+          "missing_candidates_excluded": 1
+        },
+        "rot_p7_5": {
+          "injected_type": "rotation",
+          "magnitude": 7.5,
+          "labelled_candidates": 128,
+          "injected_true": 64,
+          "hit_rate_against_injected_truth": 0.5,
+          "hit_rate_wilson95": [
+            0.4147,
+            0.5853
+          ],
+          "aida_auc_by_review_order": 0.7395,
+          "aida_auc_by_severity": 0.7394,
+          "missing_candidates_excluded": 3
+        },
+        "trans_x_m15": {
+          "injected_type": "translation_x",
+          "magnitude": -15,
+          "labelled_candidates": 152,
+          "injected_true": 66,
+          "hit_rate_against_injected_truth": 0.4342,
+          "hit_rate_wilson95": [
+            0.358,
+            0.5137
+          ],
+          "aida_auc_by_review_order": 0.8238,
+          "aida_auc_by_severity": 0.8238,
+          "missing_candidates_excluded": 0
+        },
+        "trans_x_p15": {
+          "injected_type": "translation_x",
+          "magnitude": 15,
+          "labelled_candidates": 139,
+          "injected_true": 87,
+          "hit_rate_against_injected_truth": 0.6259,
+          "hit_rate_wilson95": [
+            0.5431,
+            0.7019
+          ],
+          "aida_auc_by_review_order": 0.7387,
+          "aida_auc_by_severity": 0.7388,
+          "missing_candidates_excluded": 0
+        },
+        "trans_y_m15": {
+          "injected_type": "translation_y",
+          "magnitude": -15,
+          "labelled_candidates": 142,
+          "injected_true": 77,
+          "hit_rate_against_injected_truth": 0.5423,
+          "hit_rate_wilson95": [
+            0.4603,
+            0.622
+          ],
+          "aida_auc_by_review_order": 0.7117,
+          "aida_auc_by_severity": 0.7116,
+          "missing_candidates_excluded": 0
+        },
+        "trans_y_p15": {
+          "injected_type": "translation_y",
+          "magnitude": 15,
+          "labelled_candidates": 143,
+          "injected_true": 82,
+          "hit_rate_against_injected_truth": 0.5734,
+          "hit_rate_wilson95": [
+            0.4915,
+            0.6515
+          ],
+          "aida_auc_by_review_order": 0.8585,
+          "aida_auc_by_severity": 0.8585,
+          "missing_candidates_excluded": 0
+        },
+        "scale_m15": {
+          "injected_type": "scale",
+          "magnitude": -15,
+          "labelled_candidates": 115,
+          "injected_true": 51,
+          "hit_rate_against_injected_truth": 0.4435,
+          "hit_rate_wilson95": [
+            0.356,
+            0.5346
+          ],
+          "aida_auc_by_review_order": 0.4908,
+          "aida_auc_by_severity": 0.4908,
+          "missing_candidates_excluded": 1
+        },
+        "scale_p15": {
+          "injected_type": "scale",
+          "magnitude": 15,
+          "labelled_candidates": 101,
+          "injected_true": 47,
+          "hit_rate_against_injected_truth": 0.4653,
+          "hit_rate_wilson95": [
+            0.3711,
+            0.5621
+          ],
+          "aida_auc_by_review_order": 0.6643,
+          "aida_auc_by_severity": 0.6643,
+          "missing_candidates_excluded": 0
+        },
+        "scale_m30": {
+          "injected_type": "scale",
+          "magnitude": -30,
+          "labelled_candidates": 146,
+          "injected_true": 76,
+          "hit_rate_against_injected_truth": 0.5205,
+          "hit_rate_wilson95": [
+            0.44,
+            0.6
+          ],
+          "aida_auc_by_review_order": 0.8194,
+          "aida_auc_by_severity": 0.8195,
+          "missing_candidates_excluded": 8
+        },
+        "scale_p30": {
+          "injected_type": "scale",
+          "magnitude": 30,
+          "labelled_candidates": 141,
+          "injected_true": 63,
+          "hit_rate_against_injected_truth": 0.4468,
+          "hit_rate_wilson95": [
+            0.3672,
+            0.5292
+          ],
+          "aida_auc_by_review_order": 0.7664,
+          "aida_auc_by_severity": 0.7666,
+          "missing_candidates_excluded": 0
+        },
+        "missing_10": {
+          "injected_type": "missing",
+          "magnitude": 10,
+          "labelled_candidates": 76,
+          "injected_true": 0,
+          "hit_rate_against_injected_truth": 0.0,
+          "hit_rate_wilson95": [
+            0.0,
+            0.0481
+          ],
+          "aida_auc_by_review_order": null,
+          "aida_auc_by_severity": null,
+          "missing_candidates_excluded": 6
+        },
+        "missing_20": {
+          "injected_type": "missing",
+          "magnitude": 20,
+          "labelled_candidates": 56,
+          "injected_true": 0,
+          "hit_rate_against_injected_truth": 0.0,
+          "hit_rate_wilson95": [
+            0.0,
+            0.0642
+          ],
+          "aida_auc_by_review_order": null,
+          "aida_auc_by_severity": null,
+          "missing_candidates_excluded": 14
+        },
+        "missing_30": {
+          "injected_type": "missing",
+          "magnitude": 30,
+          "labelled_candidates": 48,
+          "injected_true": 0,
+          "hit_rate_against_injected_truth": 0.0,
+          "hit_rate_wilson95": [
+            0.0,
+            0.0741
+          ],
+          "aida_auc_by_review_order": null,
+          "aida_auc_by_severity": null,
+          "missing_candidates_excluded": 3
+        },
+        "duplicate_10": {
+          "injected_type": "duplicate",
+          "magnitude": 10,
+          "labelled_candidates": 112,
+          "injected_true": 47,
+          "hit_rate_against_injected_truth": 0.4196,
+          "hit_rate_wilson95": [
+            0.3324,
+            0.5122
+          ],
+          "aida_auc_by_review_order": 0.9064,
+          "aida_auc_by_severity": 0.9064,
+          "missing_candidates_excluded": 0
+        },
+        "duplicate_20": {
+          "injected_type": "duplicate",
+          "magnitude": 20,
+          "labelled_candidates": 157,
+          "injected_true": 91,
+          "hit_rate_against_injected_truth": 0.5796,
+          "hit_rate_wilson95": [
+            0.5014,
+            0.654
+          ],
+          "aida_auc_by_review_order": 0.8387,
+          "aida_auc_by_severity": 0.8391,
+          "missing_candidates_excluded": 3
+        },
+        "duplicate_30": {
+          "injected_type": "duplicate",
+          "magnitude": 30,
+          "labelled_candidates": 182,
+          "injected_true": 123,
+          "hit_rate_against_injected_truth": 0.6758,
+          "hit_rate_wilson95": [
+            0.6048,
+            0.7396
+          ],
+          "aida_auc_by_review_order": 0.8439,
+          "aida_auc_by_severity": 0.8439,
+          "missing_candidates_excluded": 2
+        },
+        "class_swap_10": {
+          "injected_type": "class_swap",
+          "magnitude": 10,
+          "labelled_candidates": 77,
+          "injected_true": 19,
+          "hit_rate_against_injected_truth": 0.2468,
+          "hit_rate_wilson95": [
+            0.164,
+            0.3535
+          ],
+          "aida_auc_by_review_order": 0.9528,
+          "aida_auc_by_severity": 0.9528,
+          "missing_candidates_excluded": 0
+        },
+        "class_swap_20": {
+          "injected_type": "class_swap",
+          "magnitude": 20,
+          "labelled_candidates": 106,
+          "injected_true": 35,
+          "hit_rate_against_injected_truth": 0.3302,
+          "hit_rate_wilson95": [
+            0.248,
+            0.4243
+          ],
+          "aida_auc_by_review_order": 0.9831,
+          "aida_auc_by_severity": 0.9829,
+          "missing_candidates_excluded": 0
+        },
+        "class_swap_30": {
+          "injected_type": "class_swap",
+          "magnitude": 30,
+          "labelled_candidates": 101,
+          "injected_true": 35,
+          "hit_rate_against_injected_truth": 0.3465,
+          "hit_rate_wilson95": [
+            0.2609,
+            0.4434
+          ],
+          "aida_auc_by_review_order": 0.9835,
+          "aida_auc_by_severity": 0.9835,
+          "missing_candidates_excluded": 0
+        }
+      }
+    }
+  ],
+  "not_estimable_from_these_inputs": {
+    "baseline_iou_auc": "캐시에 label_iou가 없다. raw_signal은 유형별 기하 편차라 1 − label_iou가 아니므로 대신 쓰지 않는다. 조건마다 모델 추론을 다시 돌려야 얻는다(GPU).",
+    "aida_minus_baseline_auc_gap": "기준선 AUC가 없으므로 검정력을 좌우하는 두 방법의 차이도 없다.",
+    "candidates_per_image": "캐시에 이미지 번호가 없다.",
+    "duplicate_candidates_per_unique_error": "캐시에 라벨 번호가 없어 같은 주입 오류를 가리키는 후보를 묶을 수 없다.",
+    "natural_error_prevalence": "주입 조건은 오류를 일부러 넣은 데이터라 자연 오류 비율이 아니다.",
+    "adjudication_error": "주입 정답이라 사람 판정 오류가 없다. 사람 판정 오류는 외부 판정자 없이 알 수 없다."
+  }
+}

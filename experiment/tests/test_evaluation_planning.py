@@ -131,12 +131,89 @@ def test_예산이_0이나_음수면_거부한다():
 
 # ── 근거와 미정 상태 ─────────────────────────────────────────────────────────
 
+# ── 판정자 hit 비율은 참 오류 비율이 아니다 ─────────────────────────────────
+
+def _realistic_tags(**override):
+    base = {name: "unsupported_sensitivity_example" for name in ALL_FIELDS}
+    base.update(dataset_count="business_assumption", delta="business_assumption",
+                target_power="business_assumption", alpha="protocol_fixed",
+                iterations="simulation_setting", bootstrap_iterations="simulation_setting",
+                random_seed="simulation_setting")
+    base.update(override)
+    return base
+
+
+def test_판정자_hit_비율을_timing_pilot으로_적으면_거부한다():
+    """처음 시나리오 파일이 0.065를 timing_pilot으로 적어 측정된 오류 비율처럼 읽혔다."""
+    with pytest.raises(ValidationError, match="참 오류 비율이 아니다"):
+        validate_scenario(mk(sources=_realistic_tags(error_prevalence="timing_pilot")))
+
+
+def test_판정자_hit_비율이면_공식_결론에_못_쓴다():
+    s = mk(sources=_realistic_tags(
+        error_prevalence="single_reviewer_observed_hit_rate",
+        aida_ranking_strength="measured_development",
+        baseline_ranking_strength="measured_development",
+        image_error_concentration="measured_development",
+        duplicates_per_unique_error="measured_development",
+        candidates_per_image="measured_development", hold_rate="timing_pilot",
+        candidates_per_dataset="business_assumption",
+        images_per_dataset="measured_development"))
+    validate_scenario(s)
+    assert s.unsupported_fields == []            # '근거 없음'은 하나도 없는데도
+    assert s.non_official_fields == ["error_prevalence"]
+    assert s.official is False
+
+
+@pytest.mark.parametrize("field", ["error_prevalence", "aida_ranking_strength",
+                                   "baseline_ranking_strength", "image_error_concentration",
+                                   "duplicates_per_unique_error", "hold_rate"])
+@pytest.mark.parametrize("tag", ["business_assumption", "protocol_fixed", "simulation_setting"])
+def test_현실에_대한_값은_사용자가_고르는_설정이_아니다(field, tag):
+    with pytest.raises(ValidationError, match="현실에 대한 값"):
+        validate_scenario(mk(sources=_realistic_tags(**{field: tag})))
+
+
+@pytest.mark.parametrize("field", ["dataset_count", "delta", "target_power"])
+@pytest.mark.parametrize("tag", ["measured_development", "timing_pilot",
+                                 "single_reviewer_observed_hit_rate"])
+def test_결정할_값을_측정값처럼_적지_않는다(field, tag):
+    with pytest.raises(ValidationError):
+        validate_scenario(mk(sources=_realistic_tags(**{field: tag})))
+
+
+def test_시나리오_파일의_파일럿_오류_비율은_판정자_hit_비율로_표시된다():
+    raw = json.loads((EXPERIMENT / "planning_scenarios.json").read_text(encoding="utf-8"))
+    rows = {r["value"]: r for r in raw["grid"]["error_prevalence"]}
+    for value in (0.065, 0.135):
+        assert rows[value]["source"] == "single_reviewer_observed_hit_rate"
+        assert "참 오류 비율이 아니다" in rows[value]["basis"]
+    assert all(r["source"] not in ("timing_pilot", "measured_development")
+               for r in raw["grid"]["error_prevalence"])
+
+
+def test_보고서_제목이_판정자_hit_비율을_참값처럼_찍지_않는다():
+    import power_report
+    got = power_report.prevalence_label({"value": 0.065,
+                                         "source": "single_reviewer_observed_hit_rate"})
+    assert "참 오류 비율 아님" in got
+    assert not got.startswith("오류 비율")
+
+
 def test_근거_없는_값이_하나라도_있으면_공식이_아니다():
     s = mk(sources=dict(tags("timing_pilot"),
                         aida_ranking_strength="unsupported_sensitivity_example"))
     assert s.official is False
     assert s.unsupported_fields == ["aida_ranking_strength"]
-    assert mk(sources=tags("timing_pilot")).official is True
+    assert mk(sources=_realistic_tags(
+        error_prevalence="measured_development",
+        aida_ranking_strength="measured_development",
+        baseline_ranking_strength="measured_development",
+        image_error_concentration="measured_development",
+        duplicates_per_unique_error="measured_development",
+        candidates_per_image="measured_development",
+        hold_rate="timing_pilot", candidates_per_dataset="business_assumption",
+        images_per_dataset="measured_development")).official is True
 
 
 def test_Δ와_목표_검정력은_기본이_미정이다():
@@ -419,6 +496,10 @@ def test_시나리오_파일이_읽히고_전부_민감도_전용이다():
         s = cell["scenario"]
         assert s.official is False                      # 순위 품질이 근거 없음
         assert "aida_ranking_strength" in s.unsupported_fields
+        # 파일럿 오류 비율은 참값이 아니라 판정자 hit 비율로 들어간다.
+        if cell["prevalence"] in (0.065, 0.135):
+            assert s.sources["error_prevalence"] == "single_reviewer_observed_hit_rate"
+            assert "error_prevalence" in s.non_official_fields
         assert s.delta_status == "undetermined"
         assert s.target_power_status == "undetermined"
         assert s.candidates_per_dataset >= cell["budget"]

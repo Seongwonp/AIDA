@@ -5,11 +5,12 @@
   "purpose": "설계 민감도 분석용 가정. N_required·N_final·Δ를 확정하지 않는다. 최종 자연 오류 분포를 보장하지 않는다.",
   "source_tags": {
     "measured_development": "개발 데이터에서 실측",
-    "timing_pilot": "timing1~5 파일럿에서 관측 (판정자 한 명, KITTI val Car, 자 하나)",
+    "timing_pilot": "timing1~5 파일럿에서 관측한 작업 구조(시간·후보 모양·보류 사용). 판정 결과(hit 비율)는 여기에 넣지 않는다",
     "business_assumption": "사용자가 사업 기준으로 정할 값 — 아직 정하지 않았다",
     "unsupported_sensitivity_example": "근거 없음. 민감도 축으로만 쓰고 공식 결론에 쓰지 않는다",
     "protocol_fixed": "평가 규약이 고정한 값 — 가정이 아니다",
-    "simulation_setting": "시뮬레이션 설정 — 결과의 정밀도만 바꾼다"
+    "simulation_setting": "시뮬레이션 설정 — 결과의 정밀도만 바꾼다",
+    "single_reviewer_observed_hit_rate": "판정자 한 명이 hit으로 고른 비율. 참 오류 비율이 아니다 — 이 판정자는 anchor에서 정상 라벨을 오류로 기우는 경향을 보였다. 공식 결론에 쓰지 않는다"
   },
   "grid": {
     "datasets": {
@@ -52,13 +53,13 @@
     "error_prevalence": [
       {
         "value": 0.065,
-        "source": "timing_pilot",
-        "basis": "timing5 기존 라벨 층 실제 후보 판정 hit 6/92. 정답이 없는 사람 판정이고 판정자 한 명이다"
+        "source": "single_reviewer_observed_hit_rate",
+        "basis": "timing5 기존 라벨 층 실제 후보 92건 중 판정자 한 명이 hit으로 고른 6건. 정답이 없고 판정자가 오탐 쪽으로 기울었으므로 참 오류 비율이 아니다"
       },
       {
         "value": 0.135,
-        "source": "timing_pilot",
-        "basis": "timing4 기존 라벨 층 실제 후보 판정 hit 5/37. 표본이 작다"
+        "source": "single_reviewer_observed_hit_rate",
+        "basis": "timing4 기존 라벨 층 실제 후보 37건 중 판정자 한 명이 hit으로 고른 5건. 표본이 작고 참 오류 비율이 아니다"
       },
       {
         "value": 0.25,
@@ -75,9 +76,9 @@
         },
         "sources": {
           "image_error_concentration": "unsupported_sensitivity_example",
-          "duplicates_per_unique_error": "timing_pilot"
+          "duplicates_per_unique_error": "single_reviewer_observed_hit_rate"
         },
-        "basis": "중복: 파일럿 hit 11건이 모두 서로 다른 오류였다(표본 작음). 오류가 이미지에 몰리지 않는다는 것은 근거 없음"
+        "basis": "중복 없음: 판정자 한 명이 hit으로 고른 11건이 모두 서로 다른 오류였다(표본 작고 정답 없음). 오류가 이미지에 몰리지 않는다는 것은 근거 없음"
       },
       {
         "name": "clustered",

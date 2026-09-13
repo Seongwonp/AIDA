@@ -46,6 +46,14 @@ def _mean_size(dist: dict) -> float:
     return sum(int(k) * float(w) for k, w in dist.items()) / total
 
 
+def prevalence_label(prev: dict) -> str:
+    """오류 비율 제목. **판정자 hit 비율을 참 오류 비율처럼 찍지 않는다.**"""
+    if prev["source"] == "single_reviewer_observed_hit_rate":
+        return (f"판정자 한 명의 hit 비율 {prev['value']} "
+                "(참 오류 비율 아님 — 정답 없음, 오탐 경향)")
+    return f"오류 비율 {prev['value']} ({prev['source']})"
+
+
 def _weakest(*sources: str) -> str:
     """파생값은 **가장 약한 근거**를 따른다."""
     return UNSUPPORTED if UNSUPPORTED in sources else sources[0]
@@ -285,6 +293,7 @@ def main() -> int:
                      "mean_baseline_unique_errors": round(result["mean_baseline_unique_errors"], 2),
                      "status": result["status"], "official_scenario": s.official,
                      "unsupported_fields": s.unsupported_fields,
+                     "non_official_fields": s.non_official_fields,
                      "deltas": deltas, **cap})
 
     print()
@@ -296,7 +305,7 @@ def main() -> int:
       for dep in grid["dependence"]:
         for ranking in grid["ranking"]:
             print()
-            print(f"■ 오류 비율 {prev['value']} ({prev['source']}) · "
+            print(f"■ {prevalence_label(prev)} · "
                   f"묶임 {dep['name']} · 순위 AUC AIDA {ranking['aida_auc']} / "
                   f"기준선 {ranking['baseline_auc']} ({ranking['source']})")
             print("   D    N  블록/DS 전체  근거(DS/전체)          active분  "
@@ -333,10 +342,13 @@ def main() -> int:
             print(f"  D{d}·N{n}: {minutes}분")
 
     unofficial = sorted({f for r in rows for f in r["unsupported_fields"]})
+    reviewer = sorted({f for r in rows for f in r["non_official_fields"]} - set(unofficial))
     print()
     print("공식 결론에 못 쓰는 이유:")
     if unofficial:
         print(f"  근거 없는 가정: {', '.join(unofficial)}")
+    if reviewer:
+        print(f"  판정자 한 명의 hit 비율에서 온 값(참값 아님): {', '.join(reviewer)}")
     if any(r["status"] == "too_few_iterations" for r in rows):
         print(f"  반복 부족: 복제 {reps}/재표집 {boots} (최소 "
               f"{MIN_OFFICIAL_ITERATIONS}/{MIN_OFFICIAL_BOOTSTRAP})")

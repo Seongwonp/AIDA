@@ -63,8 +63,28 @@ SOURCES = (
     # 값이 "사업 가정"처럼 보이거나, 반복 수가 "근거 없는 값"처럼 보인다.
     "protocol_fixed",                  # 평가 규약이 고정한 값 (α, 판정 규칙)
     "simulation_setting",              # 반복 수·씨앗 — 정밀도만 바꾼다
+    # 판정자 **한 명**이 `hit`으로 고른 비율. **참 오류 비율이 아니다** — 이
+    # 판정자는 anchor에서 정상 라벨을 오류로 기우는 경향을 보였다. 처음에는
+    # `timing_pilot`으로 적었는데, 그러면 측정된 오류 비율처럼 읽혔다.
+    "single_reviewer_observed_hit_rate",
 )
 UNSUPPORTED = "unsupported_sensitivity_example"
+REVIEWER_HIT_RATE = "single_reviewer_observed_hit_rate"
+
+# 공식 결론에 못 쓰는 근거. 근거가 없거나, 정답 없는 한 사람의 판정이다.
+NON_OFFICIAL_SOURCES = (UNSUPPORTED, REVIEWER_HIT_RATE)
+
+# **현실에 대한 값은 사용자가 고르는 설정이 아니다.** 오류가 실제로 얼마나 있는지,
+# 순위가 실제로 얼마나 좋은지는 취향으로 정할 수 없다 — 추정하거나, 근거 없음으로
+# 남긴다. 반대로 D·Δ·목표 검정력은 측정해서 나오는 값이 아니라 결정이다.
+EMPIRICAL_FIELDS = (
+    "error_prevalence", "aida_ranking_strength", "baseline_ranking_strength",
+    "image_error_concentration", "duplicates_per_unique_error",
+    "candidates_per_image", "hold_rate",
+)
+DECISION_FIELDS = ("dataset_count", "delta", "target_power")
+NOT_FOR_EMPIRICAL = ("business_assumption", "protocol_fixed", "simulation_setting")
+NOT_FOR_DECISIONS = ("measured_development", "timing_pilot", REVIEWER_HIT_RATE)
 
 # 반복이 적으면 검정력 추정의 몬테카를로 오차가 커서 **판정을 말할 수 없다.**
 # 0.80 근처에서 SE ≈ sqrt(0.8×0.2/R)이므로 R=200이면 ±0.028이다.
@@ -107,9 +127,14 @@ class PlanningScenario:
         return sorted(k for k, v in self.sources.items() if v == UNSUPPORTED)
 
     @property
+    def non_official_fields(self) -> list[str]:
+        """근거가 없거나 한 사람의 판정에서 나온 값."""
+        return sorted(k for k, v in self.sources.items() if v in NON_OFFICIAL_SOURCES)
+
+    @property
     def official(self) -> bool:
-        """근거 없는 값이 하나라도 있으면 공식 결론에 쓰지 않는다."""
-        return not self.unsupported_fields
+        """근거 없는 값이나 한 사람의 hit 비율이 하나라도 있으면 공식 결론에 쓰지 않는다."""
+        return not self.non_official_fields
 
     @property
     def delta_status(self) -> str:
@@ -133,6 +158,7 @@ class PlanningScenario:
                 "target_power_status": self.target_power_status,
                 "official": self.official,
                 "unsupported_fields": self.unsupported_fields,
+                "non_official_fields": self.non_official_fields,
                 "note": self.note}
 
 
@@ -244,6 +270,28 @@ def validate_scenario(s: PlanningScenario) -> None:
     bad = {k: v for k, v in s.sources.items() if v not in SOURCES}
     if bad:
         raise ValidationError(f"모르는 근거 표시다: {bad} (쓸 수 있는 것: {SOURCES})")
+
+    # 판정자 hit 비율을 측정된 오류 비율처럼 적지 못하게 한다.
+    if s.sources.get("error_prevalence") == "timing_pilot":
+        raise ValidationError(
+            "error_prevalence를 timing_pilot으로 적지 않는다. 파일럿에서 나온 것은 판정자 "
+            f"한 명의 hit 비율이지 참 오류 비율이 아니다 — '{REVIEWER_HIT_RATE}'로 적는다.")
+    misfiled = {f: s.sources[f] for f in EMPIRICAL_FIELDS
+                if s.sources.get(f) in NOT_FOR_EMPIRICAL}
+    if misfiled:
+        raise ValidationError(
+            f"현실에 대한 값을 결정이나 설정으로 적었다: {misfiled}. 오류 비율·순위 품질·"
+            "묶임은 고르는 값이 아니라 추정하거나 근거 없음으로 남기는 값이다.")
+    misfiled = {f: s.sources[f] for f in DECISION_FIELDS
+                if s.sources.get(f) in NOT_FOR_DECISIONS}
+    if misfiled:
+        raise ValidationError(
+            f"결정할 값을 측정값처럼 적었다: {misfiled}. D·Δ·목표 검정력은 측정에서 "
+            "나오지 않는다.")
+    stray = sorted(f for f, v in s.sources.items()
+                   if v == REVIEWER_HIT_RATE and f not in EMPIRICAL_FIELDS)
+    if stray:
+        raise ValidationError(f"판정자 hit 비율 표시는 현실에 대한 값에만 쓴다: {stray}")
 
 
 def scenario_from_dict(raw: dict) -> PlanningScenario:
