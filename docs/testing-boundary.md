@@ -5,7 +5,14 @@
 
 **2026-09-09 기준.** 검사 총 **416건**.
 
-이 수는 당시 기록이다. 최신 실행 결과는 CI 또는 실제 테스트 로그로 확인한다. [25번 계획 R1~R6](25-advancement-roadmap.md)의 화면 비동기 저장·복원 검사는 아직 후속 작업이며, 아래 순수 함수 검사에 포함된 것으로 간주하지 않는다.
+이 수는 당시 기록이다. 최신 실행 결과는 CI 또는 실제 테스트 로그로 확인한다. [25번 계획](25-advancement-roadmap.md) R1~R5는 완료, R6은 부분 완료다 — jsdom 흐름 검사는 있고 실제 브라우저 통합 검사는 없다.
+
+**평가 후보 모집단·순서 (2026-09-13).** `backend/tests/test_evaluation_candidate_pool.py`는
+AIDA 순서가 진단의 제품 순위를 따르는지, 잘리기 전 후보 전부를 얼리는지, 두 방법
+상위 N건의 합집합만 판정하는지를 **손으로 만든 진단 결과 JSON**으로 잰다. 실제
+추론이 `all_candidates`를 내는지, 그 앞부분 순서가 화면과 같은지는 **안 쟀다** —
+`diagnose_labels.py`는 ultralytics를 불러와 CI에서 못 돈다. 순수 부분인
+`candidate_rows`만 `experiment/tests/test_candidate_rows.py`가 잰다.
 
 ## 세 층
 

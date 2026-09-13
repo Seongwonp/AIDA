@@ -53,6 +53,11 @@
 
 ### 안 되는 것
 
+- **단순한 방법보다 나은지 아직 모른다.** 핵심 질문은 "같은 검수량에서 단순 IoU
+  불일치 순서보다 실제 오류를 더 찾는가"다. 비교 도구(가림 판정·두 방법
+  내보내기)만 준비됐고 실제 비교는 아직 안 했다. 위 정밀도 수치는 주입 오류
+  기준이라 이 질문의 답이 아니다([25번 계획](docs/25-advancement-roadmap.md)
+  "첫 실행 순서" 6번).
 - **인증도 사용자 개념도 없다.** 검수 판정은 데이터셋 단위로 서버에 남지만, 누가 매겼는지는 기록하지 않는다.
 - **배포가 반쪽이다.** Dockerfile이 있고 프론트를 빌드해 백엔드가 같이 서빙하지만, **컨테이너에서는 새 진단을 못 돌린다** — 추론이 GPU와 ultralytics·torch를 쓰는 서브프로세스라 이미지에 안 넣었다. 연구 결과 화면과 **지난 진단 열어보기**는 된다.
 - **DB가 없다.** 결과는 파일로 쌓인다.
@@ -402,6 +407,17 @@ URL 등)은 코드에 하드코딩하지 않고 `.env` 파일로 관리한다. �
 `/{dataset_id}/...` 는 전부 두 조각이라 한 조각짜리 `/history`·`/upload`·
 `/reliability-profiles`와는 서로 가리지 않는다. 다만 한 조각짜리
 `/{dataset_id}` 를 나중에 추가한다면 그때는 선언 순서가 문제가 된다.
+
+**평가용 가림 판정** — 제품 판정과 파일·API가 따로다
+([설계](docs/evaluation-adjudication-design.md)).
+
+| 메서드 | 경로 | 설명 |
+|---|---|---|
+| POST | `/api/datasets/{id}/evaluations` | 후보 목록을 얼린다. `judge_budget`을 주면 두 방법 상위 N건의 합집합만 판정 |
+| GET | `/api/datasets/{id}/evaluations/{eid}/queue` | 순위·점수·추천 출처를 뺀 판정 목록 (고정 씨앗으로 섞음) |
+| PUT | `/api/datasets/{id}/evaluations/{eid}/adjudications` | 판정 저장 |
+| POST | `/api/datasets/{id}/evaluations/{eid}/activity` | 작업 시간 기록 |
+| GET | `/api/datasets/{id}/evaluations/{eid}/export` | 집계용 내보내기 (`methods`, `scope`) |
 
 자세한 응답 스키마는 [docs/04-api-reference.md](docs/04-api-reference.md).
 

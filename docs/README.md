@@ -14,8 +14,10 @@
 | 문서 | 무엇 |
 |---|---|
 | [../README.md](../README.md) | **여기부터.** 무엇이 되고 무엇이 안 되는지, 실행 방법, 환경변수 |
-| [25-advancement-roadmap.md](./25-advancement-roadmap.md) | **현재 실행 계획.** 저장 신뢰성 → 독립 평가 → 선택적 개선 → 사용자 검증. 다음 작업은 R1 |
-| [../CLAUDE.md](../CLAUDE.md) | 데스크탑 작업 인수인계. R1 재현 절차·검증·완료 보고 원칙 |
+| [../CLAUDE.md](../CLAUDE.md) | **`git pull` 직후 읽는 인수인계.** 현재 상태·다음 할 일·검증·보고 원칙 |
+| [25-advancement-roadmap.md](./25-advancement-roadmap.md) | **현재 실행 계획.** 1단계 R1~R5 완료·R6 부분. **다음 작업은 "첫 실행 순서" 6번 — AIDA와 단순 기준선의 작은 예비 비교** |
+| [HANDOFF_2026-09-13.md](./HANDOFF_2026-09-13.md) | 최신 인계 기록. 12절이 노트북 작업(평가 순서·모집단 수정)과 데스크탑 확인 목록 |
+| [evaluation-adjudication-design.md](./evaluation-adjudication-design.md) | **가림 판정의 생산 경로.** 묶음 고정, 후보 이름, AIDA 순서=제품 순위, 상위 N 합집합 판정, 판정자 간 불일치(미설계) |
 | [24-development-plan.md](./24-development-plan.md) | 기존 장기 계획과 A·B·C 산출물 기록. 후속 검증과 우선순위는 25번을 따른다 |
 | [23-plan.md](./23-plan.md) | 이전 연구 계획. 실험 배경과 미완료 과제의 기록 |
 | [22-plan.md](./22-plan.md) | 앞 계획 (2026-09-05). 항목이 거의 다 닫혔다 — 무엇을 왜 했는지 남긴다 |
@@ -29,6 +31,21 @@
 | [21-next-plan.md](./21-next-plan.md) | **실험 기록의 본체.** 결론이 뒤집힌 이력과 정정 표시를 보존한다 |
 | [../CHANGELOG.md](../CHANGELOG.md) | 날짜별 변경 이력 |
 | [09-getting-started.md](./09-getting-started.md) | 새 세션·새 개발자용 진입점 |
+
+## 평가 준비 — 시간·표본 크기 (2026-09-09~13)
+
+비교를 몇 건으로, 몇 분 안에 할지를 정하려고 만든 문서들이다. **N·Δ·D·T는 아직
+하나도 정하지 않았다.** 예비 비교 결과가 순위 품질·오류 비율 가정의 근거가 된다.
+
+| 문서 | 무엇 |
+|---|---|
+| [capacity-vs-sample-size.md](./capacity-vs-sample-size.md) | **처리 가능량과 필요 표본 크기의 차이.** 비전공자용 |
+| [n-required-plan.md](./n-required-plan.md) | 검정력 시뮬레이션 계약, Δ 시나리오, 가정과 해석 한계 |
+| [planning-assumption-evidence.md](./planning-assumption-evidence.md) | 무엇이 사용자 결정이고 무엇이 추정할 현실값인가 |
+| [power-sensitivity-2026-09-13.md](./power-sensitivity-2026-09-13.md) | 탐색 격자 전체 표 (전부 `official=False`) |
+| [pilot-evaluation-plan.md](./pilot-evaluation-plan.md) | 계측 계약, N·Δ 결정 절차 |
+| [manual-timing-pilot.md](./manual-timing-pilot.md) · [timing4-realistic-protocol.md](./timing4-realistic-protocol.md) · [sustained-pilot-protocol.md](./sustained-pilot-protocol.md) | 시간 파일럿 규약과 결과 (timing1~5, `s_plan`) |
+| [HANDOFF_2026-09-12.md](./HANDOFF_2026-09-12.md) · [HANDOFF_2026-09-10.md](./HANDOFF_2026-09-10.md) | 그 시점 인계 기록. 파일럿 원본 SHA-256은 09-12에 있다 |
 
 ## 배경과 원리 (대체로 유효)
 
