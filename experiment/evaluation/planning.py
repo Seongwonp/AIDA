@@ -224,6 +224,15 @@ def validate_scenario(s: PlanningScenario) -> None:
             f"alpha는 규약이 고정한 {PROTOCOL_ALPHA}다 (bootstrap.py의 95% 구간). "
             f"{s.alpha!r}로 계산하려면 규약부터 바꿔야 한다.")
 
+    # **말없이 깎지 않는다.** 오류를 (1 − 몰림) 비율의 이미지에만 두므로 그 안의
+    # 비율은 `오류 비율 ÷ (1 − 몰림)`이다. 이것이 1을 넘으면 만들 수 없는데,
+    # 처음에는 `min(1, …)`로 잘라서 오류 비율 0.6·몰림 0.5를 넣으면 실제로는
+    # 약 0.5가 만들어졌다. 시나리오에 적힌 값과 계산된 값이 달라진다.
+    if s.error_prevalence > (1.0 - s.image_error_concentration) + 1e-12:
+        raise ValidationError(
+            f"오류 비율 {s.error_prevalence}를 몰림 {s.image_error_concentration}로 "
+            "만들 수 없다 — 오류를 둘 이미지 비율(1 − 몰림)보다 오류 비율이 크다.")
+
     if s.candidates_per_dataset < s.images_per_dataset:
         raise ValidationError(
             f"후보({s.candidates_per_dataset})가 이미지({s.images_per_dataset})보다 "

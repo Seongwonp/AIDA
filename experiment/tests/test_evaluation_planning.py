@@ -24,7 +24,7 @@ from evaluation.planning import (BASELINE, METHOD, ONE_SIDED_ALPHA,
                                  power_against_targets, scenario_from_dict,
                                  simulate_power, strength_from_auc,
                                  validate_scenario)
-from evaluation.schema import ValidationError
+from evaluation.schema import Adjudication, Ranking, ValidationError
 from evaluation.summary import summarise
 
 EXPERIMENT = Path(__file__).resolve().parents[1]
@@ -76,6 +76,25 @@ def mk(**kw) -> PlanningScenario:
 def test_잘못된_입력은_거부한다(change):
     with pytest.raises(ValidationError):
         validate_scenario(mk(**change))
+
+
+def test_몰림으로_만들_수_없는_오류_비율은_거부한다():
+    """오류 비율 0.6을 이미지 절반(몰림 0.5)에만 두면 그 안에서 1.2가 필요하다.
+
+    고치기 전에는 조용히 1.0으로 잘려 실제로 약 0.5가 만들어졌다.
+    """
+    with pytest.raises(ValidationError, match="만들 수 없다"):
+        validate_scenario(mk(error_prevalence=0.6, image_error_concentration=0.5))
+    validate_scenario(mk(error_prevalence=0.5, image_error_concentration=0.5))   # 경계는 된다
+
+
+def test_만든_오류_비율이_설정값과_맞는다():
+    """설정 0.25 · 몰림 0.5 → 후보 2만 건에서 실제 비율이 0.25 근처여야 한다."""
+    s = mk(candidates_per_dataset=20000, images_per_dataset=10000,
+           error_prevalence=0.25, image_error_concentration=0.5)
+    adjudications, _ = build_world(s, random.Random(4))
+    real = sum(a.verdict == "hit" for a in adjudications) / len(adjudications)
+    assert real == pytest.approx(0.25, abs=0.02)
 
 
 def test_alpha는_규약이_고정한다():
@@ -218,7 +237,7 @@ def test_중복_묶음은_이미지를_넘지_않는다():
     s = mk(candidates_per_dataset=120, images_per_dataset=40,
            candidates_per_image={"1": 1, "3": 1, "5": 1},
            duplicates_per_unique_error={"1": 0.4, "2": 0.4, "4": 0.2},
-           error_prevalence=0.6, image_error_concentration=0.5)
+           error_prevalence=0.5, image_error_concentration=0.5)
     adjudications, _ = build_world(s, random.Random(9))
     images_of: dict[str, set] = {}
     for a in adjudications:
@@ -279,18 +298,35 @@ def test_실제_부트스트랩과_판정_규칙을_그대로_부른다(monkeypa
 
 
 def test_데이터셋_동등_가중이_유지된다():
-    """전체 차이는 데이터셋별 차이의 **단순 평균**이어야 한다."""
-    s = mk(dataset_count=3, candidates_per_dataset=60, images_per_dataset=30,
-           aida_ranking_strength=2.0, baseline_ranking_strength=0.0)
-    adjudications, rankings = build_world(s, random.Random(21))
-    per = []
-    for name in ("ds1", "ds2", "ds3"):
-        facts = [a for a in adjudications if a.dataset_id == name]
-        keys = {a.key for a in facts}
-        ranks = [r for r in rankings if r.candidate_key in keys]
-        per.append(paired_difference(facts, ranks, METHOD, BASELINE, 20)["difference"])
-    overall = equal_weight_difference(adjudications, rankings, METHOD, BASELINE, 20)
-    assert overall == pytest.approx(sum(per) / 3)
+    """**크기가 다른 데이터셋**으로 본다. 크기가 같으면 크기 가중과 구별이 안 된다.
+
+    처음 판은 시뮬레이터가 만든 같은 크기의 데이터셋으로 확인해서, 크기 가중으로
+    바뀌어도 통과하는 검사였다.
+
+    손계산 (예산 1):
+      big   이미지 4장·후보 1건씩. AIDA는 오류를 1위, 기준선은 정상을 1위 → 차이 1
+      small 이미지 2장·후보 1건씩. 두 방법 모두 오류를 1위                → 차이 0
+      동등 가중 = (1 + 0) / 2 = 0.5
+      후보 수 가중이면 (1×4 + 0×2) / 6 = 0.667 — 이것이 나오면 틀린 것이다
+    """
+    facts, ranks = [], []
+
+    def add(dataset, image, is_error, aida, base):
+        a = Adjudication(dataset_id=dataset, image_id=image, candidate_id="c0",
+                         suspicion="width", verdict="hit" if is_error else "miss",
+                         unique_error_id=f"{image}_e" if is_error else None)
+        facts.append(a)
+        ranks.append(Ranking(method=METHOD, candidate_key=a.key, severity=aida))
+        ranks.append(Ranking(method=BASELINE, candidate_key=a.key, severity=base))
+
+    add("big", "b0", True, 0.9, 0.1)
+    add("big", "b1", False, 0.1, 0.9)
+    add("big", "b2", False, 0.2, 0.2)
+    add("big", "b3", False, 0.3, 0.3)
+    add("small", "s0", True, 0.9, 0.9)
+    add("small", "s1", False, 0.1, 0.1)
+
+    assert equal_weight_difference(facts, ranks, METHOD, BASELINE, 1) == 0.5
 
 
 # ── 재현성과 반복 수 ─────────────────────────────────────────────────────────
