@@ -99,8 +99,9 @@ answer key. 44개 파일의 SHA-256이 인계 문서에 있다.
 8. `docs/25-advancement-roadmap.md` — 단계별 상태
 
 `docs/20-local-claude-handoff.md`는 과거 OBB 작업 기록이므로 **현재 실행 지시로
-쓰지 않는다.** R1~R6(docs/25 1단계)은 **전부 끝났다** — 그 절을 지금 할 일로
-읽지 않는다.
+쓰지 않는다.** R1~R5(docs/25 1단계)는 **끝났다** — 그 절을 지금 할 일로 읽지 않는다. **R6은
+부분 완료**다: jsdom 흐름 검사는 CI에서 돌지만 계획이 요구한 **브라우저 통합
+검사(Playwright 등)는 미완**이다. 경계는 [`docs/testing-boundary.md`](docs/testing-boundary.md).
 
 ## 환경과 검증
 
