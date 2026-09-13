@@ -1138,9 +1138,11 @@ def capacity_from_blocks(total_seconds: float, datasets: int,
                 f"반복 블록 간 분산 근거가 없다 → {evidence}. 채택하려면 여러 "
                 "날에 걸친 반복 지속 블록이나 추가 판정자 자료가 필요하다.")
     else:
-        note = ("데이터셋당 1블록 — 관측한 범위다. 다만 전체로는 "
-                f"{blocks_total}블록이라 '다른 데이터셋에서도 같은 블록이 된다'는 "
-                "외삽이 남아 있다. 데이터셋 간 난이도 차이는 관측하지 않았다.")
+        note = ("**데이터셋당 관측 범위 운영안**이다 — 관측 범위인 것은 "
+                "데이터셋당 1블록뿐이고, **전체 계획이 비외삽이라는 뜻이 "
+                f"아니다.** 전체로는 {blocks_total}블록이라 '다른 "
+                "데이터셋에서도 같은 블록이 된다'는 외삽이 남아 있다. "
+                "데이터셋 간 난이도 차이는 관측하지 않았다.")
 
     return {**common, "status": "ok", "evidence": evidence,
             "per_dataset_evidence": per_dataset,

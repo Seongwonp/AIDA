@@ -1,0 +1,160 @@
+{
+  "version": 1,
+  "created": "2026-09-13",
+  "contract": "docs/n-required-plan.md",
+  "purpose": "설계 민감도 분석용 가정. N_required·N_final·Δ를 확정하지 않는다. 최종 자연 오류 분포를 보장하지 않는다.",
+  "source_tags": {
+    "measured_development": "개발 데이터에서 실측",
+    "timing_pilot": "timing1~5 파일럿에서 관측 (판정자 한 명, KITTI val Car, 자 하나)",
+    "business_assumption": "사용자가 사업 기준으로 정할 값 — 아직 정하지 않았다",
+    "unsupported_sensitivity_example": "근거 없음. 민감도 축으로만 쓰고 공식 결론에 쓰지 않는다",
+    "protocol_fixed": "평가 규약이 고정한 값 — 가정이 아니다",
+    "simulation_setting": "시뮬레이션 설정 — 결과의 정밀도만 바꾼다"
+  },
+  "grid": {
+    "datasets": {
+      "values": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "source": "business_assumption",
+      "basis": "D는 사용자 결정. 비교를 위해 늘어놓는다"
+    },
+    "budgets": {
+      "values": [
+        120,
+        240,
+        360,
+        480,
+        600
+      ],
+      "source": "business_assumption",
+      "basis": "N 후보. 120은 timing5 지속 블록 크기"
+    },
+    "pool_to_budget_ratio": {
+      "value": 2.0,
+      "source": "unsupported_sensitivity_example",
+      "basis": "후보 풀이 검수량의 몇 배인가. 풀과 N이 같으면 두 방법이 같은 후보를 다 보므로 재정렬 효과가 0이 된다. 실제 풀 크기는 데이터셋마다 다르고 관측하지 않았다"
+    },
+    "candidates_per_image": {
+      "value": {
+        "1": 38,
+        "2": 10,
+        "3": 8,
+        "4": 1,
+        "6": 1
+      },
+      "source": "timing_pilot",
+      "basis": "timing5 기존 라벨 층 실제 후보 92건이 58개 이미지에 나뉜 모양. 177건 중 100건을 뽑은 부분이라 이미지당 개수가 실제보다 적게 나왔을 수 있다 — 이미지 내 묶임을 과소평가하는 쪽이다"
+    },
+    "error_prevalence": [
+      {
+        "value": 0.065,
+        "source": "timing_pilot",
+        "basis": "timing5 기존 라벨 층 실제 후보 판정 hit 6/92. 정답이 없는 사람 판정이고 판정자 한 명이다"
+      },
+      {
+        "value": 0.135,
+        "source": "timing_pilot",
+        "basis": "timing4 기존 라벨 층 실제 후보 판정 hit 5/37. 표본이 작다"
+      },
+      {
+        "value": 0.25,
+        "source": "unsupported_sensitivity_example",
+        "basis": "오류가 많은 데이터를 가정한 민감도 예시"
+      }
+    ],
+    "dependence": [
+      {
+        "name": "independent",
+        "image_error_concentration": 0.0,
+        "duplicates_per_unique_error": {
+          "1": 1.0
+        },
+        "sources": {
+          "image_error_concentration": "unsupported_sensitivity_example",
+          "duplicates_per_unique_error": "timing_pilot"
+        },
+        "basis": "중복: 파일럿 hit 11건이 모두 서로 다른 오류였다(표본 작음). 오류가 이미지에 몰리지 않는다는 것은 근거 없음"
+      },
+      {
+        "name": "clustered",
+        "image_error_concentration": 0.5,
+        "duplicates_per_unique_error": {
+          "1": 0.6,
+          "2": 0.3,
+          "3": 0.1
+        },
+        "sources": {
+          "image_error_concentration": "unsupported_sensitivity_example",
+          "duplicates_per_unique_error": "unsupported_sensitivity_example"
+        },
+        "basis": "오류가 절반의 이미지에 몰리고 한 오류를 여러 후보가 집는 경우의 민감도 예시"
+      }
+    ],
+    "hold_rate": {
+      "value": 0.0,
+      "source": "timing_pilot",
+      "basis": "timing1~5 판정 232건 중 보류 0건"
+    },
+    "alpha": {
+      "value": 0.05,
+      "source": "protocol_fixed",
+      "basis": "evaluation-protocol.md 9·10절: 짝지은 차이의 95% 구간 하한 > Δ"
+    },
+    "target_power": {
+      "value": null,
+      "source": "business_assumption",
+      "basis": "사용자가 정하지 않았다. 0.80과 0.90을 비교로만 보여 준다"
+    },
+    "delta": {
+      "value": null,
+      "source": "business_assumption",
+      "basis": "delta_status=undetermined. A·B·C 안을 나란히 계산만 한다"
+    },
+    "s_plan_seconds": {
+      "value": 5.02,
+      "source": "timing_pilot",
+      "basis": "timing5. 현재 판정자의 관측 기반 계획값이지 SLA가 아니다"
+    },
+    "block_size": {
+      "value": 120,
+      "source": "timing_pilot",
+      "basis": "timing5 지속 블록"
+    },
+    "iterations": {
+      "value": 60,
+      "source": "simulation_setting",
+      "basis": "탐색용. 공식 판정 최소(200)에 못 미쳐 결과가 too_few_iterations로 표시된다"
+    },
+    "bootstrap_iterations": {
+      "value": 150,
+      "source": "simulation_setting",
+      "basis": "탐색용. 공식 판정 최소(400)에 못 미친다"
+    },
+    "random_seed": {
+      "value": 20260913,
+      "source": "simulation_setting",
+      "basis": "재현용"
+    },
+    "ranking": [
+      {
+        "name": "small_gap",
+        "aida_auc": 0.75,
+        "baseline_auc": 0.7,
+        "source": "unsupported_sensitivity_example",
+        "basis": "AIDA가 기준선보다 짝 비교 확률로 5%p 나은 경우. 두 방법 모두 관측하지 않았다"
+      },
+      {
+        "name": "large_gap",
+        "aida_auc": 0.85,
+        "baseline_auc": 0.7,
+        "source": "unsupported_sensitivity_example",
+        "basis": "15%p 나은 경우. 두 방법 모두 관측하지 않았다"
+      }
+    ],
+    "ranking_note": "순위 품질은 짝 비교 확률(AUC = 오류 후보 점수가 정상 후보 점수보다 높을 확률)로 적는다. 0.5는 무작위, 1.0은 완벽. 파일럿에서 두 방법의 효과를 계산하면 Δ 선택이 오염되므로 일부러 계산하지 않았다. 처음 판에는 강도 1.0(완벽한 순위)을 넣었다가 고쳤다."
+  }
+}
