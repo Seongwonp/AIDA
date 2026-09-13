@@ -120,8 +120,8 @@ Python 환경은 **둘로 나뉘어 있다.** 섞으면 없는 패키지를 찾�
 
 최근 통과 수는 experiment 408 · backend 260(건너뜀 1) · frontend 176이다.
 experiment·backend는 2026-09-13 노트북에서 CI와 같은 의존성 목록만 깐 가상환경으로
-직접 돌린 결과다(backend의 건너뜀 1건은 노트북 환경 탓일 수 있다 — 데스크탑
-기록은 252 통과였다). frontend 176은 이전 데스크탑 기록이고, 이번 `api.ts` 변경
+직접 돌린 결과다(backend의 건너뜀 1건은 `test_uploads_dir_agreement.py:100`
+"외부 드라이브가 없는 환경"이다 — 노트북에만 해당하고, 데스크탑 기록은 252 통과였다). frontend 176은 이전 데스크탑 기록이고, 이번 `api.ts` 변경
 뒤에는 노트북에 `node_modules`가 없어 **안 돌렸다.**
 
 프론트 변경 시 `frontend`에서 관련 검사와 `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`를 실행한다. 백엔드 변경 시 해당 가상환경으로 `backend`의 pytest를 실행한다. 화면 통합 검사 도구가 없으면 기존 구성을 확인한 뒤 필요한 최소 구성을 추가한다. 실제 브라우저 확인과 자동 테스트 결과를 구분한다.
