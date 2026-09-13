@@ -449,6 +449,25 @@ def build_world(scenario: PlanningScenario,
 
 # ── 검정력 ───────────────────────────────────────────────────────────────────
 
+def wilson_interval(successes: int, trials: int,
+                    z: float = 1.959963984540054) -> tuple[float, float]:
+    """검정력의 95% Wilson 구간.
+
+    `monte_carlo_se = sqrt(p(1−p)/R)`는 p가 0이나 1이면 **0**이 된다. 복제 60에서
+    0/60이 나왔다고 참 검정력이 정확히 0은 아니다(상한 약 0.06). 탐색 표가 실제로
+    `0.00±0.00`, `1.00±0.00`을 찍었다.
+    """
+    p = successes / trials
+    denom = 1 + z * z / trials
+    centre = (p + z * z / (2 * trials)) / denom
+    half = z * math.sqrt(p * (1 - p) / trials + z * z / (4 * trials * trials)) / denom
+    # 끝값은 식이 아니라 정의로 둔다. 60/60에서 부동소수 때문에 상한이
+    # 0.9999999999999998로 나와 "1이 안 된다"처럼 읽혔다.
+    low = 0.0 if successes == 0 else max(0.0, centre - half)
+    high = 1.0 if successes == trials else min(1.0, centre + half)
+    return (low, high)
+
+
 def _check_delta(value) -> float:
     if (isinstance(value, bool) or not isinstance(value, (int, float))
             or not math.isfinite(value)):
@@ -552,8 +571,10 @@ def simulate_power(scenario: PlanningScenario, budget: int,
     by_delta = []
     for delta, hit in zip(deltas, successes):
         power = hit / reps
+        low, high = wilson_interval(hit, reps)
         by_delta.append({"delta": delta, "successes": hit, "power": power,
-                         "monte_carlo_se": math.sqrt(power * (1.0 - power) / reps)})
+                         "monte_carlo_se": math.sqrt(power * (1.0 - power) / reps),
+                         "power_wilson95": [round(low, 4), round(high, 4)]})
 
     enough = reps >= MIN_OFFICIAL_ITERATIONS and boots >= MIN_OFFICIAL_BOOTSTRAP
     return {

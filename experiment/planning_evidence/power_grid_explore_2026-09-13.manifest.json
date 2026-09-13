@@ -1,0 +1,22 @@
+{
+  "name": "power_grid_explore_2026-09-13",
+  "generated_by": "experiment/power_report.py (결과), experiment/package_power_grid.py (묶음)",
+  "command": "./experiment/venv/Scripts/python.exe experiment/power_report.py --total-minutes 30 60 120 180 --allow-long --out <raw.json>",
+  "code_commit": "159d04d8",
+  "scenario_file": "experiment/planning_scenarios.json",
+  "scenario_commit": "159d04d8",
+  "scenario_sha256": "fd4ff64fca704b282fc9e3c5a82d0197bdad3a97d85234ae99ee88136a0758a7",
+  "random_seed": 20260913,
+  "cell_seed_rule": "f\"{random_seed}|D{D}_N{N}_p{prevalence}_{dependence}_{ranking}\"",
+  "iterations": 60,
+  "bootstrap_iterations": 150,
+  "cells": 240,
+  "runtime_minutes_wall": 64.6,
+  "hardware": "Intel Core i5-14400 (10 cores / 16 logical), ProcessPoolExecutor workers 15, RAM 31.8 GB",
+  "raw_output_sha256": "9954a488466152efb9c67720cc237612bfde9a19bd78229006be4369a84fcc07",
+  "packaged_json": "power_grid_explore_2026-09-13.json",
+  "packaged_json_sha256": "bb3f5c53ee705b06ad16ef845bc06c38a0dd1de6b6f9ad2f575fa6bf85152283",
+  "packaged_csv": "power_grid_explore_2026-09-13.csv",
+  "packaged_csv_sha256": "bdc2c2c48df1a789652433e23e99b91cef6926787083a16ba2ed6c7b0489eb8d",
+  "note": "실행 시작 시 작업 트리의 planning.py·power_report.py·planning_scenarios.json은 159d04d8에 커밋된 내용과 같았다. 52ac9d80 코드로 D1·N120 12칸을 같은 씨앗으로 다시 돌려 원시 결과와 0건 차이를 확인했다(30초)."
+}

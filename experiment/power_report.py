@@ -15,9 +15,13 @@
     ./experiment/venv/Scripts/python.exe experiment/power_report.py --total-minutes 60 180
 """
 import argparse
+import datetime
+import hashlib
 import json
 import math
 import os
+import platform
+import subprocess
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -185,10 +189,86 @@ def _calibrate_seconds_per_candidate_iteration() -> float:
 
 
 def _fmt_power(entry: dict | None, flag: bool) -> str:
+    """검정력 한 칸. **0이나 1이면 표준오차 대신 Wilson 한계를 찍는다.**
+
+    `±0.00`은 "정확히 0"처럼 읽힌다. 복제 60의 0/60은 상한이 약 0.06이다.
+    """
     if entry is None:
         return "     -      "
     mark = "!" if flag else " "
-    return f"{entry['power']:.2f}±{entry['monte_carlo_se']:.2f}{mark}"
+    p = entry["power"]
+    if p == 0.0:
+        return f"0.00(≤{entry['power_wilson95'][1]:.2f}){mark}"
+    if p == 1.0:
+        return f"1.00(≥{entry['power_wilson95'][0]:.2f}){mark}"
+    return f"{p:.2f}±{entry['monte_carlo_se']:.2f}{mark}"
+
+
+# 2026-09-13 보정 근거. 탐색 격자 240칸의 직렬 추정 534분이 작업자 15개로 실측
+# 64.6분이었다 — 작업자 수(15)가 아니라 **물리 코어 수(10)** 로 나누고 1.2를 곱하면
+# 64.1분으로 맞았다. 같은 날 12칸 재실행(직렬 추정 4.0분)도 0.48분 대 실측 0.50분.
+# i5-14400은 성능 코어 6개(하이퍼스레딩)와 효율 코어 4개가 섞여 논리 16개가
+# 물리 16개만큼 일하지 않는다. **두 번 맞았다는 것이지 법칙은 아니다** — 그래서
+# 한 숫자가 아니라 범위로 찍는다.
+OVERHEAD = 1.2
+
+
+def physical_cores() -> int | None:
+    try:
+        import psutil
+        return psutil.cpu_count(logical=False)
+    except Exception:
+        return None
+
+
+def estimate_wall_minutes(serial_minutes: float, workers: int, cells: int,
+                          physical: int | None, logical: int | None) -> tuple[float, float]:
+    """(낙관, 보수) 벽시계 분. 낙관은 논리 코어, 보수는 물리 코어로 나눈다.
+
+    물리 코어를 모르면 논리 코어의 절반으로 본다.
+    """
+    logical = logical or workers
+    phys = physical or max(1, logical // 2)
+    fast = max(1, min(workers, cells, logical))
+    slow = max(1, min(workers, cells, phys))
+    return (serial_minutes / fast * OVERHEAD, serial_minutes / slow * OVERHEAD)
+
+
+def _git(*args: str) -> str:
+    got = subprocess.run(["git", "-C", str(HERE.parent), *args],
+                         capture_output=True, text=True, encoding="utf-8")
+    return got.stdout.strip()
+
+
+def run_metadata(args, scenarios_path: Path, workers: int, reps: int, boots: int,
+                 started: float) -> dict:
+    """결과만으로는 어느 코드·시나리오·씨앗으로 나왔는지 모른다. 같이 적는다."""
+    tracked = ["experiment/evaluation", "experiment/power_report.py",
+               "experiment/planning_scenarios.json"]
+    return {
+        "generated_at": datetime.datetime.now().isoformat(timespec="seconds"),
+        "argv": sys.argv[1:],
+        "code_commit": _git("rev-parse", "--short", "HEAD") or None,
+        "code_dirty": bool(_git("status", "--porcelain", "--", *tracked)),
+        "scenario_file": scenarios_path.name,
+        "scenario_sha256": hashlib.sha256(scenarios_path.read_bytes()).hexdigest(),
+        "cell_seed_rule": "f\"{random_seed}|{scenario.name}\"",
+        "iterations": reps, "bootstrap_iterations": boots,
+        "runtime_seconds": round(time.time() - started, 1),
+        "hardware": {"logical_cpus": os.cpu_count(), "physical_cores": physical_cores(),
+                     "workers": workers, "platform": platform.platform(),
+                     "python": platform.python_version()},
+        "exploratory": reps < MIN_OFFICIAL_ITERATIONS or boots < MIN_OFFICIAL_BOOTSTRAP,
+    }
+
+
+def smoke_grid(grid: dict) -> dict:
+    """CI용 작은 격자. **결정적**이고 몇 초 안에 끝난다. 결과에 뜻은 없다."""
+    small = json.loads(json.dumps(grid))
+    small["error_prevalence"] = small["error_prevalence"][:1]
+    small["dependence"] = small["dependence"][:1]
+    small["ranking"] = small["ranking"][-1:]
+    return small
 
 
 def main() -> int:
@@ -210,10 +290,26 @@ def main() -> int:
     parser.add_argument("--allow-long", action="store_true",
                         help="예상 시간을 보고 사용자가 승인했을 때만 붙인다")
     parser.add_argument("--out", help="결과 JSON을 저장할 경로")
+    parser.add_argument("--smoke", action="store_true",
+                        help="CI용 작은 결정적 격자(1칸, 복제 5, 재표집 20). 결과에 뜻은 없다")
     args = parser.parse_args()
 
-    raw = json.loads(Path(args.scenarios).read_text(encoding="utf-8"))
+    # **CI에서 긴 실행을 시작하지 않는다.** --allow-long을 붙여도 막는다 — CI에는
+    # 소요 시간을 보고 승인할 사람이 없다.
+    if os.environ.get("CI") and not (args.estimate_only or args.smoke):
+        print("CI 환경에서는 격자를 돌리지 않습니다. --estimate-only 나 --smoke만 됩니다.")
+        return 3
+
+    started_at = time.time()
+    scenarios_path = Path(args.scenarios)
+    raw = json.loads(scenarios_path.read_text(encoding="utf-8"))
     grid = raw["grid"]
+    if args.smoke:
+        grid = smoke_grid(grid)
+        args.datasets = args.datasets or [1]
+        args.budgets = args.budgets or [20]
+        args.iterations = 5 if args.iterations is None else args.iterations
+        args.bootstrap = 20 if args.bootstrap is None else args.bootstrap
     cells = scenarios_from_grid(grid, args.datasets, args.budgets)
     # **`or`로 기본값을 채우지 않는다.** `--iterations 0`이 조용히 파일 값(60)으로
     # 바뀌면 사용자는 자기가 준 값으로 돌았다고 믿는다.
@@ -229,10 +325,14 @@ def main() -> int:
     serial = sum(reps * (boots + 3) * c["scenario"].dataset_count
                  * c["scenario"].candidates_per_dataset * unit for c in cells)
     workers = max(1, args.workers)
-    wall = serial / min(workers, len(cells)) * 1.2 / 60
-    print(f"칸 {len(cells)}개 · 복제 {reps} · 재표집 {boots} · 작업자 {workers}")
-    print(f"예상 소요: 약 {wall:.1f}분 (직렬이면 {serial / 60:.0f}분). "
+    physical = physical_cores()
+    fast, wall = estimate_wall_minutes(serial / 60, workers, len(cells), physical, os.cpu_count())
+    print(f"칸 {len(cells)}개 · 복제 {reps} · 재표집 {boots} · 작업자 {workers} "
+          f"(물리 코어 {physical or '모름'} / 논리 {os.cpu_count()})")
+    print(f"예상 소요: 약 {fast:.1f}~{wall:.1f}분 (직렬 추정 {serial / 60:.0f}분). "
           "CPU만 쓴다 — GPU·다운로드·유료 서비스 없음.")
+    print("  범위의 긴 쪽은 물리 코어 수로 나눈 값이다 — 2026-09-13 두 번의 실측과 맞았다. "
+          "보장이 아니다.")
     if reps < MIN_OFFICIAL_ITERATIONS or boots < MIN_OFFICIAL_BOOTSTRAP:
         print(f"  반복이 공식 최소({MIN_OFFICIAL_ITERATIONS}/{MIN_OFFICIAL_BOOTSTRAP})"
               "에 못 미친다 — 모든 칸이 too_few_iterations로 나온다. 탐색용이다.")
@@ -280,6 +380,8 @@ def main() -> int:
             deltas.append({"name": option["name"], "rule": option["rule"],
                            "delta": entry["delta"], "power": entry["power"],
                            "monte_carlo_se": entry["monte_carlo_se"],
+                           "successes": entry["successes"],
+                           "power_wilson95": entry["power_wilson95"],
                            "exceeds_expected_errors": entry["delta"] > expected,
                            **power_against_targets(entry["power"])})
         rows.append({"prevalence": cell["prevalence"], "dependence": cell["dependence"],
@@ -355,14 +457,20 @@ def main() -> int:
     print("  이 표로 N_required·N_final·Δ를 정하지 않고, 유리한 칸 하나를 권고하지 않는다.")
 
     if args.out:
-        Path(args.out).write_text(json.dumps({
+        for row, cell in zip(rows, cells):
+            row["cell_seed"] = f"{cell['scenario'].random_seed}|{cell['scenario'].name}"
+            row["exploratory"] = (reps < MIN_OFFICIAL_ITERATIONS
+                                  or boots < MIN_OFFICIAL_BOOTSTRAP)
+        text = json.dumps({
+            "metadata": run_metadata(args, scenarios_path, workers, reps, boots, started_at),
             "scenarios_file": str(Path(args.scenarios).name),
             "iterations": reps, "bootstrap_iterations": boots,
             "comparison_powers": list(COMPARISON_POWERS),
             "n_required_status": "undetermined", "n_final_status": "undetermined",
             "delta_status": "undetermined", "rows": rows},
-            ensure_ascii=False, indent=2), encoding="utf-8")
-        print(f"저장했습니다: {args.out}")
+            ensure_ascii=False, indent=2) + "\n"
+        Path(args.out).write_text(text, encoding="utf-8")
+        print(f"저장했습니다: {args.out}  sha256={hashlib.sha256(text.encode('utf-8')).hexdigest()}")
     return 0
 
 

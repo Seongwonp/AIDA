@@ -558,3 +558,82 @@ def test_반복_수_0을_조용히_기본값으로_바꾸지_않는다(flag):
                          encoding="utf-8", errors="replace")
     assert got.returncode != 0
     assert "1 이상" in got.stderr
+
+
+# ── 몬테카를로 표시와 실행 안내 ──────────────────────────────────────────────
+
+def test_검정력이_0이나_1이어도_구간_폭이_0이_아니다():
+    """5회 모두 성공: 표준오차는 0이지만 Wilson 하한은 0.5655다."""
+    s = mk(candidates_per_dataset=20, images_per_dataset=10, error_prevalence=1.0,
+           aida_ranking_strength=3.0, baseline_ranking_strength=0.0,
+           iterations=5, bootstrap_iterations=20)
+    got = simulate_power(s, 10, deltas=[-1.0, 0.0])
+    always, never = got["by_delta"]
+    assert always["monte_carlo_se"] == 0.0
+    assert always["power_wilson95"][0] == pytest.approx(0.5655, abs=1e-4)
+    assert never["power_wilson95"][1] == pytest.approx(0.4345, abs=1e-4)
+
+
+def test_표에서_0과_1은_표준오차_대신_한계를_찍는다():
+    import power_report
+    zero = power_report._fmt_power({"power": 0.0, "monte_carlo_se": 0.0,
+                                    "power_wilson95": [0.0, 0.0602]}, False)
+    one = power_report._fmt_power({"power": 1.0, "monte_carlo_se": 0.0,
+                                   "power_wilson95": [0.9398, 1.0]}, False)
+    mid = power_report._fmt_power({"power": 0.5, "monte_carlo_se": 0.0645,
+                                   "power_wilson95": [0.38, 0.62]}, False)
+    assert "±" not in zero and "≤0.06" in zero
+    assert "±" not in one and "≥0.94" in one
+    assert mid.startswith("0.50±0.06")
+
+
+def test_소요_시간_범위를_실측으로_맞춘_규칙대로_낸다():
+    """2026-09-13 격자: 직렬 추정 534분, 작업자 15, 칸 240, 물리 10 / 논리 16.
+
+    낙관 534 / 15 × 1.2 = 42.72,  보수 534 / 10 × 1.2 = 64.08  (실측 64.6)
+    """
+    import power_report
+    fast, slow = power_report.estimate_wall_minutes(534, 15, 240, 10, 16)
+    assert fast == pytest.approx(42.72)
+    assert slow == pytest.approx(64.08)
+    # 칸이 작업자보다 적으면 칸 수가 병렬 한도다: 4.0/12×1.2=0.4, 4.0/10×1.2=0.48
+    assert power_report.estimate_wall_minutes(4.0, 15, 12, 10, 16) == (
+        pytest.approx(0.4), pytest.approx(0.48))
+    # 물리 코어를 모르면 논리의 절반: 100/8×1.2 = 15
+    assert power_report.estimate_wall_minutes(100, 15, 240, None, 16)[1] == pytest.approx(15.0)
+
+
+def _run_report(*argv, ci=None, tmp_path=None):
+    import os
+    import subprocess
+    import sys
+    env = {k: v for k, v in os.environ.items() if k != "CI"}
+    env.update(PYTHONIOENCODING="utf-8", PYTHONPATH=str(EXPERIMENT))
+    if ci:
+        env["CI"] = ci
+    return subprocess.run([sys.executable, "power_report.py", *argv], cwd=EXPERIMENT,
+                          env=env, capture_output=True, encoding="utf-8", errors="replace")
+
+
+def test_CI에서는_긴_실행을_막는다():
+    got = _run_report("--allow-long", "--workers", "1", ci="true")
+    assert got.returncode == 3
+    assert "CI" in got.stdout
+
+
+def test_작은_결정적_격자는_CI에서도_돌고_같은_결과를_낸다(tmp_path):
+    a, b = tmp_path / "a.json", tmp_path / "b.json"
+    for out in (a, b):
+        got = _run_report("--smoke", "--workers", "1", "--out", str(out), ci="true")
+        assert got.returncode == 0, got.stdout + got.stderr
+    ra = json.loads(a.read_text(encoding="utf-8"))
+    rb = json.loads(b.read_text(encoding="utf-8"))
+    assert ra["rows"] == rb["rows"]
+    assert len(ra["rows"]) == 1
+    meta = ra["metadata"]
+    assert meta["exploratory"] is True
+    assert meta["iterations"] == 5 and meta["bootstrap_iterations"] == 20
+    assert len(meta["scenario_sha256"]) == 64
+    assert ra["rows"][0]["status"] == "too_few_iterations"
+    assert ra["rows"][0]["cell_seed"].startswith("20260913|D1_N20_")
+
