@@ -319,6 +319,9 @@ class EvaluationCandidate(BaseModel):
     class_name: str | None = None
     # 방법별 점수. 판정 화면에는 **보내지 않는다.**
     scores: dict[str, float] = {}
+    # 진단이 매긴 AIDA 제품 순위(1부터). 심각도 순서와 다를 수 있다 — 제품은
+    # 계통적 유형을 먼저 보여준다. 옛 묶음에는 없다.
+    aida_rank: int | None = None
 
 
 class EvaluationSnapshot(BaseModel):
@@ -334,6 +337,12 @@ class EvaluationSnapshot(BaseModel):
     candidate_set_hash: str = ""
     # 판정 순서를 섞은 씨앗. 안 남기면 같은 순서를 다시 못 만든다.
     shuffle_seed: int = 0
+    # 어느 목록을 얼렸나. `all_candidates`(잘리기 전 전부) | `review_queue`(옛 진단).
+    candidate_pool: str = "review_queue"
+    # 진단이 적은 전체 후보 수. 얼린 수보다 크면 잘린 목록이다. 옛 묶음에는 없다.
+    total_in_queue: int | None = None
+    # 판정 예산 N. 있으면 두 방법 상위 N건의 합집합만 판정한다.
+    judge_budget: int | None = None
 
 
 class EvaluationAdjudication(BaseModel):

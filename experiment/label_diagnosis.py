@@ -408,6 +408,38 @@ def review_order(findings: list[BoxFinding], summary: dict) -> list[BoxFinding]:
                   key=lambda f: (f.suspicion not in present, -f.severity))
 
 
+def candidate_rows(ranked: list[BoxFinding], class_names: list[str]) -> list[dict]:
+    """정렬된 후보를 진단 결과 파일의 한 줄씩으로. `rank`는 1부터 이 순서다.
+
+    `review_queue`(화면용 상위 N건)와 `all_candidates`(잘리기 전 전부)가 **같은
+    함수**로 만들어져야 한다 — 둘이 다르면 평가가 얼린 후보와 화면의 후보가
+    어긋난다.
+    """
+    return [
+        {
+            "rank": i + 1,
+            "image": f.image,
+            "label_index": f.label_index,
+            "suspicion": f.suspicion,
+            "severity": f.severity,
+            "detail": f.detail,
+            # 픽셀 좌표 (x1, y1, x2, y2). 화면이 이미지 위에 박스를 그릴 때
+            # 쓴다. 누락 의심은 라벨이 없으므로 "있어야 할 자리"인 예측
+            # 박스가 들어간다 — 그게 그 지목을 가리키는 유일한 수단이다.
+            "box": [round(v, 1) for v in f.box],
+            # 단순 불일치 기준선의 재료. 라벨이 없는 의심(누락)은 None이고, 주
+            # 비교에서 빠져 별도 층으로 보고한다(docs/evaluation-adjudication-design.md).
+            "label_iou": f.label_iou,
+            # 무엇을 보는 작업인지 알아야 판정할 수 있다. **가림 대상이
+            # 아니다** — 가리는 것은 방법·점수·순위·세부 의심 유형이다.
+            "class_name": (class_names[f.class_id]
+                           if f.class_id is not None
+                           and f.class_id < len(class_names) else None),
+        }
+        for i, f in enumerate(ranked)
+    ]
+
+
 def rescore(findings: list[BoxFinding], summary: dict) -> list[BoxFinding]:
     """데이터셋 전체를 본 뒤 severity를 다시 매긴다.
 

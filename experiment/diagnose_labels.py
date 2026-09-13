@@ -20,7 +20,7 @@ from ultralytics import YOLO
 import config
 from label_diagnosis import (
     match_boxes,Box, BoxFinding, diagnose_image, order_basis, order_risk, rescore, review_order,
-                             review_value, summarize)
+                             review_value, summarize, candidate_rows)
 
 # 진단이 "자"로 쓰는 모델. 기본은 오류 없는 라벨로 학습한 clean 모델이다.
 #
@@ -219,31 +219,11 @@ def build_result(name: str, findings: list[BoxFinding], total_labels: int,
         "dataset": name,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "summary": summary,
-        "review_queue": [
-            {
-                "rank": i + 1,
-                "image": f.image,
-                "label_index": f.label_index,
-                "suspicion": f.suspicion,
-                "severity": f.severity,
-                "detail": f.detail,
-                # 픽셀 좌표 (x1, y1, x2, y2). 화면이 이미지 위에 박스를 그릴 때
-                # 쓴다. 누락 의심은 라벨이 없으므로 "있어야 할 자리"인 예측
-                # 박스가 들어간다 — 그게 그 지목을 가리키는 유일한 수단이다.
-                "box": [round(v, 1) for v in f.box],
-                # 단순 불일치 기준선의 재료. 라벨이 없는 의심(누락)은 None이다
-                # — 그 기준선을 누락에 어떻게 매길지는 아직 정해지지 않았다
-                # (docs/evaluation-adjudication-design.md).
-                "label_iou": f.label_iou,
-                # 무엇을 보는 작업인지 알아야 판정할 수 있다. **가림 대상이
-                # 아니다** — 가리는 것은 방법·점수·순위·세부 의심 유형이다.
-                "class_name": (config.CLASS_NAMES[f.class_id]
-                               if f.class_id is not None
-                               and f.class_id < len(config.CLASS_NAMES) else None),
-            }
-            for i, f in enumerate(ranked[:top_n])
-        ],
+        "review_queue": candidate_rows(ranked[:top_n], config.CLASS_NAMES),
         "total_in_queue": len(ranked),
+        # 잘리기 전 전부. 평가는 이것을 얼린다 — `review_queue`만 얼리면 AIDA
+        # 순위 상위 N건 안에서만 기준선과 견주게 되어 AIDA에 유리하게 휜다.
+        "all_candidates": candidate_rows(ranked, config.CLASS_NAMES),
         "caveat": (
             "기준 모델(clean)의 예측과 라벨을 대조한 결과입니다. 모델 예측 자체도 "
             "완벽하지 않으므로 확정 오류가 아니라 재검수 우선순위로 활용하세요."

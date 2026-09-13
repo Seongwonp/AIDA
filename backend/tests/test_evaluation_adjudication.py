@@ -19,12 +19,17 @@ DATASET = "0123456789ab"
 
 
 def _queue(*items) -> dict:
-    """진단 결과 파일의 최소 모양. 평가가 얼리는 것은 `review_queue`뿐이다."""
+    """진단 결과 파일의 최소 모양. `all_candidates`가 없으면 `review_queue`를 얼린다.
+
+    실제 진단은 `total_in_queue`를 늘 적는다. 없으면 목록이 잘렸는지 몰라 두
+    방법 비교가 막히므로 여기서도 적는다 — 이 목록은 잘리지 않은 전부다.
+    """
     return {
         "dataset_id": DATASET,
         "generated_at": "2026-09-09T00:00:00+00:00",
         "summary": {},
         "caveat": "",
+        "total_in_queue": len(items),
         "review_queue": [
             {"rank": i + 1, "image": im, "label_index": li, "suspicion": s,
              # 상자는 줄마다 다르게 준다. 후보 이름이 (이미지, 라벨, 유형,

@@ -134,12 +134,22 @@ export type AdjudicationRow = {
   unique_error_id: string | null;
 };
 
-/** 평가를 시작한다 — 지금 후보 목록을 얼린다. 이미 있으면 409다. */
-export const startEvaluation = (datasetId: string, evaluationId: string, shuffleSeed = 0) =>
+/**
+ * 평가를 시작한다 — 지금 후보 목록을 얼린다. 이미 있으면 409다.
+ *
+ * `judgeBudget`을 주면 두 방법 상위 N건의 합집합만 판정 목록에 온다.
+ */
+export const startEvaluation = (
+  datasetId: string,
+  evaluationId: string,
+  shuffleSeed = 0,
+  judgeBudget?: number,
+) =>
   client
     .post(`/api/datasets/${datasetId}/evaluations`, {
       evaluation_id: evaluationId,
       shuffle_seed: shuffleSeed,
+      ...(judgeBudget === undefined ? {} : { judge_budget: judgeBudget }),
     })
     .then((res) => res.data);
 

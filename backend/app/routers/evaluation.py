@@ -73,7 +73,10 @@ def normalize_box(box) -> list[float] | None:
 
 
 def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
-                      shuffle_seed: int, ruler, diagnosis_generated_at) -> dict:
+                      shuffle_seed: int, ruler, diagnosis_generated_at,
+                      judge_budget: int | None = None,
+                      candidate_pool: str | None = None,
+                      total_in_queue: int | None = None) -> dict:
     """지문을 만들 재료. **판정에 영향을 주는 것만, 전부.**
 
     빠지면 안 되는 것과 들어가면 안 되는 것이 둘 다 있다.
@@ -82,9 +85,11 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
     |---|---|
     | 후보의 상자 | 같은 라벨의 같은 유형이라도 다른 상자면 다른 것을 보라는 뜻이다 |
     | 방법별 점수 | 점수가 바뀌면 순위가 바뀌고, 예산 안에 드는 후보가 달라진다 |
+    | AIDA 제품 순위 | AIDA 순서는 점수가 아니라 이것이다 |
     | `shuffle_seed` | 판정 순서가 달라지면 같은 묶음이 아니다 |
     | 자(`ruler`) | 어느 자로 잰 후보인가 |
     | 진단 생성 시각 | 어느 진단을 얼린 것인가 |
+    | 판정 예산·후보 출처·전체 후보 수 | 무엇을 판정하고 무엇과 견줄 수 있는지가 바뀐다 |
 
     **`created_at`과 `code_commit`은 넣지 않는다.** 실행할 때마다 달라지거나
     내용과 무관해서, 넣으면 지문이 "내용이 같은가"를 못 말하게 된다.
@@ -97,6 +102,9 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
         "dataset_id": dataset_id,
         "shuffle_seed": shuffle_seed,
         "diagnosis_generated_at": diagnosis_generated_at,
+        "judge_budget": judge_budget,
+        "candidate_pool": candidate_pool,
+        "total_in_queue": total_in_queue,
         "ruler": ruler.model_dump() if ruler is not None else None,
         "candidates": [
             {
@@ -107,6 +115,7 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
                 "box": normalize_box(c.box),
                 "class_name": c.class_name,
                 "scores": {k: c.scores[k] for k in sorted(c.scores)},
+                "aida_rank": c.aida_rank,
             }
             for c in sorted(candidates, key=lambda c: c.canonical_candidate_id)
         ],
@@ -230,14 +239,31 @@ def _reject_duplicates(candidates: list[EvaluationCandidate]) -> None:
                  "않습니다 — 진단 결과를 먼저 확인하세요.")
 
 
+def _rank(item: dict) -> int | None:
+    rank = item.get("rank")
+    return rank if isinstance(rank, int) and not isinstance(rank, bool) else None
+
+
 def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
-                   ruler=None, shuffle_seed: int = 0) -> EvaluationSnapshot:
+                   ruler=None, shuffle_seed: int = 0,
+                   judge_budget: int | None = None) -> EvaluationSnapshot:
     """진단 결과를 얼려 평가 묶음을 만든다.
 
     **재진단해도 이 묶음은 안 바뀐다.** 판정 도중에 후보가 바뀌면 이미 내린
     판정이 무엇을 가리키는지 알 수 없게 된다.
+
+    **잘리기 전 후보 전부(`all_candidates`)를 얼린다.** `review_queue`는 AIDA
+    순위 상위 N건이라 그것만 얼리면 기준선이 AIDA 하위 후보를 끌어올릴 기회가
+    없다. 옛 진단에는 `all_candidates`가 없어 `review_queue`를 얼리고, 잘렸는지는
+    `total_in_queue`와 대조해 두 방법을 내보낼 때 막는다.
     """
-    queue = diagnosis.get("review_queue") or []
+    if "all_candidates" in diagnosis:
+        pool, queue = "all_candidates", diagnosis.get("all_candidates") or []
+    else:
+        pool, queue = "review_queue", diagnosis.get("review_queue") or []
+    total = diagnosis.get("total_in_queue")
+    if not isinstance(total, int) or isinstance(total, bool):
+        total = None
     candidates = [
         EvaluationCandidate(
             canonical_candidate_id=canonical_id(
@@ -249,6 +275,7 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
             box=item.get("box"),
             class_name=item.get("class_name"),
             scores=_scores(item),
+            aida_rank=_rank(item),
         )
         for item in queue
     ]
@@ -259,9 +286,14 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
         diagnosis_generated_at=diagnosis.get("generated_at"),
         code_commit=_code_commit(), ruler=ruler,
         candidates=candidates, shuffle_seed=shuffle_seed,
+        candidate_pool=pool, total_in_queue=total, judge_budget=judge_budget,
     )
+    # 예산이 있으면 여기서 판정 대상을 한 번 골라 본다 — 못 고르는 묶음을 얼리지 않는다.
+    judge_ids(snapshot)
     payload = canonical_payload(dataset_id, candidates, shuffle_seed, ruler,
-                                snapshot.diagnosis_generated_at)
+                                snapshot.diagnosis_generated_at,
+                                judge_budget=judge_budget, candidate_pool=pool,
+                                total_in_queue=total)
     return snapshot.model_copy(
         update={"candidate_set_hash": candidate_set_hash(payload)})
 
@@ -310,12 +342,18 @@ def validate_adjudications(snapshot: EvaluationSnapshot,
     """판정이 규약을 지키는가 (docs/evaluation-adjudication-design.md)."""
     by_id = {c.canonical_candidate_id: c for c in snapshot.candidates}
     seen: set[str] = set()
+    allowed = judge_ids(snapshot)
 
     for r in rows:
         cand = by_id.get(r.canonical_candidate_id)
         if cand is None:
             raise HTTPException(
                 400, f"이 묶음에 없는 후보입니다: {r.canonical_candidate_id}")
+        if allowed is not None and r.canonical_candidate_id not in allowed:
+            raise HTTPException(
+                400, "판정 예산 밖의 후보입니다. 두 방법 상위 "
+                     f"{snapshot.judge_budget}건의 합집합만 판정합니다: "
+                     f"{r.canonical_candidate_id}")
         if r.canonical_candidate_id in seen:
             raise HTTPException(
                 400, f"같은 후보가 두 번 나왔습니다: {r.canonical_candidate_id}")
@@ -423,7 +461,11 @@ def blind_queue(snapshot: EvaluationSnapshot,
     """
     by_id = {a.canonical_candidate_id: a for a in saved.adjudications}
     items = []
+    # 판정 예산이 있으면 두 방법 상위 N건의 합집합만 보낸다. 겹친 후보는 한 번만.
+    allowed = judge_ids(snapshot)
     for c in snapshot.candidates:
+        if allowed is not None and c.canonical_candidate_id not in allowed:
+            continue
         a = by_id.get(c.canonical_candidate_id)
         items.append(BlindCandidate(
             canonical_candidate_id=c.canonical_candidate_id,
@@ -478,6 +520,84 @@ def _exclusion_reason(candidate: EvaluationCandidate, scope: str) -> str:
     return "기존 라벨 후보 — 누락 층에 속하지 않는다"
 
 
+def method_order(candidates: list[EvaluationCandidate],
+                 method: str) -> dict[str, float] | None:
+    """방법이 후보를 줄 세우는 값. **클수록 먼저다.** 못 매기면 `None`.
+
+    집계 모듈(`evaluation.ranking`)은 이 값을 `severity`로 받아 내림차순, 같으면
+    이미지·후보 id 순으로 자른다. 판정 대상 고르기와 내보내기가 **같은 값**을
+    쓰도록 여기 하나만 둔다 — 둘이 다르면 예산 안에 판정 안 한 후보가 들어간다.
+
+    **AIDA는 진단의 `rank`다.** 제품 화면은 계통적 유형을 먼저, 그 안에서
+    심각도 순으로 보여준다(`label_diagnosis.review_order`). 심각도로 다시 줄
+    세우면 제품이 안 쓰는 순서를 평가한다 — 계통적이지 않은 유형의 높은
+    심각도가 맨 위로 올라온다(docs/21 AN). 순위가 없거나 겹치면 지어내지 않는다.
+
+    기준선은 점수(`1 − label_iou`) 그대로다. 동점은 집계 규약이 자른다.
+    """
+    if method == AIDA:
+        ranks = [c.aida_rank for c in candidates]
+        if any(r is None for r in ranks) or len(set(ranks)) != len(ranks):
+            return None
+        return {c.canonical_candidate_id: -float(c.aida_rank) for c in candidates}
+    if any(method not in c.scores for c in candidates):
+        return None
+    return {c.canonical_candidate_id: c.scores[method] for c in candidates}
+
+
+def _top(candidates: list[EvaluationCandidate], order: dict[str, float],
+         n: int) -> list[str]:
+    """`evaluation.ranking.rank_candidates`와 같은 규칙으로 상위 n건."""
+    ranked = sorted(candidates, key=lambda c: (-order[c.canonical_candidate_id],
+                                               c.image, c.canonical_candidate_id))
+    return [c.canonical_candidate_id for c in ranked[:n]]
+
+
+def judge_ids(snapshot: EvaluationSnapshot) -> set[str] | None:
+    """판정할 후보. 판정 예산이 없으면 `None`(전부).
+
+    **층마다 그 층에 정의된 방법의 상위 N건을 모아 합집합을 낸다.**
+
+    | 층 | 방법 |
+    |---|---|
+    | 기존 라벨 | AIDA, 기준선 |
+    | 누락 | AIDA만 — 기준선이 정의되지 않았다 |
+
+    두 방법이 같은 후보를 고르면 **한 번만** 판정한다. 그래야 N 이하의 어느
+    검수량에서도 두 방법 모두 판정이 빠진 후보 없이 셀 수 있다.
+    """
+    n = snapshot.judge_budget
+    if n is None:
+        return None
+    picked: set[str] = set()
+    for scope, methods in ((LABELLED, (AIDA, IOU_BASELINE)), (MISSING, (AIDA,))):
+        layer = [c for c in snapshot.candidates if _in_scope(c, scope)]
+        for method in methods:
+            order = method_order(layer, method)
+            if order is None and method == AIDA:
+                raise HTTPException(
+                    409, "AIDA 제품 순위가 없거나 겹치는 진단입니다. 판정할 상위 "
+                         "후보를 고를 수 없습니다 — 진단을 다시 돌리세요.")
+            if order is None:
+                # 기준선 점수가 없는 옛 진단. 두 방법 비교는 내보낼 때 막힌다.
+                continue
+            picked.update(_top(layer, order, n))
+    return picked
+
+
+def _truncation(snapshot: EvaluationSnapshot) -> str | None:
+    """두 방법을 견줄 수 없게 잘린 묶음이면 그 이유. 아니면 `None`."""
+    total = snapshot.total_in_queue
+    if total is None:
+        return ("진단 결과에 전체 후보 수(`total_in_queue`)가 없어 목록이 "
+                "잘렸는지 알 수 없습니다. 두 방법을 견주지 않습니다.")
+    if len(snapshot.candidates) < total:
+        return (f"AIDA 순위로 잘린 후보 목록입니다({len(snapshot.candidates)}/"
+                f"{total}건). 기준선이 잘린 쪽 후보를 끌어올릴 수 없어 AIDA에 "
+                "유리하게 휩니다 — `all_candidates`가 있는 진단으로 다시 얼리세요.")
+    return None
+
+
 def export_for_aggregation(snapshot: EvaluationSnapshot,
                            saved: EvaluationAdjudications,
                            methods: list[str],
@@ -516,6 +636,11 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
             f"'{scope}' 층에는 사전 정의된 비교군이 없습니다. "
             f"AIDA 순위와 판정만 내보냅니다 — 요청한 방법: {', '.join(methods)}.")
 
+    if any(m != AIDA for m in methods):
+        truncated = _truncation(snapshot)
+        if truncated:
+            raise ExportBlocked(truncated)
+
     for method in methods:
         without = [c for c in included if method not in c.scores]
         if not without:
@@ -530,6 +655,15 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
         raise ExportBlocked(
             f"'{method}'의 점수가 없는 후보가 {len(without)}건 있습니다. "
             "후보 집합이 다르면 정렬 효과가 아니라 작업 전체 효과입니다.")
+
+    orders = {}
+    for method in methods:
+        orders[method] = method_order(included, method)
+        if orders[method] is None:
+            raise ExportBlocked(
+                f"'{method}'의 순서를 매길 수 없습니다. AIDA는 후보마다 진단의 "
+                "제품 순위(`rank`)가 하나씩 있어야 합니다 — 심각도로 대신하면 "
+                "제품이 안 쓰는 순서를 평가합니다.")
 
     by_id = {a.canonical_candidate_id: a for a in saved.adjudications}
     adjudications = []
@@ -546,9 +680,12 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
             "complete": bool(a and a.verdict is not None),
         })
         for method in methods:
+            # `severity`는 집계가 줄 세우는 값이다. AIDA는 −순위라 음수다 —
+            # 원래 점수는 `score`에 따로 둔다.
             rankings.append({"method": method,
                              "canonical_candidate_id": c.canonical_candidate_id,
-                             "severity": c.scores[method]})
+                             "severity": orders[method][c.canonical_candidate_id],
+                             "score": c.scores[method]})
 
     reasons: dict[str, int] = {}
     for c in excluded:
@@ -561,6 +698,11 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
         "dataset_id": snapshot.dataset_id,
         "snapshot_hash": snapshot.candidate_set_hash,
         "methods": methods,
+        "order_basis": {m: ("product_rank" if m == AIDA else "score")
+                        for m in methods},
+        "candidate_pool": snapshot.candidate_pool,
+        "total_in_diagnosis": snapshot.total_in_queue,
+        "judge_budget": snapshot.judge_budget,
         "requested_scope": scope,
         "total_candidates": len(snapshot.candidates),
         "included_candidates": len(included),
@@ -579,6 +721,8 @@ class StartEvaluation(BaseModel):
     """평가를 시작한다. 지금 후보 목록을 얼린다."""
     evaluation_id: str
     shuffle_seed: int = 0
+    # 판정할 상위 N건. 주면 두 방법 상위 N건의 합집합만 판정한다. 없으면 전부.
+    judge_budget: int | None = None
 
 
 class SaveAdjudications(BaseModel):
@@ -594,6 +738,8 @@ def start_evaluation(dataset_id: str, body: StartEvaluation) -> EvaluationSnapsh
     이미 있으면 **덮어쓰지 않는다** — 판정 도중에 후보가 바뀌면 이미 내린 판정이
     무엇을 가리키는지 알 수 없다.
     """
+    if body.judge_budget is not None and body.judge_budget < 1:
+        raise HTTPException(400, "판정 예산은 1 이상입니다.")
     path = eval_dir(dataset_id, body.evaluation_id) / SNAPSHOT_FILE
     if path.exists():
         raise HTTPException(409, "이미 있는 평가입니다. 묶음은 덮어쓰지 않습니다.")
@@ -602,7 +748,8 @@ def start_evaluation(dataset_id: str, body: StartEvaluation) -> EvaluationSnapsh
     diagnosis = load_label_diagnosis(dataset_id)
     snapshot = build_snapshot(dataset_id, body.evaluation_id, diagnosis,
                               ruler=_load_ruler_sidecar(dataset_id),
-                              shuffle_seed=body.shuffle_seed)
+                              shuffle_seed=body.shuffle_seed,
+                              judge_budget=body.judge_budget)
     save_snapshot(dataset_id, snapshot)
     return snapshot
 
