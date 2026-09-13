@@ -42,6 +42,23 @@ def _percentile(values: list[float], q: float) -> float:
     return ordered[low] * (1 - frac) + ordered[high] * frac
 
 
+def _drawn_error_id(a: Adjudication, image: str, i: int) -> str | None:
+    """재표본 벌의 고유 오류 id. **벌마다 달라야 하고, 스키마 규칙도 지켜야 한다.**
+
+    서버는 기존 라벨 hit에 `<이미지>/L<라벨>`을 붙이고, 스키마는 그 id가 후보의
+    이미지·라벨과 맞는지 본다. 처음에는 id 뒤에 `#i`만 붙여서 이미지는
+    `a.jpg#0`, id는 `a.jpg/L0#0`이 되어 규칙에 걸렸다 — 실제 내보내기로는
+    부트스트랩이 돌지 않았다(prelim1 판정 전 합성 판정으로 잡았다). 라벨을 가리키는
+    id는 **바뀐 이미지 이름으로 다시 만든다.** 이미지 이름에 `#i`가 들어 있으니
+    벌마다 여전히 다르다.
+    """
+    if not a.unique_error_id:
+        return None
+    if a.label_index is not None and a.unique_error_id == f"{a.image_id}/L{a.label_index}":
+        return f"{image}/L{a.label_index}"
+    return f"{a.unique_error_id}#{i}"
+
+
 def _resample(clusters: list[str], by_cluster: dict[str, list[Adjudication]],
               rankings_by_key: dict[str, list[Ranking]],
               rng: random.Random) -> tuple[list[Adjudication], list[Ranking]]:
@@ -57,12 +74,12 @@ def _resample(clusters: list[str], by_cluster: dict[str, list[Adjudication]],
 
     for i, name in enumerate(picked):
         for a in by_cluster[name]:
+            image = f"{a.image_id}#{i}"
             drawn = replace(
                 a,
-                image_id=f"{a.image_id}#{i}",
+                image_id=image,
                 candidate_id=f"{a.candidate_id}#{i}",
-                unique_error_id=(f"{a.unique_error_id}#{i}"
-                                 if a.unique_error_id else None),
+                unique_error_id=_drawn_error_id(a, image, i),
                 group_id=(f"{a.group_id}#{i}" if a.group_id else None))
             facts.append(drawn)
             # **두 방법 모두** 같은 벌을 가리키게 해 짝지음을 지킨다.
