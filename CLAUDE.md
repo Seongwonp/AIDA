@@ -14,7 +14,8 @@
 |---|---|
 | 계획값 | `s_plan = 5.02초` (timing5, 120건 연속 판정) |
 | 계산되는 것 | `N_capacity` — 시간 예산으로 **처리 가능한** 후보 수 |
-| **미정** | **`D` · `T` · `N_required` · `N_final` · `Δ`** |
+| 준비된 것 | 검정력 시뮬레이터 — `experiment/power_report.py` (민감도 전용) |
+| **미정** | **`D` · `T` · `N_required` · `N_final` · `Δ` · 목표 검정력** |
 
 > **`N_capacity`를 최종 표본 크기로 읽지 않는다.** 표가 답하는 질문은 "시간
 > 안에 몇 개를 볼 수 있는가"이고, 평가에 필요한 것은 "결론을 내려면 몇 개를
@@ -49,9 +50,10 @@
 
 3. **`--reviewed`는 확인 버튼이 아니다.** 구간별 속도와 anchor 결과를 사람이
    보고 받아들였다는 표시다.
-4. 나오는 것은 `N_capacity`다. **`N_final`이 아니다.** `N_required`를 정하려면
-   Δ·주지표·검정력·군집 구조·paired bootstrap 시뮬레이션이 필요한데 **하나도
-   없다**(docs/capacity-vs-sample-size.md의 체크리스트).
+4. 나오는 것은 `N_capacity`다. **`N_final`이 아니다.** `N_required`는 검정력
+   시뮬레이터(`experiment/power_report.py`, [docs/n-required-plan.md](docs/n-required-plan.md))로
+   계산하는데, **Δ·목표 검정력·순위 품질 근거가 없어** 지금 나오는 것은 민감도
+   표뿐이다. 모든 칸이 `official=False`인 것이 정상이다.
 5. 지금 고를 수 있는 것은 세 가지뿐이다 — **A** 데이터셋당 관측 범위 운영안
    (데이터셋당 120건), **B** 반복 지속 블록을 더 재고 결정, **C** Δ와 검정력
    시뮬레이션을 먼저 정해 `N_required` 계산. **사용자 승인 없이 `N_final`로
@@ -86,11 +88,12 @@ answer key. 44개 파일의 SHA-256이 인계 문서에 있다.
 
 1. [`docs/HANDOFF_2026-09-12.md`](docs/HANDOFF_2026-09-12.md) — **현재 상태와 다음 작업**
 2. [`docs/capacity-vs-sample-size.md`](docs/capacity-vs-sample-size.md) — **처리 용량과 표본 크기의 차이, A·B·C 선택지**
-3. `docs/sustained-pilot-protocol.md` — timing5 규약과 결과, `s_plan`의 근거 한계
-3. `docs/pilot-evaluation-plan.md` — 계측 계약, N·Δ 결정 절차
-4. `docs/testing-boundary.md` — 검사 경계와 미검증 항목
-5. `docs/21-next-plan.md` — BC~BN 절에 최근 경위
-6. `docs/25-advancement-roadmap.md` — 단계별 상태
+3. [`docs/n-required-plan.md`](docs/n-required-plan.md) — **검정력 시뮬레이션 계약, Δ 시나리오, 가정과 근거**
+4. `docs/sustained-pilot-protocol.md` — timing5 규약과 결과, `s_plan`의 근거 한계
+5. `docs/pilot-evaluation-plan.md` — 계측 계약, N·Δ 결정 절차
+6. `docs/testing-boundary.md` — 검사 경계와 미검증 항목
+7. `docs/21-next-plan.md` — BC~BN 절에 최근 경위
+8. `docs/25-advancement-roadmap.md` — 단계별 상태
 
 `docs/20-local-claude-handoff.md`는 과거 OBB 작업 기록이므로 **현재 실행 지시로
 쓰지 않는다.** R1~R6(docs/25 1단계)은 **전부 끝났다** — 그 절을 지금 할 일로

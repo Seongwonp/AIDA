@@ -207,8 +207,13 @@ def main() -> int:
     raw = json.loads(Path(args.scenarios).read_text(encoding="utf-8"))
     grid = raw["grid"]
     cells = scenarios_from_grid(grid, args.datasets, args.budgets)
-    reps = args.iterations or grid["iterations"]["value"]
-    boots = args.bootstrap or grid["bootstrap_iterations"]["value"]
+    # **`or`로 기본값을 채우지 않는다.** `--iterations 0`이 조용히 파일 값(60)으로
+    # 바뀌면 사용자는 자기가 준 값으로 돌았다고 믿는다.
+    reps = grid["iterations"]["value"] if args.iterations is None else args.iterations
+    boots = (grid["bootstrap_iterations"]["value"] if args.bootstrap is None
+             else args.bootstrap)
+    if reps < 1 or boots < 1:
+        parser.error(f"복제·재표집 수는 1 이상이다 (받은 값: {reps}, {boots})")
     block = grid["block_size"]["value"]
     s_plan = grid["s_plan_seconds"]["value"]
 

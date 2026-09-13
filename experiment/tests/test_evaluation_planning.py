@@ -427,3 +427,17 @@ def test_이미지당_후보가_1건이면_설정한_중복이_만들어지지_�
            error_prevalence=1.0, iterations=2, bootstrap_iterations=5)
     got = simulate_power(s, 5, deltas=[0.0])
     assert got["mean_pool_unique_errors"] == 10.0
+
+
+@pytest.mark.parametrize("flag", ["--iterations", "--bootstrap"])
+def test_반복_수_0을_조용히_기본값으로_바꾸지_않는다(flag):
+    """`args.iterations or 60`으로 짜여 있어 0을 주면 60으로 돌았다. 거부해야 한다."""
+    import os
+    import subprocess
+    import sys
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONPATH": str(EXPERIMENT)}
+    got = subprocess.run([sys.executable, "power_report.py", "--estimate-only", flag, "0"],
+                         cwd=EXPERIMENT, env=env, capture_output=True,
+                         encoding="utf-8", errors="replace")
+    assert got.returncode != 0
+    assert "1 이상" in got.stderr
