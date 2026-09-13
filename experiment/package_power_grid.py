@@ -29,6 +29,7 @@ REPO = HERE.parent
 
 from evaluation.planning import wilson_interval  # noqa: E402
 OUT_DIR = HERE / "planning_evidence"
+SCENARIO_PATH = "experiment/planning_scenarios.json"
 
 # evaluation/planning.py의 공식 최소. 가져오지 않고 적는 이유: 이 산출물은 **만들어진
 # 시점의 기준**을 담아야 한다 — 나중에 기준이 바뀌어도 옛 결과의 표시가 바뀌면 안 된다.
@@ -55,10 +56,20 @@ def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def git_show_sha(commit: str, path: str) -> str:
-    blob = subprocess.run(["git", "-C", str(REPO), "show", f"{commit}:{path}"],
-                          capture_output=True, check=True).stdout
-    return sha256_bytes(blob)
+def read_scenario_blob(commit: str) -> bytes:
+    """만들어진 시점의 시나리오 파일을 커밋에서 그대로 읽는다.
+
+    얕은 복제(CI 기본값)에는 옛 커밋이 없다. `check=True`의 CalledProcessError는
+    원인을 안 알려주므로 무엇을 하면 되는지 적어 준다.
+    """
+    proc = subprocess.run(["git", "-C", str(REPO), "show", f"{commit}:{SCENARIO_PATH}"],
+                          capture_output=True)
+    if proc.returncode != 0:
+        raise SystemExit(
+            f"시나리오 파일을 커밋에서 읽지 못했다: {commit}:{SCENARIO_PATH}\n"
+            "얕은 복제에는 옛 커밋이 없다 — `git fetch --unshallow` 뒤 다시 돌린다.\n"
+            f"git: {proc.stderr.decode('utf-8', 'replace').strip()}")
+    return proc.stdout
 
 
 def package(raw: dict, *, random_seed: int, iterations: int, bootstrap: int) -> list[dict]:
@@ -122,11 +133,18 @@ def main() -> int:
     parser.add_argument("--note", default="")
     args = parser.parse_args()
 
+    # 덮어쓰기 검사를 **일하기 전에** 한다. 뒤에 두면 셋 중 하나만 있을 때
+    # 나머지를 쓰고 나서 멈춰 반쪽 산출물이 남는다.
+    json_path = OUT_DIR / f"{args.name}.json"
+    csv_path = OUT_DIR / f"{args.name}.csv"
+    manifest_path = OUT_DIR / f"{args.name}.manifest.json"
+    for path in (json_path, csv_path, manifest_path):
+        if path.exists():
+            raise SystemExit(f"이미 있다 — 덮어쓰지 않는다: {path}")
+
     raw_bytes = args.raw.read_bytes()
     raw = json.loads(raw_bytes.decode("utf-8"))
-    scenario_bytes = subprocess.run(
-        ["git", "-C", str(REPO), "show", f"{args.scenario_commit}:experiment/planning_scenarios.json"],
-        capture_output=True, check=True).stdout
+    scenario_bytes = read_scenario_blob(args.scenario_commit)
     scenario = json.loads(scenario_bytes.decode("utf-8"))
     random_seed = scenario["grid"]["random_seed"]["value"]
     iterations, bootstrap = raw["iterations"], raw["bootstrap_iterations"]
@@ -147,11 +165,6 @@ def main() -> int:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     json_text = json.dumps(packaged, ensure_ascii=False, indent=2) + "\n"
     csv_text = to_csv(rows)
-    json_path = OUT_DIR / f"{args.name}.json"
-    csv_path = OUT_DIR / f"{args.name}.csv"
-    for path in (json_path, csv_path):
-        if path.exists():
-            raise SystemExit(f"이미 있다 — 덮어쓰지 않는다: {path}")
     json_path.write_text(json_text, encoding="utf-8")
     csv_path.write_text(csv_text, encoding="utf-8")
 
@@ -177,9 +190,6 @@ def main() -> int:
         "packaged_csv_sha256": sha256_bytes(csv_text.encode("utf-8")),
         "note": args.note,
     }
-    manifest_path = OUT_DIR / f"{args.name}.manifest.json"
-    if manifest_path.exists():
-        raise SystemExit(f"이미 있다 — 덮어쓰지 않는다: {manifest_path}")
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
                              encoding="utf-8")
     print(json.dumps({k: manifest[k] for k in ("raw_output_sha256", "packaged_json_sha256",

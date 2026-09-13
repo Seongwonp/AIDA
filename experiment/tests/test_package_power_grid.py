@@ -66,19 +66,39 @@ def test_CSV는_칸마다_Δ_안_하나씩_한_줄이다():
     assert lines[0].split(",") == pkg.CSV_FIELDS
 
 
-def test_이미_있는_산출물은_덮어쓰지_않는다(tmp_path, monkeypatch):
+def _argv(tmp_path, raw_path):
+    """`--scenario-commit`은 **저장소에 없는 값**을 준다.
+
+    덮어쓰기 검사가 git 조회보다 먼저 돌아야 여기까지 오지 않는다. 예전에는
+    순서가 반대라 얕은 복제(CI 기본값)에서 옛 커밋을 못 찾아 검사가 깨졌다.
+    """
+    return ["package_power_grid.py", "--raw", str(raw_path),
+            "--name", "grid", "--code-commit", "x",
+            "--scenario-commit", "이-커밋은-없다",
+            "--runtime-minutes", "1", "--command", "c", "--hardware", "h"]
+
+
+@pytest.mark.parametrize("existing", ["grid.json", "grid.csv", "grid.manifest.json"])
+def test_이미_있는_산출물은_덮어쓰지_않는다(tmp_path, monkeypatch, existing):
+    """셋 중 **어느 것이 있어도** 아무것도 쓰지 않는다.
+
+    manifest 검사가 예전에는 json·csv를 쓴 뒤에 있어서, manifest만 있을 때
+    반쪽 산출물이 남았다.
+    """
     raw_path = tmp_path / "raw.json"
     raw_path.write_text(json.dumps(_raw()), encoding="utf-8")
     monkeypatch.setattr(pkg, "OUT_DIR", tmp_path)
-    (tmp_path / "grid.json").write_text("{}", encoding="utf-8")
-    monkeypatch.setattr("sys.argv", ["package_power_grid.py", "--raw", str(raw_path),
-                                     "--name", "grid", "--code-commit", "x",
-                                     "--scenario-commit", "159d04d8",
-                                     "--runtime-minutes", "1", "--command", "c",
-                                     "--hardware", "h"])
+    (tmp_path / existing).write_text("{}", encoding="utf-8")
+    monkeypatch.setattr("sys.argv", _argv(tmp_path, raw_path))
     with pytest.raises(SystemExit, match="덮어쓰지 않는다"):
         pkg.main()
-    assert (tmp_path / "grid.json").read_text(encoding="utf-8") == "{}"
+    assert (tmp_path / existing).read_text(encoding="utf-8") == "{}"
+    assert sorted(p.name for p in tmp_path.iterdir()) == sorted(["raw.json", existing])
+
+
+def test_없는_커밋이면_무엇을_하면_되는지_알려준다():
+    with pytest.raises(SystemExit, match="fetch --unshallow"):
+        pkg.read_scenario_blob("이-커밋은-없다")
 
 
 def test_묶은_격자_산출물이_명세와_맞는다():
