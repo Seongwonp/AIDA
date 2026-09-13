@@ -21,6 +21,14 @@
 
 ### 데스크탑에서 할 일 — 이 순서로
 
+> **진행 상태 (2026-09-13 밤).** 1~5번이 끝났다. 예비 데이터셋 **`30512dfcbfbb`**,
+> 평가 **`prelim1`**(후보 331 전부 동결, 판정 186, `candidate_set_hash` `e996e262…`)을
+> 만들고 [`docs/prelim1-preregistration.md`](docs/prelim1-preregistration.md)를 판정 전에
+> 커밋했다. 정확한 파일은 `D:/AIDA-eval/prelim/prelim1_30512dfcbfbb/`, 해시는
+> `experiment/planning_evidence/prelim1_manifest.json`. **판정은 사람이 아직 안 했다.**
+> 화면 점검은 prelim1이 아닌 별도 평가 ID로 한다 — prelim1에 점검 기록을 남기지 않는다.
+> 판정 주소: `http://localhost:5173/?evaluate=30512dfcbfbb:prelim1`
+
 1. ~~**검사 공백부터.**~~ **끝 (2026-09-13 데스크탑).** frontend 176 passed ·
    typecheck·lint·build exit 0, backend 261 passed(건너뜀 0), experiment 408 passed,
    CI는 `8fbb09b` 이후 전부 success.
