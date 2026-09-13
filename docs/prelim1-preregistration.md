@@ -162,3 +162,24 @@
    `adjudications.json`·`activity.jsonl`이 없는지 다시 본다.
 4. 백엔드·프론트엔드를 띄우고 판정 주소를 남긴다:
    `http://localhost:5173/?evaluate=30512dfcbfbb:prelim1`
+
+## 11. 커밋 뒤, 판정 전 점검 기록 (2026-09-13)
+
+사전 등록 커밋(`0b73279b`)을 푸시한 뒤에 했다. **판정 버튼은 누르지 않았다.**
+
+| 점검 | 결과 |
+|---|---|
+| 점검용 평가 | `inspect_ui1` — 같은 씨앗 20260915·예산 90으로 만들었다. `candidate_set_hash`가 prelim1과 **같고**, 가림 목록 186건의 순서도 같다 |
+| 재검수 화면 맨 위 행 = 백엔드 `rank` | 화면 1~5행(`002081.png` 라벨 0, `005040.png` 3, `004553.png` 6, `006522.png` 0, `005853.png` 12)이 `rank` 1~5와 **같다** |
+| 재검수 화면의 판정 칸 | 누르지 않은 버튼 `오류`·`아님`뿐. 제품 판정 저장소는 비어 있다(`verdicts: {}`) |
+| 가림 화면 (`inspect_ui1`) | `0 / 186 판정`, 첫 후보 `000316.png` — 씨앗 순서의 첫 항목과 같다 |
+| 가림 화면에 보이는 글자 | 의심 유형 이름(width 등)·심각도·AIDA·IoU·기준선·점수 **없음**. "순위·점수·의심"은 "방법·점수·원래 순위·세부 의심 유형을 가립니다" 안내문에만 있다 |
+| 점검 기록이 간 곳 | `inspect_ui1/activity.jsonl` 7줄 — `candidate_opened` 1 · `queue_load_started` 2 · `queue_load_succeeded` 1 · `session_ended` 1 · `session_started` 2. 판정 이벤트 없음 |
+| 탭 | 점검 탭을 모두 닫고 90초 기다린 뒤 다시 봤다 |
+| prelim1 폴더 | **`snapshot.json`만 있다** — `adjudications.json`·`activity.jsonl` 없음. `snapshot.json` 해시가 명세와 같다 |
+
+**`inspect_ui1`은 판정하지 않는다.** 화면 확인 기록만 담긴 점검용이라 분석에 쓰지 않는다.
+판정 화면을 prelim1으로 연 적이 없으므로 prelim1을 다시 만들 필요가 없었다.
+
+**판정 주소:** `http://localhost:5173/?evaluate=30512dfcbfbb:prelim1`
+(백엔드 `http://localhost:8000`과 프론트엔드가 떠 있어야 한다)

@@ -26,7 +26,8 @@
 > 만들고 [`docs/prelim1-preregistration.md`](docs/prelim1-preregistration.md)를 판정 전에
 > 커밋했다. 정확한 파일은 `D:/AIDA-eval/prelim/prelim1_30512dfcbfbb/`, 해시는
 > `experiment/planning_evidence/prelim1_manifest.json`. **판정은 사람이 아직 안 했다.**
-> 화면 점검은 prelim1이 아닌 별도 평가 ID로 한다 — prelim1에 점검 기록을 남기지 않는다.
+> 화면 점검은 별도 평가 `inspect_ui1`로 했고(판정하지 않는다) prelim1에는 `snapshot.json`만
+> 있다 — 사전 등록 문서 11절.
 > 판정 주소: `http://localhost:5173/?evaluate=30512dfcbfbb:prelim1`
 
 1. ~~**검사 공백부터.**~~ **끝 (2026-09-13 데스크탑).** frontend 176 passed ·
@@ -127,7 +128,7 @@ Python 환경은 **둘로 나뉘어 있다.** 섞으면 없는 패키지를 찾�
 경로나 설치 여부를 추측하지 않고 먼저 확인한다. **문서에 적힌 검사 수를 이번
 실행 결과로 보고하지 않는다** — 직접 돌려 보고 그 숫자를 쓴다.
 
-최근 통과 수는 experiment 408 · backend 261(데스크탑 건너뜀 0, 노트북 260·건너뜀 1) · frontend 176이다 (2026-09-13 데스크탑).
+최근 통과 수는 experiment 409 · backend 261(데스크탑 건너뜀 0, 노트북 260·건너뜀 1) · frontend 176이다 (2026-09-13 데스크탑).
 experiment·backend는 2026-09-13 노트북에서 CI와 같은 의존성 목록만 깐 가상환경으로
 직접 돌린 결과다(backend의 건너뜀 1건은 `test_uploads_dir_agreement.py:100`
 "외부 드라이브가 없는 환경"이다 — 노트북에만 해당하고, 데스크탑 기록은 252 통과였다).
