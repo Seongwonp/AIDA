@@ -15,6 +15,12 @@
 | 근거 없는 가정 | aida_ranking_strength, baseline_ranking_strength, candidates_per_dataset, duplicates_per_unique_error, error_prevalence, image_error_concentration, images_per_dataset |
 | 생성 | `experiment/power_report.py --total-minutes 30 60 120 180 --allow-long` |
 
+> **덧붙임 (같은 날, 감사).** 아래 표는 만든 그대로 둔다. 읽을 때 세 가지를 같이 본다.
+> 1. 제목의 "오류 비율 0.065·0.135"는 **판정자 한 명의 hit 비율**이다. 참 오류 비율이 아니다.
+> 2. `0.00±0.00`·`1.00±0.00`은 과신이다. 0/60의 95% Wilson 상한은 0.06, 60/60의 하한은 0.94다.
+>    구간이 붙은 원본: `experiment/planning_evidence/power_grid_explore_2026-09-13.csv`.
+> 3. 두 방법의 순위 품질 **차이**에는 근거가 없다 — [planning-assumption-evidence.md](planning-assumption-evidence.md).
+
 Δ 값: N=120 → A 1 / B 6 / C 12, N=240 → A 1 / B 12 / C 24, N=360 → A 1 / B 18 / C 36, N=480 → A 1 / B 24 / C 48, N=600 → A 1 / B 30 / C 60
 
 ## 오류 비율 0.065 · 묶임 independent · AUC AIDA 0.75 / 기준선 0.7

@@ -15,7 +15,9 @@
 | 계획값 | `s_plan = 5.02초` (timing5, 120건 연속 판정) |
 | 계산되는 것 | `N_capacity` — 시간 예산으로 **처리 가능한** 후보 수 |
 | 준비된 것 | 검정력 시뮬레이터 — `experiment/power_report.py` (민감도 전용) |
-| **미정** | **`D` · `T` · `N_required` · `N_final` · `Δ` · 목표 검정력** |
+| **사용자가 정할 것** | **`D` · `T` · `Δ` · 목표 검정력(또는 구간 폭 방침)** |
+| **추정할 것 — 고르지 않는다** | 참 오류 비율 · 두 방법 순위 품질 차이 · 묶임 · 판정 오류 — 지금 근거 약함/없음 |
+| **아직 없는 것** | `N_required` · `N_final` |
 
 > **`N_capacity`를 최종 표본 크기로 읽지 않는다.** 표가 답하는 질문은 "시간
 > 안에 몇 개를 볼 수 있는가"이고, 평가에 필요한 것은 "결론을 내려면 몇 개를
@@ -89,6 +91,7 @@ answer key. 44개 파일의 SHA-256이 인계 문서에 있다.
 1. [`docs/HANDOFF_2026-09-12.md`](docs/HANDOFF_2026-09-12.md) — **현재 상태와 다음 작업**
 2. [`docs/capacity-vs-sample-size.md`](docs/capacity-vs-sample-size.md) — **처리 용량과 표본 크기의 차이, A·B·C 선택지**
 3. [`docs/n-required-plan.md`](docs/n-required-plan.md) — **검정력 시뮬레이션 계약, Δ 시나리오, 가정과 근거**
+   - [`docs/planning-assumption-evidence.md`](docs/planning-assumption-evidence.md) — **무엇이 결정이고 무엇이 현실인가**, 개발 증거에서 나온 것과 안 나온 것
 4. `docs/sustained-pilot-protocol.md` — timing5 규약과 결과, `s_plan`의 근거 한계
 5. `docs/pilot-evaluation-plan.md` — 계측 계약, N·Δ 결정 절차
 6. `docs/testing-boundary.md` — 검사 경계와 미검증 항목
@@ -114,7 +117,7 @@ Python 환경은 **둘로 나뉘어 있다.** 섞으면 없는 패키지를 찾�
 경로나 설치 여부를 추측하지 않고 먼저 확인한다. **문서에 적힌 검사 수를 이번
 실행 결과로 보고하지 않는다** — 직접 돌려 보고 그 숫자를 쓴다.
 
-데스크탑 기준 최근 통과 수는 experiment 350 · backend 252 · frontend 176이다 (2026-09-13).
+데스크탑 기준 최근 통과 수는 experiment 402 · backend 252 · frontend 176이다 (2026-09-13).
 
 프론트 변경 시 `frontend`에서 관련 검사와 `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`를 실행한다. 백엔드 변경 시 해당 가상환경으로 `backend`의 pytest를 실행한다. 화면 통합 검사 도구가 없으면 기존 구성을 확인한 뒤 필요한 최소 구성을 추가한다. 실제 브라우저 확인과 자동 테스트 결과를 구분한다.
 
