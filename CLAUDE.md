@@ -21,22 +21,27 @@
 
 ### 데스크탑에서 할 일 — 이 순서로
 
-1. **검사 공백부터.** `frontend`에서 `npm test`·`npm run typecheck`·`npm run lint`·
-   `npm run build`를 돌린다(노트북에서 `api.ts` 변경 뒤 못 돌렸다). 백엔드·실험
-   pytest도 돌려 수를 적고, GitHub Actions에서 `8fbb09b` 이후 CI 결과를 본다.
-2. **예비 데이터를 고른다 — 사용자 결정.** 최종 평가에 쓸 데이터와 **겹치지
+1. ~~**검사 공백부터.**~~ **끝 (2026-09-13 데스크탑).** frontend 176 passed ·
+   typecheck·lint·build exit 0, backend 261 passed(건너뜀 0), experiment 408 passed,
+   CI는 `8fbb09b` 이후 전부 success.
+   [`docs/prelim-comparison-proposal.md`](docs/prelim-comparison-proposal.md) 1절.
+2. **예비 데이터를 고른다 — 사용자 결정.** 제안: KITTI val 적격 413장 중 씨앗
+   20260914로 뽑은 300장(제안 문서 4절). 최종 평가에 쓸 데이터와 **겹치지
    않아야 한다**([`docs/evaluation-data.md`](docs/evaluation-data.md)). 여기서 쓴
    데이터는 개발 데이터가 되어 최종 평가에 재사용하지 않는다. **파일럿 데이터셋
    `ffffffffff01`~`07`은 쓰지 않는다** — 다시 진단하면 그 `label_diagnosis.json`을
    덮어쓴다.
-3. **실제 추론으로 확인한다.** 고른 데이터셋을 화면에서 박스 단위로 다시
+3. **실제 추론으로 확인한다.** 파일 점검 네 가지는 제안 표본을 `--dataset-dir`로
+   돌려 **통과**했다(제안 문서 2절). **업로드 데이터셋과 화면에서는 아직 안 했다.** 고른 데이터셋을 화면에서 박스 단위로 다시
    진단한다. 그 뒤 `uploads/` 아래 그 데이터셋의 `label_diagnosis.json`에서
    - `all_candidates` 길이가 `total_in_queue`와 같은가
    - `all_candidates` 앞부분이 `review_queue`와 같은 후보·같은 `rank`인가
    - 재검수 화면 맨 위 몇 건이 `rank` 1, 2, 3과 같은 후보인가
 
    **하나라도 어긋나면 멈추고** 원인을 본다.
-4. **N과 섞는 씨앗을 판정 전에 정한다 — 사용자 결정.** 판정할 양은 기존 라벨
+4. **N과 섞는 씨앗을 판정 전에 정한다 — 사용자 결정.** 판정 대상은 **두 방법**
+   (기존 라벨 층 AIDA·기준선 합집합, 누락 층 AIDA만). 제안: N=90(186건, 두 번에
+   나눠), `shuffle_seed` 20260915 — 제안 문서 3·5·6절. 판정할 양은 기존 라벨
    층에서 최대 2N건, 누락 층에서 최대 N건이다. timing5의 `s_plan` 5.02초로 치면
    N=60이 최대 180건, 약 15분이다(판정자 1인의 참고값). 정한 값은 **판정 전에**
    커밋한다.
@@ -114,7 +119,7 @@ Python 환경은 **둘로 나뉘어 있다.** 섞으면 없는 패키지를 찾�
 경로나 설치 여부를 추측하지 않고 먼저 확인한다. **문서에 적힌 검사 수를 이번
 실행 결과로 보고하지 않는다** — 직접 돌려 보고 그 숫자를 쓴다.
 
-최근 통과 수는 experiment 408 · backend 260(건너뜀 1) · frontend 176이다.
+최근 통과 수는 experiment 408 · backend 261(데스크탑 건너뜀 0, 노트북 260·건너뜀 1) · frontend 176이다 (2026-09-13 데스크탑).
 experiment·backend는 2026-09-13 노트북에서 CI와 같은 의존성 목록만 깐 가상환경으로
 직접 돌린 결과다(backend의 건너뜀 1건은 `test_uploads_dir_agreement.py:100`
 "외부 드라이브가 없는 환경"이다 — 노트북에만 해당하고, 데스크탑 기록은 252 통과였다).
