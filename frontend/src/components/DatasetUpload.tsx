@@ -10,6 +10,8 @@ import {
 import { ReviewQueue } from "./ReviewQueue";
 import { HistoryCard } from "./HistoryCard";
 import { RulerCard } from "./RulerCard";
+import { RankingNote } from "./RankingNote";
+import { RANKING_V1, RANKING_VERSIONS, rankingLabel } from "../ranking";
 import type {
   LabelDiagnosisResult,
   ReliabilityProfile,
@@ -29,6 +31,8 @@ export function DatasetUpload() {
   // 값이 크게 흔들렸다(docs/21 L). 그래서 보정 프로파일을 고를 수 있게 한다.
   const [profiles, setProfiles] = useState<ReliabilityProfile[]>([]);
   const [profile, setProfile] = useState("");
+  // 재검수 순위 버전 (docs/adr-ranking-separation.md). 기본은 지금까지의 제품 순서(v1).
+  const [ranking, setRanking] = useState<string>(RANKING_V1);
   // 추천에 따라 자동으로 바꿔 쓴 경우의 사유. 빈 문자열이면 안 바꿨다.
   const [autoProfile, setAutoProfile] = useState("");
   // 서버가 알려준 실패 사유. 없으면 일반 안내로 돌아간다.
@@ -43,15 +47,20 @@ export function DatasetUpload() {
   }, []);
 
   const busy = status === "uploading" || status === "diagnosing";
+  // 데이터셋 수준 계통 유형이 후보 순서를 바꾼 결과인가 (v1). 순서에 대한 안내는 그때만 한다.
+  const orderFromDatasetType =
+    (labelResult?.ranking?.ranking_version ?? RANKING_V1) === RANKING_V1;
+  const typeLabel = (suspicion: string) =>
+    labelResult?.by_type.find((t) => t.suspicion === suspicion)?.label ?? suspicion;
   const selectedProfile = profiles.find((p) => p.name === profile);
 
   /** 지난 진단을 그대로 불러온다. 추론을 다시 돌리지 않는다. */
-  const openPast = async (datasetId: string) => {
+  const openPast = async (datasetId: string, version: string = RANKING_V1) => {
     setFromHistory(true);
     setStatus("diagnosing");
     setErrorDetail("");
     try {
-      const labels = await getLabelDiagnosis(datasetId);
+      const labels = await getLabelDiagnosis(datasetId, version);
       setLabelResult(labels);
       setResult(null);          // 데이터셋 단위 결과는 따로 불러오지 않는다
       setDataset(null);
@@ -94,7 +103,7 @@ export function DatasetUpload() {
       // 박스 단위 진단이 실제 재검수 목록을 만드는 핵심이고, 데이터셋 단위
       // 진단은 성능 패턴 DB와의 비교 근거를 함께 보여주기 위해 같이 돌린다.
       const [labels, diagnosis] = await Promise.all([
-        diagnoseDatasetLabels(info.dataset_id, used),
+        diagnoseDatasetLabels(info.dataset_id, used, ranking),
         diagnoseDataset(info.dataset_id),
       ]);
       setLabelResult(labels);
@@ -157,6 +166,22 @@ export function DatasetUpload() {
             </select>
           </>
         )}
+        <label htmlFor="ranking-version-select" className="sr-only">
+          재검수 순서 버전
+        </label>
+        <select
+          id="ranking-version-select"
+          className="profile-select"
+          value={ranking}
+          onChange={(e) => setRanking(e.target.value)}
+          disabled={busy}
+        >
+          {RANKING_VERSIONS.map((v) => (
+            <option key={v} value={v}>
+              {rankingLabel(v)}
+            </option>
+          ))}
+        </select>
         <button className="refresh-button" onClick={handleRun} disabled={!file || busy}>
           {status === "uploading" ? "업로드 중..." : status === "diagnosing" ? "진단 중..." : "업로드 & 진단"}
         </button>
@@ -289,6 +314,7 @@ export function DatasetUpload() {
       {labelResult && (
         <div className="upload-result">
           <h3 className="subsection-heading">재검수 우선순위</h3>
+          <RankingNote ranking={labelResult.ranking} />
 
           <p className="verdict">
             {labelResult.systematic ? (
@@ -311,7 +337,14 @@ export function DatasetUpload() {
 
           {/* 순서를 정한 규칙이 평소와 다를 때만 말한다. 절대 문턱이 잡은
               흔한 경우(absolute)는 굳이 꺼내면 소음이다. */}
-          {labelResult.order_basis === "relative" && (
+          {!orderFromDatasetType && (labelResult.systematic_types ?? []).length > 0 && (
+            <p className="report-caveat">
+              데이터셋 수준에서 계통 유형으로 보인 것:{" "}
+              <strong>{(labelResult.systematic_types ?? []).map(typeLabel).join(", ")}</strong>.
+              이 순서에서는 이 판단이 후보 순서를 바꾸지 않습니다.
+            </p>
+          )}
+          {orderFromDatasetType && labelResult.order_basis === "relative" && (
             <p className="report-caveat">
               어느 유형도 계통적 문턱을 넘지 못해, <strong>상대 문턱</strong>으로 물러나
               가장 두드러진 유형을 먼저 보여주고 있습니다. 대개 기준 모델이 이 데이터에
@@ -331,7 +364,7 @@ export function DatasetUpload() {
               )}
             </p>
           )}
-          {labelResult.order_basis === "none" && (
+          {orderFromDatasetType && labelResult.order_basis === "none" && (
             <p className="report-caveat">
               어느 유형도 두드러지지 않아 <strong>심각도 순서로만</strong> 정렬했습니다.
             </p>
@@ -361,6 +394,7 @@ export function DatasetUpload() {
           <h4 className="subsection-heading">우선 재검수 박스</h4>
           <ReviewQueue items={labelResult.review_queue}
                        datasetId={labelResult.dataset_id}
+                       perLayer={!orderFromDatasetType}
                        fitRatio={labelResult.ruler_fit?.matched_label_ratio ?? null}
                        // 다른 데이터셋에서도 65% 이상 버틴 유형. 아래 신뢰도
                        // 표의 "데이터가 달라도 신뢰"와 같은 기준이다.

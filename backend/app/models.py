@@ -128,6 +128,11 @@ class ReviewQueueItem(BaseModel):
     # 픽셀 좌표 [x1, y1, x2, y2]. 이 기능 전에 만든 진단 결과에는 없으므로
     # None을 허용한다 — 그때는 화면이 미리보기를 생략한다.
     box: list[float] | None = None
+    # 층(`labelled_candidates` | `missing_candidates`)과 그 층 안의 순서
+    # (docs/adr-ranking-separation.md). v2는 층마다 신호가 달라 `rank`를 층 사이
+    # 점수 비교로 읽으면 안 된다. 옛 결과에는 없다.
+    layer: str | None = None
+    layer_rank: int | None = None
 
 
 class TypeRobustness(BaseModel):
@@ -195,6 +200,9 @@ class DatasetHistoryItem(BaseModel):
     has_label_diagnosis: bool = False
     total_findings: int | None = None
     dominant_label: str | None = None
+    # 결과 파일이 있는 순위 버전들 (docs/adr-ranking-separation.md). 어느 순서로 만든
+    # 목록인지 열기 전에 보여야 한다.
+    ranking_versions: list[str] = []
 
 
 class RulerFit(BaseModel):
@@ -217,6 +225,24 @@ class RulerFit(BaseModel):
     # 생짜 적합도를 0.5 같은 고정 문턱에 견주면 좁은 자에 오경보가 난다
     # (docs/21 AL). 예전 진단 결과에는 없으므로 None을 허용한다.
     coverage_ceiling: float | None = None
+
+
+class RankingInfo(BaseModel):
+    """이 재검수 목록을 어느 순위 버전으로 만들었나 (docs/adr-ranking-separation.md).
+
+    데이터셋 진단("어떤 유형이 계통적으로 많아 보이나")과 재검수 순위("어느 후보부터
+    볼까")는 다른 질문이다. v1은 앞의 답으로 뒤의 순서를 정하고, v2는 그러지 않는다.
+    """
+    ranking_version: str
+    # `mixed_queue`(v1, 한 줄 순서) | `per_layer`(v2, 층마다 따로)
+    ranking_scope: str
+    # 층마다 무엇으로 줄 세웠나
+    ranking_signal: dict[str, str]
+    # 데이터셋 수준 판정(계통 유형)이 후보 순서를 바꿨는가. v1 참, v2 거짓.
+    dataset_boost_affects_order: bool
+    tie_break_rule: str
+    # 결과 파일에 버전 기록이 없어 v1으로 읽었는가
+    legacy: bool = False
 
 
 class LabelDiagnosisResult(BaseModel):
@@ -247,6 +273,10 @@ class LabelDiagnosisResult(BaseModel):
     ruler: RulerInfo | None = None
     # 이 기능 전에 만든 진단 결과에는 없다.
     ruler_fit: RulerFit | None = None
+    # 어느 순위 버전의 목록인가. 기록 없는 옛 결과는 v1(legacy)로 채운다.
+    ranking: RankingInfo | None = None
+    # 데이터셋 수준에서 계통 유형으로 보인 것. v2에서는 순서를 바꾸지 않는다. 옛 결과에는 없다.
+    systematic_types: list[str] = []
     caveat: str
 
 
@@ -343,6 +373,9 @@ class EvaluationSnapshot(BaseModel):
     total_in_queue: int | None = None
     # 판정 예산 N. 있으면 두 방법 상위 N건의 합집합만 판정한다.
     judge_budget: int | None = None
+    # 얼린 AIDA 순서의 순위 버전 (docs/adr-ranking-separation.md). **옛 묶음에는 없고
+    # v1으로 읽는다** — 없을 때는 지문 재료에도 넣지 않아 옛 지문이 그대로다(prelim1).
+    ranking_version: str | None = None
 
 
 class EvaluationAdjudication(BaseModel):

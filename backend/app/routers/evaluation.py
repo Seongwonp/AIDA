@@ -20,6 +20,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from ..config import EXPERIMENT_ROOT, UPLOADS_DIR
+from ..ranking import (LEGACY_RANKING_VERSION, RANKING_V1, RankingVersionError,
+                       diagnosis_filename, ranking_version_of, require_version)
 from ..models import (BlindCandidate, BlindQueue, EVALUATION_SCHEMA_VERSION,
                       EvaluationAdjudication, EvaluationAdjudications,
                       EvaluationCandidate, EvaluationSnapshot)
@@ -76,7 +78,8 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
                       shuffle_seed: int, ruler, diagnosis_generated_at,
                       judge_budget: int | None = None,
                       candidate_pool: str | None = None,
-                      total_in_queue: int | None = None) -> dict:
+                      total_in_queue: int | None = None,
+                      ranking_version: str | None = None) -> dict:
     """지문을 만들 재료. **판정에 영향을 주는 것만, 전부.**
 
     빠지면 안 되는 것과 들어가면 안 되는 것이 둘 다 있다.
@@ -90,14 +93,18 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
     | 자(`ruler`) | 어느 자로 잰 후보인가 |
     | 진단 생성 시각 | 어느 진단을 얼린 것인가 |
     | 판정 예산·후보 출처·전체 후보 수 | 무엇을 판정하고 무엇과 견줄 수 있는지가 바뀐다 |
+    | 순위 버전 | 같은 후보라도 AIDA 순서의 뜻이 다르다 (docs/adr-ranking-separation.md) |
 
     **`created_at`과 `code_commit`은 넣지 않는다.** 실행할 때마다 달라지거나
     내용과 무관해서, 넣으면 지문이 "내용이 같은가"를 못 말하게 된다.
 
+    **순위 버전은 있을 때만 넣는다.** 옛 묶음(prelim1 등)에는 버전이 없고, 넣으면 그
+    지문이 바뀌어 이미 내린 판정이 묶음에서 떨어진다.
+
     후보는 이름순으로, 사전 키도 정렬해 담는다 — 목록 순서가 지문을 바꾸면
     안 된다. 순서는 씨앗이 따로 정한다.
     """
-    return {
+    payload = {
         "schema_version": EVALUATION_SCHEMA_VERSION,
         "dataset_id": dataset_id,
         "shuffle_seed": shuffle_seed,
@@ -120,6 +127,9 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
             for c in sorted(candidates, key=lambda c: c.canonical_candidate_id)
         ],
     }
+    if ranking_version is not None:
+        payload["ranking_version"] = ranking_version
+    return payload
 
 
 def candidate_set_hash(payload: dict) -> str:
@@ -168,19 +178,44 @@ def canonical_id(image: str, label_index: int | None, suspicion: str,
     return ("L" if label_index is not None else "C") + digest
 
 
-def load_label_diagnosis(dataset_id: str) -> dict:
+def load_label_diagnosis(dataset_id: str, ranking_version: str = RANKING_V1) -> dict:
     """진단 결과 파일을 **가공 없이** 읽는다.
 
     화면용 변환(`_load_label_diagnosis_json`)을 거치지 않는다 — 한국어 라벨을
     붙이고 문구를 덧대는 층이라, 얼릴 대상은 그 아래의 원본이다.
+
+    **순위 버전마다 파일이 다르고, 파일 안에 적힌 버전이 요청과 다르면 얼리지
+    않는다** (docs/adr-ranking-separation.md).
     """
-    path = UPLOADS_DIR / dataset_id / "label_diagnosis.json"
-    if not path.exists():
-        raise HTTPException(404, "아직 라벨 단위 진단을 하지 않았습니다.")
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        name = diagnosis_filename(ranking_version)
+    except RankingVersionError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    path = UPLOADS_DIR / dataset_id / name
+    if not path.exists():
+        raise HTTPException(404, f"이 순위 버전({ranking_version})의 라벨 단위 진단이 없습니다.")
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         raise HTTPException(500, f"진단 결과를 읽지 못했습니다: {exc}") from exc
+    _require_diagnosis_version(data, ranking_version, name)
+    return data
+
+
+def _require_diagnosis_version(diagnosis: dict, expected: str, where: str) -> None:
+    try:
+        found = ranking_version_of(diagnosis)
+    except RankingVersionError as exc:
+        raise HTTPException(409, f"{where}: {exc}") from exc
+    if found != expected:
+        raise HTTPException(
+            409, f"{where}에 적힌 순위 버전({found})이 요청({expected})과 다릅니다. "
+                 "다른 순서를 그 이름으로 얼리지 않습니다.")
+
+
+def snapshot_ranking_version(snapshot: EvaluationSnapshot) -> str:
+    """묶음의 순위 버전. 기록이 없는 옛 묶음은 v1이다 — v2 전에는 v1뿐이었다."""
+    return snapshot.ranking_version or LEGACY_RANKING_VERSION
 
 
 def _code_commit() -> str | None:
@@ -246,7 +281,8 @@ def _rank(item: dict) -> int | None:
 
 def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
                    ruler=None, shuffle_seed: int = 0,
-                   judge_budget: int | None = None) -> EvaluationSnapshot:
+                   judge_budget: int | None = None,
+                   ranking_version: str | None = None) -> EvaluationSnapshot:
     """진단 결과를 얼려 평가 묶음을 만든다.
 
     **재진단해도 이 묶음은 안 바뀐다.** 판정 도중에 후보가 바뀌면 이미 내린
@@ -256,7 +292,16 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
     순위 상위 N건이라 그것만 얼리면 기준선이 AIDA 하위 후보를 끌어올릴 기회가
     없다. 옛 진단에는 `all_candidates`가 없어 `review_queue`를 얼리고, 잘렸는지는
     `total_in_queue`와 대조해 두 방법을 내보낼 때 막는다.
+
+    `ranking_version`을 주면 진단에 적힌 버전과 같아야 하고, 묶음에 얼리고 지문에
+    넣는다. 안 주면 옛 방식 그대로다(버전 없음 = v1, 지문 재료도 예전과 같다).
     """
+    if ranking_version is not None:
+        try:
+            require_version(ranking_version)
+        except RankingVersionError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        _require_diagnosis_version(diagnosis, ranking_version, "진단 결과")
     if "all_candidates" in diagnosis:
         pool, queue = "all_candidates", diagnosis.get("all_candidates") or []
     else:
@@ -287,13 +332,14 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
         code_commit=_code_commit(), ruler=ruler,
         candidates=candidates, shuffle_seed=shuffle_seed,
         candidate_pool=pool, total_in_queue=total, judge_budget=judge_budget,
+        ranking_version=ranking_version,
     )
     # 예산이 있으면 여기서 판정 대상을 한 번 골라 본다 — 못 고르는 묶음을 얼리지 않는다.
     judge_ids(snapshot)
     payload = canonical_payload(dataset_id, candidates, shuffle_seed, ruler,
                                 snapshot.diagnosis_generated_at,
                                 judge_budget=judge_budget, candidate_pool=pool,
-                                total_in_queue=total)
+                                total_in_queue=total, ranking_version=ranking_version)
     return snapshot.model_copy(
         update={"candidate_set_hash": candidate_set_hash(payload)})
 
@@ -700,6 +746,10 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
         "methods": methods,
         "order_basis": {m: ("product_rank" if m == AIDA else "score")
                         for m in methods},
+        # 어느 순위 버전의 AIDA 순서인가. 집계가 버전이 다른 내보내기를 섞지 않게 한다.
+        # 옛 묶음은 v1이고, 그 사실을 `ranking_version_recorded`로 따로 적는다.
+        "ranking_version": snapshot_ranking_version(snapshot),
+        "ranking_version_recorded": snapshot.ranking_version is not None,
         "candidate_pool": snapshot.candidate_pool,
         "total_in_diagnosis": snapshot.total_in_queue,
         "judge_budget": snapshot.judge_budget,
@@ -723,6 +773,8 @@ class StartEvaluation(BaseModel):
     shuffle_seed: int = 0
     # 판정할 상위 N건. 주면 두 방법 상위 N건의 합집합만 판정한다. 없으면 전부.
     judge_budget: int | None = None
+    # 얼릴 AIDA 순서의 순위 버전. 그 버전의 진단 파일을 얼린다 (docs/adr-ranking-separation.md).
+    ranking_version: str = RANKING_V1
 
 
 class SaveAdjudications(BaseModel):
@@ -745,11 +797,12 @@ def start_evaluation(dataset_id: str, body: StartEvaluation) -> EvaluationSnapsh
         raise HTTPException(409, "이미 있는 평가입니다. 묶음은 덮어쓰지 않습니다.")
 
     from .upload import _load_ruler_sidecar
-    diagnosis = load_label_diagnosis(dataset_id)
+    diagnosis = load_label_diagnosis(dataset_id, body.ranking_version)
     snapshot = build_snapshot(dataset_id, body.evaluation_id, diagnosis,
                               ruler=_load_ruler_sidecar(dataset_id),
                               shuffle_seed=body.shuffle_seed,
-                              judge_budget=body.judge_budget)
+                              judge_budget=body.judge_budget,
+                              ranking_version=body.ranking_version)
     save_snapshot(dataset_id, snapshot)
     return snapshot
 

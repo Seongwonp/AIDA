@@ -28,6 +28,7 @@ from app.models import (
     ErrorTypeCandidate,
     LabelDiagnosisResult,
     PerformanceVector,
+    RankingInfo,
     ReliabilityProfileInfo,
     RulerFit,
     RulerInfo,
@@ -37,6 +38,9 @@ from app.models import (
     UploadDiagnosisResult,
     UploadedDatasetInfo,
 )
+from app.ranking import (RANKING_V1, RANKING_VERSIONS, RankingVersionError,
+                         diagnosis_filename, legacy_metadata, ranking_version_of,
+                         require_version)
 from app.routers.report import TYPE_LABELS
 
 router = APIRouter(prefix="/api/datasets", tags=["upload"])
@@ -847,12 +851,32 @@ def _ruler_fit_with_ceiling(dataset_id: str, summary: dict) -> RulerFit | None:
     return fit
 
 
-def _load_label_diagnosis_json(dataset_id: str) -> LabelDiagnosisResult:
-    result_path = UPLOADS_DIR / dataset_id / "label_diagnosis.json"
+def _load_label_diagnosis_json(dataset_id: str,
+                               ranking: str = RANKING_V1) -> LabelDiagnosisResult:
+    """그 순위 버전의 진단 결과 (docs/adr-ranking-separation.md).
+
+    버전마다 파일이 다르다. **파일 안에 적힌 버전이 요청과 다르면 읽지 않는다** — 다른
+    순서가 그 버전 이름을 달고 화면에 나간다. 기록이 없는 옛 파일은 v1로 읽고 그렇다고
+    표시한다.
+    """
+    try:
+        name = diagnosis_filename(ranking)
+    except RankingVersionError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    result_path = UPLOADS_DIR / dataset_id / name
     if not result_path.exists():
-        raise HTTPException(404, "아직 라벨 단위 진단을 하지 않았습니다.")
+        raise HTTPException(404, "아직 라벨 단위 진단을 하지 않았습니다." if ranking == RANKING_V1
+                            else f"이 순위 버전({ranking})의 라벨 단위 진단이 없습니다.")
 
     data = json.loads(result_path.read_text(encoding="utf-8"))
+    try:
+        found = ranking_version_of(data)
+        ranking_info = (RankingInfo(**data["ranking"]) if data.get("ranking") is not None
+                        else RankingInfo(**legacy_metadata(), legacy=True))
+    except (RankingVersionError, ValueError, TypeError) as exc:
+        raise HTTPException(409, f"{name}의 순위 버전 기록을 읽을 수 없습니다: {exc}") from exc
+    if found != ranking:
+        raise HTTPException(409, f"{name}에 적힌 순위 버전({found})이 요청({ranking})과 다릅니다.")
     summary = data["summary"]
     dominant = summary["dominant_type"]
 
@@ -887,12 +911,16 @@ def _load_label_diagnosis_json(dataset_id: str) -> LabelDiagnosisResult:
                 severity=item["severity"],
                 detail=item["detail"],
                 box=item.get("box"),
+                layer=item.get("layer"),
+                layer_rank=item.get("layer_rank"),
             )
             for item in data["review_queue"]
         ],
         robustness=_robustness(summary["by_type"]),
         ruler=_load_ruler_sidecar(dataset_id),
         ruler_fit=_ruler_fit_with_ceiling(dataset_id, summary),
+        ranking=ranking_info,
+        systematic_types=summary.get("systematic_types", []),
         caveat=data["caveat"] + (
             " 이 수치는 기준 모델이 이 데이터와 같은 도메인일 때의 것입니다. "
             "도메인이 어긋나면 유형마다 다르게 무너지며, 아래 유형별 신뢰도를 "
@@ -902,7 +930,8 @@ def _load_label_diagnosis_json(dataset_id: str) -> LabelDiagnosisResult:
 
 
 @router.post("/{dataset_id}/diagnose-labels", response_model=LabelDiagnosisResult)
-def diagnose_dataset_labels(dataset_id: str, profile: str | None = None) -> LabelDiagnosisResult:
+def diagnose_dataset_labels(dataset_id: str, profile: str | None = None,
+                            ranking: str = RANKING_V1) -> LabelDiagnosisResult:
     """박스 단위 진단 — 재검수 우선순위 목록을 만든다.
 
     /diagnose(데이터셋 단위 성능 비교)와 달리 예측 박스와 라벨을 1:1로
@@ -913,12 +942,20 @@ def diagnose_dataset_labels(dataset_id: str, profile: str | None = None) -> Labe
     dataset_dir = UPLOADS_DIR / dataset_id
     if not dataset_dir.is_dir():
         raise HTTPException(404, "데이터셋을 찾을 수 없습니다.")
+    # 순위 버전 (docs/adr-ranking-separation.md). 모르는 버전으로 추론부터 돌리지 않는다.
+    try:
+        require_version(ranking)
+    except RankingVersionError as exc:
+        raise HTTPException(400, str(exc)) from exc
     # 자 정보를 먼저 확정해 남긴다 — 진단이 끝난 뒤에는 어떤 프로파일로
     # 돌렸는지 알 길이 없다.
     _save_ruler_sidecar(dataset_id, _ruler_info(profile, dataset_dir))
-    _run_experiment_script(dataset_id, "diagnose_labels.py", ["--upload-id", dataset_id],
+    # 버전은 늘 명시한다 — 기본값이 스크립트와 여기서 따로 놀지 않게. 결과는 버전마다
+    # 다른 파일에 쓰이고, 스크립트는 다른 버전의 결과가 있는 자리에 쓰지 않는다.
+    _run_experiment_script(dataset_id, "diagnose_labels.py",
+                           ["--upload-id", dataset_id, "--ranking", ranking],
                            env_extra=_profile_env(profile))
-    return _load_label_diagnosis_json(dataset_id)
+    return _load_label_diagnosis_json(dataset_id, ranking)
 
 
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".bmp", ".webp"}
@@ -943,7 +980,9 @@ def list_dataset_history() -> list[DatasetHistoryItem]:
     for d in UPLOADS_DIR.iterdir():
         if not d.is_dir():
             continue
-        label_path = d / "label_diagnosis.json"
+        # 순위 버전마다 결과 파일이 따로다. 어느 버전이 있는지 목록에서 보여야 한다.
+        versions = [v for v in RANKING_VERSIONS if (d / diagnosis_filename(v)).exists()]
+        label_path = d / diagnosis_filename(versions[0] if versions else RANKING_V1)
         summary: dict = {}
         when: str | None = None
         if label_path.exists():
@@ -963,10 +1002,11 @@ def list_dataset_history() -> list[DatasetHistoryItem]:
                 diagnosed_at=when,
                 num_images=n_images,
                 num_labels=n_labels,
-                has_label_diagnosis=label_path.exists(),
+                has_label_diagnosis=bool(versions),
                 total_findings=summary.get("total_findings"),
                 dominant_label=(SUSPICION_LABELS.get(dominant, dominant)
                                 if dominant else None),
+                ranking_versions=versions,
             ),
         ))
 
@@ -1105,8 +1145,8 @@ def get_dataset_image(dataset_id: str, name: str) -> FileResponse:
 
 
 @router.get("/{dataset_id}/label-diagnosis", response_model=LabelDiagnosisResult)
-def get_label_diagnosis(dataset_id: str) -> LabelDiagnosisResult:
-    return _load_label_diagnosis_json(dataset_id)
+def get_label_diagnosis(dataset_id: str, ranking: str = RANKING_V1) -> LabelDiagnosisResult:
+    return _load_label_diagnosis_json(dataset_id, ranking)
 
 
 @router.get("/{dataset_id}/diagnosis", response_model=UploadDiagnosisResult)

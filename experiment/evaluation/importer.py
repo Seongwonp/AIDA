@@ -20,6 +20,25 @@ MISSING = "missing_candidates"
 ALL_DESCRIPTIVE = "all_descriptive"
 SCOPES = (LABELLED, MISSING, ALL_DESCRIPTIVE)
 
+# 재검수 순위 버전 (docs/adr-ranking-separation.md). `experiment/label_diagnosis.py`와
+# 같은 이름이다 — 이 패키지는 표준 라이브러리만 쓰므로 가져오지 않고 적고, 검사가
+# 둘을 대조한다.
+RANKING_V1 = "aida_v1_systematic_boost"
+RANKING_V2 = "aida_v2_candidate_iou"
+RANKING_VERSIONS = (RANKING_V1, RANKING_V2)
+
+
+def ranking_version_of(export: dict) -> str:
+    """어느 순위 버전의 AIDA 순서인가.
+
+    **기록이 없는 옛 내보내기는 v1이다** — v2 전에는 v1뿐이었다(prelim1도 그렇다).
+    """
+    version = export.get("ranking_version", RANKING_V1)
+    if version not in RANKING_VERSIONS:
+        raise ValidationError(
+            f"모르는 순위 버전이다: {version!r} (아는 것은 {', '.join(RANKING_VERSIONS)})")
+    return version
+
 
 def _require(data: dict, field: str):
     if field not in data:
@@ -72,6 +91,7 @@ def load_export(export: dict, dataset_id: str | None = None, *,
             f"(이 코드가 아는 것은 {SUPPORTED_EXPORT_VERSION})")
 
     check_scope(export, require_comparison=require_comparison)
+    ranking_version_of(export)
 
     name = dataset_id or _require(export, "dataset_id")
     if not isinstance(name, str) or not name.strip():
@@ -125,6 +145,14 @@ def load_exports(exports: list[dict], names: list[str] | None = None, *,
     if len(scopes) > 1:
         raise ValidationError(
             f"층이 섞였다: {', '.join(sorted(scopes))}. 비교 조건이 달라 한 "
+            "숫자로 합치지 않는다.")
+
+    # **순위 버전이 섞이면 거부한다.** 같은 `aida`라는 이름이라도 v1과 v2는 다른
+    # 순서라, 합치면 어느 순서를 잰 숫자인지 사라진다.
+    versions = {ranking_version_of(e) for e in exports}
+    if len(versions) > 1:
+        raise ValidationError(
+            f"순위 버전이 섞였다: {', '.join(sorted(versions))}. 다른 순서를 한 "
             "숫자로 합치지 않는다.")
 
     all_adjudications: list[Adjudication] = []

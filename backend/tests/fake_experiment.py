@@ -90,7 +90,20 @@ out.mkdir(parents=True, exist_ok=True)
 
 payload = json.loads(os.environ["FAKE_DIAGNOSIS_JSON"])
 payload["dataset"] = dataset_id
-(out / "label_diagnosis.json").write_text(
+
+# 순위 버전 (docs/adr-ranking-separation.md). 진짜처럼 버전마다 다른 파일에 쓰고 버전을 적는다.
+V1 = "aida_v1_systematic_boost"
+ranking = args[args.index("--ranking") + 1] if "--ranking" in args else V1
+name = "label_diagnosis.json" if ranking == V1 else f"label_diagnosis.{ranking}.json"
+if "--ranking" in args:
+    payload["ranking"] = {
+        "ranking_version": ranking,
+        "ranking_scope": "mixed_queue" if ranking == V1 else "per_layer",
+        "ranking_signal": {"labelled_candidates": "가짜", "missing_candidates": "가짜"},
+        "dataset_boost_affects_order": ranking == V1,
+        "tie_break_rule": "가짜",
+    }
+(out / name).write_text(
     json.dumps(payload, ensure_ascii=False), encoding="utf-8")
 
 if os.environ.get("FAKE_FAIL"):

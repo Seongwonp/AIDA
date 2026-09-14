@@ -105,6 +105,23 @@ export interface ReviewQueueItem {
   detail: string;
   /** 픽셀 좌표 [x1, y1, x2, y2]. 이 기능 전 진단 결과에는 없다. */
   box: number[] | null;
+  /** 층과 층 안 순서 (docs/adr-ranking-separation.md). 옛 결과에는 없다. */
+  layer?: "labelled_candidates" | "missing_candidates" | null;
+  layer_rank?: number | null;
+}
+
+/**
+ * 이 목록을 어느 순위 버전으로 만들었나 (docs/adr-ranking-separation.md).
+ * v1은 데이터셋 수준 계통 유형이 후보 순서를 바꾸고, v2는 바꾸지 않는다.
+ */
+export interface RankingInfo {
+  ranking_version: string;
+  ranking_scope: string;
+  ranking_signal: Record<string, string>;
+  dataset_boost_affects_order: boolean;
+  tie_break_rule: string;
+  /** 결과 파일에 버전 기록이 없어 v1으로 읽었는가 */
+  legacy: boolean;
 }
 
 export interface LabelDiagnosisResult {
@@ -126,6 +143,10 @@ export interface LabelDiagnosisResult {
   robustness: TypeRobustness[];
   ruler: RulerInfo | null;
   ruler_fit: RulerFit | null;
+  /** 순위 버전. 서버가 옛 결과에도 채우지만 더 옛 서버 응답에는 없을 수 있다. */
+  ranking?: RankingInfo | null;
+  /** 데이터셋 수준에서 계통 유형으로 보인 것. v2에서는 순서를 바꾸지 않는다. */
+  systematic_types?: string[];
   caveat: string;
 }
 
@@ -223,6 +244,8 @@ export interface DatasetHistoryItem {
   has_label_diagnosis: boolean;
   total_findings: number | null;
   dominant_label: string | null;
+  /** 결과 파일이 있는 순위 버전들. 옛 서버 응답에는 없다. */
+  ranking_versions?: string[];
 }
 
 /** 서버에 남긴 검수 판정. 키는 "이미지#라벨번호#의심유형". */

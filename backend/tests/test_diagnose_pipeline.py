@@ -65,7 +65,9 @@ def test_what_backend_hands_to_the_subprocess(wired):
     client.post(f"/api/datasets/{dataset_id}/diagnose-labels")
 
     call = json.loads((uploads / dataset_id / "stub_call.json").read_text(encoding="utf-8"))
-    assert call["argv"] == ["--upload-id", dataset_id]
+    # 순위 버전은 늘 명시한다 — 기본값이 스크립트와 backend에서 따로 놀지 않게
+    # (docs/adr-ranking-separation.md). 안 고르면 지금까지의 제품 순위(v1)다.
+    assert call["argv"] == ["--upload-id", dataset_id, "--ranking", "aida_v1_systematic_boost"]
     # cwd가 experiment 루트여야 한다 — 스크립트가 상대 경로로 config를 읽는다
     assert call["cwd"].endswith("experiment")
     # 프로파일을 안 골랐으면 아무것도 안 넘긴다 (기본 기준 모델)

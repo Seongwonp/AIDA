@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { deleteDataset, getDatasetHistory } from "../api";
 import type { DatasetHistoryItem } from "../types";
 import { clearVerdicts } from "./reviewQueueLogic";
+import { RANKING_V1, rankingLabel, rankingShort } from "../ranking";
 
 /**
  * 지난 진단 목록.
@@ -13,7 +14,7 @@ import { clearVerdicts } from "./reviewQueueLogic";
  * 정상이고(판정을 브라우저에 남기는 이유도 그것이다), 그러려면 어제 진단을
  * 다시 열 수 있어야 한다.
  */
-export function HistoryCard({ onOpen }: { onOpen: (datasetId: string) => void }) {
+export function HistoryCard({ onOpen }: { onOpen: (datasetId: string, ranking: string) => void }) {
   const [rows, setRows] = useState<DatasetHistoryItem[]>([]);
   const [failed, setFailed] = useState(false);
   // 지우기를 누른 줄. 되돌릴 수 없으므로 한 번 더 묻는다.
@@ -92,10 +93,14 @@ export function HistoryCard({ onOpen }: { onOpen: (datasetId: string) => void })
                   ) : (
                     <span className="row-actions">
                       {r.has_label_diagnosis ? (
-                        <button className="refresh-button"
-                                onClick={() => onOpen(r.dataset_id)}>
-                          열기
-                        </button>
+                        // 순위 버전마다 결과가 따로다 (docs/adr-ranking-separation.md).
+                        // 버전 기록을 모르는 옛 서버 응답이면 v1 하나뿐이었다.
+                        (r.ranking_versions?.length ? r.ranking_versions : [RANKING_V1]).map((v) => (
+                          <button key={v} className="refresh-button" title={rankingLabel(v)}
+                                  onClick={() => onOpen(r.dataset_id, v)}>
+                            열기 · {rankingShort(v)}
+                          </button>
+                        ))
                       ) : (
                         // 데이터셋 단위 진단만 있는 것 — 재검수 목록이 없다
                         <span className="preview-missing">재검수 목록 없음</span>

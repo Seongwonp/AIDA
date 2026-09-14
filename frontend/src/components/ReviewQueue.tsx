@@ -46,10 +46,14 @@ import {
 // 기본값 배열을 컴포넌트 안에 두면 렌더마다 새로 만들어져 참조가 달라진다
 const NO_TYPES: string[] = [];
 
-export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = NO_TYPES, dominantType = null }:
+export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = NO_TYPES, dominantType = null,
+                              perLayer = false }:
                             {
                               items: ReviewQueueItem[];
                               datasetId: string;
+                              /** 층마다 따로 줄 세운 목록인가 (v2, docs/adr-ranking-separation.md).
+                               *  그러면 순번을 층 안 순서로 보여 준다 — 층 사이 순번을 점수 비교로 읽지 않게. */
+                              perLayer?: boolean;
                               /** 기준 모델이 라벨의 몇 %를 짚었나. 모르면 null. */
                               fitRatio?: number | null;
                               /** 도메인이 어긋나도 버티는 의심 유형 (docs/21 AI). */
@@ -435,7 +439,11 @@ export function ReviewQueue({ items, datasetId, fitRatio = null, robustTypes = N
                         </button>
                       </div>
                     </td>
-                    <td>{item.rank}</td>
+                    <td>
+                      {perLayer && item.layer_rank != null
+                        ? `${item.layer === "missing_candidates" ? "누락" : "기존"} ${item.layer_rank}`
+                        : item.rank}
+                    </td>
                     <td>{item.image}</td>
                     <td>{item.label_index ?? "—"}</td>
                     <td>{item.label}</td>

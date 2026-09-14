@@ -12,6 +12,7 @@ import type {
   UploadDiagnosisResult,
   UploadedDatasetInfo,
 } from "./types";
+import { RANKING_V1 } from "./ranking";
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
@@ -67,10 +68,11 @@ export const diagnoseDataset = (datasetId: string) =>
 
 // profile은 유형 신뢰도 보정 프로파일 이름. 빈 값이면 기본값(KITTI Car 실측).
 // 유형 신뢰도가 도메인을 타기 때문에 고를 수 있게 해둔 것이다 (docs/21 L).
-export const diagnoseDatasetLabels = (datasetId: string, profile = "") =>
+// ranking은 재검수 순위 버전(docs/adr-ranking-separation.md). 늘 명시해 보낸다.
+export const diagnoseDatasetLabels = (datasetId: string, profile = "", ranking: string = RANKING_V1) =>
   client
     .post<LabelDiagnosisResult>(`/api/datasets/${datasetId}/diagnose-labels`, null, {
-      params: profile ? { profile } : undefined,
+      params: profile ? { profile, ranking } : { ranking },
     })
     .then((res) => res.data);
 
@@ -88,9 +90,11 @@ export const getDatasetHistory = () =>
     .then((res) => res.data);
 
 /** 지난 진단을 다시 읽는다. 추론을 돌리지 않는다. */
-export const getLabelDiagnosis = (datasetId: string) =>
+export const getLabelDiagnosis = (datasetId: string, ranking: string = RANKING_V1) =>
   client
-    .get<LabelDiagnosisResult>(`/api/datasets/${datasetId}/label-diagnosis`)
+    .get<LabelDiagnosisResult>(`/api/datasets/${datasetId}/label-diagnosis`, {
+      params: { ranking },
+    })
     .then((res) => res.data);
 
 export const deleteDataset = (datasetId: string) =>
