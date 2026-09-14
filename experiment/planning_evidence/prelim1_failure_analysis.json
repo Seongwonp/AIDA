@@ -1,0 +1,196 @@
+{
+  "name": "prelim1_failure_analysis",
+  "label": "사후 분석 — 가설 생성용, 선택 편향 있음. 판정된 합집합 162건만 본다. 새 순위를 검증하지 않는다.",
+  "inputs_sha256": {
+    "label_diagnosis.json": "1feb441bebf2f3902562a349671cc975bc488063d735be0d66e0482f674c9c04",
+    "n90_candidates.json": "c9312d1625b9f6effa4a75d88856253c78b78849d8fb48b000737760f51ae757"
+  },
+  "product_order": {
+    "rule": "계통 유형(present_types)을 먼저, 그 안에서 severity 내림차순 (label_diagnosis.review_order)",
+    "order_basis": "relative",
+    "systematic_flag": false,
+    "absolute_threshold": 0.12,
+    "type_ratios_among_labels": {
+      "width": 0.0969,
+      "height": 0.0578,
+      "scale": 0.0359,
+      "missing": 0.0187,
+      "translation_y": 0.0172,
+      "duplicate": 0.0172,
+      "translation_x": 0.0148
+    },
+    "present_types": [
+      "width"
+    ],
+    "labelled_pool": 307,
+    "present_type_candidates": 124,
+    "first_non_present_position": 125
+  },
+  "top90_type_mix": {
+    "aida": {
+      "width": 90
+    },
+    "iou_baseline": {
+      "scale": 27,
+      "width": 22,
+      "translation_x": 8,
+      "height": 9,
+      "duplicate": 17,
+      "translation_y": 7
+    }
+  },
+  "judged_union_by_type": {
+    "duplicate": {
+      "candidates": 17,
+      "hit": 4,
+      "miss": 13,
+      "hold": 0
+    },
+    "height": {
+      "candidates": 9,
+      "hit": 1,
+      "miss": 8,
+      "hold": 0
+    },
+    "scale": {
+      "candidates": 27,
+      "hit": 5,
+      "miss": 21,
+      "hold": 1
+    },
+    "translation_x": {
+      "candidates": 8,
+      "hit": 3,
+      "miss": 5,
+      "hold": 0
+    },
+    "translation_y": {
+      "candidates": 7,
+      "hit": 1,
+      "miss": 6,
+      "hold": 0
+    },
+    "width": {
+      "candidates": 94,
+      "hit": 4,
+      "miss": 89,
+      "hold": 1
+    }
+  },
+  "judged_union_by_set_and_promotion": {
+    "aida_only|present_type=True": {
+      "candidates": 72,
+      "hit": 4,
+      "miss": 67,
+      "hold": 1
+    },
+    "baseline_only|present_type=False": {
+      "candidates": 68,
+      "hit": 14,
+      "miss": 53,
+      "hold": 1
+    },
+    "baseline_only|present_type=True": {
+      "candidates": 4,
+      "hit": 0,
+      "miss": 4,
+      "hold": 0
+    },
+    "overlap|present_type=True": {
+      "candidates": 18,
+      "hit": 0,
+      "miss": 18,
+      "hold": 0
+    }
+  },
+  "hit_positions": {
+    "aida_top90_positions": [
+      12,
+      47,
+      66,
+      70
+    ],
+    "baseline_top90_positions": [
+      2,
+      7,
+      10,
+      13,
+      17,
+      19,
+      31,
+      38,
+      41,
+      57,
+      59,
+      67,
+      76,
+      81
+    ],
+    "baseline_only_hits_aida_labelled_positions": [
+      130,
+      135,
+      144,
+      147,
+      150,
+      153,
+      155,
+      166,
+      185,
+      225,
+      251,
+      266,
+      274,
+      297
+    ]
+  },
+  "severity_by_verdict": {
+    "hit": {
+      "n": 18,
+      "min": 0.0675,
+      "median": 0.3044,
+      "max": 0.4644
+    },
+    "miss": {
+      "n": 142,
+      "min": 0.0638,
+      "median": 0.3514,
+      "max": 0.6191
+    },
+    "hold": {
+      "n": 2,
+      "min": 0.2109,
+      "median": 0.2599,
+      "max": 0.3089
+    }
+  },
+  "label_iou_by_verdict": {
+    "hit": {
+      "n": 18,
+      "min": 0.4052,
+      "median": 0.5956,
+      "max": 0.8157
+    },
+    "miss": {
+      "n": 142,
+      "min": 0.4026,
+      "median": 0.6585,
+      "max": 0.8711
+    },
+    "hold": {
+      "n": 2,
+      "min": 0.5519,
+      "median": 0.66,
+      "max": 0.768
+    }
+  },
+  "union_candidates_per_image": {
+    "1": 63,
+    "2": 27,
+    "3": 12,
+    "4": 1,
+    "5": 1
+  },
+  "hits_per_unique_error": {
+    "1": 18
+  }
+}

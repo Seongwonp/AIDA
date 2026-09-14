@@ -6,6 +6,7 @@ prelim1 판정 전 합성 판정으로 집계 경로를 돌려 보다가 잡혔�
 부트스트랩이 한 번도 돌지 않았다.** 기존 검사는 이 모양의 id를 부트스트랩에 넣은
 적이 없었다.
 """
+import evaluation.bootstrap as bootstrap_module
 from evaluation.bootstrap import paired_cluster_bootstrap
 from evaluation.schema import Adjudication, Ranking
 
@@ -39,3 +40,44 @@ def test_서버_형식의_오류_id로도_부트스트랩이_돈다():
     assert got["observed_difference"] == 2
     assert got["ci_low"] == 2.0
     assert got["ci_high"] == 2.0
+
+
+def test_두_방법이_같은_재표본_묶음을_본다(monkeypatch):
+    """짝지음: 재표본마다 AIDA와 기준선이 **같은 후보 벌**에 점수를 매겨야 한다.
+
+    따로 뽑으면 차이의 분포가 아니라 두 독립 분포의 차이가 된다.
+    """
+    seen = []
+    real = bootstrap_module._resample
+
+    def spy(*args, **kwargs):
+        facts, ranks = real(*args, **kwargs)
+        keys = {m: {r.candidate_key for r in ranks if r.method == m} for m in ("aida", "iou_baseline")}
+        seen.append((keys["aida"] == keys["iou_baseline"] == {a.key for a in facts}, len(facts)))
+        return facts, ranks
+
+    monkeypatch.setattr(bootstrap_module, "_resample", spy)
+    facts, ranks = _world()
+    paired_cluster_bootstrap(facts, ranks, "aida", "iou_baseline", budget=2, iterations=50, seed=42)
+    assert len(seen) == 50
+    assert all(same for same, _ in seen)
+    assert all(n == 4 for _, n in seen)          # 이미지 2개 × 후보 2건씩 뽑힌다
+
+
+def test_누락_층_형식의_id도_중복_추출에서_따로_센다():
+    """누락 객체 id는 서버가 `<이미지>/M<번호>`로 붙인다. 같은 이미지가 두 번 뽑혀도
+    두 벌은 다른 누락 객체다.
+
+    손계산은 위 검사와 같다 (검수량 2): 모든 재표본에서 AIDA 2개, 기준선 0개 → 차이 2.
+    """
+    facts, ranks = [], []
+    for image in ("a.jpg", "b.jpg"):
+        hit = Adjudication("ds", image, "m0", "missing", "hit", None, f"{image}/M1")
+        miss = Adjudication("ds", image, "m1", "missing", "miss", None, None)
+        facts += [hit, miss]
+        ranks += [Ranking("aida", hit.key, 0.9), Ranking("aida", miss.key, 0.1),
+                  Ranking("iou_baseline", hit.key, 0.1), Ranking("iou_baseline", miss.key, 0.9)]
+    got = paired_cluster_bootstrap(facts, ranks, "aida", "iou_baseline", budget=2,
+                                   iterations=200, seed=42)
+    assert (got["observed_difference"], got["ci_low"], got["ci_high"]) == (2, 2.0, 2.0)
+

@@ -1,0 +1,142 @@
+{
+  "name": "prelim1_n90_independent_audit",
+  "purpose": "산술 검증. 제품 집계·부트스트랩 함수를 쓰지 않았다. 두 번째 통계 분석이 아니다.",
+  "input": {
+    "export_labelled.json": "b46f0fbd8725f0a1a391ad862ac4238b781c6196961742bbce9d2d9abb079f65"
+  },
+  "tie_rule": "점수 내림차순 → 이미지 이름 → 후보 id (평가 규약 5절)",
+  "n": 90,
+  "aida_top90": {
+    "candidates": 90,
+    "unjudged": 0,
+    "hit_candidates": 4,
+    "unique_errors": 4,
+    "miss": 85,
+    "hold": 1,
+    "decided": 89,
+    "images": 72
+  },
+  "iou_baseline_top90": {
+    "candidates": 90,
+    "unjudged": 0,
+    "hit_candidates": 14,
+    "unique_errors": 14,
+    "miss": 75,
+    "hold": 1,
+    "decided": 89,
+    "images": 66
+  },
+  "overlap": {
+    "candidates": 18,
+    "unjudged": 0,
+    "hit_candidates": 0,
+    "unique_errors": 0,
+    "miss": 18,
+    "hold": 0,
+    "decided": 18,
+    "images": 16
+  },
+  "aida_only": {
+    "candidates": 72,
+    "unjudged": 0,
+    "hit_candidates": 4,
+    "unique_errors": 4,
+    "miss": 67,
+    "hold": 1,
+    "decided": 71,
+    "images": 60
+  },
+  "baseline_only": {
+    "candidates": 72,
+    "unjudged": 0,
+    "hit_candidates": 14,
+    "unique_errors": 14,
+    "miss": 57,
+    "hold": 1,
+    "decided": 71,
+    "images": 57
+  },
+  "union": {
+    "candidates": 162,
+    "unjudged": 0,
+    "hit_candidates": 18,
+    "unique_errors": 18,
+    "miss": 142,
+    "hold": 2,
+    "decided": 160,
+    "images": 104
+  },
+  "difference_unique_errors": -10,
+  "difference_hit_candidates": -10,
+  "ties": {
+    "aida": {
+      "value_at_90": -90.0,
+      "value_at_91": -91.0,
+      "tied_with_90th": 1,
+      "boundary_split_by_tie_rule": false
+    },
+    "iou_baseline": {
+      "value_at_90": 0.3334,
+      "value_at_91": 0.3315,
+      "tied_with_90th": 1,
+      "boundary_split_by_tie_rule": false
+    }
+  },
+  "duplicate_candidates_per_unique_error_in_union": {
+    "1": 18
+  },
+  "union_images_with_hits": 17,
+  "production_comparison": {
+    "production_file_sha256": "3f4f8a807f587a509668d29efc6a812d8ab834132c5f5868e145ce03a5e67ca5",
+    "checks": {
+      "aida.unique_errors": {
+        "independent": 4,
+        "production": 4,
+        "match": true
+      },
+      "aida.hit_candidates": {
+        "independent": 4,
+        "production": 4,
+        "match": true
+      },
+      "aida.holds": {
+        "independent": 1,
+        "production": 1,
+        "match": true
+      },
+      "aida.decided": {
+        "independent": 89,
+        "production": 89,
+        "match": true
+      },
+      "iou_baseline.unique_errors": {
+        "independent": 14,
+        "production": 14,
+        "match": true
+      },
+      "iou_baseline.hit_candidates": {
+        "independent": 14,
+        "production": 14,
+        "match": true
+      },
+      "iou_baseline.holds": {
+        "independent": 1,
+        "production": 1,
+        "match": true
+      },
+      "iou_baseline.decided": {
+        "independent": 89,
+        "production": 89,
+        "match": true
+      },
+      "difference_unique_errors": {
+        "independent": -10,
+        "production": -10,
+        "match": true
+      }
+    },
+    "all_match": true
+  },
+  "detail_file": "D:/AIDA-eval/prelim/prelim1_30512dfcbfbb/audit/n90_candidates.json",
+  "detail_sha256": "7da9d37f479b288ab56c4a35a8d25e7683dbdebb0ba446ea1a5bf60462b0ba58"
+}
