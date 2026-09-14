@@ -49,6 +49,26 @@ def test_모르는_순위_버전은_읽지_않는다():
         load_export(export("d1", "aida_v3"))
 
 
+def with_baseline(data):
+    """같은 후보에 `iou_baseline` 점수를 붙인다."""
+    data["methods"] = ["aida", "iou_baseline"]
+    data["rankings"].append({"method": "iou_baseline", "canonical_candidate_id": "La",
+                             "severity": 0.6})
+    return data
+
+
+def test_v2_내보내기에_IoU_기준선이_붙어_있으면_읽지_않는다():
+    """v2의 기존 라벨 순서는 기준선과 같은 신호다. 백엔드가 막지만 손으로 만든 파일도 막는다."""
+    with pytest.raises(ValidationError, match="같은 신호"):
+        load_export(with_baseline(export("d1", V2)))
+
+
+def test_v1과_옛_내보내기는_IoU_기준선과_함께_읽는다():
+    for version in (None, V1):
+        adjudications, rankings = load_export(with_baseline(export("d1", version)))
+        assert {r.method for r in rankings} == {"aida", "iou_baseline"}
+
+
 def test_내보내기의_순위_버전을_읽어_준다():
     assert importer.ranking_version_of(export("d1")) == V1
     assert importer.ranking_version_of(export("d1", V2)) == V2

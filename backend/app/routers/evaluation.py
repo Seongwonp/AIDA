@@ -20,7 +20,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from ..config import EXPERIMENT_ROOT, UPLOADS_DIR
-from ..ranking import (LEGACY_RANKING_VERSION, RANKING_V1, RankingVersionError,
+from ..ranking import (LEGACY_RANKING_VERSION, RANKING_V1, RANKING_V2, RankingVersionError,
                        diagnosis_filename, ranking_version_of, require_version)
 from ..models import (BlindCandidate, BlindQueue, EVALUATION_SCHEMA_VERSION,
                       EvaluationAdjudication, EvaluationAdjudications,
@@ -681,6 +681,15 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
         raise ExportBlocked(
             f"'{scope}' 층에는 사전 정의된 비교군이 없습니다. "
             f"AIDA 순위와 판정만 내보냅니다 — 요청한 방법: {', '.join(methods)}.")
+
+    if (snapshot_ranking_version(snapshot) == RANKING_V2
+            and AIDA in methods and IOU_BASELINE in methods):
+        # v2의 기존 라벨 순서는 `1 − label_iou`라 기준선과 같은 신호다. 견주면 차이가 0에
+        # 가깝게 나와 "AIDA가 기준선과 대등하다"로 읽힌다 (docs/adr-ranking-separation.md).
+        raise ExportBlocked(
+            f"이 묶음의 AIDA 순서({RANKING_V2})는 '{IOU_BASELINE}'과 같은 신호(1 − label_iou)입니다. "
+            "같은 순서끼리 견주지 않습니다 — v2를 기준선과 견주려면 후보 생성까지 포함한 "
+            "다른 평가가 필요합니다(docs/next-evaluation-proposal.md).")
 
     if any(m != AIDA for m in methods):
         truncated = _truncation(snapshot)

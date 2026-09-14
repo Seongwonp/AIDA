@@ -91,7 +91,15 @@ def load_export(export: dict, dataset_id: str | None = None, *,
             f"(이 코드가 아는 것은 {SUPPORTED_EXPORT_VERSION})")
 
     check_scope(export, require_comparison=require_comparison)
-    ranking_version_of(export)
+    if ranking_version_of(export) == RANKING_V2:
+        methods = set(export.get("methods") or []) | {
+            row.get("method") for row in export.get("rankings") or []}
+        if {"aida", "iou_baseline"} <= methods:
+            # v2의 기존 라벨 순서는 `1 − label_iou`라 기준선과 같은 신호다. 견주면 차이가
+            # 0에 가깝게 나와 대등한 것처럼 읽힌다 (docs/adr-ranking-separation.md).
+            raise ValidationError(
+                f"{RANKING_V2}의 AIDA 순서는 iou_baseline과 같은 신호(1 - label_iou)다. "
+                "같은 순서끼리 견주지 않는다.")
 
     name = dataset_id or _require(export, "dataset_id")
     if not isinstance(name, str) or not name.strip():

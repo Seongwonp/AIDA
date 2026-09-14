@@ -215,6 +215,33 @@ def test_v2_묶음의_내보내기는_v2라고_적는다(client, uploads):
     assert (body["ranking_version"], body["ranking_version_recorded"]) == (V2, True)
 
 
+def export_methods(client, methods, evaluation_id="e1"):
+    return client.get(f"/api/datasets/{DATASET}/evaluations/{evaluation_id}/export?methods={methods}")
+
+
+def test_v2_묶음은_같은_신호인_IoU_기준선과_견주지_않는다(client, uploads):
+    """v2의 기존 라벨 순서는 `1 − label_iou`라 `iou_baseline`과 같다. 견주면 차이가 0에
+    가깝게 나오고 "AIDA가 기준선과 대등하다"로 잘못 읽힌다 (docs/adr-ranking-separation.md)."""
+    write(uploads, V2_FILE, diagnosis(V2))
+    assert start(client, ranking_version=V2).status_code == 200
+    r = export_methods(client, "aida,iou_baseline")
+    assert r.status_code == 409
+    assert "같은 신호" in r.json()["detail"]
+    assert export_methods(client, "aida").status_code == 200
+
+
+def test_v1_묶음은_여전히_IoU_기준선과_견줄_수_있다(client, uploads):
+    write(uploads, V1_FILE, diagnosis(None))
+    assert start(client).status_code == 200
+    assert export_methods(client, "aida,iou_baseline").status_code == 200
+
+
+def test_버전_없는_옛_묶음도_IoU_기준선과_견줄_수_있다(client, uploads):
+    """prelim1 같은 옛 묶음은 v1이다 — 그 비교를 막으면 사전 등록한 집계를 다시 못 돌린다."""
+    E.save_snapshot(DATASET, E.build_snapshot(DATASET, "e1", diagnosis(None)))
+    assert export_methods(client, "aida,iou_baseline").status_code == 200
+
+
 # ── 진단 실행 ─────────────────────────────────────────────────────────────────
 
 @pytest.fixture
