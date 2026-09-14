@@ -34,6 +34,15 @@
 > 14건, 차이 −10, 95% 구간 [−18, −2]. 이 조건에서는 기준선 순서가 판정자가 오류로 본 라벨을 더 많이
 > 올렸다. Δ가 없어 성공·실패 판정은 아니다. 심각도 순서 같은 사전 등록에 없는 분석은 이 데이터로
 > 하지 않는다 — 하려면 새 자료로 따로 사전 등록한다.
+>
+> **감사 (2026-09-14).** N=90이 유일한 1차 탐색 비교다(10~80은 사후 깊이 진단). 독립
+> 산술 감사가 제품 집계와 같았다(hit 후보 = 고유 오류, 4 대 14). 판정 186 대 기록 185는
+> 마지막 후보의 기록 전송 누락이었고, 세션 판정 결함을 고쳤다(`5cf0e998`) — prelim1
+> 시간은 `N_capacity`에 쓰지 않는다. 사후 분석: 상대 문턱으로 승격된 width가 AIDA 상위
+> 90을 전부 차지했다(가설일 뿐). prelim1은 **소비된 개발 데이터**다 —
+> [`docs/prelim1-decision.md`](docs/prelim1-decision.md)·
+> [`docs/prelim1-failure-analysis.md`](docs/prelim1-failure-analysis.md)·
+> [`docs/evaluation-data.md`](docs/evaluation-data.md) 원장.
 
 1. ~~**검사 공백부터.**~~ **끝 (2026-09-13 데스크탑).** frontend 176 passed ·
    typecheck·lint·build exit 0, backend 261 passed(건너뜀 0), experiment 408 passed,
@@ -133,7 +142,7 @@ Python 환경은 **둘로 나뉘어 있다.** 섞으면 없는 패키지를 찾�
 경로나 설치 여부를 추측하지 않고 먼저 확인한다. **문서에 적힌 검사 수를 이번
 실행 결과로 보고하지 않는다** — 직접 돌려 보고 그 숫자를 쓴다.
 
-최근 통과 수는 experiment 409 · backend 261(데스크탑 건너뜀 0, 노트북 260·건너뜀 1) · frontend 176이다 (2026-09-13 데스크탑).
+최근 통과 수는 experiment 416 · backend 261(데스크탑 건너뜀 0, 노트북 260·건너뜀 1) · frontend 177이다 (2026-09-14 데스크탑).
 experiment·backend는 2026-09-13 노트북에서 CI와 같은 의존성 목록만 깐 가상환경으로
 직접 돌린 결과다(backend의 건너뜀 1건은 `test_uploads_dir_agreement.py:100`
 "외부 드라이브가 없는 환경"이다 — 노트북에만 해당하고, 데스크탑 기록은 252 통과였다).
