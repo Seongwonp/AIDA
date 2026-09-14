@@ -51,6 +51,13 @@
 > 얼린다. **prelim1은 v1에 묶여 있고 지문이 그대로다.** v2는 **평가되지 않았다** — prelim1로
 > 검증하지 않는다. 다음 평가는 제안만 있다:
 > [`docs/next-evaluation-proposal.md`](docs/next-evaluation-proposal.md) (데이터셋·N 미정, 법률 검토 필요).
+> v2 묶음은 같은 신호인 `iou_baseline`과 견주지 못하게 막았다.
+>
+> **목적 (2026-09-14, 사용자 결정 A).** 지금 단계는 **비상업 연구 시제품**이다. 결과를 상업적
+> 주장·영업 자료에 쓰지 않는다. 검출 라이브러리 `ultralytics`가 **AGPL-3.0**이고(패키지 메타데이터
+> 확인), 자의 학습 데이터 KITTI는 비상업 조건이다 — 상용화로 바꾸면 라이브러리·자·평가를 다시
+> 본다. 라이선스 원문은 사람이 읽고 확인한다 —
+> [`docs/evaluation-data.md`](docs/evaluation-data.md) "이 단계의 목적".
 
 1. ~~**검사 공백부터.**~~ **끝 (2026-09-13 데스크탑).** frontend 176 passed ·
    typecheck·lint·build exit 0, backend 261 passed(건너뜀 0), experiment 408 passed,
@@ -102,6 +109,7 @@
   않는다.
 - 한 사람의 판정은 **일관성**을 보여줄 뿐 정확성이 아니다. 외부 사용자로
   일반화하지 않는다.
+- 이 단계의 결과를 **상업적 주장·영업 자료에 쓰지 않는다** — 비상업 연구 시제품이다(목적 A).
 - **파일럿 원본을 지우거나 고치지 않는다** — `uploads/ffffffffff01`~`07`의
   snapshot·adjudications·activity·metadata·answer key. SHA-256은
   [`docs/HANDOFF_2026-09-12.md`](docs/HANDOFF_2026-09-12.md)에 있다.
@@ -150,7 +158,7 @@ Python 환경은 **둘로 나뉘어 있다.** 섞으면 없는 패키지를 찾�
 경로나 설치 여부를 추측하지 않고 먼저 확인한다. **문서에 적힌 검사 수를 이번
 실행 결과로 보고하지 않는다** — 직접 돌려 보고 그 숫자를 쓴다.
 
-최근 통과 수는 experiment 440 · backend 279(데스크탑 건너뜀 0) · frontend 183이다 (2026-09-14 데스크탑, 순위 버전 추가 뒤).
+최근 통과 수는 experiment 442 · backend 282(데스크탑 건너뜀 0) · frontend 183이다 (2026-09-14 데스크탑, v2 대 기준선 비교 차단 뒤. frontend는 순위 버전 추가 뒤 기록).
 experiment·backend는 2026-09-13 노트북에서 CI와 같은 의존성 목록만 깐 가상환경으로
 직접 돌린 결과다(backend의 건너뜀 1건은 `test_uploads_dir_agreement.py:100`
 "외부 드라이브가 없는 환경"이다 — 노트북에만 해당하고, 데스크탑 기록은 252 통과였다).

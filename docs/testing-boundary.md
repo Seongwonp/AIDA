@@ -136,6 +136,7 @@ GPU 수치를 CI에서 못 재는 대신, **그 수치를 만든 규칙이 조�
 | 옛 결과·묶음·내보내기는 v1으로 읽힌다. 버전 없는 묶음의 지문 재료가 예전 그대로다 | `backend/tests/test_ranking_versions_api.py` |
 | 새 묶음은 버전을 얼리고 지문에 넣는다. 얼린 뒤 v2로 재진단해도 묶음은 v1이다 | 같은 파일 |
 | 버전이 다른 내보내기를 한 집계에 섞지 않는다 | `experiment/tests/test_export_ranking_version.py` |
+| v2 묶음은 같은 신호인 `iou_baseline`과 견주지 않는다(내보내기·집계 둘 다). v1·옛 묶음은 그대로 견준다 | 위 두 파일 |
 | 화면이 버전과 "데이터셋 진단 ≠ 재검수 순서"를 말하고, 이력에서 버전별로 연다 | `RankingNote.test.tsx`, `HistoryCard.test.tsx` |
 
 | 검사가 못 본다 | |
