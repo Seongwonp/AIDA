@@ -235,6 +235,11 @@ export function BlindAdjudication({
     void sendToServer(toRequest(candidates, next)).then((ok) => {
       log.record(ok ? "save_succeeded" : "save_failed");
       setSave(ok ? "saved" : "failed");
+      // **다 끝났으면 기다리지 않고 보낸다.** 기록은 12건이 쌓이거나 10초마다
+      // 나가는데, 판정자는 완료 화면에서 곧 창을 닫는다. 닫을 때의 전송
+      // (`pagehide`·`sendBeacon`)은 보장되지 않는다 — prelim1에서 마지막
+      // 후보의 판정은 저장됐는데 그 후보의 기록은 하나도 서버에 없었다.
+      if (ok && unjudgedCount(candidates, next) === 0) void log.flush();
     });
   };
 

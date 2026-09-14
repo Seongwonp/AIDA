@@ -301,13 +301,40 @@ def _sessions(events: list[dict]) -> list[list[dict]]:
             for sid in order]
 
 
+# 창을 닫을 때 `session_ended` **뒤에** 따라올 수 있는 이벤트. 이것들이 끝 뒤에
+# 있어도 세션은 끝난 것이다.
+_AFTER_END_OK = {"session_ended", "visibility_changed", "focus_changed"}
+
+
+def _really_ended(session: list[dict]) -> bool:
+    """세션의 **끝**을 봤는가.
+
+    `session_ended`가 어디에든 있으면 끝났다고 보면 안 된다. 개발 모드의 React
+    StrictMode는 화면을 띄울 때 effect 정리를 한 번 돌려 **맨 앞에**
+    `session_ended`를 남긴다. prelim1의 마지막 세션은 그 이벤트 하나만 가진 채
+    `save_started`에서 끊겼는데 온전한 세션으로 세어졌다 — 뒤가 잘리면 순번
+    구멍도 안 생긴다.
+
+    그래서 **마지막 실질 이벤트보다 뒤에** `session_ended`가 있어야 끝이다.
+    """
+    last_substantive = -1
+    last_end = -1
+    for i, e in enumerate(session):
+        name = e.get("event")
+        if name == "session_ended":
+            last_end = i
+        elif name not in _AFTER_END_OK:
+            last_substantive = i
+    return last_end > last_substantive
+
+
 def session_report(session: list[dict]) -> SessionReport:
     """세션 하나가 온전한가. **끊긴 기록을 온전한 것처럼 세지 않는다.**"""
     report = SessionReport(session_id=session[0]["session_id"],
                            events=len(session))
     names = [e.get("event") for e in session]
     report.started = "session_started" in names
-    report.ended = "session_ended" in names
+    report.ended = _really_ended(session)
     report.first_event = names[0]
     report.last_event = names[-1]
 
@@ -867,6 +894,42 @@ def judged_in_order(events: list[dict], summary: ActivitySummary) -> list[Candid
     by_id = {c.canonical_candidate_id: c for c in summary.per_candidate
              if c.judged}
     return [by_id[cid] for cid in order if cid in by_id]
+
+
+def reconcile_verdicts(events: list[dict], saved: dict[str, str]) -> dict:
+    """저장된 판정과 작업 기록의 판정을 **후보마다** 대조한다.
+
+    두 수는 같은 것을 세지 않는다. 판정 파일은 **지금 저장된 판정**이고, 작업
+    기록은 **서버에 도착한 이벤트**다. 창을 닫을 때의 전송은 보장되지 않으므로
+    판정은 저장됐는데 기록이 없는 후보가 생길 수 있다(prelim1: 186 대 185).
+    그래서 보고서는 두 수를 같은 값처럼 나란히 적지 않고, 이 대조 결과를 함께
+    적는다.
+
+    `saved`는 판정이 있는 후보만 담는다 — `{canonical_candidate_id: verdict}`.
+    기록 쪽은 후보마다 **마지막** `verdict_set`/`verdict_cleared`를 본다.
+    """
+    last: dict[str, str | None] = {}
+    for session in _sessions(dedupe(events)[0]):
+        for e in session:
+            cid = e.get("canonical_candidate_id")
+            if not cid:
+                continue
+            if e.get("event") == "verdict_set":
+                last[cid] = (e.get("meta") or {}).get("verdict")
+            elif e.get("event") == "verdict_cleared":
+                last[cid] = None
+    logged = {cid: v for cid, v in last.items() if v is not None}
+    missing = sorted(set(saved) - set(logged))
+    extra = sorted(set(logged) - set(saved))
+    mismatch = sorted(cid for cid in set(saved) & set(logged) if saved[cid] != logged[cid])
+    return {
+        "saved_judged": len(saved),
+        "telemetry_judged": len(logged),
+        "missing_telemetry": missing,
+        "telemetry_only": extra,
+        "verdict_mismatch": mismatch,
+        "consistent": not (missing or extra or mismatch),
+    }
 
 
 def interval_reports(events: list[dict], summary: ActivitySummary,

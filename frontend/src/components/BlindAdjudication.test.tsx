@@ -460,6 +460,20 @@ describe("작업 기록", () => {
     expect(names).toContain("session_ended");
   });
 
+  test("마지막 후보를 판정하면 창을 닫기 전에 기록을 보낸다", async () => {
+    // prelim1: 186번째(마지막) 후보의 판정은 저장됐는데 그 후보의 기록은 서버에
+    // 하나도 없었다. 기록은 12건이 쌓이거나 10초가 지나야 보내졌고, 판정자는
+    // 완료 화면에서 곧 창을 닫았다. 닫을 때의 전송은 보장되지 않는다.
+    getBlindQueue.mockResolvedValue(queue([cand({ canonical_candidate_id: "LAST" })]));
+    show();
+    await screen.findByText("a.jpg");
+    await click("오류 아니었다");
+    await waitFor(() => {
+      const sent = logged().filter((e) => e.event === "verdict_set");
+      expect(sent.map((e) => e.canonical_candidate_id)).toContain("LAST");
+    });
+  });
+
   test("판정 유형은 기록에만 남고 화면에는 안 뜬다", async () => {
     // 요약이 화면에 뜨면 판정자가 그걸 보고 다음 판단을 조절한다.
     getBlindQueue.mockResolvedValue(queue([cand()]));
