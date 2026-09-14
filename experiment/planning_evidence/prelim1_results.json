@@ -1,0 +1,225 @@
+{
+  "name": "prelim1_results",
+  "dataset_id": "30512dfcbfbb",
+  "evaluation_id": "prelim1",
+  "candidate_set_hash": null,
+  "status": "exploratory — 판정자 1인, 최종 성공·실패 판정 없음(Δ 미정)",
+  "inputs_sha256": {
+    "export_labelled.json": "b46f0fbd8725f0a1a391ad862ac4238b781c6196961742bbce9d2d9abb079f65",
+    "export_missing.json": "22c112fa065f7da361cf0ad2335e1233cbe79d1cb1bdf557ebf9ea7a8201218c",
+    "adjudications.json": "52c9b510d4c8dbd7cd51d4f9e2d7b1fd1bb1c072add118f22f6e8b70be63ed31",
+    "activity.jsonl": "ddf93678e3531c20498ea26f548e945b87a7438c00f42084793b4471c789eb73"
+  },
+  "bootstrap": {
+    "seed": 42,
+    "iterations": 2000,
+    "unit": "image cluster, paired",
+    "weighting": "single dataset"
+  },
+  "labelled_layer": {
+    "judged": 162,
+    "verdicts": {
+      "miss": 142,
+      "hit": 18,
+      "hold": 2
+    },
+    "hold_rate": 0.0123,
+    "unique_errors_among_judged": 18,
+    "single_reviewer_observed_hit_rate": 0.1111,
+    "images_with_hits": 17,
+    "hits_per_image": {
+      "1": 16,
+      "2": 1
+    },
+    "by_budget": [
+      {
+        "budget": 10,
+        "aida": {
+          "unique_errors": 0,
+          "hit_candidates": 0,
+          "holds": 0,
+          "decided": 10
+        },
+        "iou_baseline": {
+          "unique_errors": 3,
+          "hit_candidates": 3,
+          "holds": 0,
+          "decided": 10
+        },
+        "difference_unique_errors": -3,
+        "bootstrap95": [
+          -6.0,
+          0.0
+        ]
+      },
+      {
+        "budget": 20,
+        "aida": {
+          "unique_errors": 1,
+          "hit_candidates": 1,
+          "holds": 0,
+          "decided": 20
+        },
+        "iou_baseline": {
+          "unique_errors": 6,
+          "hit_candidates": 6,
+          "holds": 0,
+          "decided": 20
+        },
+        "difference_unique_errors": -5,
+        "bootstrap95": [
+          -9.0,
+          0.0
+        ]
+      },
+      {
+        "budget": 30,
+        "aida": {
+          "unique_errors": 1,
+          "hit_candidates": 1,
+          "holds": 0,
+          "decided": 30
+        },
+        "iou_baseline": {
+          "unique_errors": 6,
+          "hit_candidates": 6,
+          "holds": 1,
+          "decided": 29
+        },
+        "difference_unique_errors": -5,
+        "bootstrap95": [
+          -11.0,
+          -1.0
+        ]
+      },
+      {
+        "budget": 40,
+        "aida": {
+          "unique_errors": 1,
+          "hit_candidates": 1,
+          "holds": 0,
+          "decided": 40
+        },
+        "iou_baseline": {
+          "unique_errors": 8,
+          "hit_candidates": 8,
+          "holds": 1,
+          "decided": 39
+        },
+        "difference_unique_errors": -7,
+        "bootstrap95": [
+          -12.0,
+          -2.0
+        ]
+      },
+      {
+        "budget": 50,
+        "aida": {
+          "unique_errors": 2,
+          "hit_candidates": 2,
+          "holds": 0,
+          "decided": 50
+        },
+        "iou_baseline": {
+          "unique_errors": 9,
+          "hit_candidates": 9,
+          "holds": 1,
+          "decided": 49
+        },
+        "difference_unique_errors": -7,
+        "bootstrap95": [
+          -14.0,
+          -1.0
+        ]
+      },
+      {
+        "budget": 60,
+        "aida": {
+          "unique_errors": 2,
+          "hit_candidates": 2,
+          "holds": 0,
+          "decided": 60
+        },
+        "iou_baseline": {
+          "unique_errors": 11,
+          "hit_candidates": 11,
+          "holds": 1,
+          "decided": 59
+        },
+        "difference_unique_errors": -9,
+        "bootstrap95": [
+          -15.0,
+          -1.9750000000001364
+        ]
+      },
+      {
+        "budget": 70,
+        "aida": {
+          "unique_errors": 4,
+          "hit_candidates": 4,
+          "holds": 0,
+          "decided": 70
+        },
+        "iou_baseline": {
+          "unique_errors": 12,
+          "hit_candidates": 12,
+          "holds": 1,
+          "decided": 69
+        },
+        "difference_unique_errors": -8,
+        "bootstrap95": [
+          -16.0,
+          -2.0
+        ]
+      },
+      {
+        "budget": 80,
+        "aida": {
+          "unique_errors": 4,
+          "hit_candidates": 4,
+          "holds": 1,
+          "decided": 79
+        },
+        "iou_baseline": {
+          "unique_errors": 13,
+          "hit_candidates": 13,
+          "holds": 1,
+          "decided": 79
+        },
+        "difference_unique_errors": -9,
+        "bootstrap95": [
+          -17.0,
+          -2.0
+        ]
+      },
+      {
+        "budget": 90,
+        "aida": {
+          "unique_errors": 4,
+          "hit_candidates": 4,
+          "holds": 1,
+          "decided": 89
+        },
+        "iou_baseline": {
+          "unique_errors": 14,
+          "hit_candidates": 14,
+          "holds": 1,
+          "decided": 89
+        },
+        "difference_unique_errors": -10,
+        "bootstrap95": [
+          -18.0,
+          -2.0
+        ]
+      }
+    ]
+  },
+  "missing_layer_descriptive": {
+    "judged": 24,
+    "verdicts": {
+      "hit": 22,
+      "miss": 2
+    },
+    "unique_errors": 20
+  }
+}

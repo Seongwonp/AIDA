@@ -25,10 +25,15 @@
 > 평가 **`prelim1`**(후보 331 전부 동결, 판정 186, `candidate_set_hash` `e996e262…`)을
 > 만들고 [`docs/prelim1-preregistration.md`](docs/prelim1-preregistration.md)를 판정 전에
 > 커밋했다. 정확한 파일은 `D:/AIDA-eval/prelim/prelim1_30512dfcbfbb/`, 해시는
-> `experiment/planning_evidence/prelim1_manifest.json`. **판정은 사람이 아직 안 했다.**
+> `experiment/planning_evidence/prelim1_manifest.json`. **판정 186건은 2026-09-14에 끝났고 집계는 [`docs/prelim1-results.md`](docs/prelim1-results.md)에 있다.**
 > 화면 점검은 별도 평가 `inspect_ui1`로 했고(판정하지 않는다) prelim1에는 `snapshot.json`만
 > 있다 — 사전 등록 문서 11절.
 > 판정 주소: `http://localhost:5173/?evaluate=30512dfcbfbb:prelim1`
+>
+> **결과 요약 (탐색, 판정자 1인).** 기존 라벨 층 검수량 90에서 AIDA 제품 순위 4건 대 단순 기준선
+> 14건, 차이 −10, 95% 구간 [−18, −2]. 이 조건에서는 기준선 순서가 판정자가 오류로 본 라벨을 더 많이
+> 올렸다. Δ가 없어 성공·실패 판정은 아니다. 심각도 순서 같은 사전 등록에 없는 분석은 이 데이터로
+> 하지 않는다 — 하려면 새 자료로 따로 사전 등록한다.
 
 1. ~~**검사 공백부터.**~~ **끝 (2026-09-13 데스크탑).** frontend 176 passed ·
    typecheck·lint·build exit 0, backend 261 passed(건너뜀 0), experiment 408 passed,
