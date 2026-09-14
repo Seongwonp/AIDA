@@ -408,13 +408,160 @@ def review_order(findings: list[BoxFinding], summary: dict) -> list[BoxFinding]:
                   key=lambda f: (f.suspicion not in present, -f.severity))
 
 
-def candidate_rows(ranked: list[BoxFinding], class_names: list[str]) -> list[dict]:
+# ── 재검수 순위 버전 (docs/adr-ranking-separation.md) ─────────────────────────
+#
+# 데이터셋 진단("어떤 유형이 계통적으로 많아 보이나")과 후보 재검수 순위("어느
+# 후보부터 볼까")는 다른 질문이다. v1은 앞의 답으로 뒤의 순서를 정한다 — prelim1
+# 에서 상위 90건이 전부 width였다. v2는 둘을 나눈다. **v2가 낫다는 검증은 없다.**
+RANKING_V1 = "aida_v1_systematic_boost"
+RANKING_V2 = "aida_v2_candidate_iou"
+RANKING_VERSIONS = (RANKING_V1, RANKING_V2)
+# 버전 기록이 없는 옛 결과는 v1이 만든 것이다 — v2 전에는 v1뿐이었다.
+LEGACY_RANKING_VERSION = RANKING_V1
+
+LAYER_LABELLED = "labelled_candidates"
+LAYER_MISSING = "missing_candidates"
+
+
+class RankingError(ValueError):
+    """순위를 매길 수 없다. 점수를 지어내거나 다른 버전을 덮어쓰는 대신 멈춘다."""
+
+
+def _require_version(version) -> str:
+    if version not in RANKING_VERSIONS:
+        raise RankingError(f"모르는 순위 버전: {version!r} "
+                           f"(아는 것: {', '.join(RANKING_VERSIONS)})")
+    return version
+
+
+def ranking_metadata(version: str) -> dict:
+    """결과 파일에 싣는 순위 설명. 화면·평가 묶음·내보내기가 이것을 읽는다."""
+    _require_version(version)
+    if version == RANKING_V1:
+        rule = ("계통 유형(present_types) 후보를 먼저, 그 안에서 severity 내림차순. "
+                "계통 유형은 severity도 다시 매긴다(rescore)")
+        return {
+            "ranking_version": RANKING_V1,
+            "ranking_scope": "mixed_queue",
+            "ranking_signal": {LAYER_LABELLED: rule, LAYER_MISSING: rule},
+            "dataset_boost_affects_order": True,
+            "tie_break_rule": ("안정 정렬 — 키가 같으면 진단이 낸 순서"
+                               "(이미지 이름순, 이미지 안에서는 판정 단계 순)"),
+        }
+    return {
+        "ranking_version": RANKING_V2,
+        "ranking_scope": "per_layer",
+        "ranking_signal": {LAYER_LABELLED: "1 - label_iou", LAYER_MISSING: "severity"},
+        "dataset_boost_affects_order": False,
+        "tie_break_rule": ("기존 라벨 층: 점수 내림차순 → 이미지 이름 → 라벨 번호 → 의심 유형. "
+                           "누락 층: 점수 내림차순 → 이미지 이름 → 상자 좌표. 한 줄 목록은 "
+                           "층 순위를 번갈아 놓는다(기존 라벨 먼저) — 층 사이 점수는 비교하지 않는다"),
+    }
+
+
+def layer_of(finding: BoxFinding) -> str:
+    return LAYER_LABELLED if finding.label_index is not None else LAYER_MISSING
+
+
+def labelled_priority(finding: BoxFinding) -> float:
+    """v2 기존 라벨 후보의 점수 `1 − label_iou`. **없으면 지어내지 않고 멈춘다.**"""
+    if finding.label_iou is None:
+        raise RankingError(
+            f"label_iou가 없는 기존 라벨 후보입니다: {finding.image} 라벨 "
+            f"{finding.label_index} ({finding.suspicion}). v2는 점수를 지어내지 않습니다.")
+    return round(1.0 - float(finding.label_iou), 4)
+
+
+def review_order_v2(findings: list[BoxFinding]) -> list[BoxFinding]:
+    """v2: 층마다 후보 단위 신호만으로 줄 세운다. 데이터셋 요약을 받지 않는다.
+
+    **두 층의 점수를 서로 견주지 않는다.** 한 줄 목록이 필요한 화면을 위해 층 순위를
+    번갈아 놓을 뿐이다(기존 1, 누락 1, 기존 2, …). 이것은 표시 규칙이고 평가하지 않았다.
+    """
+    labelled = sorted((f for f in findings if f.label_index is not None),
+                      key=lambda f: (-labelled_priority(f), f.image, f.label_index,
+                                     f.suspicion))
+    missing = sorted((f for f in findings if f.label_index is None),
+                     key=lambda f: (-f.severity, f.image, tuple(f.box)))
+    out: list[BoxFinding] = []
+    for i in range(max(len(labelled), len(missing))):
+        if i < len(labelled):
+            out.append(labelled[i])
+        if i < len(missing):
+            out.append(missing[i])
+    return out
+
+
+def rank_findings(findings: list[BoxFinding], summary: dict, version: str) -> list[BoxFinding]:
+    """버전에 맞는 재검수 순서.
+
+    v1은 역사적 동작 그대로다 — 계통 유형의 severity를 다시 매기고(rescore) 그 유형을
+    먼저 둔다. v2는 다시 매기지도 않는다 — 데이터셋 판정으로 후보 점수를 바꾸는 것도
+    승격이다.
+    """
+    _require_version(version)
+    if version == RANKING_V1:
+        return review_order(rescore(findings, summary), summary)
+    return review_order_v2(findings)
+
+
+def diagnosis_filename(version: str) -> str:
+    """버전마다 다른 결과 파일. v1은 옛 이름 그대로라 옛 결과가 그대로 읽힌다."""
+    _require_version(version)
+    return "label_diagnosis.json" if version == RANKING_V1 else f"label_diagnosis.{version}.json"
+
+
+def ranking_version_of(data) -> str:
+    """결과 파일이 어느 순위 버전으로 만들어졌나. 기록이 없으면 옛 v1."""
+    if not isinstance(data, dict):
+        raise RankingError("진단 결과가 사전이 아닙니다.")
+    ranking = data.get("ranking")
+    if ranking is None:
+        return LEGACY_RANKING_VERSION
+    return _require_version(ranking.get("ranking_version") if isinstance(ranking, dict) else None)
+
+
+def refuse_cross_version_overwrite(path, version: str) -> None:
+    """그 자리에 **다른 버전의 결과**가 있으면 쓰지 않는다. 읽을 수 없어도 쓰지 않는다.
+
+    같은 버전을 다시 돌리는 것은 예전처럼 새 결과로 바뀐다. 이미 얼린 평가 묶음은
+    진단 파일이 아니라 자기 사본을 쓰므로 영향이 없다.
+    """
+    _require_version(version)
+    path = Path(path)
+    if not path.exists():
+        return
+    try:
+        existing = ranking_version_of(json.loads(path.read_text(encoding="utf-8")))
+    except (OSError, ValueError) as exc:
+        raise RankingError(f"{path.name}을 읽을 수 없어 어느 순위 버전인지 모릅니다 — "
+                           f"덮어쓰지 않습니다: {exc}") from exc
+    if existing != version:
+        raise RankingError(f"{path.name}에는 {existing} 결과가 있습니다 — "
+                           f"{version} 결과로 덮어쓰지 않습니다.")
+
+
+def candidate_rows(ranked: list[BoxFinding], class_names: list[str],
+                   ranking_version: str = RANKING_V1) -> list[dict]:
     """정렬된 후보를 진단 결과 파일의 한 줄씩으로. `rank`는 1부터 이 순서다.
 
     `review_queue`(화면용 상위 N건)와 `all_candidates`(잘리기 전 전부)가 **같은
     함수**로 만들어져야 한다 — 둘이 다르면 평가가 얼린 후보와 화면의 후보가
     어긋난다.
+
+    `layer_rank`는 그 층 안에서의 순서다. v2는 층마다 신호가 달라 층 사이의 `rank`를
+    점수 비교로 읽으면 안 된다. v2 줄에만 그 층의 순서 점수(`priority_score`)를 싣는다.
     """
+    _require_version(ranking_version)
+    seen = {LAYER_LABELLED: 0, LAYER_MISSING: 0}
+    extras = []
+    for f in ranked:
+        seen[layer_of(f)] += 1
+        extra = {"layer": layer_of(f), "layer_rank": seen[layer_of(f)]}
+        if ranking_version == RANKING_V2:
+            extra["priority_score"] = (labelled_priority(f) if f.label_index is not None
+                                       else f.severity)
+        extras.append(extra)
     return [
         {
             "rank": i + 1,
@@ -435,6 +582,7 @@ def candidate_rows(ranked: list[BoxFinding], class_names: list[str]) -> list[dic
             "class_name": (class_names[f.class_id]
                            if f.class_id is not None
                            and f.class_id < len(class_names) else None),
+            **extras[i],
         }
         for i, f in enumerate(ranked)
     ]

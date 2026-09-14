@@ -114,9 +114,13 @@ def test_diagnose_labels_uses_review_order(L):
     규칙만 있고 안 쓰면 아무 소용이 없다. 실제로 build_result가 순수 심각도
     정렬을 쓰고 있었던 것이 AN의 결함이었다.
     """
+    # 순위 버전이 생긴 뒤(docs/adr-ranking-separation.md) v1 경로는 rank_findings 안에 있다.
     src = (EXPERIMENT / "diagnose_labels.py").read_text(encoding="utf-8")
-    assert "review_order(findings, summary)" in src, \
-        "build_result가 review_order를 안 쓴다 — AN 처방이 빠졌다"
+    lib = (EXPERIMENT / "label_diagnosis.py").read_text(encoding="utf-8")
+    assert "rank_findings(findings, summary, ranking)" in src, \
+        "build_result가 버전별 순서를 안 쓴다"
+    assert "return review_order(rescore(findings, summary), summary)" in lib, \
+        "v1 경로가 review_order를 안 쓴다 — AN 처방이 빠졌다"
     assert "sorted(findings, key=lambda f: -f.severity)" not in src, \
         "순수 심각도 정렬이 되살아났다"
 

@@ -19,8 +19,9 @@ from ultralytics import YOLO
 
 import config
 from label_diagnosis import (
-    match_boxes,Box, BoxFinding, diagnose_image, order_basis, order_risk, rescore, review_order,
-                             review_value, summarize, candidate_rows)
+    match_boxes,Box, BoxFinding, diagnose_image, order_basis, order_risk, present_types,
+    rank_findings, ranking_metadata, diagnosis_filename, refuse_cross_version_overwrite,
+    RANKING_V1, RANKING_VERSIONS, RankingError, review_value, summarize, candidate_rows)
 
 # 진단이 "자"로 쓰는 모델. 기본은 오류 없는 라벨로 학습한 clean 모델이다.
 #
@@ -173,13 +174,17 @@ def run(images_dir: Path, labels_dir: Path, limit: int | None = None,
 
 
 def build_result(name: str, findings: list[BoxFinding], total_labels: int,
-                 top_n: int, fit: dict | None = None) -> dict:
-    # 2패스 구조: 이미지별 진단은 데이터셋 전체를 못 보므로 보수적인 신뢰도로
+                 top_n: int, fit: dict | None = None,
+                 ranking: str = RANKING_V1) -> dict:
+    # 순위 버전 (docs/adr-ranking-separation.md).
+    #
+    # v1 — 2패스 구조: 이미지별 진단은 데이터셋 전체를 못 보므로 보수적인 신뢰도로
     # 점수를 매겨두고, summarize()가 대표 오류 유형을 확정한 뒤 rescore()가
     # 그 유형의 severity를 올린다. 그래야 "이 데이터셋의 문제는 누락"이라는
     # 판정과 재검수 목록의 순서가 어긋나지 않는다.
+    #
+    # v2 — 데이터셋 판정은 요약으로만 내고 후보 순서·점수를 바꾸지 않는다.
     summary = summarize(findings, total_labels)
-    findings = rescore(findings, summary)
 
     # 재검수 우선순위. 이게 AIDA가 원래 약속한 산출물이다.
     #
@@ -196,12 +201,22 @@ def build_result(name: str, findings: list[BoxFinding], total_labels: int,
     # 남겨둔다 — 표본을 늘리면 판단이 달라질 수 있다.
     # 계통적 유형을 먼저. 심각도만으로 정렬하면 어긋난 자에서 목록 맨 위가
     # 아래보다 나빠진다 (docs/21 AN, @5 정밀도 +0.42).
-    ranked = review_order(findings, summary)
-    # 그 순서를 절대 문턱으로 정했는지, 상대 문턱으로 물러났는지 (docs/21 AO).
-    # 물러난 경우는 순서를 정한 규칙 자체가 다른데 지금까지 어디에도 안 나왔다.
-    summary["order_basis"] = order_basis(summary)
-    # 그 순서가 오탐을 좇고 있을 위험이 있는지 (docs/21 BB).
-    summary["order_risk"] = order_risk(summary)
+    ranked = rank_findings(findings, summary, ranking)
+    # 데이터셋 수준 진단. 두 버전 모두 낸다 — 무엇이 계통 유형으로 보였고, 절대·상대
+    # 문턱 중 무엇으로 잡혔으며, 상대 문턱이 기하 유형만 올렸는지.
+    summary["systematic_types"] = sorted(present_types(summary))
+    summary["systematic_basis"] = order_basis(summary)
+    summary["systematic_geometry_only_fallback"] = order_risk(summary)
+    if ranking == RANKING_V1:
+        # 그 순서를 절대 문턱으로 정했는지, 상대 문턱으로 물러났는지 (docs/21 AO).
+        # 물러난 경우는 순서를 정한 규칙 자체가 다른데 지금까지 어디에도 안 나왔다.
+        summary["order_basis"] = order_basis(summary)
+        # 그 순서가 오탐을 좇고 있을 위험이 있는지 (docs/21 BB).
+        summary["order_risk"] = order_risk(summary)
+    else:
+        # v2의 순서는 계통 유형과 무관하다. "순서를 무엇으로 정했나"로 읽히는 값을 두지 않는다.
+        summary["order_basis"] = None
+        summary["order_risk"] = None
     if fit:
         import statistics
         confs = fit["confidences"]
@@ -219,11 +234,13 @@ def build_result(name: str, findings: list[BoxFinding], total_labels: int,
         "dataset": name,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "summary": summary,
-        "review_queue": candidate_rows(ranked[:top_n], config.CLASS_NAMES),
+        # 어느 순위 버전으로 만든 결과인가. 없으면 옛 v1 결과로 읽힌다.
+        "ranking": ranking_metadata(ranking),
+        "review_queue": candidate_rows(ranked[:top_n], config.CLASS_NAMES, ranking),
         "total_in_queue": len(ranked),
         # 잘리기 전 전부. 평가는 이것을 얼린다 — `review_queue`만 얼리면 AIDA
         # 순위 상위 N건 안에서만 기준선과 견주게 되어 AIDA에 유리하게 휜다.
-        "all_candidates": candidate_rows(ranked, config.CLASS_NAMES),
+        "all_candidates": candidate_rows(ranked, config.CLASS_NAMES, ranking),
         "caveat": (
             "기준 모델(clean)의 예측과 라벨을 대조한 결과입니다. 모델 예측 자체도 "
             "완벽하지 않으므로 확정 오류가 아니라 재검수 우선순위로 활용하세요."
@@ -240,15 +257,26 @@ def main():
     parser.add_argument("--limit", type=int, help="이미지 수 제한 (빠른 확인용)")
     parser.add_argument("--top-n", type=int, default=100, help="재검수 목록 길이")
     parser.add_argument("--out", help="결과 JSON 저장 경로")
+    # 재검수 순위 버전 (docs/adr-ranking-separation.md). 기본은 지금까지의 제품 순위.
+    parser.add_argument("--ranking", choices=RANKING_VERSIONS, default=RANKING_V1,
+                        help="재검수 순위 버전")
     args = parser.parse_args()
-
-    images_dir, labels_dir, name = resolve_dataset(args)
-    findings, total_labels, fit = run(images_dir, labels_dir, args.limit)
-    result = build_result(name, findings, total_labels, args.top_n, fit)
 
     out_path = Path(args.out) if args.out else None
     if out_path is None and args.upload_id:
-        out_path = config.uploads_dir() / args.upload_id / "label_diagnosis.json"
+        # 버전마다 다른 파일이다 — v2를 돌려도 v1 결과가 그대로 남는다.
+        out_path = config.uploads_dir() / args.upload_id / diagnosis_filename(args.ranking)
+    if out_path:
+        # 추론 전에 막는다. 그 자리에 다른 버전의 결과가 있으면 쓰지 않는다.
+        try:
+            refuse_cross_version_overwrite(out_path, args.ranking)
+        except RankingError as exc:
+            raise SystemExit(str(exc)) from exc
+
+    images_dir, labels_dir, name = resolve_dataset(args)
+    findings, total_labels, fit = run(images_dir, labels_dir, args.limit)
+    result = build_result(name, findings, total_labels, args.top_n, fit, ranking=args.ranking)
+
     if out_path:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
