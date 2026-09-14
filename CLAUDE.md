@@ -43,6 +43,14 @@
 > [`docs/prelim1-decision.md`](docs/prelim1-decision.md)·
 > [`docs/prelim1-failure-analysis.md`](docs/prelim1-failure-analysis.md)·
 > [`docs/evaluation-data.md`](docs/evaluation-data.md) 원장.
+>
+> **순위 분리 (2026-09-14, 사용자 결정 C안 + 임시 A안).** 데이터셋 진단과 후보 재검수 순위를
+> 나눴다 — [`docs/adr-ranking-separation.md`](docs/adr-ranking-separation.md). 순위 버전
+> `aida_v1_systematic_boost`(기본, 지금까지의 제품 순위)와 `aida_v2_candidate_iou`(시험, 기존 라벨
+> `1 − label_iou`·누락 심각도, 층 분리)가 있다. 진단 파일은 버전별이고, 새 평가 묶음은 버전을
+> 얼린다. **prelim1은 v1에 묶여 있고 지문이 그대로다.** v2는 **평가되지 않았다** — prelim1로
+> 검증하지 않는다. 다음 평가는 제안만 있다:
+> [`docs/next-evaluation-proposal.md`](docs/next-evaluation-proposal.md) (데이터셋·N 미정, 법률 검토 필요).
 
 1. ~~**검사 공백부터.**~~ **끝 (2026-09-13 데스크탑).** frontend 176 passed ·
    typecheck·lint·build exit 0, backend 261 passed(건너뜀 0), experiment 408 passed,
@@ -142,7 +150,7 @@ Python 환경은 **둘로 나뉘어 있다.** 섞으면 없는 패키지를 찾�
 경로나 설치 여부를 추측하지 않고 먼저 확인한다. **문서에 적힌 검사 수를 이번
 실행 결과로 보고하지 않는다** — 직접 돌려 보고 그 숫자를 쓴다.
 
-최근 통과 수는 experiment 416 · backend 261(데스크탑 건너뜀 0, 노트북 260·건너뜀 1) · frontend 177이다 (2026-09-14 데스크탑).
+최근 통과 수는 experiment 440 · backend 279(데스크탑 건너뜀 0) · frontend 183이다 (2026-09-14 데스크탑, 순위 버전 추가 뒤).
 experiment·backend는 2026-09-13 노트북에서 CI와 같은 의존성 목록만 깐 가상환경으로
 직접 돌린 결과다(backend의 건너뜀 1건은 `test_uploads_dir_agreement.py:100`
 "외부 드라이브가 없는 환경"이다 — 노트북에만 해당하고, 데스크탑 기록은 252 통과였다).

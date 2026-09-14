@@ -185,7 +185,9 @@
 | 3 | R3~R5 복원·손상·재진단 수명 정리 | 완료 | 검사 5·9·15건, R3~R5 절 |
 | 4 | R6 실제 화면 흐름 CI 편입 | 부분 완료 | jsdom 흐름 검사는 CI에서 돈다. **브라우저 통합 검사 미완** — [testing-boundary.md](testing-boundary.md) |
 | 5 | 평가 규약의 독립성·통계·중단 기준 개정 | 진행 중 | 규약·검정력 도구는 있으나 Δ·목표 검정력·`N_required`·`N_final` 미정 — [n-required-plan.md](n-required-plan.md) |
-| 6 | 작은 독립 데이터 선택과 예비 평가 준비 | 미착수 | 권한·분할·비용·실행 명세 |
+| 6 | 작은 독립 데이터 선택과 예비 평가 준비 | **완료 (2026-09-14)** — 결과는 기준선이 나았다 | [prelim1-results.md](prelim1-results.md), 감사 `5cf0e998`·`181f29f4` |
+| 7 | 데이터셋 진단과 후보 순위 분리 (순위 v2 시험 버전) | **구현 완료, 평가 안 함** | [adr-ranking-separation.md](adr-ranking-separation.md), 검사는 [testing-boundary.md](testing-boundary.md) "순위 버전" 절 |
+| 8 | 손대지 않은 데이터셋에서 다음 평가 | **제안만** — 데이터셋·N·1차 지표 미정, 법률 검토 필요 | [next-evaluation-proposal.md](next-evaluation-proposal.md) |
 
 다음 실행은 **6번(예비 판정 자료 확보)**이다. 시뮬레이터를 더 정교하게 만드는
 것보다 **실제 판정 자료**가 먼저다 — 지금 표본 설계를 막는 것은 도구가 아니라

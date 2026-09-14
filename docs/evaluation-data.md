@@ -245,6 +245,12 @@ docs/24 규칙대로 **"자연 오류 검증"이라고 부르지 않는다.**
 | **prelim1** — 데이터셋 `30512dfcbfbb`, 평가 `prelim1` | KITTI val · Car · 300장 (이름 전부가 `experiment/planning_evidence/prelim1_manifest.json`) | 두 방법 예비 비교, 사후 실패 분석 | **소비됨** — 개발·보정 데이터 |
 | 시간 파일럿 `ffffffffff01`~`07` (timing1~5) | KITTI 개발 이미지, 주입·실제 진단 후보 | 판정 시간 계측, 판정 화면 점검 | **소비됨** — 개발 데이터 |
 | 점검용 평가 `inspect_ui1` | prelim1과 같은 후보 | 화면 가림 점검 | 판정·분석에 쓰지 않음 |
+| KITTI 2D object 학습 데이터 | Car 단일·Car/Van/Pedestrian/Cyclist 자의 학습 자료 (`experiment/config.py`) | 자 학습, 주입 오류 실험 전부 | **소비됨** — 평가에 쓸 수 없다 |
+| COCO val2017 Car 부분집합 | Car가 든 이미지 520장 (`experiment/download_coco.py`) | COCO 자 학습, KITTI 자의 교차 데이터 측정 | **소비됨** — 개발 데이터 |
+
+> 2026-09-14 추가. 위 두 줄은 저장소 사용 이력을 grep으로 다시 확인해 넣었다. 자 학습의 시작점
+> `yolov8n.pt`가 COCO로 사전학습됐다고 보면 COCO train2017도 사실상 본 데이터다(공식 출처로 확인하지
+> 않았다). 순위 v2([adr-ranking-separation.md](adr-ranking-separation.md))도 위 데이터로 검증하지 않는다.
 
 **규칙.**
 

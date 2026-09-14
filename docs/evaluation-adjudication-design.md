@@ -198,6 +198,15 @@ snapshot.json        방법별 점수와 순서
 내보내기를 막는다. 내보내기의 `severity`는 집계가 줄 세우는 값이라 AIDA는
 `−rank`(음수)이고, 원래 점수는 `score`에 따로 둔다.
 
+**어느 순위 버전의 `rank`인지 묶음이 얼린다 (2026-09-14,
+[adr-ranking-separation.md](adr-ranking-separation.md)).** 평가를 시작할 때
+`ranking_version`(기본 `aida_v1_systematic_boost`)을 받아 **그 버전의 진단 파일**을 얼리고,
+파일에 적힌 버전이 다르면 얼리지 않는다. 새 묶음은 버전을 지문 재료에 넣는다. **버전이 없는
+옛 묶음(prelim1)은 v1으로 읽고 지문 재료에 버전을 넣지 않아 지문이 그대로다.** 얼린 뒤 다른
+버전으로 재진단해도 묶음은 바뀌지 않는다. 한 묶음에는 AIDA 순서가 **한 벌**만 있다 — v1과 v2를
+같은 후보로 견주려면 두 벌을 얼리는 기능이 따로 필요하다
+([next-evaluation-proposal.md](next-evaluation-proposal.md)).
+
 ### 모집단은 잘리기 전 AIDA 후보 전부다
 
 `review_queue`는 AIDA 순위 상위 N건(기본 100)이다. 그것만 얼리면 기준선이 AIDA
@@ -261,6 +270,10 @@ evaluation_export.json
 
 **AIDA와 기준선의 후보 집합이 다르면 내보내기를 거부한다** — 정렬 효과는 같은
 후보 안에서만 잰다.
+
+**내보내기는 `ranking_version`과 `ranking_version_recorded`를 싣는다** (옛 묶음은 v1·거짓).
+집계 어댑터는 버전 기록이 없는 내보내기를 v1으로 읽고, **순위 버전이 다른 내보내기를 한 집계에
+합치지 않는다** — 같은 `aida`라는 이름이라도 v1과 v2는 다른 순서다.
 
 내보내기는 **층(`scope`)을 받고, 거른 것을 결과에 적는다.**
 
