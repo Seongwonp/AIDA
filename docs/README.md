@@ -15,11 +15,13 @@
 |---|---|
 | [../README.md](../README.md) | **여기부터.** 무엇이 되고 무엇이 안 되는지, 실행 방법, 환경변수 |
 | [../CLAUDE.md](../CLAUDE.md) | **`git pull` 직후 읽는 인수인계.** 현재 상태·다음 할 일·검증·보고 원칙 |
-| [25-advancement-roadmap.md](./25-advancement-roadmap.md) | **현재 실행 계획.** 1단계 R1~R5 완료·R6 부분. 예비 비교(prelim1)는 끝났다 |
+| [next-work-2026-09-15.md](./next-work-2026-09-15.md) | **다음 작업 순서표.** W0~W7 — 누가(사용자·Claude), 무엇이 선행인지, 완료 조건. 데스크탑은 여기서 이어간다 |
+| [25-advancement-roadmap.md](./25-advancement-roadmap.md) | **현재 실행 계획.** 1단계 R1~R5 완료·R6 부분. 예비 비교(prelim1) 끝, 순위 분리 구현·미평가, 다음은 8번 |
 | [prelim1-results.md](./prelim1-results.md) · [prelim1-failure-analysis.md](./prelim1-failure-analysis.md) · [prelim1-decision.md](./prelim1-decision.md) | **예비 비교 결과와 감사.** 현재 제품 순위가 단순 IoU 순서보다 나빴다(N=90, 4 대 14). 사후 분석은 가설일 뿐 |
 | [adr-ranking-separation.md](./adr-ranking-separation.md) | **결정 (2026-09-14).** 데이터셋 진단과 후보 재검수 순위를 분리 — v1 보존, v2는 검증 안 된 시험 버전 |
 | [next-evaluation-proposal.md](./next-evaluation-proposal.md) | **다음 평가 제안 (실행 안 함).** v1 대 v2, 후보 생성, 전체 라벨 IoU 비교와 데이터셋 후보·법적 위험 |
-| [HANDOFF_2026-09-13.md](./HANDOFF_2026-09-13.md) | 최신 인계 기록. 12절이 노트북 작업(평가 순서·모집단 수정)과 데스크탑 확인 목록 |
+| [HANDOFF_2026-09-14.md](./HANDOFF_2026-09-14.md) | 최신 인계 기록. prelim1 감사, 순위 분리, 목적 A와 라이선스 차단점 |
+| [HANDOFF_2026-09-13.md](./HANDOFF_2026-09-13.md) | 그 전 인계. 12절이 노트북 작업(평가 순서·모집단 수정) |
 | [evaluation-adjudication-design.md](./evaluation-adjudication-design.md) | **가림 판정의 생산 경로.** 묶음 고정, 후보 이름, AIDA 순서=제품 순위, 상위 N 합집합 판정, 판정자 간 불일치(미설계) |
 | [24-development-plan.md](./24-development-plan.md) | 기존 장기 계획과 A·B·C 산출물 기록. 후속 검증과 우선순위는 25번을 따른다 |
 | [23-plan.md](./23-plan.md) | 이전 연구 계획. 실험 배경과 미완료 과제의 기록 |
