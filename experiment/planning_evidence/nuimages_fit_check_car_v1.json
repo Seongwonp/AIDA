@@ -1,0 +1,251 @@
+{
+  "name": "nuimages_fit_check_car_v1",
+  "ran_at": "2026-09-16",
+  "label": "nuImages train의 fit_check(620장, 기록 7개, 96% singapore-onenorth)에서 자 적합도를 잰 개발용 수치. 통과 기준은 정하지 않았다. val은 보지 않았다.",
+  "training": {
+    "run": "runs_nuimages/car_v1 (git 제외, 공개하지 않음)",
+    "base": "yolov8n.pt",
+    "train_images": 3200,
+    "val_images": 357,
+    "epochs": 50,
+    "imgsz": 640,
+    "batch": 16,
+    "seed": 42,
+    "seconds": 2131,
+    "gpu": "RTX 3050 6GB",
+    "ruler_val_last_epoch": {
+      "precision": 0.866,
+      "recall": 0.604,
+      "mAP50": 0.726,
+      "mAP50_95": 0.479
+    },
+    "best_epoch_note": "fitness가 50에폭에서 최고 — 아직 오르는 중이었다",
+    "best_pt_sha256": "566cd4a317015cbae22a3dbc57778353586b3945e96d3dc968758b695cc1cb23"
+  },
+  "match_iou_threshold": 0.4,
+  "band_note": "by_height·by_camera·by_location은 라벨별 최고 IoU≥0.4 비율(탐욕 짝짓기인 matched_label_ratio보다 약간 후할 수 있다). 높이는 원본 1600x900 픽셀.",
+  "rulers": [
+    {
+      "ruler": "nuimages_car_v1",
+      "imgsz": 640,
+      "images": 620,
+      "labels": 1728,
+      "matched_label_ratio": 0.6991,
+      "predictions": 1619,
+      "unmatched_predictions": 411,
+      "labels_with_iou0": 263,
+      "by_height": {
+        "0-30": {
+          "labels": 489,
+          "label_iou_ge_threshold": 0.474
+        },
+        "30-60": {
+          "labels": 606,
+          "label_iou_ge_threshold": 0.752
+        },
+        "60-120": {
+          "labels": 434,
+          "label_iou_ge_threshold": 0.864
+        },
+        "120-900": {
+          "labels": 199,
+          "label_iou_ge_threshold": 0.955
+        }
+      },
+      "by_camera": {
+        "CAM_BACK": {
+          "labels": 538,
+          "label_iou_ge_threshold": 0.701
+        },
+        "CAM_BACK_LEFT": {
+          "labels": 249,
+          "label_iou_ge_threshold": 0.687
+        },
+        "CAM_BACK_RIGHT": {
+          "labels": 121,
+          "label_iou_ge_threshold": 0.645
+        },
+        "CAM_FRONT": {
+          "labels": 431,
+          "label_iou_ge_threshold": 0.756
+        },
+        "CAM_FRONT_LEFT": {
+          "labels": 206,
+          "label_iou_ge_threshold": 0.772
+        },
+        "CAM_FRONT_RIGHT": {
+          "labels": 183,
+          "label_iou_ge_threshold": 0.776
+        }
+      },
+      "by_location": {
+        "boston-seaport": {
+          "labels": 164,
+          "label_iou_ge_threshold": 0.677
+        },
+        "singapore-onenorth": {
+          "labels": 1564,
+          "label_iou_ge_threshold": 0.73
+        }
+      },
+      "findings": 554,
+      "findings_by_type": {
+        "height": 125,
+        "width": 211,
+        "scale": 121,
+        "translation_x": 51,
+        "missing": 9,
+        "translation_y": 12,
+        "duplicate": 25
+      }
+    },
+    {
+      "ruler": "coco_car",
+      "imgsz": 640,
+      "images": 620,
+      "labels": 1728,
+      "matched_label_ratio": 0.4896,
+      "predictions": 1382,
+      "unmatched_predictions": 536,
+      "labels_with_iou0": 505,
+      "by_height": {
+        "0-30": {
+          "labels": 489,
+          "label_iou_ge_threshold": 0.223
+        },
+        "30-60": {
+          "labels": 606,
+          "label_iou_ge_threshold": 0.508
+        },
+        "60-120": {
+          "labels": 434,
+          "label_iou_ge_threshold": 0.717
+        },
+        "120-900": {
+          "labels": 199,
+          "label_iou_ge_threshold": 0.804
+        }
+      },
+      "by_camera": {
+        "CAM_BACK": {
+          "labels": 538,
+          "label_iou_ge_threshold": 0.511
+        },
+        "CAM_BACK_LEFT": {
+          "labels": 249,
+          "label_iou_ge_threshold": 0.442
+        },
+        "CAM_BACK_RIGHT": {
+          "labels": 121,
+          "label_iou_ge_threshold": 0.421
+        },
+        "CAM_FRONT": {
+          "labels": 431,
+          "label_iou_ge_threshold": 0.541
+        },
+        "CAM_FRONT_LEFT": {
+          "labels": 206,
+          "label_iou_ge_threshold": 0.539
+        },
+        "CAM_FRONT_RIGHT": {
+          "labels": 183,
+          "label_iou_ge_threshold": 0.59
+        }
+      },
+      "by_location": {
+        "boston-seaport": {
+          "labels": 164,
+          "label_iou_ge_threshold": 0.439
+        },
+        "singapore-onenorth": {
+          "labels": 1564,
+          "label_iou_ge_threshold": 0.522
+        }
+      },
+      "findings": 466,
+      "findings_by_type": {
+        "width": 189,
+        "scale": 85,
+        "height": 99,
+        "translation_x": 23,
+        "missing": 26,
+        "translation_y": 20,
+        "duplicate": 24
+      }
+    },
+    {
+      "ruler": "kitti_car",
+      "imgsz": 640,
+      "images": 620,
+      "labels": 1728,
+      "matched_label_ratio": 0.3061,
+      "predictions": 608,
+      "unmatched_predictions": 79,
+      "labels_with_iou0": 935,
+      "by_height": {
+        "0-30": {
+          "labels": 489,
+          "label_iou_ge_threshold": 0.033
+        },
+        "30-60": {
+          "labels": 606,
+          "label_iou_ge_threshold": 0.304
+        },
+        "60-120": {
+          "labels": 434,
+          "label_iou_ge_threshold": 0.569
+        },
+        "120-900": {
+          "labels": 199,
+          "label_iou_ge_threshold": 0.563
+        }
+      },
+      "by_camera": {
+        "CAM_BACK": {
+          "labels": 538,
+          "label_iou_ge_threshold": 0.377
+        },
+        "CAM_BACK_LEFT": {
+          "labels": 249,
+          "label_iou_ge_threshold": 0.277
+        },
+        "CAM_BACK_RIGHT": {
+          "labels": 121,
+          "label_iou_ge_threshold": 0.14
+        },
+        "CAM_FRONT": {
+          "labels": 431,
+          "label_iou_ge_threshold": 0.313
+        },
+        "CAM_FRONT_LEFT": {
+          "labels": 206,
+          "label_iou_ge_threshold": 0.374
+        },
+        "CAM_FRONT_RIGHT": {
+          "labels": 183,
+          "label_iou_ge_threshold": 0.317
+        }
+      },
+      "by_location": {
+        "boston-seaport": {
+          "labels": 164,
+          "label_iou_ge_threshold": 0.274
+        },
+        "singapore-onenorth": {
+          "labels": 1564,
+          "label_iou_ge_threshold": 0.329
+        }
+      },
+      "findings": 219,
+      "findings_by_type": {
+        "height": 65,
+        "translation_y": 7,
+        "width": 81,
+        "scale": 31,
+        "translation_x": 13,
+        "missing": 7,
+        "duplicate": 15
+      }
+    }
+  ]
+}

@@ -6,7 +6,9 @@
 > [`docs/HANDOFF_2026-09-16.md`](docs/HANDOFF_2026-09-16.md), 할 일 순서표는
 > [`docs/next-work-2026-09-15.md`](docs/next-work-2026-09-15.md).
 >
-> **지금 막힌 곳은 코드가 아니라 사용자 결정 둘이다 — W1 라이선스 원문 확인, W5 사전 등록.**
+> **W1은 정했다 — nuImages(비상업 연구·포트폴리오).** train 분할·Car 자 `car_v1` 학습·적합도 확인까지
+> 끝났다(fit_check 69.9%, 작은 차 맹점 — [`docs/nuimages-data-plan.md`](docs/nuimages-data-plan.md) 5절).
+> **지금 막힌 곳은 W5 사전 등록(사용자 결정)이다.** val은 그 커밋 전까지 열지 않는다.
 > W2~W4(1차 질문 선택·최소 구현·경로 드라이런)는 2026-09-16에 끝났다. 같은 날 저녁에 결정이
 > 필요 없는 일을 마쳤다 — **자 기록 버전별 분리(S3), access violation 조사(S4), 판정 API 부하 측정,
 > 사전 등록 초안** [`docs/qa-preregistration-draft.md`](docs/qa-preregistration-draft.md)(값은 전부 빈칸),
