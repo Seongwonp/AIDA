@@ -42,6 +42,10 @@ Sweeps(180GB)는 받지 않는다 — 주석이 없다.
 
 - 씨앗 **20260916**. 세 묶음은 주행 기록(log)이 서로 겹치지 않는다(`experiment/nuimages_split.py`, 검사
   `test_nuimages_split.py`).
+- **실제 분할(2026-09-16):** fit_check 620장·기록 7, ruler_val 357장·기록 3, ruler_train 3,200장·기록 303
+  (`experiment/planning_evidence/nuimages_split_dev_v1.json`). 기록을 통째로 모아 목표를 넘었다. fit_check는
+  96%가 singapore-onenorth라 **적합도 수치를 지역 전체로 일반화하지 않는다.** 치우침을 보고 씨앗을 바꿔
+  다시 뽑지 않는다.
 - **val은 사전 등록 커밋 전까지 열지 않는다** — 이미지·라벨·통계 모두. Metadata 압축에 val 표가 들어 있어
   풀리기는 하지만 읽지 않는다. 분할 스크립트는 train이 아닌 분할 이름을 거부한다.
 - **적합도 확인용으로 best.pt를 고르지 않는다** — 고르면 확인 수치가 부풀려진다.

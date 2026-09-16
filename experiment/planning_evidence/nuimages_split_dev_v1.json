@@ -1,0 +1,38 @@
+{
+  "date": "2026-09-16",
+  "purpose": "nuImages train을 기록 단위로 자 학습용·학습 검증용·적합도 확인용으로 나눈 기록. val·test는 읽지 않았다.",
+  "archives_sha256": {
+    "nuimages-v1.0-all-metadata.tgz": "5104b780d7365c5d86d58d2423de9fefbc0c901402d0a4777cb30c9337649525",
+    "nuimages-v1.0-mini.tgz": "9f5da97c9a820785487daea1c0f156ae18ddf2ac7e90245fa6d502b400a732b3"
+  },
+  "license_file_in_metadata": "nuScenes, nuPlan, nuImages, and nuReality Terms of Use — Non-Commercial Use, last updated Nov 16, 2021 (CC BY-NC-SA 4.0 + Dataset Terms). 앞서 확인한 웹 원문과 같다.",
+  "command": "nuimages_split.py --version v1.0-train --fit-check-images 500 --ruler-val-images 300 --ruler-train-images 3200 --seed 20260916",
+  "summary": {
+    "seed": 20260916,
+    "cameras": null,
+    "keyframes_considered": 67279,
+    "logs_available": 350,
+    "fit_check_images": 620,
+    "fit_check_logs": 7,
+    "fit_check_by_location": {"singapore-onenorth": 598, "boston-seaport": 22},
+    "ruler_val_images": 357,
+    "ruler_val_logs": 3,
+    "ruler_train_images": 3200,
+    "ruler_train_logs": 303,
+    "ruler_train_by_location": {"singapore-onenorth": 2391, "boston-seaport": 761, "singapore-queenstown": 48},
+    "ruler_train_shortfall": 0,
+    "ruler_train_by_camera": {"CAM_FRONT_LEFT": 506, "CAM_FRONT_RIGHT": 517, "CAM_BACK": 554,
+                              "CAM_BACK_RIGHT": 477, "CAM_BACK_LEFT": 506, "CAM_FRONT": 640},
+    "version": "v1.0-train"
+  },
+  "outputs_sha256": {
+    "fit_check_tokens.txt": "725518ad1266c4783e7889a0ef6ab081c5e585b9734b8dc7452ca3fc5595f507",
+    "ruler_val_tokens.txt": "475a76faa926768d23f76d69492f81d2e8021216ca2a415ca1e4835c4b927470",
+    "ruler_train_tokens.txt": "a9e8ac872e1d78a9b045c4c175bc0b25700dc6564d79f8aac3e7bb546780b540",
+    "split_summary.json": "911f7b1b1e8b9f8aa73e3a7555fa4d7e9a3a264051f98334f0c45d4d9caf6cd7"
+  },
+  "notes": [
+    "기록을 통째로 모으므로 목표(500·300)를 넘었다 — 기록 하나가 키프레임 약 90~190장.",
+    "fit_check는 기록 7개뿐이고 96%가 singapore-onenorth다. 적합도 수치를 지역 전체로 일반화하지 않는다. 이 치우침을 보고 분할을 다시 뽑지 않는다(씨앗 고르기 금지)."
+  ]
+}
