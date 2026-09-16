@@ -79,7 +79,9 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
                       judge_budget: int | None = None,
                       candidate_pool: str | None = None,
                       total_in_queue: int | None = None,
-                      ranking_version: str | None = None) -> dict:
+                      ranking_version: str | None = None,
+                      random_sample_size: int | None = None,
+                      random_sample_seed: int | None = None) -> dict:
     """지문을 만들 재료. **판정에 영향을 주는 것만, 전부.**
 
     빠지면 안 되는 것과 들어가면 안 되는 것이 둘 다 있다.
@@ -123,12 +125,19 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
                 "class_name": c.class_name,
                 "scores": {k: c.scores[k] for k in sorted(c.scores)},
                 "aida_rank": c.aida_rank,
+                # 기본값이 아닐 때만 넣는다 — 옛 묶음의 지문이 그대로여야 한다.
+                **({"source": c.source} if c.source != SOURCE_AIDA else {}),
+                **({"random_sample": True} if c.random_sample else {}),
+                **({"confidence": c.confidence} if c.confidence is not None else {}),
             }
             for c in sorted(candidates, key=lambda c: c.canonical_candidate_id)
         ],
     }
     if ranking_version is not None:
         payload["ranking_version"] = ranking_version
+    if random_sample_size is not None:
+        payload["random_sample"] = {"size": random_sample_size,
+                                    "seed": random_sample_seed}
     return payload
 
 
@@ -232,6 +241,22 @@ def _code_commit() -> str | None:
 # 방법 이름. 기준선을 늘릴 때 이 자리에 붙인다.
 AIDA = "aida"
 IOU_BASELINE = "iou_baseline"
+# 후보 생성까지 포함한 비교의 방법들 (docs/next-work-2026-09-15.md W3).
+# **모집단이 AIDA 후보보다 넓다** — 규칙이 놓친 라벨과 필터가 버린 예측까지 본다.
+ALL_LABEL_IOU = "all_label_iou"            # 모든 기존 라벨을 1 − label_iou로
+UNMATCHED_CONFIDENCE = "unmatched_confidence"   # 필터 전 미매칭 예측을 확신도로
+
+# 후보의 출처. 무엇을 AIDA의 성과로 셀 수 있는지가 여기서 갈린다.
+SOURCE_AIDA = "aida_candidate"
+SOURCE_LABEL = "label"
+SOURCE_PREDICTION = "unmatched_prediction"
+
+# 비교 모드. **어느 모집단을 재는가**이고, 사전 등록이 이것을 고정한다.
+WITHIN_AIDA = "within_aida_candidates"            # AIDA 후보 안의 재정렬 (prelim1과 같은 질문)
+GENERATION_INCLUDED = "candidate_generation_included"   # 후보 생성까지 포함
+COMPARISON_MODES = (WITHIN_AIDA, GENERATION_INCLUDED)
+# 그 모드에서만 쓸 수 있는 방법 — 모집단이 AIDA 후보 밖으로 넓어지기 때문이다.
+POPULATION_METHODS = (ALL_LABEL_IOU, UNMATCHED_CONFIDENCE)
 
 
 def _scores(item: dict) -> dict[str, float]:
@@ -253,6 +278,93 @@ def _scores(item: dict) -> dict[str, float]:
         scores[IOU_BASELINE] = round(1.0 - float(label_iou), 4)
     return scores
 
+
+
+def _box_key(image: str, box) -> tuple:
+    """상자로 같은 예측을 잇는 열쇠. 진단과 **같은 반올림**이라 그대로 맞는다."""
+    return (image, tuple(normalize_box(box) or ()))
+
+
+def _population_candidates(candidates: list[EvaluationCandidate],
+                           diagnosis: dict) -> list[EvaluationCandidate]:
+    """규칙 밖 모집단을 후보 목록에 더한다 (docs/next-work-2026-09-15.md W3).
+
+    **같은 대상은 한 번만 얼린다.** AIDA가 이미 고른 라벨·예측은 새로 만들지 않고 그
+    후보에 점수(와 확신도)만 붙인다 — 둘로 나누면 판정자가 같은 상자를 두 번 보고, 한
+    오류가 두 번 세어질 자리가 생긴다.
+
+    모집단이 없는 옛 진단은 **아무것도 바뀌지 않는다.**
+    """
+    labels = diagnosis.get("all_labels")
+    predictions = diagnosis.get("unmatched_predictions")
+    if labels is None and predictions is None:
+        return candidates
+
+    by_label = {(c.image, c.label_index): c for c in candidates
+                if c.label_index is not None}
+    by_box = {_box_key(c.image, c.box): c for c in candidates if c.label_index is None}
+    out = list(candidates)
+
+    for row in labels or []:
+        value = row.get("label_iou")
+        if value is None:
+            # 점수를 지어내지 않는다. 그 라벨은 이 방법의 모집단에 못 들어간다.
+            continue
+        score = round(1.0 - float(value), 4)
+        found = by_label.get((row.get("image", ""), row.get("label_index")))
+        if found is not None:
+            found.scores[ALL_LABEL_IOU] = score
+            continue
+        out.append(EvaluationCandidate(
+            canonical_candidate_id=canonical_id(
+                row.get("image", ""), row.get("label_index"), "", row.get("box")),
+            image=row.get("image", ""), label_index=row.get("label_index"),
+            suspicion="", box=row.get("box"), class_name=row.get("class_name"),
+            scores={ALL_LABEL_IOU: score}, source=SOURCE_LABEL))
+
+    for row in predictions or []:
+        value = row.get("confidence")
+        if value is None:
+            continue
+        confidence = round(float(value), 4)
+        found = by_box.get(_box_key(row.get("image", ""), row.get("box")))
+        if found is not None:
+            found.scores[UNMATCHED_CONFIDENCE] = confidence
+            found.confidence = confidence
+            continue
+        out.append(EvaluationCandidate(
+            canonical_candidate_id=canonical_id(
+                row.get("image", ""), None, "", row.get("box")),
+            image=row.get("image", ""), label_index=None, suspicion="",
+            box=row.get("box"), class_name=row.get("class_name"),
+            scores={UNMATCHED_CONFIDENCE: confidence}, confidence=confidence,
+            source=SOURCE_PREDICTION))
+    return out
+
+
+def _mark_random_sample(candidates: list[EvaluationCandidate],
+                        size: int | None, seed: int | None) -> None:
+    """규칙 밖 라벨에서 K건을 씨앗으로 뽑아 표시한다.
+
+    **AIDA가 고른 후보는 표본이 아니다** — 이 층은 "규칙이 놓친 라벨에 오류가 얼마나
+    있나"를 재고, 그러려면 규칙 밖에서 고르게 뽑아야 한다. 씨앗이 없으면 같은 표본을
+    다시 만들 수 없으므로 거부한다.
+    """
+    if size is None:
+        return
+    if not isinstance(size, int) or isinstance(size, bool) or size < 0:
+        raise HTTPException(400, "무작위 표본 크기는 0 이상의 정수입니다.")
+    if size and seed is None:
+        raise HTTPException(400, "무작위 표본 씨앗을 함께 정하세요 — 없으면 같은 "
+                                 "표본을 다시 만들 수 없습니다.")
+    pool = sorted((c for c in candidates if c.source == SOURCE_LABEL),
+                  key=lambda c: c.canonical_candidate_id)
+    if size > len(pool):
+        raise HTTPException(
+            400, f"규칙 밖 기존 라벨이 {len(pool)}건인데 무작위 표본 {size}건을 "
+                 "요청했습니다. 진단에 모든 라벨이 들어 있는지 확인하세요.")
+    for candidate in random.Random(seed).sample(pool, size):
+        candidate.random_sample = True
 
 
 def _reject_duplicates(candidates: list[EvaluationCandidate]) -> None:
@@ -282,7 +394,9 @@ def _rank(item: dict) -> int | None:
 def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
                    ruler=None, shuffle_seed: int = 0,
                    judge_budget: int | None = None,
-                   ranking_version: str | None = None) -> EvaluationSnapshot:
+                   ranking_version: str | None = None,
+                   random_sample_size: int | None = None,
+                   random_sample_seed: int | None = None) -> EvaluationSnapshot:
     """진단 결과를 얼려 평가 묶음을 만든다.
 
     **재진단해도 이 묶음은 안 바뀐다.** 판정 도중에 후보가 바뀌면 이미 내린
@@ -324,7 +438,10 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
         )
         for item in queue
     ]
+    # 규칙 밖 모집단(모든 기존 라벨·필터 전 미매칭 예측)과 무작위 표본.
+    candidates = _population_candidates(candidates, diagnosis)
     _reject_duplicates(candidates)
+    _mark_random_sample(candidates, random_sample_size, random_sample_seed)
     snapshot = EvaluationSnapshot(
         evaluation_id=evaluation_id, dataset_id=dataset_id,
         created_at=datetime.now(timezone.utc).isoformat(),
@@ -333,13 +450,16 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
         candidates=candidates, shuffle_seed=shuffle_seed,
         candidate_pool=pool, total_in_queue=total, judge_budget=judge_budget,
         ranking_version=ranking_version,
+        random_sample_size=random_sample_size, random_sample_seed=random_sample_seed,
     )
     # 예산이 있으면 여기서 판정 대상을 한 번 골라 본다 — 못 고르는 묶음을 얼리지 않는다.
     judge_ids(snapshot)
     payload = canonical_payload(dataset_id, candidates, shuffle_seed, ruler,
                                 snapshot.diagnosis_generated_at,
                                 judge_budget=judge_budget, candidate_pool=pool,
-                                total_in_queue=total, ranking_version=ranking_version)
+                                total_in_queue=total, ranking_version=ranking_version,
+                                random_sample_size=random_sample_size,
+                                random_sample_seed=random_sample_seed)
     return snapshot.model_copy(
         update={"candidate_set_hash": candidate_set_hash(payload)})
 
@@ -537,6 +657,11 @@ LABELLED = "labelled_candidates"
 MISSING = "missing_candidates"
 ALL_DESCRIPTIVE = "all_descriptive"
 SCOPES = (LABELLED, MISSING, ALL_DESCRIPTIVE)
+# 층마다 정의된 방법. 여기 없는 방법을 그 층에 붙이면 거부한다 — 층이 다르면
+# 같은 이름이라도 다른 것을 잰다.
+SCOPE_METHODS = {LABELLED: (AIDA, IOU_BASELINE, ALL_LABEL_IOU),
+                 MISSING: (AIDA, UNMATCHED_CONFIDENCE),
+                 ALL_DESCRIPTIVE: (AIDA,)}
 
 _LIMITATION = {
     LABELLED:
@@ -559,8 +684,11 @@ def _in_scope(candidate: EvaluationCandidate, scope: str) -> bool:
     return True
 
 
-def _exclusion_reason(candidate: EvaluationCandidate, scope: str) -> str:
-    """왜 뺐는가. **미정이라서가 아니라 층이 달라서다.**"""
+def _exclusion_reason(candidate: EvaluationCandidate, scope: str, mode: str) -> str:
+    """왜 뺐는가. **미정이라서가 아니라 층이나 모집단이 달라서다.**"""
+    if _in_scope(candidate, scope) and candidate.source != SOURCE_AIDA:
+        return ("AIDA 규칙 밖 모집단 — 후보 생성 포함 모드"
+                f"(`{GENERATION_INCLUDED}`)에서만 센다")
     if scope == LABELLED:
         return "누락 후보 — 비교군이 없어 별도 층에서 기술 통계로만 본다"
     return "기존 라벨 후보 — 누락 층에 속하지 않는다"
@@ -569,6 +697,11 @@ def _exclusion_reason(candidate: EvaluationCandidate, scope: str) -> str:
 def method_order(candidates: list[EvaluationCandidate],
                  method: str) -> dict[str, float] | None:
     """방법이 후보를 줄 세우는 값. **클수록 먼저다.** 못 매기면 `None`.
+
+    **모집단은 방법마다 다르다** (docs/next-work-2026-09-15.md W3). AIDA는 자기 규칙이
+    만든 후보만, `all_label_iou`는 기존 라벨 전부, `unmatched_confidence`는 필터 전
+    미매칭 예측 전부를 줄 세운다. 자기 모집단 밖 후보는 그 방법의 순서에 **없다** —
+    맨 뒤로 보내면 그 방법이 만들지도 않은 후보를 본 것처럼 세어진다.
 
     집계 모듈(`evaluation.ranking`)은 이 값을 `severity`로 받아 내림차순, 같으면
     이미지·후보 id 순으로 자른다. 판정 대상 고르기와 내보내기가 **같은 값**을
@@ -582,20 +715,27 @@ def method_order(candidates: list[EvaluationCandidate],
     기준선은 점수(`1 − label_iou`) 그대로다. 동점은 집계 규약이 자른다.
     """
     if method == AIDA:
-        ranks = [c.aida_rank for c in candidates]
-        if any(r is None for r in ranks) or len(set(ranks)) != len(ranks):
+        mine = [c for c in candidates if c.source == SOURCE_AIDA]
+        ranks = [c.aida_rank for c in mine]
+        if not mine or any(r is None for r in ranks) or len(set(ranks)) != len(ranks):
             return None
-        return {c.canonical_candidate_id: -float(c.aida_rank) for c in candidates}
-    if any(method not in c.scores for c in candidates):
+        return {c.canonical_candidate_id: -float(c.aida_rank) for c in mine}
+    mine = [c for c in candidates if method in c.scores]
+    if not mine:
         return None
-    return {c.canonical_candidate_id: c.scores[method] for c in candidates}
+    return {c.canonical_candidate_id: c.scores[method] for c in mine}
 
 
 def _top(candidates: list[EvaluationCandidate], order: dict[str, float],
          n: int) -> list[str]:
-    """`evaluation.ranking.rank_candidates`와 같은 규칙으로 상위 n건."""
-    ranked = sorted(candidates, key=lambda c: (-order[c.canonical_candidate_id],
-                                               c.image, c.canonical_candidate_id))
+    """`evaluation.ranking.rank_candidates`와 같은 규칙으로 상위 n건.
+
+    그 방법의 모집단이 n보다 작으면 **남는 예산은 안 쓴다** — 다른 방법의 후보로
+    채우면 그 방법이 만들지 않은 후보가 그 방법의 성과로 세어진다.
+    """
+    mine = [c for c in candidates if c.canonical_candidate_id in order]
+    ranked = sorted(mine, key=lambda c: (-order[c.canonical_candidate_id],
+                                         c.image, c.canonical_candidate_id))
     return [c.canonical_candidate_id for c in ranked[:n]]
 
 
@@ -606,28 +746,32 @@ def judge_ids(snapshot: EvaluationSnapshot) -> set[str] | None:
 
     | 층 | 방법 |
     |---|---|
-    | 기존 라벨 | AIDA, 기준선 |
-    | 누락 | AIDA만 — 기준선이 정의되지 않았다 |
+    | 기존 라벨 | AIDA, 기준선, 그리고 모집단이 있으면 `all_label_iou` |
+    | 누락 | AIDA, 그리고 모집단이 있으면 `unmatched_confidence` |
 
     두 방법이 같은 후보를 고르면 **한 번만** 판정한다. 그래야 N 이하의 어느
     검수량에서도 두 방법 모두 판정이 빠진 후보 없이 셀 수 있다.
+
+    **무작위 표본은 예산과 별도로 전부 판정한다** — 표본에서 빠진 것이 생기면 그
+    층의 비율 추정이 깨진다.
     """
     n = snapshot.judge_budget
     if n is None:
         return None
     picked: set[str] = set()
-    for scope, methods in ((LABELLED, (AIDA, IOU_BASELINE)), (MISSING, (AIDA,))):
+    for scope in (LABELLED, MISSING):
         layer = [c for c in snapshot.candidates if _in_scope(c, scope)]
-        for method in methods:
+        for method in SCOPE_METHODS[scope]:
             order = method_order(layer, method)
-            if order is None and method == AIDA:
-                raise HTTPException(
-                    409, "AIDA 제품 순위가 없거나 겹치는 진단입니다. 판정할 상위 "
-                         "후보를 고를 수 없습니다 — 진단을 다시 돌리세요.")
             if order is None:
-                # 기준선 점수가 없는 옛 진단. 두 방법 비교는 내보낼 때 막힌다.
+                if method == AIDA and any(c.source == SOURCE_AIDA for c in layer):
+                    raise HTTPException(
+                        409, "AIDA 제품 순위가 없거나 겹치는 진단입니다. 판정할 상위 "
+                             "후보를 고를 수 없습니다 — 진단을 다시 돌리세요.")
+                # 점수가 없는 방법(옛 진단의 기준선, 모집단 없는 진단). 내보낼 때 막힌다.
                 continue
             picked.update(_top(layer, order, n))
+    picked.update(c.canonical_candidate_id for c in snapshot.candidates if c.random_sample)
     return picked
 
 
@@ -637,8 +781,9 @@ def _truncation(snapshot: EvaluationSnapshot) -> str | None:
     if total is None:
         return ("진단 결과에 전체 후보 수(`total_in_queue`)가 없어 목록이 "
                 "잘렸는지 알 수 없습니다. 두 방법을 견주지 않습니다.")
-    if len(snapshot.candidates) < total:
-        return (f"AIDA 순위로 잘린 후보 목록입니다({len(snapshot.candidates)}/"
+    frozen = sum(1 for c in snapshot.candidates if c.source == SOURCE_AIDA)
+    if frozen < total:
+        return (f"AIDA 순위로 잘린 후보 목록입니다({frozen}/"
                 f"{total}건). 기준선이 잘린 쪽 후보를 끌어올릴 수 없어 AIDA에 "
                 "유리하게 휩니다 — `all_candidates`가 있는 진단으로 다시 얼리세요.")
     return None
@@ -647,36 +792,65 @@ def _truncation(snapshot: EvaluationSnapshot) -> str | None:
 def export_for_aggregation(snapshot: EvaluationSnapshot,
                            saved: EvaluationAdjudications,
                            methods: list[str],
-                           scope: str = LABELLED) -> dict:
+                           scope: str = LABELLED,
+                           mode: str = WITHIN_AIDA) -> dict:
     """집계 모듈이 그대로 받는 JSON.
 
-    **층을 먼저 고른다.** 기존 라벨 후보와 누락 후보는 비교 조건이 달라 한
-    숫자로 합치지 않는다(docs/evaluation-protocol.md).
+    **층과 비교 모드를 먼저 고른다.** 기존 라벨 후보와 누락 후보는 비교 조건이 달라 한
+    숫자로 합치지 않고(docs/evaluation-protocol.md), 같은 층이라도 **무엇을 모집단으로
+    보느냐**에 따라 다른 질문이 된다(docs/next-work-2026-09-15.md W3).
 
     | scope | 무엇 | 비교 |
     |---|---|---|
-    | `labelled_candidates` | `label_index`가 있는 후보만 | AIDA 대 `1 − label_iou` |
-    | `missing_candidates` | 누락 후보만 | **없다** — 기술 통계만 |
+    | `labelled_candidates` | `label_index`가 있는 후보 | 방법 간 비교 가능 |
+    | `missing_candidates` | 누락 후보 | **보조 기술 통계만** — 성공·실패를 판정하지 않는다 |
     | `all_descriptive` | 전부 | **없다** — 현황 확인용 |
 
-    **거른 것을 조용히 넘기지 않는다.** 몇 건을 왜 뺐는지 결과에 적는다 —
-    안 적으면 나중에 그 숫자가 무엇을 뺀 값인지 아무도 모른다.
+    | mode | 모집단 | 답하는 질문 |
+    |---|---|---|
+    | `within_aida_candidates` | AIDA 규칙이 만든 후보만 | 후보 안의 재정렬 (prelim1과 같은 질문) |
+    | `candidate_generation_included` | 규칙 밖 라벨·예측까지 | 후보 생성까지 포함한 효과 (Q-A·Q-C) |
 
-    **후보 집합이 방법마다 다르면 거부한다.** 정렬 효과는 같은 후보 안에서만
-    잰다. 특히 누락 후보의 단순 기준선 점수는 아직 정의되지 않았고, 임의
-    공식을 만들지 않는다 — 예측 신뢰도를 쓰면 IoU 기준선이 아니라 신뢰도
-    기준선이 되고, 가장 가까운 라벨과의 IoU를 쓰면 전부 동점이 된다.
+    **거른 것을 조용히 넘기지 않는다.** 몇 건을 왜 뺐는지 결과에 적는다 — 안 적으면
+    나중에 그 숫자가 무엇을 뺀 값인지 아무도 모른다.
+
+    **모집단이 방법마다 다르면 그 사실을 적는다.** `within_aida_candidates`에서는 예전처럼
+    후보 집합이 다르면 거부하고, `candidate_generation_included`에서는 방법별 모집단 크기를
+    `method_population`으로 내놓는다 — 그게 이 모드에서 재려는 것이기 때문이다.
     """
     if scope not in SCOPES:
         raise ExportBlocked(
             f"모르는 평가 층입니다: {scope!r}. 아는 것은 {', '.join(SCOPES)}입니다.")
+    if mode not in COMPARISON_MODES:
+        raise ExportBlocked(
+            f"모르는 비교 모드입니다: {mode!r}. 아는 것은 {', '.join(COMPARISON_MODES)}입니다.")
 
-    included = [c for c in snapshot.candidates if _in_scope(c, scope)]
-    excluded = [c for c in snapshot.candidates if not _in_scope(c, scope)]
+    unknown = [m for m in methods if m not in SCOPE_METHODS[scope]]
+    if unknown:
+        raise ExportBlocked(
+            f"'{scope}' 층에 정의되지 않은 방법입니다: {', '.join(unknown)}. "
+            f"이 층의 방법은 {', '.join(SCOPE_METHODS[scope])}입니다.")
+
+    wider = [m for m in methods if m in POPULATION_METHODS]
+    if mode == WITHIN_AIDA and wider:
+        raise ExportBlocked(
+            f"{', '.join(wider)}는 AIDA 규칙 밖 모집단까지 줄 세웁니다. 후보 생성까지 "
+            f"포함한 비교는 `{GENERATION_INCLUDED}` 모드로 요청하세요 — AIDA 후보 안의 "
+            "재정렬과는 다른 질문입니다.")
+
+    in_scope = [c for c in snapshot.candidates if _in_scope(c, scope)]
+    included = (in_scope if mode == GENERATION_INCLUDED
+                else [c for c in in_scope if c.source == SOURCE_AIDA])
+    included_ids = {c.canonical_candidate_id for c in included}
+    excluded = [c for c in snapshot.candidates
+                if c.canonical_candidate_id not in included_ids]
+
+    # 방법 간 비교로 읽어도 되는 층인가. **누락 층은 기준선이 생겨도 보조 통계다** —
+    # 1차 지표로 올리려면 가설·점수·동점·Δ를 따로 사전 등록해야 한다.
     comparison_allowed = scope == LABELLED
 
-    if not comparison_allowed and any(m != AIDA for m in methods):
-        # 비교군이 없는 층에 기준선을 붙이면, 그 자체로 "견줄 수 있다"는
+    if not comparison_allowed and any(m not in (AIDA, UNMATCHED_CONFIDENCE) for m in methods):
+        # 비교군이 없는 층에 임의의 기준선을 붙이면, 그 자체로 "견줄 수 있다"는
         # 뜻이 되어 버린다.
         raise ExportBlocked(
             f"'{scope}' 층에는 사전 정의된 비교군이 없습니다. "
@@ -696,29 +870,35 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
         if truncated:
             raise ExportBlocked(truncated)
 
+    orders: dict[str, dict[str, float]] = {}
     for method in methods:
-        without = [c for c in included if method not in c.scores]
-        if not without:
-            continue
-        no_label = [c for c in without if c.label_index is None]
-        if no_label:
+        order = method_order(included, method)
+        if order is None:
             raise ExportBlocked(
-                f"'{method}'가 누락 후보에 줄 점수가 정해지지 않았습니다 "
-                f"({len(no_label)}건). 임의 공식을 만들지 않습니다 — "
-                f"'{LABELLED}' 층으로 내보내거나 누락을 별도 층으로 보세요"
-                "(docs/evaluation-adjudication-design.md).")
-        raise ExportBlocked(
-            f"'{method}'의 점수가 없는 후보가 {len(without)}건 있습니다. "
-            "후보 집합이 다르면 정렬 효과가 아니라 작업 전체 효과입니다.")
+                f"'{method}'로 줄 세울 후보가 없습니다. AIDA는 후보마다 진단의 제품 "
+                f"순위(`rank`)가 하나씩 있어야 하고, `{ALL_LABEL_IOU}`·"
+                f"`{UNMATCHED_CONFIDENCE}`는 진단이 규칙 밖 모집단(`all_labels`·"
+                "`unmatched_predictions`)을 적어 두었어야 합니다.")
+        orders[method] = order
 
-    orders = {}
-    for method in methods:
-        orders[method] = method_order(included, method)
-        if orders[method] is None:
+    if mode == WITHIN_AIDA:
+        # 옛 규칙 그대로. 이 모드의 뜻이 "같은 후보 안의 재정렬"이라, 후보 집합이
+        # 방법마다 다르면 정렬 효과가 아니라 작업 전체 효과가 된다.
+        for method in methods:
+            without = [c for c in included
+                       if c.canonical_candidate_id not in orders[method]]
+            if not without:
+                continue
+            no_label = [c for c in without if c.label_index is None]
+            if no_label:
+                raise ExportBlocked(
+                    f"'{method}'가 누락 후보에 줄 점수가 정해지지 않았습니다 "
+                    f"({len(no_label)}건). 임의 공식을 만들지 않습니다 — "
+                    f"'{LABELLED}' 층으로 내보내거나 누락을 별도 층으로 보세요"
+                    "(docs/evaluation-adjudication-design.md).")
             raise ExportBlocked(
-                f"'{method}'의 순서를 매길 수 없습니다. AIDA는 후보마다 진단의 "
-                "제품 순위(`rank`)가 하나씩 있어야 합니다 — 심각도로 대신하면 "
-                "제품이 안 쓰는 순서를 평가합니다.")
+                f"'{method}'의 점수가 없는 후보가 {len(without)}건 있습니다. "
+                "후보 집합이 다르면 정렬 효과가 아니라 작업 전체 효과입니다.")
 
     by_id = {a.canonical_candidate_id: a for a in saved.adjudications}
     adjudications = []
@@ -733,19 +913,34 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
             "unique_error_id": a.unique_error_id if a else None,
             "group_id": None,
             "complete": bool(a and a.verdict is not None),
+            # 무엇의 성과로 셀 수 있는지가 여기서 갈린다. 무작위 표본은 방법 간
+            # 비교가 아니라 "규칙이 놓친 비율"을 재는 별도 층이다.
+            "source": c.source,
+            "random_sample": c.random_sample,
         })
         for method in methods:
+            order = orders[method]
+            if c.canonical_candidate_id not in order:
+                continue        # 그 방법의 모집단 밖 — 순서에 없다
             # `severity`는 집계가 줄 세우는 값이다. AIDA는 −순위라 음수다 —
             # 원래 점수는 `score`에 따로 둔다.
             rankings.append({"method": method,
                              "canonical_candidate_id": c.canonical_candidate_id,
-                             "severity": orders[method][c.canonical_candidate_id],
-                             "score": c.scores[method]})
+                             "severity": order[c.canonical_candidate_id],
+                             "score": c.scores.get(method,
+                                                   order[c.canonical_candidate_id])})
 
     reasons: dict[str, int] = {}
     for c in excluded:
-        reason = _exclusion_reason(c, scope)
+        reason = _exclusion_reason(c, scope, mode)
         reasons[reason] = reasons.get(reason, 0) + 1
+
+    limitation = _LIMITATION[scope]
+    if mode == GENERATION_INCLUDED:
+        limitation = (
+            "후보 생성까지 포함한 비교입니다 — AIDA 규칙이 만들지 않은 라벨·예측도 "
+            "모집단에 있습니다. 방법마다 모집단이 다르므로 `method_population`을 함께 "
+            "읽으세요. " + limitation)
 
     return {
         "schema_version": EVALUATION_SCHEMA_VERSION,
@@ -763,12 +958,20 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
         "total_in_diagnosis": snapshot.total_in_queue,
         "judge_budget": snapshot.judge_budget,
         "requested_scope": scope,
+        # 어느 모집단을 잰 내보내기인가. 모드가 다르면 같은 방법 이름이라도 다른 질문이다.
+        "comparison_mode": mode,
+        "method_population": {m: len(orders[m]) for m in methods},
+        "random_sample": {
+            "size": snapshot.random_sample_size,
+            "seed": snapshot.random_sample_seed,
+            "in_scope": sum(1 for c in included if c.random_sample),
+        },
         "total_candidates": len(snapshot.candidates),
         "included_candidates": len(included),
         "excluded_candidates": len(excluded),
         "exclusion_reasons": reasons,
         "comparison_allowed": comparison_allowed,
-        "comparison_limitation": _LIMITATION[scope],
+        "comparison_limitation": limitation,
         "descriptive_only": not comparison_allowed,
         "adjudications": adjudications,
         "rankings": rankings,
@@ -784,6 +987,10 @@ class StartEvaluation(BaseModel):
     judge_budget: int | None = None
     # 얼릴 AIDA 순서의 순위 버전. 그 버전의 진단 파일을 얼린다 (docs/adr-ranking-separation.md).
     ranking_version: str = RANKING_V1
+    # 규칙 밖 기존 라벨에서 뽑을 무작위 표본 K와 그 씨앗 (docs/next-work-2026-09-15.md W3).
+    # 후보 생성이 놓친 오류 비율을 재는 별도 층이다 — 방법 간 비교에 섞지 않는다.
+    random_sample_size: int | None = None
+    random_sample_seed: int | None = None
 
 
 class SaveAdjudications(BaseModel):
@@ -811,7 +1018,9 @@ def start_evaluation(dataset_id: str, body: StartEvaluation) -> EvaluationSnapsh
                               ruler=_load_ruler_sidecar(dataset_id),
                               shuffle_seed=body.shuffle_seed,
                               judge_budget=body.judge_budget,
-                              ranking_version=body.ranking_version)
+                              ranking_version=body.ranking_version,
+                              random_sample_size=body.random_sample_size,
+                              random_sample_seed=body.random_sample_seed)
     save_snapshot(dataset_id, snapshot)
     return snapshot
 
@@ -840,12 +1049,17 @@ def put_adjudications(dataset_id: str, evaluation_id: str,
 
 @router.get("/{dataset_id}/evaluations/{evaluation_id}/export")
 def get_export(dataset_id: str, evaluation_id: str,
-               methods: str = "aida", scope: str = LABELLED) -> dict:
+               methods: str = "aida", scope: str = LABELLED,
+               mode: str = WITHIN_AIDA) -> dict:
     """집계 모듈에 그대로 넣는 JSON.
 
     `methods`는 쉼표로 나눈다. `scope`는 평가 층이며 기본은 주 비교인
-    `labelled_candidates`다. 기준선을 넣었는데 점수가 없거나, 비교군이 없는
-    층에 기준선을 붙이면 **거부한다.**
+    `labelled_candidates`다. `mode`는 모집단이고 기본은 AIDA 후보 안의 재정렬
+    (`within_aida_candidates`)이다 — 후보 생성까지 포함하려면
+    `candidate_generation_included`로 요청한다.
+
+    기준선을 넣었는데 점수가 없거나, 비교군이 없는 층에 기준선을 붙이거나, 모드에
+    맞지 않는 방법을 요청하면 **거부한다.**
     """
     snapshot = load_snapshot(dataset_id, evaluation_id)
     saved = load_adjudications(dataset_id, evaluation_id,
@@ -853,7 +1067,7 @@ def get_export(dataset_id: str, evaluation_id: str,
     try:
         return export_for_aggregation(
             snapshot, saved,
-            [m.strip() for m in methods.split(",") if m.strip()], scope)
+            [m.strip() for m in methods.split(",") if m.strip()], scope, mode)
     except ExportBlocked as exc:
         raise HTTPException(409, str(exc)) from exc
 

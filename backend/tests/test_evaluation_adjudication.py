@@ -377,7 +377,10 @@ def test_비교군이_없는_층에_기준선을_붙이면_막는다(client, upl
     r = client.get(f"/api/datasets/{DATASET}/evaluations/e1/export"
                    "?methods=aida,iou_baseline&scope=missing_candidates")
     assert r.status_code == 409
-    assert "비교군이 없습니다" in r.json()["detail"]
+    # 층마다 정의된 방법이 생긴 뒤(W3)로는 그 검사가 먼저 잡는다 — 거부 이유는 같다:
+    # 누락 층에 기존 라벨의 IoU 기준선을 붙이지 않는다.
+    detail = r.json()["detail"]
+    assert "iou_baseline" in detail and "missing_candidates" in detail
 
 
 def test_후보_집합이_다르면_내보내기를_막는다(client, uploads):

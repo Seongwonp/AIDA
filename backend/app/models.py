@@ -352,6 +352,16 @@ class EvaluationCandidate(BaseModel):
     # 진단이 매긴 AIDA 제품 순위(1부터). 심각도 순서와 다를 수 있다 — 제품은
     # 계통적 유형을 먼저 보여준다. 옛 묶음에는 없다.
     aida_rank: int | None = None
+    # 이 후보가 어디서 왔나 (docs/next-work-2026-09-15.md W3).
+    #   `aida_candidate`       AIDA 규칙이 만든 후보 — 지금까지는 이것뿐이었다
+    #   `label`                규칙에 안 걸린 기존 라벨 (후보 생성 비교 Q-A의 모집단)
+    #   `unmatched_prediction` 누락 필터가 버린 예측 (누락 층 기준선 Q-C의 모집단)
+    source: str = "aida_candidate"
+    # 규칙 밖 라벨에서 씨앗으로 뽑은 무작위 표본인가. **방법 간 비교에 섞지 않는다** —
+    # 후보 생성이 놓친 비율을 따로 추정하는 층이다.
+    random_sample: bool = False
+    # 예측 확신도. 누락 층 기준선의 점수 재료다. 기존 라벨 후보에는 없다.
+    confidence: float | None = None
 
 
 class EvaluationSnapshot(BaseModel):
@@ -373,6 +383,10 @@ class EvaluationSnapshot(BaseModel):
     total_in_queue: int | None = None
     # 판정 예산 N. 있으면 두 방법 상위 N건의 합집합만 판정한다.
     judge_budget: int | None = None
+    # 규칙 밖 라벨의 무작위 표본 크기 K와 씨앗. 없으면 표본을 안 뽑은 묶음이다.
+    # 씨앗을 안 남기면 같은 표본을 다시 만들 수 없다.
+    random_sample_size: int | None = None
+    random_sample_seed: int | None = None
     # 얼린 AIDA 순서의 순위 버전 (docs/adr-ranking-separation.md). **옛 묶음에는 없고
     # v1으로 읽는다** — 없을 때는 지문 재료에도 넣지 않아 옛 지문이 그대로다(prelim1).
     ranking_version: str | None = None
