@@ -15,11 +15,16 @@ def _keys_of(rankings: list[Ranking], method: str) -> set[str]:
 
 
 def check_same_candidate_set(rankings: list[Ranking], method: str,
-                             baseline: str) -> None:
+                             baseline: str, require_same: bool = True) -> None:
     """두 방법이 같은 후보를 봤는가.
 
     다르면 **거부한다.** 다른 후보 집합으로 낸 차이를 "정렬 효과"라고 부르면
     순서가 아니라 후보 생성의 차이를 재게 된다.
+
+    `require_same=False`는 **부르는 쪽이 후보 생성까지 포함한 비교라고 밝힌 것**이다
+    (docs/next-work-2026-09-15.md Q-A). 그때 짝지음의 단위는 후보가 아니라 **이미지
+    묶음**이다 — 같은 이미지 표본에서 두 방법이 각자 상위 N을 고르는 것을 견준다.
+    방법이 같거나 순위가 아예 없는 것은 그때도 거부한다.
     """
     if method == baseline:
         raise ValidationError(f"같은 방법끼리 견줄 수 없다: {method!r}")
@@ -29,7 +34,7 @@ def check_same_candidate_set(rankings: list[Ranking], method: str,
         raise ValidationError(f"그 방법의 순위가 하나도 없다: {method!r}")
     if not b:
         raise ValidationError(f"기준선의 순위가 하나도 없다: {baseline!r}")
-    if a != b:
+    if require_same and a != b:
         only_a, only_b = sorted(a - b)[:3], sorted(b - a)[:3]
         raise ValidationError(
             f"두 방법의 후보 집합이 다르다 ({method}만 {len(a - b)}개, "
@@ -40,8 +45,9 @@ def check_same_candidate_set(rankings: list[Ranking], method: str,
 
 def paired_difference(adjudications: list[Adjudication], rankings: list[Ranking],
                       method: str, baseline: str,
-                      budget: int | None = None) -> dict:
-    """같은 후보 집합에서 두 방법의 성과 차이.
+                      budget: int | None = None,
+                      require_same_candidates: bool = True) -> dict:
+    """두 방법의 성과 차이. 기본은 **같은 후보 집합** 안에서다.
 
     주지표는 **고정 예산에서 찾은 고유 오류 수**다.
 
@@ -51,11 +57,14 @@ def paired_difference(adjudications: list[Adjudication], rankings: list[Ranking]
     시간이 되니까 그 숫자를 여기에 넣으면 표본 크기를 일정이 정하게 된다.
     docs/capacity-vs-sample-size.md를 보고 `N_final`이 정해진 뒤에 넣는다.
     """
-    check_same_candidate_set(rankings, method, baseline)
+    check_same_candidate_set(rankings, method, baseline, require_same_candidates)
     a = summarise(adjudications, rankings, method, budget)
     b = summarise(adjudications, rankings, baseline, budget)
     return {
         "method": method, "baseline": baseline, "budget": budget,
+        # 무엇을 짝지었는가. **보고서가 둘을 섞지 않게 결과에 남긴다** — 같은 후보면
+        # 정렬 효과, 다르면 후보 생성까지 포함한 효과다.
+        "same_candidate_set": require_same_candidates,
         "method_unique_errors": a.unique_error_yield,
         "baseline_unique_errors": b.unique_error_yield,
         "difference": a.unique_error_yield - b.unique_error_yield,

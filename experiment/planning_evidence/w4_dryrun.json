@@ -1,0 +1,62 @@
+{
+  "name": "w4_dryrun",
+  "label": "W4 경로 드라이런 — 소비된 개발 데이터(prelim1 300장)로 진단→묶음→합성 판정→내보내기→집계. **합성 판정이라 수율·차이는 싣지 않는다.** 규모와 구조만 기록한다.",
+  "ran_at": "2026-09-16",
+  "source": {
+    "images": 300,
+    "labels": 1280,
+    "diagnosis_sha256": "fac8439afc4b18a94fa41e7148a78cab9b1fd656ce8c84249fcbc264827f760b",
+    "ranking_version": "aida_v1_systematic_boost"
+  },
+  "diagnosis_rows": {
+    "all_candidates": 331,
+    "all_labels": 1280,
+    "unmatched_predictions": 322,
+    "aida_candidates_identical_to_prelim1": true
+  },
+  "snapshot": {
+    "candidates": 1602,
+    "by_source": {
+      "aida_candidate": 331,
+      "label": 973,
+      "unmatched_prediction": 298
+    },
+    "labelled": 1280,
+    "missing": 322,
+    "file_bytes": 436222
+  },
+  "placeholders": {
+    "judge_budget": 90,
+    "random_sample_size": 50,
+    "note": "자리값이다 — N·K·씨앗은 사전 등록(W5)에서 사용자가 정한다"
+  },
+  "judging_load": {
+    "candidates_to_judge": 388,
+    "blind_queue": 388,
+    "labelled": 298,
+    "missing": 90,
+    "random_sample": 50
+  },
+  "method_population": {
+    "labelled_candidates": {
+      "aida": 307,
+      "iou_baseline": 307,
+      "all_label_iou": 1280
+    },
+    "missing_candidates": {
+      "aida": 24,
+      "unmatched_confidence": 322
+    }
+  },
+  "paths_exercised": {
+    "within_aida_candidates(aida,iou_baseline)": "통과 — 포함 307건, 짝지은 부트스트랩 통과",
+    "candidate_generation_included(aida,all_label_iou)": "통과 — 포함 1280건, 이미지 묶음으로 짝지은 부트스트랩",
+    "missing candidate_generation_included(aida,unmatched_confidence)": "통과 — descriptive_only",
+    "random_sample_layer": "통과 — 표본 50건 전부 규칙 밖 라벨, 판정 대상에 포함"
+  },
+  "not_measured": [
+    "실제 사람 판정 시간",
+    "판정 화면의 대용량 묶음 부하",
+    "어떤 성능 수치도"
+  ]
+}

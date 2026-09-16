@@ -92,6 +92,7 @@ def paired_cluster_bootstrap(
     adjudications: list[Adjudication], rankings: list[Ranking],
     method: str, baseline: str, budget: int | None = None,
     iterations: int = DEFAULT_ITERATIONS, seed: int = DEFAULT_SEED,
+    require_same_candidates: bool = True,
 ) -> dict:
     """(방법 − 기준선) 차이의 95% 구간.
 
@@ -99,13 +100,17 @@ def paired_cluster_bootstrap(
 
     돌려주는 것에 **반복 수와 씨앗을 담는다** — 그것 없이는 결과를 다시 만들 수
     없다.
+
+    `require_same_candidates=False`는 후보 생성까지 포함한 비교라고 밝힌 것이다. 재표집
+    단위는 그때도 **이미지 묶음**이라 짝지음은 그대로 지켜진다 — 같은 이미지 벌에서 두
+    방법이 각자 상위 N을 고른다. 그 사실을 결과에 남긴다.
     """
     if not isinstance(iterations, int) or iterations < 1:
         raise ValidationError(f"반복 수는 1 이상이다: {iterations!r}")
-    check_same_candidate_set(rankings, method, baseline)
+    check_same_candidate_set(rankings, method, baseline, require_same_candidates)
 
-    observed = equal_weight_difference(adjudications, rankings, method,
-                                       baseline, budget)
+    observed = equal_weight_difference(adjudications, rankings, method, baseline,
+                                       budget, require_same_candidates)
 
     by_dataset: dict[str, list[Adjudication]] = defaultdict(list)
     for a in adjudications:
@@ -133,7 +138,8 @@ def paired_cluster_bootstrap(
             facts, ranks = _resample(clusters, grouped, rankings_by_key, rng)
             # **처음부터 다시 계산한다** — 순위도 중복 제거도.
             per_dataset.append(
-                paired_difference(facts, ranks, method, baseline, budget)["difference"])
+                paired_difference(facts, ranks, method, baseline, budget,
+                                  require_same_candidates)["difference"])
         draws.append(mean(per_dataset))          # 데이터셋 동등 가중
 
     return {
@@ -142,6 +148,8 @@ def paired_cluster_bootstrap(
         "ci_low": _percentile(draws, 0.025),
         "ci_high": _percentile(draws, 0.975),
         "iterations": iterations, "seed": seed,
+        # 무엇을 짝지었는가 — 같은 후보면 정렬 효과, 다르면 후보 생성까지 포함한 효과다.
+        "same_candidate_set": require_same_candidates,
         "datasets": datasets,
         "clusters": {name: len(clusters_of[name][0]) for name in datasets},
         "weighting": "데이터셋 동등 가중",
@@ -150,8 +158,13 @@ def paired_cluster_bootstrap(
 
 def equal_weight_difference(adjudications: list[Adjudication],
                             rankings: list[Ranking], method: str, baseline: str,
-                            budget: int | None = None) -> float:
-    """데이터셋별 차이의 단순 평균. 큰 데이터셋이 결론을 끌지 않게."""
+                            budget: int | None = None,
+                            require_same_candidates: bool = True) -> float:
+    """데이터셋별 차이의 단순 평균. 큰 데이터셋이 결론을 끌지 않게.
+
+    `require_same_candidates`는 그대로 `paired_difference`에 넘긴다 — 여기서 기본값으로
+    되돌리면 후보 생성까지 포함한 비교가 데이터셋 단위에서 다시 막힌다.
+    """
     by_dataset: dict[str, list[Adjudication]] = defaultdict(list)
     for a in adjudications:
         by_dataset[a.dataset_id].append(a)
@@ -160,8 +173,8 @@ def equal_weight_difference(adjudications: list[Adjudication],
     for name in sorted(by_dataset):
         keys = {a.key for a in by_dataset[name]}
         subset = [r for r in rankings if r.candidate_key in keys]
-        diffs.append(paired_difference(by_dataset[name], subset, method,
-                                       baseline, budget)["difference"])
+        diffs.append(paired_difference(by_dataset[name], subset, method, baseline,
+                                       budget, require_same_candidates)["difference"])
     return mean(diffs) if diffs else 0.0
 
 
