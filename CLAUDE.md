@@ -7,7 +7,10 @@
 > [`docs/next-work-2026-09-15.md`](docs/next-work-2026-09-15.md).
 >
 > **지금 막힌 곳은 코드가 아니라 사용자 결정 둘이다 — W1 라이선스 원문 확인, W5 사전 등록.**
-> W2~W4(1차 질문 선택·최소 구현·경로 드라이런)는 2026-09-16에 끝났다.
+> W2~W4(1차 질문 선택·최소 구현·경로 드라이런)는 2026-09-16에 끝났다. 같은 날 저녁에 결정이
+> 필요 없는 일을 마쳤다 — **자 기록 버전별 분리(S3), access violation 조사(S4), 판정 API 부하 측정,
+> 사전 등록 초안** [`docs/qa-preregistration-draft.md`](docs/qa-preregistration-draft.md)(값은 전부 빈칸),
+> **판정자 둘 이상 설계 초안** [`docs/multi-adjudicator-design.md`](docs/multi-adjudicator-design.md).
 
 **예비 비교(prelim1)는 끝났고, 현재 제품 순서가 단순 IoU 순서보다 나빴다.** 기존 라벨 후보
 상위 90건에서 판정자가 오류로 본 라벨이 AIDA 제품 순서 4건, 단순 기준선(`1 − label_iou`)
@@ -107,13 +110,14 @@ Python 환경은 **둘로 나뉘어 있다.** 섞으면 없는 패키지를 찾�
 경로나 설치 여부를 추측하지 않고 먼저 확인한다. **문서에 적힌 검사 수를 이번
 실행 결과로 보고하지 않는다** — 직접 돌려 보고 그 숫자를 쓴다.
 
-최근 기록: **2026-09-16 데스크탑** experiment 459 · backend 302(건너뜀 0), 프론트 미변경(직전 183) · 그 전 **2026-09-14** experiment 442 · backend 282(건너뜀 0) · frontend 183 ·
-typecheck·lint·build exit 0. **2026-09-15 노트북**(CI와 같은 의존성만 깐 임시 환경) backend 281 통과·
-1 건너뜀(`test_uploads_dir_agreement.py:100`, 외부 드라이브 없음) · experiment 442 통과, frontend
-미실행, CI 미확인. 실험 검사 중 `test_config.py` 하위 프로세스가 `faulthandler` "access violation"을
-찍지만 통과한다 — 원인 미확인(순서표 S4).
-**2026-09-16 데스크탑** experiment 442 · backend 282(건너뜀 0) · frontend 183 · typecheck·lint·build exit 0,
-CI는 `c1e3ac28`까지 전부 success, 보호 자료 해시 전부 일치 (W0 완료).
+최근 기록: **2026-09-16 저녁 데스크탑** backend **308** 통과(건너뜀 0) · experiment **459** 통과 ·
+frontend **183** 통과 · typecheck·lint·build exit 0 · 보호 자료 해시 전부 일치.
+노트북(CI와 같은 의존성만 깐 환경)에서는 backend의 외부 드라이브 검사 1건
+(`test_uploads_dir_agreement.py:100`)이 건너뛰어진다.
+실험 검사 중 가끔 `faulthandler`가 "Windows fatal exception: access violation"을 찍지만 검사는
+통과한다 — 찍히는 자리가 실행마다 달라 처리된 네이티브 예외로 추정하고 조치하지 않았다
+([`docs/testing-boundary.md`](docs/testing-boundary.md) 해당 절). **이 출력과 검사 실패가 같이
+나오면** 그때 본다.
 
 프론트 변경 시 `frontend`에서 관련 검사와 `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`를 실행한다. 백엔드 변경 시 해당 가상환경으로 `backend`의 pytest를 실행한다. 화면 통합 검사 도구가 없으면 기존 구성을 확인한 뒤 필요한 최소 구성을 추가한다. 실제 브라우저 확인과 자동 테스트 결과를 구분한다.
 

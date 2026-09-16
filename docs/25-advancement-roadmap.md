@@ -2,9 +2,10 @@
 
 작성: 2026-09-09. 기준 코드: `fb56bf6`.
 
-> **현재 상태 (2026-09-15).** 1단계 R1~R5 완료, R6 부분 완료. 예비 비교(6번)는
+> **현재 상태 (2026-09-16).** 1단계 R1~R5 완료, R6 부분 완료. 예비 비교(6번)는
 > 끝났고 제품 순서가 단순 IoU 순서보다 나빴다. 순위 분리(7번)는 구현했지만 평가하지
-> 않았다. 다음은 맨 아래 8번 — 순서표는 [next-work-2026-09-15.md](next-work-2026-09-15.md).
+> 않았다. 8번은 1차 질문(Q-A)·최소 구현·드라이런까지 끝났고 **데이터셋 라이선스 확인과
+> 사전 등록(사용자 결정)** 에서 멈췄다 — 순서표는 [next-work-2026-09-15.md](next-work-2026-09-15.md).
 > 아래 본문의 "미착수"·"발견했다" 같은 서술은 작성 시점의 기록이다.
 
 이 문서는 [24번 계획](24-development-plan.md)의 후속 실행 계획이다. 기존 산출물은 보존하되 A·B·C 완료를 제품 신뢰성이나 독립 검증 완료로 해석하지 않는다. 작업 우선순위와 단계 통과 기준은 이 문서를 따른다.
@@ -188,7 +189,7 @@
 | 5 | 평가 규약의 독립성·통계·중단 기준 개정 | 진행 중 | 규약·검정력 도구는 있으나 Δ·목표 검정력·`N_required`·`N_final` 미정 — [n-required-plan.md](n-required-plan.md) |
 | 6 | 작은 독립 데이터 선택과 예비 평가 준비 | **완료 (2026-09-14)** — 결과는 기준선이 나았다 | [prelim1-results.md](prelim1-results.md), 감사 `5cf0e998`·`181f29f4` |
 | 7 | 데이터셋 진단과 후보 순위 분리 (순위 v2 시험 버전) | **구현 완료, 평가 안 함** | [adr-ranking-separation.md](adr-ranking-separation.md), 검사는 [testing-boundary.md](testing-boundary.md) "순위 버전" 절 |
-| 8 | 손대지 않은 데이터셋에서 다음 평가 | **제안만** — 데이터셋·N·1차 지표 미정, 법률 검토 필요 | [next-evaluation-proposal.md](next-evaluation-proposal.md) |
+| 8 | 손대지 않은 데이터셋에서 다음 평가 | **준비 끝, 결정 대기** — 1차 Q-A·보조 Q-C 결정(2026-09-16), 모집단·비교 모드 구현, 드라이런·API 부하 측정. 데이터셋(W1)·사전 등록(W5)은 사용자 결정 | [next-work-2026-09-15.md](next-work-2026-09-15.md), [qa-preregistration-draft.md](qa-preregistration-draft.md), `experiment/planning_evidence/w4_dryrun.json` |
 
 **다음 실행은 8번이다 (2026-09-15).** 순서표와 사용자 결정 목록은
 [next-work-2026-09-15.md](next-work-2026-09-15.md)에 있다 — W0 시작 점검, W1 라이선스 원문
