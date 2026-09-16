@@ -362,6 +362,9 @@ class EvaluationCandidate(BaseModel):
     random_sample: bool = False
     # 예측 확신도. 누락 층 기준선의 점수 재료다. 기존 라벨 후보에는 없다.
     confidence: float | None = None
+    # 연속 장면 묶음(주행 기록 등). 데이터셋 폴더의 `groups.json`에서 묶음을 만들 때 얼린다.
+    # 없으면 이미지 하나가 곧 묶음이다 — 이웃 프레임이 따로 세어져 구간이 좁아질 수 있다.
+    group_id: str | None = None
 
 
 class EvaluationSnapshot(BaseModel):

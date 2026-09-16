@@ -38,6 +38,8 @@ MAX_EVENTS_PER_REQUEST = 500
 VALID_VERDICTS = {"hit", "miss", "hold"}
 # 누락 객체의 이름. 판정자가 이미지 안에서 번호를 매긴다.
 MISSING_ID = re.compile(r"^M\d+$")
+# 이미지 → 연속 장면 묶음 이름. 데이터셋 폴더에 있으면 묶음을 만들 때 얼린다.
+GROUPS_FILE = "groups.json"
 
 
 def eval_dir(dataset_id: str, evaluation_id: str) -> Path:
@@ -96,6 +98,7 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
     | 진단 생성 시각 | 어느 진단을 얼린 것인가 |
     | 판정 예산·후보 출처·전체 후보 수 | 무엇을 판정하고 무엇과 견줄 수 있는지가 바뀐다 |
     | 순위 버전 | 같은 후보라도 AIDA 순서의 뜻이 다르다 (docs/adr-ranking-separation.md) |
+    | 장면 묶음(`group_id`) | 재표집 단위가 바뀌면 구간이 바뀐다. 판정 뒤에 묶음을 바꾸지 못하게 한다 |
 
     **`created_at`과 `code_commit`은 넣지 않는다.** 실행할 때마다 달라지거나
     내용과 무관해서, 넣으면 지문이 "내용이 같은가"를 못 말하게 된다.
@@ -129,6 +132,7 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
                 **({"source": c.source} if c.source != SOURCE_AIDA else {}),
                 **({"random_sample": True} if c.random_sample else {}),
                 **({"confidence": c.confidence} if c.confidence is not None else {}),
+                **({"group_id": c.group_id} if c.group_id is not None else {}),
             }
             for c in sorted(candidates, key=lambda c: c.canonical_candidate_id)
         ],
@@ -209,6 +213,38 @@ def load_label_diagnosis(dataset_id: str, ranking_version: str = RANKING_V1) -> 
         raise HTTPException(500, f"진단 결과를 읽지 못했습니다: {exc}") from exc
     _require_diagnosis_version(data, ranking_version, name)
     return data
+
+
+def load_groups(dataset_id: str) -> dict[str, str] | None:
+    """데이터셋 폴더의 `groups.json`(이미지 이름 → 묶음 이름). 없으면 None.
+
+    **모양이 틀리면 얼리지 않는다.** 조용히 건너뛰면 이미지 단위로 재표집되어, 이웃 프레임이
+    독립 표본처럼 세어진다.
+    """
+    path = UPLOADS_DIR / dataset_id / GROUPS_FILE
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise HTTPException(400, f"{GROUPS_FILE}를 읽지 못했습니다: {exc}") from exc
+    if not isinstance(data, dict) or not data or not all(
+            isinstance(k, str) and isinstance(v, str) and v.strip() for k, v in data.items()):
+        raise HTTPException(400, f"{GROUPS_FILE}는 비어 있지 않은 {{이미지 이름: 묶음 이름}}이어야 합니다.")
+    return data
+
+
+def _assign_groups(candidates: list[EvaluationCandidate],
+                   groups: dict[str, str] | None) -> list[EvaluationCandidate]:
+    """후보마다 묶음을 붙인다. **묶음 표에 없는 이미지가 하나라도 있으면 거부한다.**"""
+    if groups is None:
+        return candidates
+    missing = sorted({c.image for c in candidates if c.image not in groups})
+    if missing:
+        raise HTTPException(
+            400, f"{GROUPS_FILE}에 없는 이미지가 {len(missing)}장 있습니다 (예: {missing[0]}). "
+                 "일부만 묶으면 재표집 단위가 섞입니다.")
+    return [c.model_copy(update={"group_id": groups[c.image]}) for c in candidates]
 
 
 def _require_diagnosis_version(diagnosis: dict, expected: str, where: str) -> None:
@@ -407,7 +443,8 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
                    judge_budget: int | None = None,
                    ranking_version: str | None = None,
                    random_sample_size: int | None = None,
-                   random_sample_seed: int | None = None) -> EvaluationSnapshot:
+                   random_sample_seed: int | None = None,
+                   groups: dict[str, str] | None = None) -> EvaluationSnapshot:
     """진단 결과를 얼려 평가 묶음을 만든다.
 
     **재진단해도 이 묶음은 안 바뀐다.** 판정 도중에 후보가 바뀌면 이미 내린
@@ -453,6 +490,7 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
     candidates = _population_candidates(candidates, diagnosis)
     _reject_duplicates(candidates)
     _mark_random_sample(candidates, random_sample_size, random_sample_seed)
+    candidates = _assign_groups(candidates, groups)
     snapshot = EvaluationSnapshot(
         evaluation_id=evaluation_id, dataset_id=dataset_id,
         created_at=datetime.now(timezone.utc).isoformat(),
@@ -922,7 +960,9 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
             "suspicion": c.suspicion,
             "verdict": a.verdict if a else None,
             "unique_error_id": a.unique_error_id if a else None,
-            "group_id": None,
+            "group_id": c.group_id,
+            # 층별(상자 높이 등) 기술통계용. 판정이 끝난 뒤의 내보내기라 가림과 무관하다.
+            "box": c.box,
             "complete": bool(a and a.verdict is not None),
             # 무엇의 성과로 셀 수 있는지가 여기서 갈린다. 무작위 표본은 방법 간
             # 비교가 아니라 "규칙이 놓친 비율"을 재는 별도 층이다.
@@ -1031,7 +1071,8 @@ def start_evaluation(dataset_id: str, body: StartEvaluation) -> EvaluationSnapsh
                               judge_budget=body.judge_budget,
                               ranking_version=body.ranking_version,
                               random_sample_size=body.random_sample_size,
-                              random_sample_seed=body.random_sample_seed)
+                              random_sample_seed=body.random_sample_seed,
+                              groups=load_groups(dataset_id))
     save_snapshot(dataset_id, snapshot)
     return snapshot
 

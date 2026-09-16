@@ -113,6 +113,9 @@ def test_변환하면_YOLO_폴더와_출처_명세가_생긴다(tmp_path):
     rows = {r["image"]: r for r in manifest["rows"]}
     assert rows["a.jpg"]["log_token"] == "logA" and rows["b.jpg"]["camera"] == "CAM_BACK"
     assert json.loads((out / "nuimages_manifest.json").read_text(encoding="utf-8")) == manifest
+    groups = json.loads((out / "groups.json").read_text(encoding="utf-8"))
+    assert groups == {r["image"]: r["log_token"] for r in manifest["rows"]}
+    assert set(groups) == {"a.jpg", "b.jpg"}
 
 
 def test_이미_있는_출력_폴더에는_쓰지_않는다(tmp_path):

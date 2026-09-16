@@ -156,6 +156,11 @@ def convert(src_root: Path, version: str, out_dir: Path, mapping: dict[str, int]
     }
     (out_dir / "nuimages_manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    # 이미지 → 주행 기록. 평가 묶음이 재표집 단위로 얼린다(backend `groups.json`). 이웃 프레임을
+    # 독립 표본으로 세지 않게 한다.
+    (out_dir / "groups.json").write_text(
+        json.dumps({r["image"]: r["log_token"] for r in manifest_rows}, ensure_ascii=False, indent=2),
+        encoding="utf-8")
     return manifest
 
 

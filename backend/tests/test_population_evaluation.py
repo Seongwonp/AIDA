@@ -371,3 +371,83 @@ def test_판정_목록에_출처_표본_확신도가_새지_않는다(client, up
                "verdict", "unique_error_id"}
     for item in queue["candidates"]:
         assert set(item) == allowed
+
+
+# ── 연속 장면 묶음 (groups.json) ─────────────────────────────────────────────
+# 주행 영상은 이웃 프레임이 닮았다. 이미지 하나를 재표집 단위로 두면 독립 표본이 부풀어 구간이
+# 좁아진다. 데이터셋 폴더의 `groups.json`(이미지 → 묶음)을 묶음을 만들 때 얼린다.
+
+def write_groups(uploads, groups):
+    (uploads / DATASET / "groups.json").write_text(json.dumps(groups), encoding="utf-8")
+
+
+def test_묶음_표가_있으면_후보마다_묶음을_얼리고_내보낸다(client, uploads):
+    write(uploads, diagnosis())
+    write_groups(uploads, {"a.png": "log1", "b.png": "log1"})
+    snap = start(client)
+    assert {c["group_id"] for c in snap["candidates"]} == {"log1"}
+    body = export(client, "aida,all_label_iou", mode="candidate_generation_included").json()
+    assert {r["group_id"] for r in body["adjudications"]} == {"log1"}
+
+
+def test_내보내기_줄에_상자가_실린다(client, uploads):
+    """층별(상자 높이) 기술통계 재료. 판정이 끝난 뒤의 파일이라 가림과 무관하다."""
+    write(uploads, diagnosis())
+    start(client)
+    body = export(client, "aida,all_label_iou", mode="candidate_generation_included").json()
+    boxes = {(r["image"], r["label_index"]): r["box"] for r in body["adjudications"]}
+    assert boxes[("a.png", 1)] == [20.0, 20.0, 70.0, 70.0]
+
+
+def test_묶음_표에_없는_이미지가_있으면_얼리지_않는다(client, uploads):
+    write(uploads, diagnosis())
+    write_groups(uploads, {"a.png": "log1"})
+    r = client.post(f"/api/datasets/{DATASET}/evaluations", json={"evaluation_id": "e1"})
+    assert r.status_code == 400 and "b.png" in r.json()["detail"]
+
+
+@pytest.mark.parametrize("bad", [[], {}, {"a.png": ""}, {"a.png": 3}])
+def test_묶음_표_모양이_틀리면_얼리지_않는다(client, uploads, bad):
+    write(uploads, diagnosis())
+    write_groups(uploads, bad)
+    r = client.post(f"/api/datasets/{DATASET}/evaluations", json={"evaluation_id": "e1"})
+    assert r.status_code == 400
+
+
+def test_묶음_표가_없으면_지문이_예전_그대로고_있으면_바뀐다(uploads):
+    """옛 묶음(prelim1)의 판정이 떨어지지 않아야 하고, 묶음을 바꾸면 다른 묶음이어야 한다."""
+    old = E.build_snapshot(DATASET, "e1", diagnosis())
+    same = E.build_snapshot(DATASET, "e1", diagnosis(), groups=None)
+    grouped = E.build_snapshot(DATASET, "e1", diagnosis(), groups={"a.png": "g", "b.png": "g"})
+    split = E.build_snapshot(DATASET, "e1", diagnosis(), groups={"a.png": "g", "b.png": "h"})
+    assert old.candidate_set_hash == same.candidate_set_hash
+    assert len({old.candidate_set_hash, grouped.candidate_set_hash, split.candidate_set_hash}) == 3
+
+
+def test_판정_목록에_묶음이_새지_않는다(client, uploads):
+    write(uploads, diagnosis())
+    write_groups(uploads, {"a.png": "log1", "b.png": "log2"})
+    start(client)
+    queue = client.get(f"/api/datasets/{DATASET}/evaluations/e1/queue").json()
+    assert queue["candidates"] and all("group_id" not in item for item in queue["candidates"])
+
+
+def test_집계가_묶음_단위로_재표집한다(client, uploads):
+    """이미지 둘을 한 묶음으로 두면 재표집 단위는 하나다."""
+    write(uploads, diagnosis())
+    write_groups(uploads, {"a.png": "log1", "b.png": "log1"})
+    snap = start(client)
+    verdicts = [{"canonical_candidate_id": c["canonical_candidate_id"], "verdict": "miss"}
+                for c in snap["candidates"] if c["label_index"] is not None]
+    r = client.put(f"/api/datasets/{DATASET}/evaluations/e1/adjudications",
+                   json={"candidate_set_hash": snap["candidate_set_hash"],
+                         "adjudications": verdicts})
+    assert r.status_code == 200, r.text
+
+    from evaluation.bootstrap import paired_cluster_bootstrap
+    from evaluation.importer import load_export
+    body = export(client, "aida,all_label_iou", mode="candidate_generation_included").json()
+    adjudications, rankings = load_export(body, require_comparison=True)
+    result = paired_cluster_bootstrap(adjudications, rankings, "all_label_iou", "aida",
+                                      budget=1, iterations=10, require_same_candidates=False)
+    assert result["clusters"] == {DATASET: 1}

@@ -89,6 +89,18 @@ KITTI 25%·COCO 55%)과 나란히 적고, 사전 등록 전에 사용자가 이 
 - **작은 차:** 높이 10px 미만·20% 미만으로 보이는 객체는 nuImages가 라벨을 달지 않는다 — 누락 후보가 이런
   것이면 판정 지침에 넣는다.
 
+### 평가 경로에 더한 것 (2026-09-16, W5 조언 반영)
+
+- **주행 기록 묶음.** `nuimages_to_yolo.py`가 `groups.json`(이미지 → log)을 쓴다. 업로드 zip에 넣으면 평가
+  묶음이 후보마다 `group_id`를 얼리고(지문에 들어간다), 집계가 기록 단위로 재표집한다. 표에 없는 이미지가
+  있으면 묶음을 만들지 않는다.
+- **val 표집** `nuimages_eval_sample.py` — 사전 등록 파일이 커밋되어 있고 바뀌지 않았을 때만 val 표를 연다.
+  기록을 씨앗으로 섞고 기록마다 최대 `per_log`장. 요약에 사전 등록 커밋을 적는다.
+- **높이 층별 기술통계** `evaluation/strata.py` — 내보내기 줄의 `box`로 층을 정하고, 방법의 상위 N을 전체에서
+  고른 뒤 층으로 나눠 센다.
+- **아직 없는 것:** 제품 경로(업로드 → 진단)에서 nuImages 자를 고르는 길. 지금 진단은 `AIDA_DATASET`별
+  `runs*/clean/weights/best.pt`를 연다 — 자를 확정한 뒤 연결한다.
+
 ## 6. 판정 지침에 넣을 nuImages 라벨 규칙
 
 ([advice-w1-w5-2026-09-16.md](advice-w1-w5-2026-09-16.md) 5절, nuScenes devkit `instructions_nuimages.md`)
