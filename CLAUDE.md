@@ -109,6 +109,8 @@ typecheck·lint·build exit 0. **2026-09-15 노트북**(CI와 같은 의존성�
 1 건너뜀(`test_uploads_dir_agreement.py:100`, 외부 드라이브 없음) · experiment 442 통과, frontend
 미실행, CI 미확인. 실험 검사 중 `test_config.py` 하위 프로세스가 `faulthandler` "access violation"을
 찍지만 통과한다 — 원인 미확인(순서표 S4).
+**2026-09-16 데스크탑** experiment 442 · backend 282(건너뜀 0) · frontend 183 · typecheck·lint·build exit 0,
+CI는 `c1e3ac28`까지 전부 success, 보호 자료 해시 전부 일치 (W0 완료).
 
 프론트 변경 시 `frontend`에서 관련 검사와 `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`를 실행한다. 백엔드 변경 시 해당 가상환경으로 `backend`의 pytest를 실행한다. 화면 통합 검사 도구가 없으면 기존 구성을 확인한 뒤 필요한 최소 구성을 추가한다. 실제 브라우저 확인과 자동 테스트 결과를 구분한다.
 
