@@ -20,6 +20,7 @@
 """
 import pytest
 
+import evaluation.bootstrap as bootstrap_module
 from evaluation.bootstrap import paired_cluster_bootstrap
 from evaluation.paired import paired_difference
 from evaluation.schema import Adjudication, Ranking, ValidationError
@@ -85,3 +86,73 @@ def test_모집단이_달라도_없는_방법은_거부한다():
     with pytest.raises(ValidationError, match="같은 방법끼리"):
         paired_difference(facts, rankings, AIDA, AIDA, budget=1,
                           require_same_candidates=False)
+
+# ── 짝지음이 실제로 지켜지는가 ────────────────────────────────────────────────
+#
+# 위 세계는 이미지 둘의 효과가 **둘 다 +1**이라, 두 방법을 따로 재표집해도 같은 구간이
+# 나온다 — 짝지음을 고정하지 못한다. 아래는 이미지마다 **부호가 갈리는** 세계다.
+#
+# | 이미지 | 오류가 있는 쪽 | 검수량 2에서 |
+# |---|---|---|
+# | a.jpg | 규칙 밖 후보 y (hit), AIDA 후보 x는 miss | 같은 이미지를 두 번 뽑으면 wide +2, aida 0 |
+# | b.jpg | AIDA 후보 x (hit), 규칙 밖 y는 miss | 두 번 뽑으면 wide 0, aida +2 |
+#
+# 짝지어 뽑으면 한 번의 재표본에서 두 방법이 **같은 이미지 벌**을 보므로 차이는
+# {+2, 0, −2}만 나온다. 따로 뽑으면 ±1도 나온다 — 그 차이를 검사가 잡는다.
+
+
+def asymmetric_world():
+    xa = Adjudication("ds", "a.jpg", "x", "width", "miss", 0, None)
+    ya = Adjudication("ds", "a.jpg", "y", "", "hit", 1, "a.jpg/L1")
+    xb = Adjudication("ds", "b.jpg", "x", "width", "hit", 0, "b.jpg/L0")
+    yb = Adjudication("ds", "b.jpg", "y", "", "miss", 1, None)
+    facts = [xa, ya, xb, yb]
+    rankings = [
+        Ranking(AIDA, xa.key, 0.8), Ranking(AIDA, xb.key, 0.9),
+        Ranking(WIDE, ya.key, 0.95), Ranking(WIDE, yb.key, 0.90),
+        Ranking(WIDE, xa.key, 0.50), Ranking(WIDE, xb.key, 0.40),
+    ]
+    return facts, rankings
+
+
+def test_이미지마다_부호가_갈려도_관측_차이는_0이다():
+    facts, rankings = asymmetric_world()
+    got = paired_difference(facts, rankings, WIDE, AIDA, budget=2,
+                            require_same_candidates=False)
+    # 검수량 2: wide는 y(a) hit + y(b) miss = 1, aida는 x(b) hit + x(a) miss = 1
+    assert (got["method_unique_errors"], got["baseline_unique_errors"]) == (1, 1)
+    assert got["difference"] == 0
+
+
+def test_재표본마다_두_방법이_같은_이미지_벌을_본다(monkeypatch):
+    """모집단이 달라도 짝지음은 지켜져야 한다 — 두 방법이 **같은 재표본**을 보고,
+    각자 자기 모집단만 줄 세운다."""
+    seen = []
+    real = bootstrap_module._resample
+
+    def spy(*args, **kwargs):
+        drawn_facts, drawn_rankings = real(*args, **kwargs)
+        keys = {m: {r.candidate_key for r in drawn_rankings if r.method == m}
+                for m in (AIDA, WIDE)}
+        all_keys = {f.key for f in drawn_facts}
+        flagged = {f.key for f in drawn_facts if f.suspicion == "width"}
+        seen.append((keys[WIDE] == all_keys, keys[AIDA] == flagged, len(drawn_facts)))
+        return drawn_facts, drawn_rankings
+
+    monkeypatch.setattr(bootstrap_module, "_resample", spy)
+    facts, rankings = asymmetric_world()
+    paired_cluster_bootstrap(facts, rankings, WIDE, AIDA, budget=2, iterations=50,
+                             seed=42, require_same_candidates=False)
+    assert len(seen) == 50
+    assert all(wide_all for wide_all, _, _ in seen)      # 넓은 쪽은 뽑힌 후보 전부를 본다
+    assert all(aida_flagged for _, aida_flagged, _ in seen)   # AIDA는 자기 후보만
+    assert all(n == 4 for _, _, n in seen)               # 이미지 2개 × 후보 2건
+
+
+def test_짝지어_뽑으면_홀수_차이가_안_나온다():
+    """따로 뽑으면 ±1이 섞인다. 짝지어 뽑으면 {+2, 0, −2}뿐이라 구간이 [−2, 2]다."""
+    facts, rankings = asymmetric_world()
+    got = paired_cluster_bootstrap(facts, rankings, WIDE, AIDA, budget=2,
+                                   iterations=400, seed=42, require_same_candidates=False)
+    assert got["observed_difference"] == 0
+    assert (got["ci_low"], got["ci_high"]) == (-2.0, 2.0)
