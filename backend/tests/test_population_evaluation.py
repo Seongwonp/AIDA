@@ -356,3 +356,18 @@ def test_모집단이_다른_두_방법을_집계가_그대로_센다(client, up
     adjudications, rankings = load_export(body, require_comparison=True)
     assert summarise(adjudications, rankings, "all_label_iou", budget=1).unique_error_yield == 1
     assert summarise(adjudications, rankings, "aida", budget=1).unique_error_yield == 0
+
+
+# ── 가림 ─────────────────────────────────────────────────────────────────────
+
+def test_판정_목록에_출처_표본_확신도가_새지_않는다(client, uploads):
+    """`source`가 보이면 판정자가 AIDA 후보인지 알고, `confidence`가 보이면 누락 층 기준선의
+    점수가 보인다. 판정 목록 한 줄에 실리는 필드를 **이름으로** 고정한다."""
+    write(uploads, diagnosis())
+    start(client, judge_budget=1, random_sample_size=1, random_sample_seed=7)
+    queue = client.get(f"/api/datasets/{DATASET}/evaluations/e1/queue").json()
+    assert queue["candidates"]
+    allowed = {"canonical_candidate_id", "image", "label_index", "box", "class_name",
+               "verdict", "unique_error_id"}
+    for item in queue["candidates"]:
+        assert set(item) == allowed
