@@ -3,7 +3,8 @@
   "purpose": "nuImages train을 기록 단위로 자 학습용·학습 검증용·적합도 확인용으로 나눈 기록. val·test는 읽지 않았다.",
   "archives_sha256": {
     "nuimages-v1.0-all-metadata.tgz": "5104b780d7365c5d86d58d2423de9fefbc0c901402d0a4777cb30c9337649525",
-    "nuimages-v1.0-mini.tgz": "9f5da97c9a820785487daea1c0f156ae18ddf2ac7e90245fa6d502b400a732b3"
+    "nuimages-v1.0-mini.tgz": "9f5da97c9a820785487daea1c0f156ae18ddf2ac7e90245fa6d502b400a732b3",
+    "nuimages-v1.0-all-samples.tgz": "f25721cdbf2160bd175b8e69c5e4581398b4803fa795d4e873ab01aad7d40cbd"
   },
   "license_file_in_metadata": "nuScenes, nuPlan, nuImages, and nuReality Terms of Use — Non-Commercial Use, last updated Nov 16, 2021 (CC BY-NC-SA 4.0 + Dataset Terms). 앞서 확인한 웹 원문과 같다.",
   "command": "nuimages_split.py --version v1.0-train --fit-check-images 500 --ruler-val-images 300 --ruler-train-images 3200 --seed 20260916",
@@ -14,15 +15,28 @@
     "logs_available": 350,
     "fit_check_images": 620,
     "fit_check_logs": 7,
-    "fit_check_by_location": {"singapore-onenorth": 598, "boston-seaport": 22},
+    "fit_check_by_location": {
+      "singapore-onenorth": 598,
+      "boston-seaport": 22
+    },
     "ruler_val_images": 357,
     "ruler_val_logs": 3,
     "ruler_train_images": 3200,
     "ruler_train_logs": 303,
-    "ruler_train_by_location": {"singapore-onenorth": 2391, "boston-seaport": 761, "singapore-queenstown": 48},
+    "ruler_train_by_location": {
+      "singapore-onenorth": 2391,
+      "boston-seaport": 761,
+      "singapore-queenstown": 48
+    },
     "ruler_train_shortfall": 0,
-    "ruler_train_by_camera": {"CAM_FRONT_LEFT": 506, "CAM_FRONT_RIGHT": 517, "CAM_BACK": 554,
-                              "CAM_BACK_RIGHT": 477, "CAM_BACK_LEFT": 506, "CAM_FRONT": 640},
+    "ruler_train_by_camera": {
+      "CAM_FRONT_LEFT": 506,
+      "CAM_FRONT_RIGHT": 517,
+      "CAM_BACK": 554,
+      "CAM_BACK_RIGHT": 477,
+      "CAM_BACK_LEFT": 506,
+      "CAM_FRONT": 640
+    },
     "version": "v1.0-train"
   },
   "outputs_sha256": {
@@ -34,5 +48,36 @@
   "notes": [
     "기록을 통째로 모으므로 목표(500·300)를 넘었다 — 기록 하나가 키프레임 약 90~190장.",
     "fit_check는 기록 7개뿐이고 96%가 singapore-onenorth다. 적합도 수치를 지역 전체로 일반화하지 않는다. 이 치우침을 보고 분할을 다시 뽑지 않는다(씨앗 고르기 금지)."
-  ]
+  ],
+  "samples_extraction": {
+    "archive_bytes": 16381401772,
+    "members_read": 93484,
+    "read_to_end_without_error": true,
+    "extracted": "분할에 든 train 키프레임 4,177장만. val·test 이미지는 풀지 않았다.",
+    "missing": 0
+  },
+  "yolo_conversion": {
+    "category": "vehicle.car -> Car",
+    "fit_check": {
+      "images": 620,
+      "car_boxes": 1728,
+      "other_category": 3891,
+      "clipped": 0,
+      "degenerate": 0
+    },
+    "ruler_val": {
+      "images": 357,
+      "car_boxes": 782,
+      "other_category": 3724,
+      "clipped": 0,
+      "degenerate": 0
+    },
+    "ruler_train": {
+      "images": 3200,
+      "car_boxes": 9560,
+      "other_category": 16960,
+      "clipped": 1,
+      "degenerate": 0
+    }
+  }
 }
