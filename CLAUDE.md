@@ -105,7 +105,7 @@ Python 환경은 **둘로 나뉘어 있다.** 섞으면 없는 패키지를 찾�
 경로나 설치 여부를 추측하지 않고 먼저 확인한다. **문서에 적힌 검사 수를 이번
 실행 결과로 보고하지 않는다** — 직접 돌려 보고 그 숫자를 쓴다.
 
-최근 기록: **2026-09-16 데스크탑** experiment 451 · backend 300(건너뜀 0), 프론트 미변경 · 그 전 **2026-09-14** experiment 442 · backend 282(건너뜀 0) · frontend 183 ·
+최근 기록: **2026-09-16 데스크탑** experiment 451 · backend 302(건너뜀 0), 프론트 미변경(직전 183) · 그 전 **2026-09-14** experiment 442 · backend 282(건너뜀 0) · frontend 183 ·
 typecheck·lint·build exit 0. **2026-09-15 노트북**(CI와 같은 의존성만 깐 임시 환경) backend 281 통과·
 1 건너뜀(`test_uploads_dir_agreement.py:100`, 외부 드라이브 없음) · experiment 442 통과, frontend
 미실행, CI 미확인. 실험 검사 중 `test_config.py` 하위 프로세스가 `faulthandler` "access violation"을
