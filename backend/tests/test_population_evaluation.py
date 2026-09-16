@@ -34,7 +34,7 @@ DATASET = "0123456789ab"
 def candidate(rank, image, label_index, suspicion, severity, label_iou=None, box=None):
     row = {"rank": rank, "image": image, "label_index": label_index,
            "suspicion": suspicion, "severity": severity, "detail": "",
-           "box": box or [10.0, 10.0, 60.0, 60.0]}
+           "box": box or [10.0, 10.0, 60.0, 60.0], "class_name": "Car"}
     if label_iou is not None:
         row["label_iou"] = label_iou
     return row
@@ -219,6 +219,44 @@ def test_표본이_모집단보다_크면_거부한다(client, uploads):
                     json={"evaluation_id": "e2", "random_sample_size": 99,
                           "random_sample_seed": 1})
     assert r.status_code == 400
+
+
+def test_상자가_같은_미매칭_예측이_둘이면_얼리지_않는다(client, uploads):
+    """판정 화면은 이미지와 상자만 보여준다. 상자가 같으면 판정자가 둘을 구분할 수 없고,
+    후보 이름에도 클래스가 없다(옛 지문과 호환되어야 한다). 조용히 하나를 덮어쓰면
+    그 후보의 확신도와 기준선 점수가 다른 예측의 것이 된다."""
+    data = diagnosis()
+    data["unmatched_predictions"] = UNMATCHED + [
+        {"image": "a.png", "label_index": None, "box": [50.0, 50.0, 60.0, 60.0],
+         "confidence": 0.40, "covered_ratio": 0.0, "class_name": "Pedestrian"}]
+    write(uploads, data)
+    r = client.post(f"/api/datasets/{DATASET}/evaluations", json={"evaluation_id": "e1"})
+    assert r.status_code == 409
+    detail = r.json()["detail"]
+    assert "a.png" in detail and "상자" in detail
+
+
+def test_무작위_표본은_방법의_순서나_예산을_바꾸지_않는다(uploads):
+    """표본은 규칙 밖 라벨에서 뽑고, 그 라벨은 `all_label_iou`의 모집단이기도 하다.
+    **표본에서 빼면 그 방법의 순서가 표본 추출에 따라 흔들린다.** 규칙은 "표본이 방법의
+    예산을 쓰지 않는다"이지 "표본을 순위에서 뺀다"가 아니다."""
+    plain = E.build_snapshot(DATASET, "e1", diagnosis(), judge_budget=1)
+    sampled = E.build_snapshot(DATASET, "e2", diagnosis(), judge_budget=1,
+                               random_sample_size=2, random_sample_seed=7)
+
+    def tops(snap):
+        labelled = [c for c in snap.candidates if c.label_index is not None]
+        return {m: E._top(labelled, E.method_order(labelled, m), 1)
+                for m in ("aida", "iou_baseline", "all_label_iou")}
+
+    assert tops(plain) == tops(sampled)          # 순서도 예산 안 후보도 그대로
+    # 규칙 밖 라벨 둘을 표본으로 뽑았다. a.L1은 이미 `all_label_iou` 상위 1이라 판정
+    # 대상이었고, b.L1(1 − IoU 0.05)만 새로 더해진다 — 예산이 아니라 표본으로 들어온다.
+    marked = {c.canonical_candidate_id for c in sampled.candidates if c.random_sample}
+    assert len(marked) == 2
+    assert marked <= E.judge_ids(sampled)
+    assert E.judge_ids(sampled) - E.judge_ids(plain) == {
+        E.canonical_id("b.png", 1, "", [30.0, 30.0, 80.0, 80.0])}
 
 
 # ── 내보내기 ─────────────────────────────────────────────────────────────────

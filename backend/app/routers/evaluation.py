@@ -322,12 +322,23 @@ def _population_candidates(candidates: list[EvaluationCandidate],
             suspicion="", box=row.get("box"), class_name=row.get("class_name"),
             scores={ALL_LABEL_IOU: score}, source=SOURCE_LABEL))
 
+    seen_boxes: set[tuple] = set()
     for row in predictions or []:
         value = row.get("confidence")
         if value is None:
             continue
         confidence = round(float(value), 4)
-        found = by_box.get(_box_key(row.get("image", ""), row.get("box")))
+        key = _box_key(row.get("image", ""), row.get("box"))
+        if key in seen_boxes:
+            # 판정 화면은 이미지와 상자만 보여주고 후보 이름에도 클래스가 없다(옛 지문과
+            # 호환되어야 한다). 조용히 하나를 덮어쓰면 그 후보의 확신도와 기준선 점수가
+            # 다른 예측의 것이 되고, 새로 만들면 판정자가 구분할 수 없는 후보가 둘 생긴다.
+            raise HTTPException(
+                409, f"같은 이미지에서 상자가 같은 미매칭 예측이 둘 이상입니다 "
+                     f"({row.get('image', '')} {row.get('box')}). 판정자가 둘을 구분할 "
+                     "수 없어 얼리지 않습니다 — 진단 결과를 확인하세요.")
+        seen_boxes.add(key)
+        found = by_box.get(key)
         if found is not None:
             found.scores[UNMATCHED_CONFIDENCE] = confidence
             found.confidence = confidence
