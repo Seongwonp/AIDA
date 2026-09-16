@@ -19,7 +19,8 @@ from ultralytics import YOLO
 
 import config
 from label_diagnosis import (
-    match_boxes,Box, BoxFinding, diagnose_image, order_basis, order_risk, present_types,
+    match_boxes,Box, BoxFinding, diagnose_image, label_rows, unmatched_prediction_rows,
+    order_basis, order_risk, present_types,
     rank_findings, ranking_metadata, diagnosis_filename, refuse_cross_version_overwrite,
     RANKING_V1, RANKING_VERSIONS, RankingError, review_value, summarize, candidate_rows)
 
@@ -86,8 +87,14 @@ def resolve_dataset(args) -> tuple[Path, Path, str]:
 
 
 def run(images_dir: Path, labels_dir: Path, limit: int | None = None,
-        weights: Path | None = None) -> tuple[list[BoxFinding], int, dict]:
-    """weights를 주면 그 모델을 자로 쓴다. 안 주면 clean 모델."""
+        weights: Path | None = None, collect_population: bool = False):
+    """weights를 주면 그 모델을 자로 쓴다. 안 주면 clean 모델.
+
+    `collect_population=True`면 **규칙 밖까지의 모집단**을 함께 모아 4번째 값으로
+    돌려준다(모든 기존 라벨, 필터 전 미매칭 예측 — docs/next-work-2026-09-15.md W3).
+    기본값이 False인 것은 이 함수를 쓰는 측정 스크립트가 여럿이라 반환 모양을 바꾸지
+    않으려는 것이다.
+    """
     weights = weights or CLEAN_WEIGHTS
     if not weights.exists():
         raise RuntimeError(f"{weights} 없음 — 해당 조건을 먼저 학습하세요")
@@ -118,6 +125,7 @@ def run(images_dir: Path, labels_dir: Path, limit: int | None = None,
               f"위치만으로 진단합니다. 클래스 오기입은 탐지되지 않습니다.")
 
     findings: list[BoxFinding] = []
+    population: dict[str, list[dict]] = {"all_labels": [], "unmatched_predictions": []}
     total_labels = 0
     # 기준 모델 적합도. 라벨이 맞다고 가정하지 않는 값들만 모은다.
     fit: dict = {"matched_labels": 0, "predictions": 0, "confidences": []}
@@ -170,12 +178,28 @@ def run(images_dir: Path, labels_dir: Path, limit: int | None = None,
             fit["predictions"] += len(predictions)
             fit["confidences"].extend(confs)
 
+            # 규칙에 걸린 후보 **밖**까지. 클래스 인자는 진단과 같은 것을 준다 —
+            # 다르면 짝짓기가 달라져 두 목록이 같은 세계를 말하지 않는다.
+            if collect_population:
+                population["all_labels"].extend(label_rows(
+                    path.name, predictions, labels,
+                    label_classes=label_classes if class_aware else None,
+                    class_names=config.CLASS_NAMES if class_aware else None))
+                population["unmatched_predictions"].extend(unmatched_prediction_rows(
+                    path.name, predictions, confs, labels,
+                    pred_classes=pred_classes if class_aware else None,
+                    label_classes=label_classes if class_aware else None,
+                    class_names=config.CLASS_NAMES if class_aware else None))
+
+    if collect_population:
+        return findings, total_labels, fit, population
     return findings, total_labels, fit
 
 
 def build_result(name: str, findings: list[BoxFinding], total_labels: int,
                  top_n: int, fit: dict | None = None,
-                 ranking: str = RANKING_V1) -> dict:
+                 ranking: str = RANKING_V1,
+                 population: dict | None = None) -> dict:
     # 순위 버전 (docs/adr-ranking-separation.md).
     #
     # v1 — 2패스 구조: 이미지별 진단은 데이터셋 전체를 못 보므로 보수적인 신뢰도로
@@ -241,6 +265,11 @@ def build_result(name: str, findings: list[BoxFinding], total_labels: int,
         # 잘리기 전 전부. 평가는 이것을 얼린다 — `review_queue`만 얼리면 AIDA
         # 순위 상위 N건 안에서만 기준선과 견주게 되어 AIDA에 유리하게 휜다.
         "all_candidates": candidate_rows(ranked, config.CLASS_NAMES, ranking),
+        # 규칙 밖까지의 모집단. **없으면 키 자체를 넣지 않는다** — 옛 결과와 구분되어야
+        # 후보 생성 비교(Q-A)·누락 기준선(Q-C)을 못 돌린다고 말할 수 있다.
+        **({"all_labels": population["all_labels"],
+            "unmatched_predictions": population["unmatched_predictions"]}
+           if population else {}),
         "caveat": (
             "기준 모델(clean)의 예측과 라벨을 대조한 결과입니다. 모델 예측 자체도 "
             "완벽하지 않으므로 확정 오류가 아니라 재검수 우선순위로 활용하세요."
@@ -274,8 +303,10 @@ def main():
             raise SystemExit(str(exc)) from exc
 
     images_dir, labels_dir, name = resolve_dataset(args)
-    findings, total_labels, fit = run(images_dir, labels_dir, args.limit)
-    result = build_result(name, findings, total_labels, args.top_n, fit, ranking=args.ranking)
+    findings, total_labels, fit, population = run(images_dir, labels_dir, args.limit,
+                                                  collect_population=True)
+    result = build_result(name, findings, total_labels, args.top_n, fit,
+                          ranking=args.ranking, population=population)
 
     if out_path:
         out_path.parent.mkdir(parents=True, exist_ok=True)

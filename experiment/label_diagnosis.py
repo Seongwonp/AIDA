@@ -588,6 +588,77 @@ def candidate_rows(ranked: list[BoxFinding], class_names: list[str],
     ]
 
 
+# ── 비교 모집단 — 규칙 밖까지 (docs/next-work-2026-09-15.md W3) ───────────────
+#
+# AIDA 규칙에 걸린 후보만으로는 두 질문을 못 잰다.
+#
+#   Q-A 후보 생성 — 규칙이 **놓친** 라벨에 오류가 얼마나 있나
+#   Q-C 누락 필터 — 규칙이 **버린** 예측 중에 진짜 누락이 얼마나 있나
+#
+# 그래서 진단이 후보 목록과 별개로 모집단을 그대로 적는다. **여기서 줄 세우지
+# 않는다** — 순서는 평가 쪽 방법(`all_label_iou` 등)이 정한다.
+
+
+def _class_name(class_names, class_id):
+    if class_names is None or class_id is None:
+        return None
+    return class_names[class_id] if 0 <= class_id < len(class_names) else None
+
+
+def _at(values, i):
+    return values[i] if values is not None and i < len(values) else None
+
+
+def label_rows(image: str, predictions: list[Box], labels: list[Box],
+               label_classes: list[int] | None = None,
+               class_names: list[str] | None = None) -> list[dict]:
+    """기존 라벨 **전부**, 규칙에 걸렸는지와 무관하게 한 줄씩.
+
+    `label_iou`는 후보에 붙는 값과 **같은 계산**이다(가장 많이 겹치는 예측과의 IoU,
+    소수점 4자리). 다르면 같은 라벨이 방법마다 다른 점수를 받아 비교가 무의미해진다.
+    """
+    rows = []
+    for i, label in enumerate(labels):
+        best = max((iou(p, label) for p in predictions), default=0.0)
+        rows.append({
+            "image": image,
+            "label_index": i,
+            "box": [round(v, 1) for v in label],
+            "label_iou": round(best, 4),
+            "class_name": _class_name(class_names, _at(label_classes, i)),
+        })
+    return rows
+
+
+def unmatched_prediction_rows(image: str, predictions: list[Box],
+                              confidences: list[float], labels: list[Box],
+                              pred_classes: list[int] | None = None,
+                              label_classes: list[int] | None = None,
+                              class_names: list[str] | None = None) -> list[dict]:
+    """라벨과 짝이 안 된 예측 **전부** — AIDA 누락 필터 전이다.
+
+    AIDA는 이 중에서 확신도 `MISSING_CONFIDENCE_THRESHOLD` 이상이고 기존 라벨에
+    `MISSING_MAX_COVERED_RATIO`를 넘게 삼켜지지 않은 것만 누락 후보로 올린다. 그 두
+    문턱이 무엇을 더하는지 재려면 **버린 것도 남아야 한다.** 여기서는 문턱을 적용하지
+    않고 잰 값(`confidence`·`covered_ratio`)을 그대로 적는다.
+
+    상자는 후보와 **같은 반올림**이라 두 목록을 상자로 맞댈 수 있다.
+    """
+    _, unmatched, _ = match_boxes(predictions, labels, pred_classes=pred_classes,
+                                  label_classes=label_classes)
+    return [
+        {
+            "image": image,
+            "label_index": None,
+            "box": [round(v, 1) for v in predictions[pi]],
+            "confidence": round(float(_at(confidences, pi) or 0.0), 4),
+            "covered_ratio": round(covered_ratio(predictions[pi], labels), 4),
+            "class_name": _class_name(class_names, _at(pred_classes, pi)),
+        }
+        for pi in unmatched
+    ]
+
+
 def rescore(findings: list[BoxFinding], summary: dict) -> list[BoxFinding]:
     """데이터셋 전체를 본 뒤 severity를 다시 매긴다.
 
