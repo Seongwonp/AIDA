@@ -40,7 +40,7 @@ from app.models import (
 )
 from app.ranking import (RANKING_V1, RANKING_VERSIONS, RankingVersionError,
                          diagnosis_filename, legacy_metadata, ranking_version_of,
-                         require_version)
+                         require_version, ruler_filename)
 from app.routers.report import TYPE_LABELS
 
 router = APIRouter(prefix="/api/datasets", tags=["upload"])
@@ -808,23 +808,37 @@ def diagnose_dataset(dataset_id: str) -> UploadDiagnosisResult:
     return _load_diagnosis_json(dataset_id)
 
 
-RULER_SIDECAR = "ruler.json"
+# v1의 자 기록 파일 이름. 다른 순위 버전은 `ranking.ruler_filename`이 정한다.
+RULER_SIDECAR = ruler_filename(RANKING_V1)
 
 
-def _save_ruler_sidecar(dataset_id: str, ruler: RulerInfo) -> None:
+def _save_ruler_sidecar(dataset_id: str, ruler: RulerInfo,
+                        ranking: str = RANKING_V1) -> None:
     """어느 자로 쟀는지 결과 옆에 남긴다.
 
     label_diagnosis.json은 실험 스크립트가 쓰는 것이라 프로파일 선택을
     모른다. 그렇다고 진단 응답에만 담으면, 나중에 GET으로 결과를 다시
     불러왔을 때 자가 사라진다 — 리포트를 나중에 여는 게 정상 사용이므로
     파일로 남겨야 한다.
+
+    **순위 버전마다 따로 남긴다.** 진단 결과가 버전마다 따로인데 자 기록이 하나면, 다른
+    프로파일로 v2를 돌린 뒤 v1 결과에 v2의 자가 붙는다 — 그 상태로 v1을 얼리면 다른 자로
+    잰 후보라고 지문에 남는다.
     """
-    (UPLOADS_DIR / dataset_id / RULER_SIDECAR).write_text(
+    (UPLOADS_DIR / dataset_id / ruler_filename(ranking)).write_text(
         ruler.model_dump_json(indent=2), encoding="utf-8")
 
 
-def _load_ruler_sidecar(dataset_id: str) -> RulerInfo | None:
-    path = UPLOADS_DIR / dataset_id / RULER_SIDECAR
+def _load_ruler_sidecar(dataset_id: str, ranking: str = RANKING_V1) -> RulerInfo | None:
+    """그 순위 버전의 자 기록. **다른 버전의 기록을 빌려 쓰지 않는다.**
+
+    이 수정 전에 만든 v2 결과에는 자기 기록이 없다. 공유 파일(`ruler.json`)은 어느 실행의
+    것인지 모르므로 모른다(None)고 말한다 — 틀린 자를 붙이는 것보다 낫다.
+    """
+    try:
+        path = UPLOADS_DIR / dataset_id / ruler_filename(ranking)
+    except RankingVersionError:
+        return None
     if not path.exists():
         return None                    # 이 기능 전에 만든 결과 — 자를 모른다
     try:
@@ -833,7 +847,8 @@ def _load_ruler_sidecar(dataset_id: str) -> RulerInfo | None:
         return None
 
 
-def _ruler_fit_with_ceiling(dataset_id: str, summary: dict) -> RulerFit | None:
+def _ruler_fit_with_ceiling(dataset_id: str, summary: dict,
+                            ranking: str = RANKING_V1) -> RulerFit | None:
     """적합도에 그 자의 천장을 붙인다.
 
     천장은 진단 스크립트가 모른다 — 그건 자의 클래스 수와 업로드된 라벨 구성을
@@ -844,7 +859,7 @@ def _ruler_fit_with_ceiling(dataset_id: str, summary: dict) -> RulerFit | None:
     if not raw:
         return None
     fit = RulerFit(**raw)
-    ruler = _load_ruler_sidecar(dataset_id)
+    ruler = _load_ruler_sidecar(dataset_id, ranking)
     if ruler and ruler.classes:
         fit.coverage_ceiling = _coverage_ceiling(
             UPLOADS_DIR / dataset_id, len(ruler.classes))
@@ -917,8 +932,8 @@ def _load_label_diagnosis_json(dataset_id: str,
             for item in data["review_queue"]
         ],
         robustness=_robustness(summary["by_type"]),
-        ruler=_load_ruler_sidecar(dataset_id),
-        ruler_fit=_ruler_fit_with_ceiling(dataset_id, summary),
+        ruler=_load_ruler_sidecar(dataset_id, ranking),
+        ruler_fit=_ruler_fit_with_ceiling(dataset_id, summary, ranking),
         ranking=ranking_info,
         systematic_types=summary.get("systematic_types", []),
         caveat=data["caveat"] + (
@@ -949,7 +964,7 @@ def diagnose_dataset_labels(dataset_id: str, profile: str | None = None,
         raise HTTPException(400, str(exc)) from exc
     # 자 정보를 먼저 확정해 남긴다 — 진단이 끝난 뒤에는 어떤 프로파일로
     # 돌렸는지 알 길이 없다.
-    _save_ruler_sidecar(dataset_id, _ruler_info(profile, dataset_dir))
+    _save_ruler_sidecar(dataset_id, _ruler_info(profile, dataset_dir), ranking)
     # 버전은 늘 명시한다 — 기본값이 스크립트와 여기서 따로 놀지 않게. 결과는 버전마다
     # 다른 파일에 쓰이고, 스크립트는 다른 버전의 결과가 있는 자리에 쓰지 않는다.
     _run_experiment_script(dataset_id, "diagnose_labels.py",

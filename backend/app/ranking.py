@@ -33,6 +33,16 @@ def diagnosis_filename(version: str) -> str:
     return "label_diagnosis.json" if version == RANKING_V1 else f"label_diagnosis.{version}.json"
 
 
+def ruler_filename(version: str) -> str:
+    """버전마다 다른 자 기록 파일. v1은 옛 이름(`ruler.json`) 그대로다.
+
+    진단 결과가 버전마다 따로인데 자 기록만 데이터셋에 하나면, 다른 프로파일로 v2를 돌린
+    뒤 v1 결과를 열 때 **v2의 자가 붙어 나온다**(docs/next-work-2026-09-15.md S3).
+    """
+    require_version(version)
+    return "ruler.json" if version == RANKING_V1 else f"ruler.{version}.json"
+
+
 def ranking_version_of(data) -> str:
     """진단 결과가 어느 버전으로 만들어졌나. 기록이 없으면 옛 v1."""
     if not isinstance(data, dict):

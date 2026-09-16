@@ -1026,7 +1026,7 @@ def start_evaluation(dataset_id: str, body: StartEvaluation) -> EvaluationSnapsh
     from .upload import _load_ruler_sidecar
     diagnosis = load_label_diagnosis(dataset_id, body.ranking_version)
     snapshot = build_snapshot(dataset_id, body.evaluation_id, diagnosis,
-                              ruler=_load_ruler_sidecar(dataset_id),
+                              ruler=_load_ruler_sidecar(dataset_id, body.ranking_version),
                               shuffle_seed=body.shuffle_seed,
                               judge_budget=body.judge_budget,
                               ranking_version=body.ranking_version,
