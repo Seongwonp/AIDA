@@ -1,0 +1,32 @@
+{
+  "name": "w4_load_check",
+  "label": "1602건 묶음(드라이런 진단)에서 판정 API 크기·시간. 데스크탑 한 대, TestClient(네트워크 없음) 참고값",
+  "ran_at": "2026-09-16",
+  "snapshot": {
+    "candidates": 1602,
+    "file_bytes": 728477,
+    "start_ms": 190
+  },
+  "queue": {
+    "items": 388,
+    "response_bytes": 67180,
+    "ms": 22
+  },
+  "put_adjudications": {
+    "final_items": 388,
+    "final_request_bytes": 26493,
+    "ms_first": 15,
+    "ms_last": 18,
+    "ms_median": 15
+  },
+  "activity_post_12_events_ms": 12,
+  "export_generation_included": {
+    "response_bytes": 437043,
+    "ms": 25
+  },
+  "not_measured": [
+    "실제 브라우저 렌더링",
+    "이미지 로드",
+    "네트워크 지연"
+  ]
+}
