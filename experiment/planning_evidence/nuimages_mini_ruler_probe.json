@@ -1,0 +1,23 @@
+{
+  "name": "nuimages_mini_ruler_probe",
+  "label": "nuImages v1.0-mini(50장, train 소속 — 개발용)에서 기존 자의 적합도만 잰 참고값. 표본이 작다. 평가 데이터(val)는 보지 않았다.",
+  "ran_at": "2026-09-16",
+  "archive": {"file": "nuimages-v1.0-mini.tgz", "bytes": 117873411,
+              "sha256": "9f5da97c9a820785487daea1c0f156ae18ddf2ac7e90245fa6d502b400a732b3",
+              "source": "nuscenes.org nuImages download, Asia mirror", "terms": "nuScenes Terms of Use (non-commercial), last updated 2021-11-16"},
+  "mini": {"keyframes": 50, "resolution": "1600x900", "cameras": 6, "car_labels": 122,
+           "locations": {"singapore-onenorth": 36, "boston-seaport": 13, "singapore-queenstown": 1}},
+  "conversion": {"category_mapping": {"vehicle.car": 0}, "kept": 122, "other_category": 384, "clipped": 0, "degenerate": 0},
+  "probes": [
+    {"ruler": "runs/clean (KITTI Car)", "imgsz": 640, "matched_label_ratio": 0.254, "predictions": 38, "labels_with_no_overlapping_prediction": 72,
+     "matched_by_box_height": {"0-30": 0.03, "30-60": 0.14, "60-120": 0.45, "120-900": 0.58}},
+    {"ruler": "runs/clean (KITTI Car)", "imgsz": 1280, "matched_label_ratio": 0.213, "predictions": 33, "labels_with_no_overlapping_prediction": 80,
+     "matched_by_box_height": {"0-30": 0.10, "30-60": 0.21, "60-120": 0.42, "120-900": 0.11}},
+    {"ruler": "runs_coco/clean (COCO Car)", "imgsz": 640, "matched_label_ratio": 0.451, "predictions": 103, "labels_with_no_overlapping_prediction": 40,
+     "matched_by_box_height": {"0-30": 0.14, "30-60": 0.33, "60-120": 0.74, "120-900": 0.84}},
+    {"ruler": "runs_coco/clean (COCO Car)", "imgsz": 1280, "matched_label_ratio": 0.549, "predictions": 128, "labels_with_no_overlapping_prediction": 35,
+     "matched_by_box_height": {"0-30": 0.31, "30-60": 0.49, "60-120": 0.74, "120-900": 0.84}}
+  ],
+  "prior_training_reference": {"gpu": "RTX 3050 6GB", "runs_mc_nested_n3200/clean": "50 epochs, imgsz 640, 약 2015초(34분)"},
+  "note": "라벨을 짚은 비율이 낮으면 all_label_iou 상위가 '자가 못 본 멀쩡한 라벨'로 채워져 Q-A가 자의 맹점을 재게 된다."
+}
