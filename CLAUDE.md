@@ -7,7 +7,10 @@
 > [`docs/next-work-2026-09-15.md`](docs/next-work-2026-09-15.md).
 >
 > **W1은 정했다 — nuImages(비상업 연구·포트폴리오).** train 분할·Car 자 `car_v1` 학습·적합도 확인까지
-> 끝났다(fit_check 69.9%, 작은 차 맹점 — [`docs/nuimages-data-plan.md`](docs/nuimages-data-plan.md) 5절).
+> 끝났다(fit_check 69.9%, 작은 차 맹점 — [`docs/nuimages-data-plan.md`](docs/nuimages-data-plan.md) 5절). 100에폭 재학습
+> `car_v1_e100`도 끝났다(ruler_val fitness 0.504→0.516, fit_check 71.6%) — **어느 자를 쓸지는 사용자 결정.**
+> W5 조언([`docs/advice-w5-2026-09-16.md`](docs/advice-w5-2026-09-16.md))으로 기록 단위 묶음(`groups.json`)·높이
+> 층별 집계·사전 등록 뒤에만 도는 val 표집을 구현했다. **남은 구현: 업로드 진단에서 nuImages 자를 고르는 길.**
 > **지금 막힌 곳은 W5 사전 등록(사용자 결정)이다.** val은 그 커밋 전까지 열지 않는다.
 > W2~W4(1차 질문 선택·최소 구현·경로 드라이런)는 2026-09-16에 끝났다. 같은 날 저녁에 결정이
 > 필요 없는 일을 마쳤다 — **자 기록 버전별 분리(S3), access violation 조사(S4), 판정 API 부하 측정,
@@ -112,7 +115,7 @@ Python 환경은 **둘로 나뉘어 있다.** 섞으면 없는 패키지를 찾�
 경로나 설치 여부를 추측하지 않고 먼저 확인한다. **문서에 적힌 검사 수를 이번
 실행 결과로 보고하지 않는다** — 직접 돌려 보고 그 숫자를 쓴다.
 
-최근 기록: **2026-09-16 저녁 데스크탑** backend **308** 통과(건너뜀 0) · experiment **459** 통과 ·
+최근 기록: **2026-09-16 밤 데스크탑** backend **318** · experiment **500** 통과(프론트 미변경). 그 전 **저녁** backend **308** 통과(건너뜀 0) · experiment **459** 통과 ·
 frontend **183** 통과 · typecheck·lint·build exit 0 · 보호 자료 해시 전부 일치.
 노트북(CI와 같은 의존성만 깐 환경)에서는 backend의 외부 드라이브 검사 1건
 (`test_uploads_dir_agreement.py:100`)이 건너뛰어진다.

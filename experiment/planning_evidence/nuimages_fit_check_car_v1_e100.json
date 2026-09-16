@@ -1,0 +1,116 @@
+{
+  "name": "nuimages_fit_check_car_v1_e100",
+  "ran_at": "2026-09-16",
+  "label": "100에폭 재학습 자를 같은 fit_check(620장, 기록 7개, 96% singapore-onenorth)에서 잰 개발용 수치. 50에폭 자 결과는 nuimages_fit_check_car_v1.json. 통과 기준·자 선택은 정하지 않았다. val은 보지 않았다.",
+  "training": {
+    "run": "runs_nuimages/car_v1_e100 (git 제외, 공개하지 않음)",
+    "base": "yolov8n.pt",
+    "train_images": 3200,
+    "val_images": 357,
+    "epochs": 100,
+    "imgsz": 640,
+    "batch": 16,
+    "seed": 42,
+    "seconds": 4093,
+    "gpu": "RTX 3050 6GB",
+    "best_pt_epoch_by_ruler_val_fitness": 93,
+    "ruler_val_best_epoch": {
+      "precision": 0.835,
+      "recall": 0.625,
+      "mAP50": 0.735,
+      "mAP50_95": 0.492,
+      "fitness": 0.5162
+    },
+    "ruler_val_last_epoch": {
+      "precision": 0.819,
+      "recall": 0.624,
+      "mAP50": 0.724,
+      "mAP50_95": 0.486
+    },
+    "compare_car_v1_50ep_ruler_val": {
+      "precision": 0.866,
+      "recall": 0.604,
+      "mAP50": 0.726,
+      "mAP50_95": 0.479,
+      "fitness": 0.5039
+    },
+    "best_pt_sha256": "fffecf529a6df1a87d5f10ec2f5613d55adaf69ec09fd48996ecd467584110cc"
+  },
+  "selection_rule_note": "W5 조언: 자 선택은 ruler_val fitness로만, fit_check는 약점 기록용. 사용자가 사전 등록에서 정한다.",
+  "match_iou_threshold": 0.4,
+  "band_note": "by_height 등은 라벨별 최고 IoU≥0.4 비율(탐욕 짝짓기인 matched_label_ratio보다 약간 후할 수 있다).",
+  "ruler": {
+    "ruler": "nuimages_car_v1_e100",
+    "imgsz": 640,
+    "images": 620,
+    "labels": 1728,
+    "matched_label_ratio": 0.7164,
+    "predictions": 1657,
+    "unmatched_predictions": 419,
+    "labels_with_iou0": 233,
+    "by_height": {
+      "0-30": {
+        "labels": 489,
+        "label_iou_ge_threshold": 0.507
+      },
+      "30-60": {
+        "labels": 606,
+        "label_iou_ge_threshold": 0.776
+      },
+      "60-120": {
+        "labels": 434,
+        "label_iou_ge_threshold": 0.862
+      },
+      "120-900": {
+        "labels": 199,
+        "label_iou_ge_threshold": 0.96
+      }
+    },
+    "by_camera": {
+      "CAM_BACK": {
+        "labels": 538,
+        "label_iou_ge_threshold": 0.729
+      },
+      "CAM_BACK_LEFT": {
+        "labels": 249,
+        "label_iou_ge_threshold": 0.739
+      },
+      "CAM_BACK_RIGHT": {
+        "labels": 121,
+        "label_iou_ge_threshold": 0.628
+      },
+      "CAM_FRONT": {
+        "labels": 431,
+        "label_iou_ge_threshold": 0.754
+      },
+      "CAM_FRONT_LEFT": {
+        "labels": 206,
+        "label_iou_ge_threshold": 0.757
+      },
+      "CAM_FRONT_RIGHT": {
+        "labels": 183,
+        "label_iou_ge_threshold": 0.82
+      }
+    },
+    "by_location": {
+      "boston-seaport": {
+        "labels": 164,
+        "label_iou_ge_threshold": 0.701
+      },
+      "singapore-onenorth": {
+        "labels": 1564,
+        "label_iou_ge_threshold": 0.747
+      }
+    },
+    "findings": 566,
+    "findings_by_type": {
+      "height": 135,
+      "width": 212,
+      "translation_x": 53,
+      "scale": 110,
+      "duplicate": 22,
+      "missing": 21,
+      "translation_y": 13
+    }
+  }
+}
