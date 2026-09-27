@@ -42,6 +42,10 @@ def analyse(export: dict, budget: int, iterations: int, seed: int, methods: list
     exported_methods = {r.method for r in ranks}
     if set(methods) - exported_methods:
         raise ValidationError(f"내보내기에 없는 방법이 있다: {sorted(set(methods) - exported_methods)}")
+    for method in methods:
+        observed = summarise(facts, ranks, method, budget)
+        if observed.in_budget != observed.judged:
+            raise ValidationError(f"원래 표본의 '{method}' 상위 N에 미판정 후보가 있다")
     missing = unjudged_in_fixed_resamples(facts, ranks, methods, budget, iterations, seed)
     if any(missing.values()):
         raise ValidationError(

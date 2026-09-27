@@ -6,7 +6,7 @@
 ## 1. 준비 (데스크탑, `experiment/venv`)
 
 ```
-python experiment/check_run_environment.py --out experiment/planning_evidence/env_2026-09-XX.json
+& .\experiment\venv\Scripts\python.exe experiment/check_run_environment.py --out experiment/planning_evidence/env_2026-09-XX.json
 ```
 자 `car_v1_e100`의 SHA-256·cleanlab·ultralytics·torch 버전을 실행 기록에 적는다. **이 노트북에는 가중치가
 없어 sha256이 None이다** — 데스크탑 값을 쓴다.
@@ -37,7 +37,7 @@ python experiment/check_run_environment.py --out experiment/planning_evidence/en
 GET .../queue?adjudicator=ai  → practice_ai_queue.json
 python experiment/render_adjudication_images.py --queue practice_ai_queue.json --images <ds>/images --labels <ds>/labels --out practice_ai/
 ```
-- 그림에 점수·순위가 없는지, amodal 상자가 잘 보이는지, crop 여백이 충분한지 본다.
+- 전체 장면(`full_file`)과 크롭(`file`) 두 그림에 점수·순위가 없는지, amodal 상자가 잘 보이는지, crop 여백이 충분한지 본다.
 - 프롬프트 초안([`ai-adjudicator-prompt-draft.md`](ai-adjudicator-prompt-draft.md))으로 몇 건을 보내 **형식만** 점검한다
   (모델 식별자는 이때 정해 적는다). 일치율은 보되 합격선으로 쓰지 않는다.
 - AI 판정 저장: `PUT .../adjudications?adjudicator=ai` (표본 밖은 거부된다).
@@ -47,3 +47,5 @@ python experiment/render_adjudication_images.py --queue practice_ai_queue.json -
 - 지침·프롬프트 원문을 고정하고 확정본 초안에 붙인다.
 - 판정 상한 C(건)를 정해 실행 계획에 적는다.
 - **그 뒤에** 사전 등록 확정본 커밋 → val 표집. 연습 묶음·판정은 분석에 쓰지 않고 실행 기록에만 남긴다.
+
+상세 환경 경계와 인수인계는 [데스크탑 실행 절차](desktop-handoff-2026-09-27.md)를 따른다.

@@ -54,3 +54,23 @@ def test_manifest에_점수나_순위가_없다(tmp_path):
     text = (tmp_path / "out" / "manifest.json").read_text(encoding="utf-8")
     for forbidden in ("score", "rank", "severity", "suspicion", "random_sample", "source"):
         assert forbidden not in text
+
+
+def test_full_context_preserves_other_labels_outside_crop(tmp_path):
+    ds = make_dataset(tmp_path)
+    q = {"candidates": [{"canonical_candidate_id": "L1", "image": "a.png", "label_index": 0,
+                         "box": [20, 20, 60, 60], "class_name": "Car", "verdict": None}]}
+    m = R.render_queue(q, ds / "images", ds / "labels", tmp_path / "out")
+    full = Image.open(tmp_path / "out" / m[0]["full_file"]).convert("RGB")
+    assert full.size == (200, 100)
+    assert full.getpixel((120, 55)) == R.BLUE
+    assert Image.open(tmp_path / "out" / m[0]["file"]).size == (100, 100)
+
+
+@pytest.mark.parametrize("extra", [{"verdict": "hit"}, {"unique_error_id": "a/L0"},
+                                    {"scores": {}}, {"coverage_extra": True}, {"method": "aida"}])
+def test_library_rejects_unblinded_inputs_before_writing(tmp_path, extra):
+    q = {"candidates": [{"canonical_candidate_id": "L1", **extra}]}
+    with pytest.raises(ValueError):
+        R.render_queue(q, tmp_path, tmp_path, tmp_path / "out")
+    assert not (tmp_path / "out").exists()

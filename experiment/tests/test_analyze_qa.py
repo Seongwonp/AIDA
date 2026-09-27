@@ -76,3 +76,12 @@ def test_판정을_바꿔도_입력_지문은_그대로다():
     for r in f["adjudications"]:
         r["verdict"] = "hold"
     assert export_fingerprint(e) == export_fingerprint(f)
+
+
+def test_original_top_n_must_be_judged_even_if_resamples_do_not_select_it(monkeypatch):
+    e = export()
+    e["adjudications"][0]["verdict"] = None
+    e["adjudications"][0]["unique_error_id"] = None
+    monkeypatch.setattr(analyze_qa, "unjudged_in_fixed_resamples", lambda *a, **k: {A: [], B: []})
+    with pytest.raises(ValidationError, match="원래 표본"):
+        analyze_qa.analyse(e, N, ITER, SEED, [A, B])

@@ -7,7 +7,7 @@
 사용법:
   python render_adjudication_images.py --queue queue.json --images <데이터셋>/images --labels <데이터셋>/labels \
       --out practice_ai/ [--margin 0.5]
-출력: 후보마다 `<후보 id>.png`와 `manifest.json`(후보 id·이미지·상자·클래스 이름·좌표 문구). 판정은 하지 않는다.
+출력: 후보마다 크롭 `<후보 id>.png`, 전체 장면 `<후보 id>.full.png`와 `manifest.json`(후보 id·이미지·상자·클래스 이름·좌표 문구). 판정은 하지 않는다.
 """
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ def dashed_rect(draw: ImageDraw.ImageDraw, box, colour, width=3, dash=8):
                        (ax + (bx - ax) * t1, ay + (by - ay) * t1)], fill=colour, width=width)
 
 
-def render_one(image_path: Path, label_path: Path, candidate: dict, margin: float) -> tuple[Image.Image, dict]:
+def render_one(image_path: Path, label_path: Path, candidate: dict, margin: float, full_frame: bool = False) -> tuple[Image.Image, dict]:
     img = Image.open(image_path).convert("RGB")
     w, h = img.size
     box = candidate["box"]
@@ -62,6 +62,8 @@ def render_one(image_path: Path, label_path: Path, candidate: dict, margin: floa
     pad_w, pad_h = max(40, bw * margin), max(40, bh * margin)
     crop = (max(0, int(box[0] - pad_w)), max(0, int(box[1] - pad_h)),
             min(w, int(box[2] + pad_w)), min(h, int(box[3] + pad_h)))
+    if full_frame:
+        crop = (0, 0, w, h)
     view = img.crop(crop)
     meta = {"canonical_candidate_id": candidate["canonical_candidate_id"], "image": candidate["image"],
             "task": "labelled" if is_label else "missing", "class_name": candidate.get("class_name"),
@@ -73,6 +75,14 @@ def render_one(image_path: Path, label_path: Path, candidate: dict, margin: floa
 
 
 def render_queue(queue: dict, images: Path, labels: Path, out: Path, margin: float = 0.5) -> list[dict]:
+    # Library callers need the same blinding guard as CLI callers.
+    for c in queue["candidates"]:
+        for forbidden in ("scores", "score", "severity", "rank", "aida_rank", "source",
+                          "random_sample", "suspicion", "coverage_extra", "method"):
+            if forbidden in c:
+                raise ValueError(f"가림 목록에 금지 필드: {forbidden}")
+        if c.get("verdict") is not None or c.get("unique_error_id") is not None:
+            raise ValueError("이미 판정한 목록은 AI 입력으로 사용할 수 없습니다")
     out.mkdir(parents=True, exist_ok=True)
     manifest = []
     for c in queue["candidates"]:
@@ -82,6 +92,12 @@ def render_queue(queue: dict, images: Path, labels: Path, out: Path, margin: flo
         path = out / f"{c['canonical_candidate_id']}.png"
         view.save(path)
         meta["file"] = path.name
+        # Preserve full-image context alongside the marked crop.
+        full, _ = render_one(images / c["image"], labels / (Path(c["image"]).stem + ".txt"),
+                             c, margin=margin, full_frame=True)
+        full_path = out / f"{c['canonical_candidate_id']}.full.png"
+        full.save(full_path)
+        meta["full_file"] = full_path.name
         manifest.append(meta)
     (out / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8")
     return manifest
