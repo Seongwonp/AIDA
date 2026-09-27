@@ -397,6 +397,10 @@ class EvaluationSnapshot(BaseModel):
     # `min_height_px` 미만인 **기존 라벨 후보**를 평가 범위에서 뺀 기록. 누락 층(예측)에는
     # 적용하지 않는다. 없으면 필터를 안 건 묶음이다(옛 묶음 전부).
     label_height_filter: dict | None = None
+    # 보조 판정 표본 (사전 등록 D8). 판정 대상이 확정된 뒤·판정 시작 전에 고정 씨앗으로 뽑은
+    # 후보 id 목록과 추출 규칙. 두 번째 판정자(AI 등)는 이 표본만 본다. 없으면 보조 판정이
+    # 없는 묶음이다(옛 묶음 전부).
+    auxiliary_sample: dict | None = None
 
 
 class EvaluationAdjudication(BaseModel):
@@ -417,6 +421,9 @@ class EvaluationAdjudications(BaseModel):
     updated_at: str | None = None
     # 저장 파일이 깨져 읽지 못했는가 (docs/25 R4와 같은 규칙).
     damaged: bool = False
+    # 누구의 판정인가. 옛 파일에는 없고 `primary`(사람, 1차 분석)로 읽는다. 다른 판정자의
+    # 원본은 다른 파일에 따로 저장한다 — 섞지 않는다.
+    adjudicator: str = "primary"
 
 
 class BlindCandidate(BaseModel):

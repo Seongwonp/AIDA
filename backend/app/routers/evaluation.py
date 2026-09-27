@@ -22,6 +22,7 @@ from pydantic import BaseModel
 from ..config import EXPERIMENT_ROOT, UPLOADS_DIR
 from ..ranking import (LEGACY_RANKING_VERSION, RANKING_V1, RANKING_V2, RankingVersionError,
                        diagnosis_filename, ranking_version_of, require_version)
+from ..agreement import agreement_report
 from ..models import (BlindCandidate, BlindQueue, EVALUATION_SCHEMA_VERSION,
                       EvaluationAdjudication, EvaluationAdjudications,
                       EvaluationCandidate, EvaluationSnapshot)
@@ -30,6 +31,23 @@ router = APIRouter(prefix="/api/datasets", tags=["evaluation"])
 
 SNAPSHOT_FILE = "snapshot.json"
 ADJUDICATIONS_FILE = "adjudications.json"
+# 판정자 (사전 등록 D8). `primary`는 사람 판정이고 옛 파일 이름 그대로다. 다른 판정자는
+# 자기 파일(`adjudications.<id>.json`)에 따로 저장한다 — 원본을 섞지 않는다.
+PRIMARY_ADJUDICATOR = "primary"
+ADJUDICATOR_PATTERN = re.compile(r"^[a-z0-9_-]{1,20}$")
+AUXILIARY_ROUNDING = "ceil"
+
+
+def require_adjudicator(adjudicator: str) -> str:
+    if not ADJUDICATOR_PATTERN.fullmatch(adjudicator or ""):
+        raise HTTPException(400, "판정자 id 형식이 아닙니다 (소문자·숫자·_·-, 20자 이내).")
+    return adjudicator
+
+
+def adjudications_file(adjudicator: str) -> str:
+    require_adjudicator(adjudicator)
+    return (ADJUDICATIONS_FILE if adjudicator == PRIMARY_ADJUDICATOR
+            else f"adjudications.{adjudicator}.json")
 # 작업 기록. **판정 결과와 섞지 않는다** — 수명도 쓰임도 다르다.
 ACTIVITY_FILE = "activity.jsonl"
 EVENT_SCHEMA_VERSION = 1
@@ -84,7 +102,8 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
                       ranking_version: str | None = None,
                       random_sample_size: int | None = None,
                       random_sample_seed: int | None = None,
-                      label_height_filter: dict | None = None) -> dict:
+                      label_height_filter: dict | None = None,
+                      auxiliary_sample: dict | None = None) -> dict:
     """지문을 만들 재료. **판정에 영향을 주는 것만, 전부.**
 
     빠지면 안 되는 것과 들어가면 안 되는 것이 둘 다 있다.
@@ -146,6 +165,10 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
     if label_height_filter is not None:
         # 범위가 다르면 다른 묶음이다 — 옛 묶음(필터 없음)의 지문은 그대로다.
         payload["label_height_filter"] = label_height_filter
+    if auxiliary_sample is not None:
+        # 보조 표본은 판정 전에 고정된다. 규칙과 씨앗이 지문에 들어가야 나중에 바꿀 수 없다.
+        payload["auxiliary_sample"] = {k: auxiliary_sample[k] for k in
+                                       ("fraction", "seed", "rounding", "pool", "size")}
     return payload
 
 
@@ -486,6 +509,37 @@ def _mark_random_sample(candidates: list[EvaluationCandidate],
         candidate.random_sample = True
 
 
+def _draw_auxiliary_sample(snapshot: EvaluationSnapshot, fraction: float | None,
+                           seed: int | None) -> dict | None:
+    """보조 판정 표본 (사전 등록 D8).
+
+    **확정된 판정 대상**(예산이 있으면 층별 상위 N 합집합 ∪ 무작위 표본, 없으면 전부)에서
+    단순 무작위로 뽑는다. 크기는 `ceil(fraction × 대상 수)` — 반올림 규칙을 기록한다.
+    씨앗 없이는 같은 표본을 다시 만들 수 없으므로 거부한다. 뽑은 목록은 정렬해 저장하고,
+    지문에는 규칙·씨앗·크기가 들어간다.
+    """
+    if fraction is None:
+        return None
+    if (isinstance(fraction, bool) or not isinstance(fraction, (int, float))
+            or not math.isfinite(fraction) or not (0 < fraction <= 1)):
+        raise HTTPException(400, "보조 표본 비율은 0 초과 1 이하입니다.")
+    if seed is None:
+        raise HTTPException(400, "보조 표본 씨앗을 함께 정하세요 — 없으면 같은 표본을 다시 만들 수 없습니다.")
+    allowed = judge_ids(snapshot)
+    pool = sorted(allowed if allowed is not None
+                  else {c.canonical_candidate_id for c in snapshot.candidates})
+    size = math.ceil(fraction * len(pool))
+    picked = sorted(random.Random(seed).sample(pool, size))
+    return {
+        "fraction": float(fraction), "seed": seed, "rounding": AUXILIARY_ROUNDING,
+        "pool": ("judge_ids (층별 방법 상위 N 합집합 ∪ 무작위 표본)"
+                 if allowed is not None else "all_candidates"),
+        "pool_size": len(pool), "size": size,
+        "candidate_ids": picked,
+        "blinding": "보조 판정자에게는 이 목록의 후보만, 점수·순위·방법·출처·표본 여부·다른 판정자의 판정 없이 보낸다",
+    }
+
+
 def _reject_duplicates(candidates: list[EvaluationCandidate]) -> None:
     """이름이 겹치는 후보가 있으면 얼리기를 **거부한다.**
 
@@ -517,7 +571,9 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
                    random_sample_size: int | None = None,
                    random_sample_seed: int | None = None,
                    groups: dict[str, str] | None = None,
-                   min_label_height_px: float | None = None) -> EvaluationSnapshot:
+                   min_label_height_px: float | None = None,
+                   auxiliary_sample_fraction: float | None = None,
+                   auxiliary_sample_seed: int | None = None) -> EvaluationSnapshot:
     """진단 결과를 얼려 평가 묶음을 만든다.
 
     **재진단해도 이 묶음은 안 바뀐다.** 판정 도중에 후보가 바뀌면 이미 내린
@@ -579,13 +635,17 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
     )
     # 예산이 있으면 여기서 판정 대상을 한 번 골라 본다 — 못 고르는 묶음을 얼리지 않는다.
     judge_ids(snapshot)
+    # 보조 표본은 판정 대상이 확정된 **뒤**에 뽑는다 — 대상 밖 후보가 표본에 들면 안 된다.
+    auxiliary = _draw_auxiliary_sample(snapshot, auxiliary_sample_fraction, auxiliary_sample_seed)
+    snapshot = snapshot.model_copy(update={"auxiliary_sample": auxiliary})
     payload = canonical_payload(dataset_id, candidates, shuffle_seed, ruler,
                                 snapshot.diagnosis_generated_at,
                                 judge_budget=judge_budget, candidate_pool=pool,
                                 total_in_queue=total, ranking_version=ranking_version,
                                 random_sample_size=random_sample_size,
                                 random_sample_seed=random_sample_seed,
-                                label_height_filter=height_filter)
+                                label_height_filter=height_filter,
+                                auxiliary_sample=auxiliary)
     return snapshot.model_copy(
         update={"candidate_set_hash": candidate_set_hash(payload)})
 
@@ -608,12 +668,14 @@ def load_snapshot(dataset_id: str, evaluation_id: str) -> EvaluationSnapshot:
 
 
 def load_adjudications(dataset_id: str, evaluation_id: str,
-                       expected_hash: str) -> EvaluationAdjudications:
-    """판정을 읽되 **다른 묶음에 붙은 것이면 읽지 않는다.**"""
-    path = eval_dir(dataset_id, evaluation_id) / ADJUDICATIONS_FILE
+                       expected_hash: str,
+                       adjudicator: str = PRIMARY_ADJUDICATOR) -> EvaluationAdjudications:
+    """판정을 읽되 **다른 묶음에 붙은 것이면 읽지 않는다.** 판정자마다 파일이 다르다."""
+    path = eval_dir(dataset_id, evaluation_id) / adjudications_file(adjudicator)
     if not path.exists():
         return EvaluationAdjudications(evaluation_id=evaluation_id,
-                                       candidate_set_hash=expected_hash)
+                                       candidate_set_hash=expected_hash,
+                                       adjudicator=adjudicator)
     try:
         saved = EvaluationAdjudications.model_validate_json(
             path.read_text(encoding="utf-8"))
@@ -621,12 +683,23 @@ def load_adjudications(dataset_id: str, evaluation_id: str,
         # 판정을 막지 않되 **손상을 정상적인 빈 판정으로 숨기지 않는다.**
         return EvaluationAdjudications(evaluation_id=evaluation_id,
                                        candidate_set_hash=expected_hash,
-                                       damaged=True)
+                                       damaged=True, adjudicator=adjudicator)
     if saved.candidate_set_hash != expected_hash:
         raise HTTPException(
             409, "이 판정은 다른 후보 목록에 붙은 것입니다. 되살리면 무엇을 "
                  "가리키는지 알 수 없어 읽지 않습니다.")
+    if saved.adjudicator != adjudicator:
+        raise HTTPException(
+            409, f"{path.name}에 적힌 판정자({saved.adjudicator})가 요청({adjudicator})과 다릅니다. "
+                 "다른 판정자의 원본을 빌려 쓰지 않습니다.")
     return saved
+
+
+def auxiliary_ids(snapshot: EvaluationSnapshot) -> set[str] | None:
+    """보조 판정 표본의 후보 id. 표본이 없는 묶음이면 None."""
+    if not snapshot.auxiliary_sample:
+        return None
+    return set(snapshot.auxiliary_sample.get("candidate_ids", []))
 
 
 def validate_adjudications(snapshot: EvaluationSnapshot,
@@ -732,21 +805,32 @@ def resolve_unique_error_ids(snapshot: EvaluationSnapshot,
 def save_adjudications(dataset_id: str, evaluation_id: str,
                        snapshot: EvaluationSnapshot,
                        rows: list[EvaluationAdjudication],
+                       adjudicator: str = PRIMARY_ADJUDICATOR,
                        ) -> EvaluationAdjudications:
     validate_adjudications(snapshot, rows)
+    if adjudicator != PRIMARY_ADJUDICATOR:
+        # 보조 판정자는 보조 표본만 판정한다. 표본 밖 판정은 받지 않는다.
+        sample = auxiliary_ids(snapshot)
+        if sample is None:
+            raise HTTPException(409, "이 묶음에는 보조 판정 표본이 없습니다. 보조 판정을 받지 않습니다.")
+        outside = [r.canonical_candidate_id for r in rows if r.canonical_candidate_id not in sample]
+        if outside:
+            raise HTTPException(400, f"보조 표본 밖의 후보를 판정했습니다: {outside[0]} 외 {len(outside) - 1}건")
     resolved = resolve_unique_error_ids(snapshot, rows)
     saved = EvaluationAdjudications(
         evaluation_id=evaluation_id,
         candidate_set_hash=snapshot.candidate_set_hash,
         adjudications=resolved,
-        updated_at=datetime.now(timezone.utc).isoformat())
-    _write_atomic(eval_dir(dataset_id, evaluation_id) / ADJUDICATIONS_FILE,
+        updated_at=datetime.now(timezone.utc).isoformat(),
+        adjudicator=adjudicator)
+    _write_atomic(eval_dir(dataset_id, evaluation_id) / adjudications_file(adjudicator),
                   saved.model_dump_json(indent=2))
     return saved
 
 
 def blind_queue(snapshot: EvaluationSnapshot,
-                saved: EvaluationAdjudications) -> BlindQueue:
+                saved: EvaluationAdjudications,
+                adjudicator: str = PRIMARY_ADJUDICATOR) -> BlindQueue:
     """판정 화면에 보낼 목록. **점수·순위·진단 문구를 뺀다.**
 
     순서는 묶음에 적힌 씨앗으로 섞는다 — 순위대로 주면 그것이 곧 힌트다.
@@ -755,6 +839,12 @@ def blind_queue(snapshot: EvaluationSnapshot,
     items = []
     # 판정 예산이 있으면 두 방법 상위 N건의 합집합만 보낸다. 겹친 후보는 한 번만.
     allowed = judge_ids(snapshot)
+    if adjudicator != PRIMARY_ADJUDICATOR:
+        # 보조 판정자는 보조 표본만 본다. 다른 판정자의 판정은 `saved`가 자기 파일이라 섞이지 않는다.
+        sample = auxiliary_ids(snapshot)
+        if sample is None:
+            raise HTTPException(409, "이 묶음에는 보조 판정 표본이 없습니다.")
+        allowed = sample if allowed is None else (allowed & sample)
     for c in snapshot.candidates:
         if allowed is not None and c.canonical_candidate_id not in allowed:
             continue
@@ -1078,6 +1168,10 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
         "evaluation_id": snapshot.evaluation_id,
         "dataset_id": snapshot.dataset_id,
         "snapshot_hash": snapshot.candidate_set_hash,
+        # 어느 판정자의 원본으로 낸 내보내기인가. 1차 분석은 primary다.
+        "adjudicator": saved.adjudicator,
+        "auxiliary_sample": ({k: v for k, v in snapshot.auxiliary_sample.items() if k != "candidate_ids"}
+                             if snapshot.auxiliary_sample else None),
         "methods": methods,
         "order_basis": {m: ("product_rank" if m == AIDA else "score")
                         for m in methods},
@@ -1127,6 +1221,9 @@ class StartEvaluation(BaseModel):
     # 기존 라벨 층의 높이 필터 (사전 등록 D2). 원본 픽셀 기준 이 값 미만의 기존 라벨 후보를
     # 평가 범위에서 뺀다. 누락 층에는 걸지 않는다. 없으면 필터 없음(옛 동작).
     min_label_height_px: float | None = None
+    # 보조 판정 표본 (사전 등록 D8). 판정 대상의 이 비율을 씨앗으로 뽑아 두 번째 판정자에게 준다.
+    auxiliary_sample_fraction: float | None = None
+    auxiliary_sample_seed: int | None = None
 
 
 class SaveAdjudications(BaseModel):
@@ -1158,37 +1255,73 @@ def start_evaluation(dataset_id: str, body: StartEvaluation) -> EvaluationSnapsh
                               random_sample_size=body.random_sample_size,
                               random_sample_seed=body.random_sample_seed,
                               groups=load_groups(dataset_id),
-                              min_label_height_px=body.min_label_height_px)
+                              min_label_height_px=body.min_label_height_px,
+                              auxiliary_sample_fraction=body.auxiliary_sample_fraction,
+                              auxiliary_sample_seed=body.auxiliary_sample_seed)
     save_snapshot(dataset_id, snapshot)
     return snapshot
 
 
 @router.get("/{dataset_id}/evaluations/{evaluation_id}/queue",
             response_model=BlindQueue)
-def get_blind_queue(dataset_id: str, evaluation_id: str) -> BlindQueue:
-    """가림 판정 목록. 점수·순위·진단 문구가 빠져 있다."""
+def get_blind_queue(dataset_id: str, evaluation_id: str,
+                    adjudicator: str = PRIMARY_ADJUDICATOR) -> BlindQueue:
+    """가림 판정 목록. 점수·순위·진단 문구가 빠져 있다. `adjudicator`가 primary가 아니면
+    보조 표본만, 그 판정자의 판정만 붙여 보낸다."""
+    require_adjudicator(adjudicator)
     snapshot = load_snapshot(dataset_id, evaluation_id)
     saved = load_adjudications(dataset_id, evaluation_id,
-                               snapshot.candidate_set_hash)
-    return blind_queue(snapshot, saved)
+                               snapshot.candidate_set_hash, adjudicator)
+    return blind_queue(snapshot, saved, adjudicator)
 
 
 @router.put("/{dataset_id}/evaluations/{evaluation_id}/adjudications",
             response_model=EvaluationAdjudications)
 def put_adjudications(dataset_id: str, evaluation_id: str,
-                      body: SaveAdjudications) -> EvaluationAdjudications:
+                      body: SaveAdjudications,
+                      adjudicator: str = PRIMARY_ADJUDICATOR) -> EvaluationAdjudications:
+    require_adjudicator(adjudicator)
     snapshot = load_snapshot(dataset_id, evaluation_id)
     if body.candidate_set_hash != snapshot.candidate_set_hash:
         raise HTTPException(
             409, "후보 목록이 그 사이에 바뀌었습니다. 판정을 저장하지 않습니다.")
     return save_adjudications(dataset_id, evaluation_id, snapshot,
-                              body.adjudications)
+                              body.adjudications, adjudicator)
+
+
+@router.get("/{dataset_id}/evaluations/{evaluation_id}/agreement")
+def get_agreement(dataset_id: str, evaluation_id: str,
+                  secondary: str, primary: str = PRIMARY_ADJUDICATOR) -> dict:
+    """보조 표본에서 두 판정자의 일치도 (D8). 양쪽 보류 수·일치율·κ와 그 분모를 낸다.
+
+    **1차 분석을 바꾸지 않는다.** 이 수치는 공개용이고, 불일치 건의 `hold` 처리는 별도의
+    사전 계획된 민감도 분석이다.
+    """
+    require_adjudicator(primary)
+    require_adjudicator(secondary)
+    if primary == secondary:
+        raise HTTPException(400, "같은 판정자끼리 일치도를 낼 수 없습니다.")
+    snapshot = load_snapshot(dataset_id, evaluation_id)
+    sample = auxiliary_ids(snapshot)
+    if sample is None:
+        raise HTTPException(409, "이 묶음에는 보조 판정 표본이 없습니다.")
+    a = load_adjudications(dataset_id, evaluation_id, snapshot.candidate_set_hash, primary)
+    b = load_adjudications(dataset_id, evaluation_id, snapshot.candidate_set_hash, secondary)
+    report = agreement_report(
+        sorted(sample),
+        {r.canonical_candidate_id: r.verdict for r in a.adjudications},
+        {r.canonical_candidate_id: r.verdict for r in b.adjudications})
+    return {"evaluation_id": evaluation_id, "primary": primary, "secondary": secondary,
+            "damaged": {"primary": a.damaged, "secondary": b.damaged},
+            "sample": {k: v for k, v in snapshot.auxiliary_sample.items() if k != "candidate_ids"},
+            **report}
 
 
 @router.get("/{dataset_id}/evaluations/{evaluation_id}/export")
 def get_export(dataset_id: str, evaluation_id: str,
                methods: str = "aida", scope: str = LABELLED,
-               mode: str = WITHIN_AIDA) -> dict:
+               mode: str = WITHIN_AIDA,
+               adjudicator: str = PRIMARY_ADJUDICATOR) -> dict:
     """집계 모듈에 그대로 넣는 JSON.
 
     `methods`는 쉼표로 나눈다. `scope`는 평가 층이며 기본은 주 비교인
@@ -1199,9 +1332,10 @@ def get_export(dataset_id: str, evaluation_id: str,
     기준선을 넣었는데 점수가 없거나, 비교군이 없는 층에 기준선을 붙이거나, 모드에
     맞지 않는 방법을 요청하면 **거부한다.**
     """
+    require_adjudicator(adjudicator)
     snapshot = load_snapshot(dataset_id, evaluation_id)
     saved = load_adjudications(dataset_id, evaluation_id,
-                               snapshot.candidate_set_hash)
+                               snapshot.candidate_set_hash, adjudicator)
     try:
         return export_for_aggregation(
             snapshot, saved,
