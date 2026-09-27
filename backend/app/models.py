@@ -410,6 +410,11 @@ class EvaluationSnapshot(BaseModel):
     # 자른다 — 후보 선정·화면 대상·내보내기·집계가 같은 키를 쓴다. 없으면 이미지·후보 id 순
     # (옛 묶음 전부).
     tie_seed: int | None = None
+    # 고정 재표본 합집합 (docs/unjudged-bootstrap-review-2026-09-27.md 안 (a)). 부트스트랩 씨앗·
+    # 반복 수·방법을 얼리고, 어느 재표본의 상위 N에라도 드는 후보 중 원래 판정 범위(상위 N 합집합
+    # ∪ K) 밖의 것을 `additional_candidate_ids`로 둔다. **비교 예산 N과 점 추정치는 안 바뀐다** —
+    # 추가 후보는 부트스트랩 계산용이다. 없으면 이 기능 전의 묶음이다.
+    bootstrap_coverage: dict | None = None
 
 
 class EvaluationAdjudication(BaseModel):

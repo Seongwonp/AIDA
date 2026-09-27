@@ -126,8 +126,14 @@ def paired_cluster_bootstrap(
     method: str, baseline: str, budget: int | None = None,
     iterations: int = DEFAULT_ITERATIONS, seed: int = DEFAULT_SEED,
     require_same_candidates: bool = True,
+    require_judged_top_n: bool = False,
 ) -> dict:
     """(방법 − 기준선) 차이의 95% 구간.
+
+    `require_judged_top_n=True`면 **어느 재표본의 상위 N에라도 미판정(`verdict=None`) 후보가 있으면
+    구간을 내지 않고 거부한다.** 보류(`hold`)는 완료된 판정이라 미판정이 아니다. 고정 재표본 합집합을
+    전부 판정했을 때만 통과한다 — 통과가 구간의 통계적 타당성을 뜻하지는 않는다
+    (docs/unjudged-bootstrap-review-2026-09-27.md).
 
     **데이터셋이 여럿이면 데이터셋별로 재표집하고 차이를 동등 가중한다.**
 
@@ -182,7 +188,12 @@ def paired_cluster_bootstrap(
         per_dataset.append(diff["difference"])
         for m, key in ((method, "method_summary"), (baseline, "baseline_summary")):
             summ = diff[key]
-            unjudged[m].append(summ["in_budget"] - summ["judged"])
+            missing = summ["in_budget"] - summ["judged"]
+            if require_judged_top_n and missing:
+                raise ValidationError(
+                    f"재표본 {i}({name})의 '{m}' 상위 {budget} 안에 미판정 후보가 {missing}건 있다. "
+                    "고정 재표본 합집합을 전부 판정하기 전에는 구간을 내지 않는다.")
+            unjudged[m].append(missing)
     if per_dataset:
         draws.append(mean(per_dataset))
 
@@ -205,6 +216,7 @@ def paired_cluster_bootstrap(
         # 재표본 상위 N에 든 미판정 후보(데이터셋·재표본 단위). 0이 아니면 구간에 "미판정 =
         # 수확 0" 처리가 들어가 있다. 이 값은 보고용이고 구간 계산을 바꾸지 않는다.
         "unjudged_in_top_n": {m: _stats(v) for m, v in unjudged.items()},
+        "judged_top_n_required": require_judged_top_n,
     }
 
 

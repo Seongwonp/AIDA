@@ -85,3 +85,21 @@ def resample_top_n_union(adjudications: list[Adjudication], rankings: list[Ranki
             "union_size_at": {str(k): v for k, v in sorted(curve[m].items())},
         }
     return out
+
+
+def unjudged_in_fixed_resamples(adjudications: list[Adjudication], rankings: list[Ranking],
+                                methods: list[str], budget: int, iterations: int, seed: int) -> dict:
+    """고정 재표본들의 상위 N에 든 **미판정**(verdict None) 후보. 보류는 판정이다.
+
+    최종 분석 전 점검용. 비어 있어야 `paired_cluster_bootstrap(require_judged_top_n=True)`가 통과한다.
+    """
+    by_key = {a.key: a for a in adjudications}
+    found: dict[str, set[str]] = {m: set() for m in methods}
+    for _i, _name, facts, ranks in iter_resamples(adjudications, rankings, iterations, seed):
+        dk = {a.key: a for a in facts}
+        for m in methods:
+            mine = [r for r in ranks if r.method == m]
+            for r in top_n(mine, dk, budget):
+                if dk[r.candidate_key].verdict is None:
+                    found[m].add(original_key(r.candidate_key))
+    return {m: sorted(v) for m, v in found.items()}

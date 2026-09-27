@@ -104,7 +104,8 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
                       random_sample_seed: int | None = None,
                       label_height_filter: dict | None = None,
                       auxiliary_sample: dict | None = None,
-                      tie_seed: int | None = None) -> dict:
+                      tie_seed: int | None = None,
+                      bootstrap_coverage: dict | None = None) -> dict:
     """지문을 만들 재료. **판정에 영향을 주는 것만, 전부.**
 
     빠지면 안 되는 것과 들어가면 안 되는 것이 둘 다 있다.
@@ -173,6 +174,11 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
     if tie_seed is not None:
         # 동점 순서가 바뀌면 상위 N이 바뀐다 — 씨앗은 지문에 들어간다.
         payload["tie_seed"] = tie_seed
+    if bootstrap_coverage is not None:
+        # 계산 설정·입력 지문·최종 추가 목록이 지문에 든다 — 판정 전에 고정된다.
+        payload["bootstrap_coverage"] = {k: bootstrap_coverage[k] for k in
+                                         ("iterations", "seed", "budget", "methods",
+                                          "input_fingerprint", "additional_candidate_ids")}
     return payload
 
 
@@ -536,8 +542,10 @@ def _draw_auxiliary_sample(snapshot: EvaluationSnapshot, fraction: float | None,
     picked = sorted(random.Random(seed).sample(pool, size))
     return {
         "fraction": float(fraction), "seed": seed, "rounding": AUXILIARY_ROUNDING,
-        "pool": ("judge_ids (층별 방법 상위 N 합집합 ∪ 무작위 표본)"
+        "pool": ("judge_ids (층별 방법 상위 N 합집합 ∪ 무작위 표본 K ∪ 고정 재표본 추가 후보)"
                  if allowed is not None else "all_candidates"),
+        "represents": ("최종 판정 목록 전체에서의 사람–보조 판정 일치도. 원래 상위 N만의 일치도가 "
+                       "아니며, 추가 후보와 K 표본이 섞여 있다"),
         "pool_size": len(pool), "size": size,
         "candidate_ids": picked,
         "blinding": "보조 판정자에게는 이 목록의 후보만, 점수·순위·방법·출처·표본 여부·다른 판정자의 판정 없이 보낸다",
@@ -578,7 +586,9 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
                    min_label_height_px: float | None = None,
                    auxiliary_sample_fraction: float | None = None,
                    auxiliary_sample_seed: int | None = None,
-                   tie_seed: int | None = None) -> EvaluationSnapshot:
+                   tie_seed: int | None = None,
+                   coverage_iterations: int | None = None,
+                   coverage_seed: int | None = None) -> EvaluationSnapshot:
     """진단 결과를 얼려 평가 묶음을 만든다.
 
     **재진단해도 이 묶음은 안 바뀐다.** 판정 도중에 후보가 바뀌면 이미 내린
@@ -647,8 +657,14 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
         tie_seed=tie_seed,
     )
     # 예산이 있으면 여기서 판정 대상을 한 번 골라 본다 — 못 고르는 묶음을 얼리지 않는다.
-    judge_ids(snapshot)
+    base_pool = judge_ids(snapshot)
+    if coverage_iterations is not None or coverage_seed is not None:
+        # 고정 재표본 합집합 (안 (a)). 원래 판정 범위(상위 N 합집합 ∪ K)를 기준으로 추가분을 센다.
+        coverage = compute_bootstrap_coverage(snapshot, coverage_iterations, coverage_seed,
+                                              set(base_pool or ()))
+        snapshot = snapshot.model_copy(update={"bootstrap_coverage": coverage})
     # 보조 표본은 판정 대상이 확정된 **뒤**에 뽑는다 — 대상 밖 후보가 표본에 들면 안 된다.
+    # 합집합 추가분이 있으면 그것까지 포함한 **최종 판정 목록**에서 뽑는다.
     auxiliary = _draw_auxiliary_sample(snapshot, auxiliary_sample_fraction, auxiliary_sample_seed)
     snapshot = snapshot.model_copy(update={"auxiliary_sample": auxiliary})
     payload = canonical_payload(dataset_id, candidates, shuffle_seed, ruler,
@@ -659,7 +675,8 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
                                 random_sample_seed=random_sample_seed,
                                 label_height_filter=height_filter,
                                 auxiliary_sample=auxiliary,
-                                tie_seed=tie_seed)
+                                tie_seed=tie_seed,
+                                bootstrap_coverage=snapshot.bootstrap_coverage)
     return snapshot.model_copy(
         update={"candidate_set_hash": candidate_set_hash(payload)})
 
@@ -1006,6 +1023,81 @@ def _top(candidates: list[EvaluationCandidate], order: dict[str, float],
     return [c.canonical_candidate_id for c in ranked[:n]]
 
 
+def _aggregation():
+    """실험 쪽 집계 패키지(표준 라이브러리만). coverage는 **최종 분석과 같은 코드**로 돈다."""
+    import sys
+    root = str(EXPERIMENT_ROOT)
+    if root not in sys.path:
+        sys.path.append(root)
+    from evaluation import coverage, importer      # noqa: WPS433
+    return coverage, importer
+
+
+def _export_fingerprint(export: dict) -> str:
+    """coverage 입력의 지문 — 모집단(후보 id·묶음)과 순위(방법·점수·동점 키)만."""
+    material = {
+        "adjudications": sorted((r["canonical_candidate_id"], r["group_id"] or "")
+                                for r in export["adjudications"]),
+        "rankings": sorted((r["method"], r["canonical_candidate_id"], r["severity"], r.get("tie_key"))
+                           for r in export["rankings"]),
+    }
+    return hashlib.sha256(json.dumps(material, ensure_ascii=False, sort_keys=True,
+                                     separators=(",", ":")).encode("utf-8")).hexdigest()
+
+
+def compute_bootstrap_coverage(snapshot: EvaluationSnapshot, iterations: int, seed: int,
+                               base_pool: set[str]) -> dict:
+    """기존 라벨 층의 1차 비교 방법들에 대해, 고정 재표본에서 상위 N에 드는 후보의 합집합.
+
+    **최종 분석과 같은 길**을 탄다: `export_for_aggregation`(판정 없음) → `importer.load_export` →
+    `coverage.resample_top_n_union`. 그래서 모집단·묶음·순위·동점 키가 분석과 정확히 같다. 판정한
+    후보만 남겨 모집단을 줄이지 않는다 — 내보내기는 미판정 후보도 전부 담는다.
+    """
+    if snapshot.judge_budget is None:
+        raise HTTPException(400, "판정 예산(N)이 있어야 재표본 합집합을 셀 수 있습니다.")
+    if not isinstance(iterations, int) or isinstance(iterations, bool) or iterations < 1:
+        raise HTTPException(400, "부트스트랩 반복 수는 1 이상의 정수입니다.")
+    if seed is None:
+        raise HTTPException(400, "부트스트랩 씨앗을 함께 정하세요 — 없으면 같은 재표본을 다시 만들 수 없습니다.")
+    labelled = [c for c in snapshot.candidates if _in_scope(c, LABELLED)]
+    version = snapshot_ranking_version(snapshot)
+    methods = [m for m in (AIDA, ALL_LABEL_IOU, ALL_LABEL_OBJECTLAB)
+               if method_order(labelled, m, version, LABELLED) is not None]
+    if len(methods) < 2:
+        raise HTTPException(409, "기존 라벨 층에 줄 세울 수 있는 방법이 둘 미만이라 합집합을 셀 수 없습니다.")
+    empty = EvaluationAdjudications(evaluation_id=snapshot.evaluation_id,
+                                    candidate_set_hash=snapshot.candidate_set_hash)
+    try:
+        export = export_for_aggregation(snapshot, empty, methods, LABELLED, GENERATION_INCLUDED)
+    except ExportBlocked as exc:
+        raise HTTPException(409, f"재표본 합집합을 낼 수 없습니다: {exc}") from exc
+    coverage, importer = _aggregation()
+    facts, ranks = importer.load_export(export, require_comparison=False)
+    pool_keys = {a.key for a in facts if a.candidate_id in base_pool}
+    result = coverage.resample_top_n_union(facts, ranks, methods, snapshot.judge_budget,
+                                           iterations, seed, judged_pool=pool_keys)
+    key_to_id = {a.key: a.candidate_id for a in facts}
+    additional = sorted(key_to_id[k] for k in result["additional_candidate_keys"])
+    return {
+        "purpose": "부트스트랩 계산용. 비교 예산 N과 원래 상위 N·점 추정치는 바뀌지 않는다",
+        "iterations": iterations, "seed": seed, "budget": snapshot.judge_budget,
+        "methods": methods, "scope": LABELLED, "mode": GENERATION_INCLUDED,
+        "input_fingerprint": _export_fingerprint(export),
+        "base_pool_size": len(base_pool),
+        "additional_count": len(additional),
+        "additional_candidate_ids": additional,
+        "per_method": result["methods"],
+        "guarantee": ("고정 재표본의 판정 누락만 없앤다. 신뢰구간의 포함률·통계적 타당성은 "
+                      "검증하지 않는다"),
+    }
+
+
+def coverage_ids(snapshot: EvaluationSnapshot) -> set[str]:
+    if not snapshot.bootstrap_coverage:
+        return set()
+    return set(snapshot.bootstrap_coverage.get("additional_candidate_ids", []))
+
+
 def judge_ids(snapshot: EvaluationSnapshot) -> set[str] | None:
     """판정할 후보. 판정 예산이 없으면 `None`(전부).
 
@@ -1039,6 +1131,9 @@ def judge_ids(snapshot: EvaluationSnapshot) -> set[str] | None:
                 continue
             picked.update(_top(layer, order, n, snapshot.tie_seed))
     picked.update(c.canonical_candidate_id for c in snapshot.candidates if c.random_sample)
+    # 고정 재표본 합집합의 추가 후보 (안 (a)). 판정 대상에는 들지만 어느 방법의 원래 상위 N도
+    # 바꾸지 않고 무작위 표본 K에 합쳐지지도 않는다.
+    picked.update(coverage_ids(snapshot))
     return picked
 
 
@@ -1189,6 +1284,8 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
             # 비교가 아니라 "규칙이 놓친 비율"을 재는 별도 층이다.
             "source": c.source,
             "random_sample": c.random_sample,
+            # 고정 재표본 합집합으로 더해진 후보인가. K 표본과 다르며 합치지 않는다.
+            "coverage_extra": c.canonical_candidate_id in coverage_ids(snapshot),
         })
         for method in methods:
             order = orders[method]
@@ -1267,7 +1364,19 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
             "size": snapshot.random_sample_size,
             "seed": snapshot.random_sample_seed,
             "in_scope": sum(1 for c in included if c.random_sample),
+            "definition": "AIDA 규칙 밖 기존 라벨의 단순 무작위 표본. 재표본 추가 후보와 합치지 않는다",
         },
+        # 비교 예산과 연구용 총 판정량을 가른다. N은 방법별 상위 N이고, 총 판정량은
+        # 상위 N 합집합 ∪ K ∪ 고정 재표본 추가 후보다.
+        "judging": {
+            "comparison_budget_n": snapshot.judge_budget,
+            "total_judging_list": (len(judge_ids(snapshot)) if snapshot.judge_budget is not None else None),
+            "coverage_extra_in_scope": sum(1 for c in included
+                                           if c.canonical_candidate_id in coverage_ids(snapshot)),
+        },
+        "bootstrap_coverage": ({k: v for k, v in snapshot.bootstrap_coverage.items()
+                                if k != "additional_candidate_ids"}
+                               if snapshot.bootstrap_coverage else None),
         # 기존 라벨 층의 높이 필터 기록 (D2). 없으면 필터 없는 묶음이다.
         "label_height_filter": snapshot.label_height_filter,
         "total_candidates": len(snapshot.candidates),
@@ -1303,6 +1412,9 @@ class StartEvaluation(BaseModel):
     auxiliary_sample_seed: int | None = None
     # 동점 씨앗 (사전 등록 D9). 없으면 옛 규칙(이미지·후보 id 순).
     tie_seed: int | None = None
+    # 고정 재표본 합집합 (안 (a)). 최종 분석의 부트스트랩과 같은 반복 수·씨앗이어야 한다.
+    coverage_iterations: int | None = None
+    coverage_seed: int | None = None
 
 
 class SaveAdjudications(BaseModel):
@@ -1337,7 +1449,9 @@ def start_evaluation(dataset_id: str, body: StartEvaluation) -> EvaluationSnapsh
                               min_label_height_px=body.min_label_height_px,
                               auxiliary_sample_fraction=body.auxiliary_sample_fraction,
                               auxiliary_sample_seed=body.auxiliary_sample_seed,
-                              tie_seed=body.tie_seed)
+                              tie_seed=body.tie_seed,
+                              coverage_iterations=body.coverage_iterations,
+                              coverage_seed=body.coverage_seed)
     save_snapshot(dataset_id, snapshot)
     return snapshot
 
