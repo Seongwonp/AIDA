@@ -908,6 +908,9 @@ def _truncation(snapshot: EvaluationSnapshot) -> str | None:
         return ("진단 결과에 전체 후보 수(`total_in_queue`)가 없어 목록이 "
                 "잘렸는지 알 수 없습니다. 두 방법을 견주지 않습니다.")
     frozen = sum(1 for c in snapshot.candidates if c.source == SOURCE_AIDA)
+    # 높이 필터(D2)로 뺀 AIDA 후보는 잘린 것이 아니라 범위 밖이다 — 기록된 수만큼 되돌려 센다.
+    if snapshot.label_height_filter:
+        frozen += int(snapshot.label_height_filter.get("excluded_aida_candidates", 0))
     if frozen < total:
         return (f"AIDA 순위로 잘린 후보 목록입니다({frozen}/"
                 f"{total}건). 기준선이 잘린 쪽 후보를 끌어올릴 수 없어 AIDA에 "
