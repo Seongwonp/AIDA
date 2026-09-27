@@ -16,7 +16,10 @@
 > `all_label_objectlab`·`unmatched_objectlab`이 그것으로 줄 세운다(cleanlab 없으면 방법이 안 생긴다).
 > D1~D9 제안값은 [`docs/qa-preregistration-proposal-2026-09-27.md`](docs/qa-preregistration-proposal-2026-09-27.md).
 > D8(사람 전량 + AI 보조 30%)·D9(가: IoU 0 포함, 고정 씨앗 동점)는 사용자 검토로 정리됐다.
-> 확정 전 남은 구현: 높이 필터(D2), 판정자 ID·보조 표본·이중 판정(D8), 동점 씨앗(D9), nuImages 자 선택 경로.
+> **확정 전 구현 4개는 끝났다(2026-09-27 밤):** 높이 필터(D2, `min_label_height_px`), 판정자 분리·보조 표본·일치도(D8,
+> `adjudicator`·`auxiliary_sample_*`·`GET .../agreement`), 동점 씨앗(D9, `tie_seed`·`tie_key`), 외부 자 선택
+> (`?ruler=nuimages_car_v1_e100`, SHA-256 대조). 남은 것은 **확정본의 실행 명세**(자 SHA, AI 판정자 식별자·프롬프트)와
+> 사용자의 확정 커밋이다 — 제안 문서 "확정본에 남은 실행 명세". **val은 확정본 커밋 전까지 열지 않는다.**
 > 아래 09-16 상태는 그대로 유효하다.
 
 ## 그 전 상태 — 2026-09-16
@@ -136,7 +139,7 @@ Python 환경은 **둘로 나뉘어 있다.** 섞으면 없는 패키지를 찾�
 경로나 설치 여부를 추측하지 않고 먼저 확인한다. **문서에 적힌 검사 수를 이번
 실행 결과로 보고하지 않는다** — 직접 돌려 보고 그 숫자를 쓴다.
 
-최근 기록: **2026-09-16 밤 데스크탑** backend **318** · experiment **500** 통과(프론트 미변경). 그 전 **저녁** backend **308** 통과(건너뜀 0) · experiment **459** 통과 ·
+최근 기록: **2026-09-27 밤 노트북(CI와 같은 의존성)** backend **355** 통과·1 건너뜀 · experiment **518** 통과(프론트는 `types.ts` 선택 필드만 — 타입체크 미실행). 그 전 **2026-09-16 밤 데스크탑** backend **318** · experiment **500** 통과. 그 전 **저녁** backend **308** 통과(건너뜀 0) · experiment **459** 통과 ·
 frontend **183** 통과 · typecheck·lint·build exit 0 · 보호 자료 해시 전부 일치.
 노트북(CI와 같은 의존성만 깐 환경)에서는 backend의 외부 드라이브 검사 1건
 (`test_uploads_dir_agreement.py:100`)이 건너뛰어진다.
