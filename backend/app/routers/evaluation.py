@@ -103,7 +103,8 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
                       random_sample_size: int | None = None,
                       random_sample_seed: int | None = None,
                       label_height_filter: dict | None = None,
-                      auxiliary_sample: dict | None = None) -> dict:
+                      auxiliary_sample: dict | None = None,
+                      tie_seed: int | None = None) -> dict:
     """지문을 만들 재료. **판정에 영향을 주는 것만, 전부.**
 
     빠지면 안 되는 것과 들어가면 안 되는 것이 둘 다 있다.
@@ -169,6 +170,9 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
         # 보조 표본은 판정 전에 고정된다. 규칙과 씨앗이 지문에 들어가야 나중에 바꿀 수 없다.
         payload["auxiliary_sample"] = {k: auxiliary_sample[k] for k in
                                        ("fraction", "seed", "rounding", "pool", "size")}
+    if tie_seed is not None:
+        # 동점 순서가 바뀌면 상위 N이 바뀐다 — 씨앗은 지문에 들어간다.
+        payload["tie_seed"] = tie_seed
     return payload
 
 
@@ -573,7 +577,8 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
                    groups: dict[str, str] | None = None,
                    min_label_height_px: float | None = None,
                    auxiliary_sample_fraction: float | None = None,
-                   auxiliary_sample_seed: int | None = None) -> EvaluationSnapshot:
+                   auxiliary_sample_seed: int | None = None,
+                   tie_seed: int | None = None) -> EvaluationSnapshot:
     """진단 결과를 얼려 평가 묶음을 만든다.
 
     **재진단해도 이 묶음은 안 바뀐다.** 판정 도중에 후보가 바뀌면 이미 내린
@@ -632,6 +637,7 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
         ranking_version=ranking_version,
         random_sample_size=random_sample_size, random_sample_seed=random_sample_seed,
         label_height_filter=height_filter,
+        tie_seed=tie_seed,
     )
     # 예산이 있으면 여기서 판정 대상을 한 번 골라 본다 — 못 고르는 묶음을 얼리지 않는다.
     judge_ids(snapshot)
@@ -645,7 +651,8 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
                                 random_sample_size=random_sample_size,
                                 random_sample_seed=random_sample_seed,
                                 label_height_filter=height_filter,
-                                auxiliary_sample=auxiliary)
+                                auxiliary_sample=auxiliary,
+                                tie_seed=tie_seed)
     return snapshot.model_copy(
         update={"candidate_set_hash": candidate_set_hash(payload)})
 
@@ -942,16 +949,38 @@ def method_order(candidates: list[EvaluationCandidate],
     return {c.canonical_candidate_id: c.scores[method] for c in mine}
 
 
+def tie_key(tie_seed: int | None, candidate_id: str) -> str | None:
+    """동점 키 (사전 등록 D9). `sha256("{tie_seed}:{후보 id}")`.
+
+    **후보와 씨앗만으로 정해진다** — 입력 순서·프로세스·방법과 무관하다. 같은 후보는 어느
+    방법에서든 같은 키를 받으므로 방법 간 동점 순서가 일관된다. 씨앗이 없으면 None이고
+    옛 규칙(이미지 이름 → 후보 id)으로 자른다.
+    """
+    if tie_seed is None:
+        return None
+    return hashlib.sha256(f"{tie_seed}:{candidate_id}".encode("utf-8")).hexdigest()
+
+
+def _sort_key(c: EvaluationCandidate, order: dict[str, float], tie_seed: int | None) -> tuple:
+    key = tie_key(tie_seed, c.canonical_candidate_id)
+    if key is not None:
+        return (-order[c.canonical_candidate_id], key, c.image, c.canonical_candidate_id)
+    return (-order[c.canonical_candidate_id], c.image, c.canonical_candidate_id)
+
+
 def _top(candidates: list[EvaluationCandidate], order: dict[str, float],
-         n: int) -> list[str]:
+         n: int, tie_seed: int | None = None) -> list[str]:
     """`evaluation.ranking.rank_candidates`와 같은 규칙으로 상위 n건.
 
     그 방법의 모집단이 n보다 작으면 **남는 예산은 안 쓴다** — 다른 방법의 후보로
     채우면 그 방법이 만들지 않은 후보가 그 방법의 성과로 세어진다.
+
+    동점은 `tie_seed`가 있으면 `tie_key` 순, 없으면 이미지·후보 id 순이다. 내보내기의
+    `tie_key`와 집계의 `rank_candidates`가 같은 값을 쓰므로 여기서 고른 상위 N과 집계가
+    세는 상위 N이 같다.
     """
     mine = [c for c in candidates if c.canonical_candidate_id in order]
-    ranked = sorted(mine, key=lambda c: (-order[c.canonical_candidate_id],
-                                         c.image, c.canonical_candidate_id))
+    ranked = sorted(mine, key=lambda c: _sort_key(c, order, tie_seed))
     return [c.canonical_candidate_id for c in ranked[:n]]
 
 
@@ -986,7 +1015,7 @@ def judge_ids(snapshot: EvaluationSnapshot) -> set[str] | None:
                              "후보를 고를 수 없습니다 — 진단을 다시 돌리세요.")
                 # 점수가 없는 방법(옛 진단의 기준선, 모집단 없는 진단). 내보낼 때 막힌다.
                 continue
-            picked.update(_top(layer, order, n))
+            picked.update(_top(layer, order, n, snapshot.tie_seed))
     picked.update(c.canonical_candidate_id for c in snapshot.candidates if c.random_sample)
     return picked
 
@@ -1145,11 +1174,28 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
                 continue        # 그 방법의 모집단 밖 — 순서에 없다
             # `severity`는 집계가 줄 세우는 값이다. AIDA는 −순위라 음수다 —
             # 원래 점수는 `score`에 따로 둔다.
-            rankings.append({"method": method,
-                             "canonical_candidate_id": c.canonical_candidate_id,
-                             "severity": order[c.canonical_candidate_id],
-                             "score": c.scores.get(method,
-                                                   order[c.canonical_candidate_id])})
+            row = {"method": method,
+                   "canonical_candidate_id": c.canonical_candidate_id,
+                   "severity": order[c.canonical_candidate_id],
+                   "score": c.scores.get(method, order[c.canonical_candidate_id])}
+            key = tie_key(snapshot.tie_seed, c.canonical_candidate_id)
+            if key is not None:
+                row["tie_key"] = key       # 집계가 그대로 쓴다 — 후보 선정과 같은 동점 순서
+            rankings.append(row)
+
+    # IoU 0 라벨 보고 (D9). 평가 범위 안의 기존 라벨 중 `label_iou`가 0인 것과, 그것이
+    # `all_label_iou` 상위 N에 몇 건 드는지. 판정을 바꾸지 않는 기술 통계다.
+    iou_zero = None
+    if scope == LABELLED and ALL_LABEL_IOU in orders:
+        zero_ids = {c.canonical_candidate_id for c in included
+                    if c.scores.get(ALL_LABEL_IOU) is not None
+                    and abs(c.scores[ALL_LABEL_IOU] - 1.0) < 1e-9}
+        top = (_top(included, orders[ALL_LABEL_IOU], snapshot.judge_budget, snapshot.tie_seed)
+               if snapshot.judge_budget else [])
+        iou_zero = {"in_scope_labels": len(zero_ids),
+                    "in_top_n_all_label_iou": sum(1 for i in top if i in zero_ids),
+                    "n": snapshot.judge_budget,
+                    "definition": "1 − label_iou == 1.0 (겹치는 예측이 없는 기존 라벨)"}
 
     reasons: dict[str, int] = {}
     for c in excluded:
@@ -1175,6 +1221,11 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
         "methods": methods,
         "order_basis": {m: ("product_rank" if m == AIDA else "score")
                         for m in methods},
+        # 동점 규칙 (D9). 씨앗이 있으면 각 순위 줄에 `tie_key`가 붙고 집계는 그것으로 자른다.
+        "tie_seed": snapshot.tie_seed,
+        "tie_break_rule": ("점수 → sha256(tie_seed:후보 id) → 이미지 → 후보 id"
+                           if snapshot.tie_seed is not None else "점수 → 이미지 → 후보 id"),
+        "iou_zero_labels": iou_zero,
         # 어느 순위 버전의 AIDA 순서인가. 집계가 버전이 다른 내보내기를 섞지 않게 한다.
         # 옛 묶음은 v1이고, 그 사실을 `ranking_version_recorded`로 따로 적는다.
         "ranking_version": snapshot_ranking_version(snapshot),
@@ -1224,6 +1275,8 @@ class StartEvaluation(BaseModel):
     # 보조 판정 표본 (사전 등록 D8). 판정 대상의 이 비율을 씨앗으로 뽑아 두 번째 판정자에게 준다.
     auxiliary_sample_fraction: float | None = None
     auxiliary_sample_seed: int | None = None
+    # 동점 씨앗 (사전 등록 D9). 없으면 옛 규칙(이미지·후보 id 순).
+    tie_seed: int | None = None
 
 
 class SaveAdjudications(BaseModel):
@@ -1257,7 +1310,8 @@ def start_evaluation(dataset_id: str, body: StartEvaluation) -> EvaluationSnapsh
                               groups=load_groups(dataset_id),
                               min_label_height_px=body.min_label_height_px,
                               auxiliary_sample_fraction=body.auxiliary_sample_fraction,
-                              auxiliary_sample_seed=body.auxiliary_sample_seed)
+                              auxiliary_sample_seed=body.auxiliary_sample_seed,
+                              tie_seed=body.tie_seed)
     save_snapshot(dataset_id, snapshot)
     return snapshot
 

@@ -401,6 +401,10 @@ class EvaluationSnapshot(BaseModel):
     # 후보 id 목록과 추출 규칙. 두 번째 판정자(AI 등)는 이 표본만 본다. 없으면 보조 판정이
     # 없는 묶음이다(옛 묶음 전부).
     auxiliary_sample: dict | None = None
+    # 동점 씨앗 (사전 등록 D9). 있으면 점수가 같은 후보를 sha256(tie_seed, 후보 id) 순으로
+    # 자른다 — 후보 선정·화면 대상·내보내기·집계가 같은 키를 쓴다. 없으면 이미지·후보 id 순
+    # (옛 묶음 전부).
+    tie_seed: int | None = None
 
 
 class EvaluationAdjudication(BaseModel):

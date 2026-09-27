@@ -8,12 +8,16 @@ from .schema import Adjudication, Ranking
 
 def rank_candidates(rankings: list[Ranking],
                     by_key: dict[str, Adjudication]) -> list[Ranking]:
-    """심각도 내림차순. 같으면 **이미지 이름 · 후보 id 순**으로 자른다.
+    """심각도 내림차순. 같으면 `tie_key`(있으면) → **이미지 이름 · 후보 id 순**으로 자른다.
 
     규약 5절의 동점 규칙이다. 입력 행 순서에 기대지 않는다.
     """
     def order(r: Ranking) -> tuple:
         a = by_key[r.candidate_key]
+        if r.tie_key is not None:
+            # 고정 씨앗 동점 키(D9). 재표집으로 이미지 이름에 `#i`가 붙어도 키는 그대로라
+            # 같은 후보의 동점 순서가 벌마다 흔들리지 않는다.
+            return (-r.severity, r.tie_key, a.image_id, a.candidate_id)
         return (-r.severity, a.image_id, a.candidate_id)
 
     return sorted(rankings, key=order)

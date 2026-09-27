@@ -78,10 +78,16 @@ class Adjudication:
 
 @dataclass(frozen=True)
 class Ranking:
-    """방법이 후보에 매긴 점수. **방법마다 다른 것은 이것뿐이다.**"""
+    """방법이 후보에 매긴 점수. **방법마다 다른 것은 이것뿐이다.**
+
+    `tie_key`는 동점을 자르는 값이다(사전 등록 D9). 백엔드가 묶음의 `tie_seed`와 후보 id로
+    만들어 내보내기에 적고, 집계는 그 값을 **그대로** 쓴다 — 같은 후보는 방법이 달라도
+    같은 키라 순서가 방법 간에 일관된다. 없으면(옛 내보내기) 이미지·후보 id 순이다.
+    """
     method: str
     candidate_key: str
     severity: float
+    tie_key: str | None = None
 
 
 @dataclass(frozen=True)

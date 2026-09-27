@@ -399,3 +399,33 @@ def test_verdict_uses_the_lower_bound():
     assert verdict_against_delta(r, 2.0) == "성공"      # 하한이 Δ를 넘는다
     assert verdict_against_delta(r, 4.0) == "불확실"    # 구간이 Δ를 걸친다
     assert verdict_against_delta(r, 6.0) == "실패"      # 상한이 Δ 아래다
+
+
+# --- F-2. 동점 키 (사전 등록 D9) ------------------------------------------------
+
+def test_tie_key가_있으면_그것으로_자르고_재표집에도_그대로다():
+    from evaluation.bootstrap import _resample
+    from evaluation.ranking import top_n
+    from evaluation.schema import Adjudication, Ranking
+    import random
+    facts = [Adjudication("d", im, "c", "", verdict="miss") for im in ("a", "b", "c")]
+    by_key = {a.key: a for a in facts}
+    # 점수 동점, tie_key는 이름순의 반대
+    ranks = [Ranking("m", facts[0].key, 1.0, tie_key="z"),
+             Ranking("m", facts[1].key, 1.0, tie_key="y"),
+             Ranking("m", facts[2].key, 1.0, tie_key="x")]
+    assert [by_key[r.candidate_key].image_id for r in top_n(ranks, by_key, 3)] == ["c", "b", "a"]
+    # 재표집해도 tie_key가 따라간다
+    grouped = {a.cluster: [a] for a in facts}
+    rk = {a.key: [r for r in ranks if r.candidate_key == a.key] for a in facts}
+    _, drawn = _resample(sorted(grouped), grouped, rk, random.Random(0))
+    assert all(r.tie_key in ("x", "y", "z") for r in drawn)
+
+
+def test_tie_key가_없으면_옛_규칙_그대로다():
+    from evaluation.ranking import top_n
+    from evaluation.schema import Adjudication, Ranking
+    facts = [Adjudication("d", im, "c", "", verdict="miss") for im in ("b", "a")]
+    by_key = {a.key: a for a in facts}
+    ranks = [Ranking("m", f.key, 1.0) for f in facts]
+    assert [by_key[r.candidate_key].image_id for r in top_n(ranks, by_key, 2)] == ["a", "b"]

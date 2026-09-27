@@ -125,9 +125,13 @@ def load_export(export: dict, dataset_id: str | None = None, *,
         cid = _require(row, "canonical_candidate_id")
         if cid not in key_of:
             raise ValidationError(f"판정에 없는 후보에 점수가 붙었다: {cid}")
+        tie_key = row.get("tie_key")
+        if tie_key is not None and not isinstance(tie_key, str):
+            raise ValidationError(f"tie_key는 문자열이다: {tie_key!r}")
         rankings.append(Ranking(method=_require(row, "method"),
                                 candidate_key=key_of[cid],
-                                severity=float(_require(row, "severity"))))
+                                severity=float(_require(row, "severity")),
+                                tie_key=tie_key))
 
     validate_adjudications(adjudications)
     validate_rankings(rankings, {a.key for a in adjudications})
