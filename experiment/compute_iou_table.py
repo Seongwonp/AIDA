@@ -1,6 +1,6 @@
 """조건별 magnitude → 평균 IoU 감소율 매핑표 (사후 계산, 재학습 불필요).
 
-김성호 교수님 피드백(docs/11-professor-feedback.md 3번): 오류 강도를 단순 길이
+김성호 교수님 피드백(docs/archive/11-professor-feedback.md 3번): 오류 강도를 단순 길이
 증감(%, 도)이 아니라 원본 참값과의 IoU 감소량으로도 제시하면 설득력이 높아진다.
 이 스크립트는 이미 만들어진 labels_gt/train(참값)에 각 조건의 변형 함수를 그대로
 적용해, "이 조건이 실제로 원본 박스를 얼마나 밀어내는가"를 IoU로 정량화한다.
@@ -35,7 +35,7 @@ def mean_iou_for_condition(condition: config.Condition, label_dir: Path, image_d
     # 주의: 여기서는 GT 박스 100%에 변형을 적용한다. 실제 학습 라벨(error_injector.py의
     # build_condition_labels)은 config.ERROR_RATIO(30%)만 무작위로 변형하므로, 이 함수의
     # 결과는 "이 조건이 이론상 얼마나 세게 박스를 왜곡하는가"이지 실제 학습에 들어간
-    # 라벨의 평균 IoU가 아니다. 둘을 섞어서 비교하면 안 됨 — docs/13-ppt-visuals-checklist.md
+    # 라벨의 평균 IoU가 아니다. 둘을 섞어서 비교하면 안 됨 — docs/archive/13-ppt-visuals-checklist.md
     # 3번 항목의 "주의" 참고.
     if condition.type == "none":
         return 1.0

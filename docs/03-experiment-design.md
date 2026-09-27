@@ -160,7 +160,7 @@
 5. 2차 예선용 최소 실험 범위와 성공 기준
 
 **→ 김성호 교수님(영남대 AVIL) 회신 도착, 1·2·4·5번에 대한 답변 포함.**
-자세한 내용과 대응 방안은 [11-professor-feedback.md](./11-professor-feedback.md) 참고.
+자세한 내용과 대응 방안은 [11-professor-feedback.md](./archive/11-professor-feedback.md) 참고.
 핵심 요지: (1) 완전한 역진단은 ill-posed problem이므로 "확률적 진단 + 재검수
 우선순위 가이드"로 포지셔닝 필요, (2) 회전각 오류는 KITTI의 axis-aligned 2D
 박스와 기하학적으로 맞지 않아 OBB 도입 또는 중심점이동·스케일로 대체 검토 필요,

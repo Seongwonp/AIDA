@@ -78,7 +78,7 @@ def test_apply_rotation_90_degrees_swaps_width_and_height():
 
 def test_apply_rotation_nonzero_angle_enlarges_non_square_box():
     """알려진 한계: 축정렬 박스는 90도의 배수가 아닌 각도로 회전하면 항상 더 커진다
-    (docs/11-professor-feedback.md 2번 항목 — 회전 방향과 무관하게 박스가 커지는
+    (docs/archive/11-professor-feedback.md 2번 항목 — 회전 방향과 무관하게 박스가 커지는
     형태로 나타나는 현상을 코드 수준에서 문서화하는 회귀 테스트).
     """
     original_area = (BOX[2] - BOX[0]) * (BOX[3] - BOX[1])

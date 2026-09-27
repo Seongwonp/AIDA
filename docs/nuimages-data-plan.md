@@ -108,7 +108,7 @@ KITTI 25%·COCO 55%)과 나란히 적고, 사전 등록 전에 사용자가 이 
 
 ## 6. 판정 지침에 넣을 nuImages 라벨 규칙
 
-([advice-w1-w5-2026-09-16.md](advice-w1-w5-2026-09-16.md) 5절, nuScenes devkit `instructions_nuimages.md`)
+([advice-w1-w5-2026-09-16.md](./archive/advice-w1-w5-2026-09-16.md) 5절, nuScenes devkit `instructions_nuimages.md`)
 
 - 가려진 차의 상자는 **가려진 부분까지 추정해 포함**한다(amodal).
 - 이미지 경계에서 잘린 차는 **경계에서 멈춘다.**

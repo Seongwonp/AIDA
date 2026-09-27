@@ -1,7 +1,7 @@
 # 11. 김성호 교수님(영남대 AVIL) 기술 검토 피드백
 <!-- 시점 표시 -->
 
-> **끝난 일의 기록이다.** 2026 국방기술 창업경진대회는 2026-08-19에 2차 예선에서 탈락했고, 그 뒤로 프로젝트는 발표 준비가 아니라 기술 검증으로 방향을 바꿨다. 이 문서는 **당시 상태 그대로 두며 갱신하지 않는다** — 지금 시스템과 다른 것이 정상이다. 현재 상태는 저장소 README와 [21-next-plan.md](./21-next-plan.md)를 볼 것.
+> **끝난 일의 기록이다.** 2026 국방기술 창업경진대회는 2026-08-19에 2차 예선에서 탈락했고, 그 뒤로 프로젝트는 발표 준비가 아니라 기술 검증으로 방향을 바꿨다. 이 문서는 **당시 상태 그대로 두며 갱신하지 않는다** — 지금 시스템과 다른 것이 정상이다. 현재 상태는 저장소 README와 [21-next-plan.md](../21-next-plan.md)를 볼 것.
 
 
 [08-professor-review-email.md](./08-professor-review-email.md)로 보낸 검토 요청에 대한
@@ -14,7 +14,7 @@
 > 모두 구현하기보다, 신뢰도 높은 KITTI 공개 데이터셋을 활용해 '역진단 가능성'이라는
 > 핵심 알고리즘부터 검증하겠다는 실무적인 접근은 적절하다.
 
-→ KITTI 재활용 결정([06-decisions.md](./06-decisions.md) "MVP 데이터: 신규 이미지 생성
+→ KITTI 재활용 결정([06-decisions.md](../06-decisions.md) "MVP 데이터: 신규 이미지 생성
 없이 KITTI 재활용")이 옳았음을 확인. **대응 불필요, 현행 유지.**
 
 ## 2. 초기 오류 유형 설정 — 회전각 구현의 한계 (★ 가장 중요한 지적)
@@ -38,7 +38,7 @@
 `NEXT_PHASE_CONDITIONS`를 추가하고 `error_injector.py`에 중심점 이동
 (`translation_x`, `translation_y`)과 스케일(`scale`) 변형 함수를 구현했다.
 기존 `rotation` 조건은 "축정렬 박스로 근사한 회전 조건"으로만 해석한다. OBB 도입
-범위와 비용은 [16-obb-adoption-review.md](./16-obb-adoption-review.md)에 별도 정리했다.
+범위와 비용은 [16-obb-adoption-review.md](../16-obb-adoption-review.md)에 별도 정리했다.
 
 ## 3. 오류 강도 설정 기준 — IoU 감소량 제안
 
@@ -106,5 +106,5 @@ Car 포함 프레임(6,684장) 대비 약 7.8%로 오히려 권장 범위(20~30%
 | 5 | 서브셋 크기·COCO 사전학습 사용이 권장사항과 일치함을 발표에 명시 (4번) | 낮음 (이미 하고 있음) |
 | — | 회전각 오류 유형 자체를 교체(OBB 도입 or 중심점이동·스케일) | 높음 — 본선 진출 시 검토 |
 
-관련 문서: [03-experiment-design.md](./03-experiment-design.md) 9절,
-[06-decisions.md](./06-decisions.md), [08-professor-review-email.md](./08-professor-review-email.md)
+관련 문서: [03-experiment-design.md](../03-experiment-design.md) 9절,
+[06-decisions.md](../06-decisions.md), [08-professor-review-email.md](./08-professor-review-email.md)

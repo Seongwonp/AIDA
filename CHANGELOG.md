@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-27
+
+- 방향 결정: 연구 논문으로 정리. 창업·제품 목표는 접는다.
+- `label_diagnosis.parse_yolo_labels` 추가 — 형식이 틀린 라벨 줄은 파일·줄 번호를 말하며 `LabelParseError`. `diagnose_labels.run`은 그 이미지를 건너뛰고 `summary.skipped_images`에 남긴다. 예전에는 `ValueError`로 진단 전체가 죽었고, 짧은 줄은 조용히 건너뛰어 `label_index`가 백엔드 줄 번호와 어긋날 수 있었다.
+- 인수인계·조언·대회 준비 문서 20개를 `docs/archive/`로 이동, 저장소 전체 링크 갱신.
+
 ## 2026-09-09
 
 ### 후속 계획과 문서 안내 정리
@@ -1508,7 +1514,7 @@ V·Y·Z·AA에서 "중복은 모든 실패 방식을 견딘다"고 한 것은 �
 
 ### Added
 
-- `docs/08-professor-review-email.md` — 교수님께 보낼 기술 검토 요청 메일 완성본
+- `docs/archive/08-professor-review-email.md` — 교수님께 보낼 기술 검토 요청 메일 완성본
   (본문 5개 핵심 질문 + 세부 사항은 첨부 자료로 분리)
 - `docs/09-getting-started.md` — 새 세션/새 개발자가 프로젝트를 이어받을 때 가장
   먼저 읽는 진입점 문서 (완료된 것 / 다음 할 일 / AI 어시스턴트용 안내 포함)
@@ -1551,13 +1557,13 @@ V·Y·Z·AA에서 "중복은 모든 실패 방식을 견딘다"고 한 것은 �
 
 ### Added
 
-- `docs/10-competition-brief.md` — 공식 공고문(방위사업청·국방과학연구소·민군협력진흥원,
+- `docs/archive/10-competition-brief.md` — 공식 공고문(방위사업청·국방과학연구소·민군협력진흥원,
   2026-06-09) 기준 대회 전체 일정, 1차/2차 예선 평가기준 배점표, 본선 시상 내역,
   지원 내용(바우처 멘토링, MVP 제작비 50만원, 기술이전 특전 등) 정리
 
 ### Fixed
 
-- `docs/07-roadmap.md`의 "2차 예선 통과 시 전원 수상" 메모가 공식 공고와 다름을
+- `docs/archive/07-roadmap.md`의 "2차 예선 통과 시 전원 수상" 메모가 공식 공고와 다름을
   확인 후 정정 (본선은 발표·시연 기반 경쟁 평가이며 최종 결과로 학생부/일반부
   각 6팀만 수상). 배경은 `docs/06-decisions.md` "2026-07-07 (3)" 항목 참고
 
@@ -1568,7 +1574,7 @@ V·Y·Z·AA에서 "중복은 모든 실패 방식을 견딘다"고 한 것은 �
 - **핵심 7개 조건 실제 학습·평가 완료** — KITTI Car 400장(학습)+120장(평가)로
   clean/width±30/height±30/rot±15 학습, `backend/app/data/metrics.csv`에 실측
   결과 반영 (목업 데이터 → 실제 데이터로 최초 교체)
-- `docs/11-professor-feedback.md` — 김성호 교수님(영남대 AVIL) 기술 검토 회신 정리
+- `docs/archive/11-professor-feedback.md` — 김성호 교수님(영남대 AVIL) 기술 검토 회신 정리
   및 2차 예선 전 대응 방안 (포지셔닝 문구 변경, 회전각 오류 한계 인정, IoU 기반
   강도 지표 제안, ROI 정량화 등)
 - `docs/12-experiment-results.md` — 실측 결과 분석: (1) 세 오류 유형 모두 성능

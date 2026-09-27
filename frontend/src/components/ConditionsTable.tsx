@@ -36,7 +36,7 @@ function toCsvValue(value: string | number | null) {
 }
 
 // 서버 호출 없이 이미 받아온 조건별 데이터를 그대로 CSV로 변환해 다운로드시킨다
-// (백엔드에 별도 export 엔드포인트가 없어도 되는 구조, docs/14-dashboard-enhancement-plan.md 참고)
+// (백엔드에 별도 export 엔드포인트가 없어도 되는 구조, docs/archive/14-dashboard-enhancement-plan.md 참고)
 function downloadConditionsCsv(conditions: ConditionMetric[]) {
   const headers = [
     "condition",

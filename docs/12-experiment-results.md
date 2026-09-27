@@ -43,7 +43,7 @@ CUDA 데스크탑(RTX 3050)에서 실행했으며, 이전 M1 Mac 결과(핵심 7
 
 13개 조건 전체가 동일 조건(50epoch)으로 학습되어, 이전 결과의 "clean만 50epoch,
 나머지 25epoch" 편향이 완전히 사라졌다. IoU 기반 오류강도 지표(`experiment/iou_table.csv`,
-[11-professor-feedback.md](./11-professor-feedback.md) 3번 대응)도 이 데이터와 별개로
+[11-professor-feedback.md](./archive/11-professor-feedback.md) 3번 대응)도 이 데이터와 별개로
 이미 계산돼 있다.
 
 ## 핵심 발견 4가지
@@ -98,7 +98,7 @@ Recall은 조건에 따라 -1.3%~+6.4%까지 폭넓게 변한다. `rot_m15`가 R
    박스 4꼭짓점을 회전시킨 뒤 그 꼭짓점을 감싸는 axis-aligned 사각형으로
    재계산한다. IoU 기준으로는 -15°/+15°가 완전히 동일하게 박스를 왜곡시켜
    방향성이 사라진다(`iou_table.csv`). 김성호 교수님 피드백
-   ([11-professor-feedback.md](./11-professor-feedback.md) 2번, ★ 가장 중요한
+   ([11-professor-feedback.md](./archive/11-professor-feedback.md) 2번, ★ 가장 중요한
    지적) — 발표에서 선제적으로 인정하고 후속 계획(OBB 도입 또는 중심점이동·
    스케일 교체)으로 제시.
 4. **세분화 조건도 단일 시드** — 13개 조건 모두 확보했지만 여전히 조건당
@@ -115,6 +115,6 @@ Recall은 조건에 따라 -1.3%~+6.4%까지 폭넓게 변한다. `rot_m15`가 R
 - [x] 조건별 IoU 감소율 계산 완료 (`experiment/compute_iou_table.py` →
       `iou_table.csv`) — 교수님 피드백 3번 대응
 - [ ] PPT에 회전각 한계 다이어그램·IoU 감소율 그래프 반영 (진행 중,
-      [13-ppt-visuals-checklist.md](./13-ppt-visuals-checklist.md) 참고)
+      [13-ppt-visuals-checklist.md](./archive/13-ppt-visuals-checklist.md) 참고)
 - [ ] 대시보드에 13개 조건 상세 표 + CSV 다운로드 추가
-      ([14-dashboard-enhancement-plan.md](./14-dashboard-enhancement-plan.md) 참고)
+      ([14-dashboard-enhancement-plan.md](./archive/14-dashboard-enhancement-plan.md) 참고)

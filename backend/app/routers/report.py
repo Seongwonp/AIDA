@@ -106,7 +106,7 @@ def get_conditions(profile_classes: str = "") -> list[ConditionMetric]:
 @router.get("/roi-estimate", response_model=RoiEstimate)
 def get_roi_estimate() -> RoiEstimate:
     # 아래 숫자는 실제 고객 계약 단가가 아니라 발표용 예시 가정값이다
-    # (사업계획서의 라벨링 단가 벤치마크, docs/13-ppt-visuals-checklist.md 5번 참고).
+    # (사업계획서의 라벨링 단가 벤치마크, docs/archive/13-ppt-visuals-checklist.md 5번 참고).
     # 실제 절감률은 PoC를 통해 검증할 예정 — RoiEstimateCard.tsx의 캡션에도 명시돼 있음.
     assumptions = RoiAssumptions(
         dataset_labels=100_000,

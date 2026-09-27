@@ -1,4 +1,4 @@
-"""nuImages → YOLO 폴더 변환 (docs/advice-w1-w5-2026-09-16.md 4·5절).
+"""nuImages → YOLO 폴더 변환 (docs/archive/advice-w1-w5-2026-09-16.md 4·5절).
 
 **손으로 만든 작은 표로 검사한다.** 실제 nuImages 파일은 저장소에 넣지 않는다(약관).
 

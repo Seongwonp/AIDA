@@ -1,15 +1,28 @@
 # AIDA 작업 안내
 
-## 현재 상태 — 2026-09-16
+## 현재 상태 — 2026-09-27
+
+> **방향을 정했다 — 연구 논문으로 정리한다.** 창업·제품 목표는 접는다(라이선스 차단점과
+> prelim1 결과). 주장은 하나로 좁힌다: *데이터셋 단위 유형 역진단은 박스 단위 재검수
+> 순위를 개선하지 못하고, 진단 품질은 자의 도메인 적합이 지배한다.* 남은 실험은
+> nuImages Q-A 하나다(W5 사전 등록 → 판정자 2인 → 집계). 비교 방법에 **Cleanlab ObjectLab
+> 기준선을 추가**한다(구현 전).
+>
+> 2026-09-27 노트북 작업: 라벨 파일의 깨진 줄 하나가 진단 전체를 죽이던 결함을 고쳤다
+> (`label_diagnosis.parse_yolo_labels`, 이미지 단위로 건너뛰고 `summary.skipped_images`에
+> 기록). 인수인계·조언·대회 문서 20개를 [`docs/archive/`](docs/archive/README.md)로 옮기고
+> 링크 371개를 검사했다(깨진 것 0). 아래 09-16 상태는 그대로 유효하다.
+
+## 그 전 상태 — 2026-09-16
 
 > **`git pull` 직후 이것부터 읽는다.** 최근 경위는
-> [`docs/HANDOFF_2026-09-16.md`](docs/HANDOFF_2026-09-16.md), 할 일 순서표는
+> [`docs/archive/HANDOFF_2026-09-16.md`](docs/archive/HANDOFF_2026-09-16.md), 할 일 순서표는
 > [`docs/next-work-2026-09-15.md`](docs/next-work-2026-09-15.md).
 >
 > **W1은 정했다 — nuImages(비상업 연구·포트폴리오).** train 분할·Car 자 `car_v1` 학습·적합도 확인까지
 > 끝났다(fit_check 69.9%, 작은 차 맹점 — [`docs/nuimages-data-plan.md`](docs/nuimages-data-plan.md) 5절). 100에폭 재학습
 > `car_v1_e100`도 끝났다(ruler_val fitness 0.504→0.516, fit_check 71.6%) — **어느 자를 쓸지는 사용자 결정.**
-> W5 조언([`docs/advice-w5-2026-09-16.md`](docs/advice-w5-2026-09-16.md))으로 기록 단위 묶음(`groups.json`)·높이
+> W5 조언([`docs/archive/advice-w5-2026-09-16.md`](docs/archive/advice-w5-2026-09-16.md))으로 기록 단위 묶음(`groups.json`)·높이
 > 층별 집계·사전 등록 뒤에만 도는 val 표집을 구현했다. **남은 구현: 업로드 진단에서 nuImages 자를 고르는 길.**
 > **지금 막힌 곳은 W5 사전 등록(사용자 결정)이다.** val은 그 커밋 전까지 열지 않는다.
 > W2~W4(1차 질문 선택·최소 구현·경로 드라이런)는 2026-09-16에 끝났다. 같은 날 저녁에 결정이
@@ -70,7 +83,7 @@
 - 대용량 다운로드는 **용량·시간을 먼저 적고 사용자 승인 후** 한다.
 - **보호 자료를 지우거나 고치지 않는다** — `uploads/30512dfcbfbb`(prelim1),
   `D:/AIDA-eval/prelim/prelim1_30512dfcbfbb/`, `uploads/ffffffffff01`~`07`(시간 파일럿, SHA-256은
-  [`docs/HANDOFF_2026-09-12.md`](docs/HANDOFF_2026-09-12.md)).
+  [`docs/archive/HANDOFF_2026-09-12.md`](docs/archive/HANDOFF_2026-09-12.md)).
 
 ### 멈춰 둔 것 — 시간·표본 크기
 
@@ -97,7 +110,7 @@
 7. [`docs/prelim1-preregistration.md`](docs/prelim1-preregistration.md) — 다음 사전 등록의 형식
 8. [`docs/testing-boundary.md`](docs/testing-boundary.md) — 검사 경계와 미검증 항목
 
-`docs/20-local-claude-handoff.md`는 과거 OBB 작업 기록이므로 **현재 실행 지시로
+`docs/archive/20-local-claude-handoff.md`는 과거 OBB 작업 기록이므로 **현재 실행 지시로
 쓰지 않는다.** R1~R5(docs/25 1단계)는 **끝났다** — 그 절을 지금 할 일로 읽지 않는다. **R6은
 부분 완료**다: jsdom 흐름 검사는 CI에서 돌지만 계획이 요구한 **브라우저 통합
 검사(Playwright 등)는 미완**이다. 경계는 [`docs/testing-boundary.md`](docs/testing-boundary.md).

@@ -2,7 +2,7 @@
 
 > **이 자료는 시간 추정용이고 효능 증거가 아니다.**
 >
-> **현재 상태와 다음 작업**: [HANDOFF_2026-09-10.md](HANDOFF_2026-09-10.md).
+> **현재 상태와 다음 작업**: [HANDOFF_2026-09-10.md](./archive/HANDOFF_2026-09-10.md).
 > 이 문서가 다루는 timing1~3은 **주입 후보**이고, 실제 진단 후보로 잰 것은
 > [timing4-realistic-protocol.md](timing4-realistic-protocol.md)다.
 >
