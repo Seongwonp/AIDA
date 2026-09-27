@@ -70,6 +70,10 @@ def sample_by_log(tables: dict, images: int, per_log: int, seed: int,
         "logs": len(per_log_counts), "max_per_log": max(per_log_counts.values(), default=0),
         "by_location": dict(Counter(r["location"] for r in picked)),
         "by_camera": dict(Counter(r["camera"] for r in picked)),
+        # 개발/최종 경계 (사전 등록 D1). 이번 표본이 **소비한** val 기록과, 아직 열지 않은
+        # 기록 수. 다음 평가는 소비한 기록을 다시 쓰지 않는다.
+        "consumed_log_tokens": sorted(per_log_counts),
+        "unconsumed_logs": len(logs) - len(per_log_counts),
     }}
 
 

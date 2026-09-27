@@ -180,6 +180,10 @@ export interface RulerInfo {
   unknown_class_ids: number[];
   // 클래스 의미가 대응되는지에 대한 한마디 (docs/24 B). 예전 결과에는 없다.
   class_note?: string;
+  // 외부 자를 명시적으로 골랐을 때만 (사전 등록 D1). 가중치 경로와 SHA-256.
+  ruler_id?: string | null;
+  weights_path?: string | null;
+  weights_sha256?: string | null;
 }
 
 /**

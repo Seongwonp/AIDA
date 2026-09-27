@@ -97,3 +97,14 @@ def test_커밋된_사전_등록이면_그_커밋을_돌려준다(repo):
     head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"],
                           capture_output=True, text=True).stdout.strip()
     assert V.check_preregistration(repo, "prereg.md") == head
+
+
+def test_표본_요약은_소비한_기록과_남은_기록_수를_적는다():
+    """개발/최종 경계 (사전 등록 D1). 다음 평가가 같은 기록을 다시 쓰지 않게."""
+    t = tables()
+    all_logs = {r["log_token"] for r in V._keyframes(t, None)}
+    summ = V.sample_by_log(t, images=3, per_log=2, seed=1)["summary"]
+    consumed = summ["consumed_log_tokens"]
+    assert consumed == sorted(consumed) and len(consumed) == summ["logs"]
+    assert set(consumed) <= all_logs
+    assert summ["unconsumed_logs"] == len(all_logs) - len(consumed)

@@ -184,6 +184,11 @@ class RulerInfo(BaseModel):
     # 할 말이 없다는 뜻이다. 개수만 맞고 순서가 다르면 지금까지 아무 경고도
     # 없었다 — 그게 가장 위험한 경우다.
     class_note: str = ""
+    # 외부 자를 명시적으로 골랐을 때 (사전 등록 D1). 어느 자인지, 실제 가중치 파일이 어디이고
+    # SHA-256이 무엇인지. 진단 결과의 `ruler.sha256`과 대조해 다르면 묶음을 얼리지 않는다.
+    ruler_id: str | None = None
+    weights_path: str | None = None
+    weights_sha256: str | None = None
 
 
 class DatasetHistoryItem(BaseModel):

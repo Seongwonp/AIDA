@@ -86,10 +86,17 @@ out.mkdir(parents=True, exist_ok=True)
     "profile": os.environ.get("AIDA_RELIABILITY_PROFILE"),
     "classes": os.environ.get("AIDA_CLASSES"),
     "dataset": os.environ.get("AIDA_DATASET"),
+    "ruler_weights": os.environ.get("AIDA_RULER_WEIGHTS"),
+    "ruler_sha256": os.environ.get("AIDA_RULER_SHA256"),
 }, ensure_ascii=False), encoding="utf-8")
 
 payload = json.loads(os.environ["FAKE_DIAGNOSIS_JSON"])
 payload["dataset"] = dataset_id
+# 진짜처럼 실제로 연 자를 적는다. FAKE_WRONG_RULER면 다른 해시를 적어 대조가 잡는지 본다.
+if os.environ.get("AIDA_RULER_WEIGHTS"):
+    payload["ruler"] = {"weights": os.environ["AIDA_RULER_WEIGHTS"],
+                        "sha256": ("0" * 64 if os.environ.get("FAKE_WRONG_RULER")
+                                   else os.environ.get("AIDA_RULER_SHA256"))}
 
 # 순위 버전 (docs/adr-ranking-separation.md). 진짜처럼 버전마다 다른 파일에 쓰고 버전을 적는다.
 V1 = "aida_v1_systematic_boost"

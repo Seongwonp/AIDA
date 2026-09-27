@@ -598,6 +598,13 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
         except RankingVersionError as exc:
             raise HTTPException(400, str(exc)) from exc
         _require_diagnosis_version(diagnosis, ranking_version, "진단 결과")
+    if ruler is not None and getattr(ruler, "weights_sha256", None):
+        # 외부 자를 고른 진단은 결과에 실제로 연 자의 해시가 있어야 하고 같아야 한다.
+        found = (diagnosis.get("ruler") or {}).get("sha256")
+        if found != ruler.weights_sha256:
+            raise HTTPException(
+                409, f"자 기록의 SHA-256({ruler.weights_sha256[:12]}…)과 진단 결과의 자"
+                     f"({str(found)[:12]}…)가 다릅니다. 다른 자로 잰 후보를 얼리지 않습니다.")
     if "all_candidates" in diagnosis:
         pool, queue = "all_candidates", diagnosis.get("all_candidates") or []
     else:

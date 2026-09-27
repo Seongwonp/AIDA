@@ -19,6 +19,7 @@ from ultralytics import YOLO
 
 import config
 import objectlab_baseline
+import ruler_check
 from label_diagnosis import (
     match_boxes,Box, BoxFinding, diagnose_image, label_rows, unmatched_prediction_rows,
     order_basis, order_risk, present_types,
@@ -91,9 +92,15 @@ def run(images_dir: Path, labels_dir: Path, limit: int | None = None,
     기본값이 False인 것은 이 함수를 쓰는 측정 스크립트가 여럿이라 반환 모양을 바꾸지
     않으려는 것이다.
     """
-    weights = weights or CLEAN_WEIGHTS
-    if not weights.exists():
-        raise RuntimeError(f"{weights} 없음 — 해당 조건을 먼저 학습하세요")
+    # 자 해석 (사전 등록 D1). 인자 > 환경변수(AIDA_RULER_WEIGHTS, SHA-256 대조) > clean 기본.
+    # 환경변수의 자가 없거나 해시가 다르면 기본 자로 되돌아가지 않고 멈춘다.
+    if weights is not None:
+        if not weights.exists():
+            raise RuntimeError(f"{weights} 없음 — 해당 조건을 먼저 학습하세요")
+        ruler_record = {"weights": str(weights), "sha256": ruler_check.sha256_of(weights),
+                        "source": "argument", "sha256_verified": False}
+    else:
+        weights, ruler_record = ruler_check.from_environ(CLEAN_WEIGHTS)
     if not images_dir.is_dir():
         raise RuntimeError(f"{images_dir} 없음")
 
@@ -128,7 +135,9 @@ def run(images_dir: Path, labels_dir: Path, limit: int | None = None,
     # 기준 모델 적합도. 라벨이 맞다고 가정하지 않는 값들만 모은다.
     fit: dict = {"matched_labels": 0, "predictions": 0, "confidences": [],
                  # 라벨 파일이 깨져 진단에서 뺀 이미지. 비어 있는 것이 정상이다.
-                 "skipped_images": []}
+                 "skipped_images": [],
+                 # 실제로 연 자와 그 해시. 결과의 `ruler`로 나간다.
+                 "ruler": ruler_record}
 
     # 이미지를 한 장씩 넘기면 GPU 호출 오버헤드가 커서, 배치로 끊어 예측한다.
     batch_size = 16
@@ -278,6 +287,8 @@ def build_result(name: str, findings: list[BoxFinding], total_labels: int,
         "summary": summary,
         # 어느 순위 버전으로 만든 결과인가. 없으면 옛 v1 결과로 읽힌다.
         "ranking": ranking_metadata(ranking),
+        # 실제로 연 가중치와 SHA-256. 백엔드의 자 기록(sidecar)과 대조된다.
+        "ruler": (fit or {}).get("ruler"),
         "review_queue": candidate_rows(ranked[:top_n], config.CLASS_NAMES, ranking),
         "total_in_queue": len(ranked),
         # 잘리기 전 전부. 평가는 이것을 얼린다 — `review_queue`만 얼리면 AIDA

@@ -6,6 +6,7 @@ torch 의존)은 backend가 아니라 experiment/venv 쪽에서 서브프로세�
 backend에 얹지 않는 것과 같은 구조다.
 """
 import html
+import hashlib
 import json
 import yaml
 import os
@@ -60,6 +61,50 @@ DIAGNOSE_TIMEOUT_SEC = 300
 
 # 프로파일 파일 이름 → 사람이 읽을 이름. 없으면 파일 이름을 그대로 쓴다.
 PROFILE_LABELS = {"mc": "다중 클래스 (Car/Van/Pedestrian/Cyclist 실측)"}
+
+# 명시적으로 고르는 외부 자 (사전 등록 D1). 경로는 EXPERIMENT_ROOT 기준이고 가중치는 git 밖이다.
+# 여기 없는 이름은 거부하고, 파일이 없으면 다른 자로 **대체하지 않는다.**
+EXTERNAL_RULERS: dict[str, dict] = {
+    "nuimages_car_v1_e100": {
+        "weights": "runs_nuimages/car_v1_e100/weights/best.pt",
+        "classes": ["Car"], "dataset": "nuimages",
+        "label": "nuImages Car 자 car_v1_e100 (100에폭 학습, best=93)",
+    },
+}
+
+
+def _sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _external_ruler(ruler: str, dataset_dir: Path) -> tuple[RulerInfo, dict[str, str]]:
+    """외부 자의 기록과 서브프로세스 환경변수. 없으면 404, 모르면 400."""
+    spec = EXTERNAL_RULERS.get(ruler)
+    if spec is None:
+        raise HTTPException(400, f"모르는 자입니다: {ruler}. 아는 것: {', '.join(EXTERNAL_RULERS)}")
+    path = EXPERIMENT_ROOT / spec["weights"]
+    if not path.is_file():
+        raise HTTPException(
+            404, f"자 '{ruler}'의 가중치가 이 서버에 없습니다 ({spec['weights']}). 다른 자로 대체하지 않습니다.")
+    sha = _sha256_file(path)
+    classes = list(spec["classes"])
+    unknown = sorted(i for i in _label_class_ids(dataset_dir) if i >= len(classes))
+    info = RulerInfo(
+        profile="", profile_label=spec["label"], classes=classes,
+        weights=str(Path(spec["weights"]).parent.parent.name),
+        class_aware=len(classes) > 1 and not unknown,
+        class_note=compare_class_names(read_class_names(dataset_dir), classes),
+        seed_spread_pp=RULER_SEED_SPREAD_PP.get(len(classes), DEFAULT_SEED_SPREAD_PP),
+        unknown_class_ids=unknown,
+        ruler_id=ruler, weights_path=spec["weights"], weights_sha256=sha,
+    )
+    env = {"AIDA_RULER_WEIGHTS": str(path), "AIDA_RULER_SHA256": sha,
+           "AIDA_CLASSES": ",".join(classes)}
+    return info, env
 
 # 박스 단위 의심 유형 한글 라벨. report.py의 TYPE_LABELS(조건 type 기준)와
 # 겹치는 이름이 많지만, 여기엔 missing/duplicate가 "라벨이 빠졌다/겹쳤다"는
@@ -944,9 +989,23 @@ def _load_label_diagnosis_json(dataset_id: str,
     )
 
 
+@router.get("/rulers")
+def list_external_rulers() -> list[dict]:
+    """명시적으로 고를 수 있는 외부 자와 이 서버에 있는지·SHA-256."""
+    out = []
+    for name, spec in EXTERNAL_RULERS.items():
+        path = EXPERIMENT_ROOT / spec["weights"]
+        out.append({"ruler_id": name, "label": spec["label"], "classes": spec["classes"],
+                    "dataset": spec["dataset"], "weights_path": spec["weights"],
+                    "available": path.is_file(),
+                    "weights_sha256": _sha256_file(path) if path.is_file() else None})
+    return out
+
+
 @router.post("/{dataset_id}/diagnose-labels", response_model=LabelDiagnosisResult)
 def diagnose_dataset_labels(dataset_id: str, profile: str | None = None,
-                            ranking: str = RANKING_V1) -> LabelDiagnosisResult:
+                            ranking: str = RANKING_V1,
+                            ruler: str | None = None) -> LabelDiagnosisResult:
     """박스 단위 진단 — 재검수 우선순위 목록을 만든다.
 
     /diagnose(데이터셋 단위 성능 비교)와 달리 예측 박스와 라벨을 1:1로
@@ -964,13 +1023,40 @@ def diagnose_dataset_labels(dataset_id: str, profile: str | None = None,
         raise HTTPException(400, str(exc)) from exc
     # 자 정보를 먼저 확정해 남긴다 — 진단이 끝난 뒤에는 어떤 프로파일로
     # 돌렸는지 알 길이 없다.
-    _save_ruler_sidecar(dataset_id, _ruler_info(profile, dataset_dir), ranking)
+    if ruler:
+        # 외부 자 (사전 등록 D1). 프로파일과 같이 고르면 어느 자인지 모호해지므로 거부한다.
+        if profile:
+            raise HTTPException(400, "외부 자와 신뢰도 프로파일을 같이 고를 수 없습니다.")
+        info, env = _external_ruler(ruler, dataset_dir)
+    else:
+        info, env = _ruler_info(profile, dataset_dir), _profile_env(profile)
+    _save_ruler_sidecar(dataset_id, info, ranking)
     # 버전은 늘 명시한다 — 기본값이 스크립트와 여기서 따로 놀지 않게. 결과는 버전마다
     # 다른 파일에 쓰이고, 스크립트는 다른 버전의 결과가 있는 자리에 쓰지 않는다.
     _run_experiment_script(dataset_id, "diagnose_labels.py",
                            ["--upload-id", dataset_id, "--ranking", ranking],
-                           env_extra=_profile_env(profile))
+                           env_extra=env)
+    _check_ruler_record(dataset_id, ranking, info)
     return _load_label_diagnosis_json(dataset_id, ranking)
+
+
+def _check_ruler_record(dataset_id: str, ranking: str, info: RulerInfo) -> None:
+    """진단이 실제로 연 자가 고른 자와 같은가. 외부 자를 골랐을 때만 본다.
+
+    결과 JSON의 `ruler.sha256`이 없거나 다르면 결과를 돌려주지 않는다 — 다른 자로 잰 결과가
+    그 자의 이름을 달고 나가는 것을 막는다.
+    """
+    if not info.weights_sha256:
+        return
+    path = UPLOADS_DIR / dataset_id / diagnosis_filename(ranking)
+    try:
+        record = json.loads(path.read_text(encoding="utf-8")).get("ruler") or {}
+    except (OSError, ValueError) as exc:
+        raise HTTPException(500, f"진단 결과를 읽지 못했습니다: {exc}") from exc
+    if record.get("sha256") != info.weights_sha256:
+        raise HTTPException(
+            500, f"진단이 연 자({str(record.get('sha256'))[:12]}…)가 고른 자"
+                 f"({info.weights_sha256[:12]}…)와 다릅니다. 결과를 쓰지 않습니다.")
 
 
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".bmp", ".webp"}
