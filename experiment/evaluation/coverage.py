@@ -11,6 +11,7 @@
 않고도 판정 목록을 만들 수 있지만, 분석 정의를 무엇으로 할지는 여기서 정하지 않는다.
 """
 import hashlib
+import json
 from collections import defaultdict
 
 from .bootstrap import iter_resamples
@@ -103,3 +104,39 @@ def unjudged_in_fixed_resamples(adjudications: list[Adjudication], rankings: lis
                 if dk[r.candidate_key].verdict is None:
                     found[m].add(original_key(r.candidate_key))
     return {m: sorted(v) for m, v in found.items()}
+
+
+def export_fingerprint(export: dict) -> str:
+    """내보내기의 coverage 입력 지문. **백엔드 `_export_fingerprint`와 같은 식** — 모집단(후보 id·묶음)과
+    순위(방법·후보·점수·동점 키)만. 판정은 들어가지 않는다."""
+    material = {
+        "adjudications": sorted((r["canonical_candidate_id"], r.get("group_id") or "")
+                                for r in export["adjudications"]),
+        "rankings": sorted((r["method"], r["canonical_candidate_id"], r["severity"], r.get("tie_key"))
+                           for r in export["rankings"]),
+    }
+    return hashlib.sha256(json.dumps(material, ensure_ascii=False, sort_keys=True,
+                                     separators=(",", ":")).encode("utf-8")).hexdigest()
+
+
+def check_export_against_coverage(export: dict, budget: int, iterations: int, seed: int,
+                                  methods: list[str]) -> dict:
+    """최종 분석 입력이 묶음에 얼린 coverage 설정과 같은가. 다르면 `ValidationError`.
+
+    보는 것: 묶음의 `bootstrap_coverage`(반복 수·씨앗·N·방법)와 분석 인자, 그리고 내보내기에서
+    다시 계산한 입력 지문과 얼린 지문. **하나라도 다르면 분석을 시작하지 않는다.**
+    """
+    cov = export.get("bootstrap_coverage")
+    if not cov:
+        raise ValidationError("내보내기에 bootstrap_coverage가 없다 — 고정 재표본 합집합 없이 얼린 묶음이다")
+    expected = {"iterations": iterations, "seed": seed, "budget": budget, "methods": sorted(methods)}
+    frozen = {"iterations": cov.get("iterations"), "seed": cov.get("seed"), "budget": cov.get("budget"),
+              "methods": sorted(cov.get("methods") or [])}
+    if expected != frozen:
+        raise ValidationError(f"분석 입력이 묶음의 coverage 설정과 다르다: 분석 {expected} / 묶음 {frozen}")
+    if export.get("judge_budget") != budget:
+        raise ValidationError(f"내보내기의 판정 예산({export.get('judge_budget')})이 N({budget})과 다르다")
+    actual = export_fingerprint(export)
+    if actual != cov.get("input_fingerprint"):
+        raise ValidationError("내보내기에서 다시 계산한 입력 지문이 묶음에 얼린 지문과 다르다 — 모집단·순위·동점 키 중 무엇이 바뀌었다")
+    return {"fingerprint": actual, **expected}

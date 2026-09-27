@@ -28,6 +28,9 @@
 > 방식은 **정하지 않았다** — [`docs/unjudged-bootstrap-review-2026-09-27.md`](docs/unjudged-bootstrap-review-2026-09-27.md).
 > Codex가 **안 (a)**(고정 재표본 합집합 전량 판정)를 추천했고 연결 구현을 끝냈다(`coverage_iterations`·`coverage_seed` →
 > `bootstrap_coverage` 지문 고정 → 판정 목록·저장·내보내기 → `require_judged_top_n`). 사전 등록 확정·val 개봉은 **아직 보류.**
+> 최종 분석 경로 `experiment/analyze_qa.py`가 `require_judged_top_n=True`를 강제하고 묶음의 coverage 설정·입력 지문과
+> 다르면 중단한다. 연습 자료: `docs/practice-judging-plan.md`, 프롬프트 초안 `docs/ai-adjudicator-prompt-draft.md`,
+> `check_run_environment.py`(자 SHA·버전 — 데스크탑에서), `render_adjudication_images.py`. 판정 상한 C는 연습 뒤 사용자가 정한다.
 > 아래 09-16 상태는 그대로 유효하다.
 
 ## 그 전 상태 — 2026-09-16
@@ -147,7 +150,7 @@ Python 환경은 **둘로 나뉘어 있다.** 섞으면 없는 패키지를 찾�
 경로나 설치 여부를 추측하지 않고 먼저 확인한다. **문서에 적힌 검사 수를 이번
 실행 결과로 보고하지 않는다** — 직접 돌려 보고 그 숫자를 쓴다.
 
-최근 기록: **2026-09-27 밤 노트북(CI와 같은 의존성)** backend **366** 통과·1 건너뜀 · experiment **528** 통과(프론트는 `types.ts` 선택 필드만 — 타입체크 미실행). 그 전 **2026-09-16 밤 데스크탑** backend **318** · experiment **500** 통과. 그 전 **저녁** backend **308** 통과(건너뜀 0) · experiment **459** 통과 ·
+최근 기록: **2026-09-27 밤 노트북(CI와 같은 의존성)** backend **367** 통과·1 건너뜀 · experiment **541** 통과(프론트는 `types.ts` 선택 필드만 — 타입체크 미실행). 그 전 **2026-09-16 밤 데스크탑** backend **318** · experiment **500** 통과. 그 전 **저녁** backend **308** 통과(건너뜀 0) · experiment **459** 통과 ·
 frontend **183** 통과 · typecheck·lint·build exit 0 · 보호 자료 해시 전부 일치.
 노트북(CI와 같은 의존성만 깐 환경)에서는 backend의 외부 드라이브 검사 1건
 (`test_uploads_dir_agreement.py:100`)이 건너뛰어진다.

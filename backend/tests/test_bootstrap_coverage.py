@@ -170,3 +170,10 @@ def test_반복_수나_씨앗이_없으면_거부한다(client):
     for body in ({"coverage_iterations": ITER}, {"coverage_seed": SEED}, {"coverage_iterations": 0, "coverage_seed": 1}):
         r = client.post(f"/api/datasets/{DATASET}/evaluations", json={"evaluation_id": "e9", **BODY, **body})
         assert r.status_code == 400, body
+
+
+def test_입력_지문은_집계_모듈과_같은_식이다(client):
+    from evaluation.coverage import export_fingerprint
+    start(client, "e1", coverage_iterations=ITER, coverage_seed=SEED)
+    body = export(client, "e1")
+    assert export_fingerprint(body) == body["bootstrap_coverage"]["input_fingerprint"] == E._export_fingerprint(body)

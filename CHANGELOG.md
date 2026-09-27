@@ -7,6 +7,7 @@
 - 인수인계·조언·대회 준비 문서 20개를 `docs/archive/`로 이동, 저장소 전체 링크 갱신.
 - Cleanlab ObjectLab 기준선: `experiment/objectlab_baseline.py`(cleanlab 기본값, 선택 의존성), 진단 결과 `all_labels[].objectlab_score`·`unmatched_predictions[].objectlab_overlooked`·`objectlab` 메타. 백엔드 평가 방법 `all_label_objectlab`(기존 라벨 층)·`unmatched_objectlab`(누락 층) 추가.
 - Q-A 사전 등록 D1~D9 제안값 문서 추가(확정 아님).
+- 최종 분석 경로 `analyze_qa.py`: `require_judged_top_n=True` 강제, 묶음의 coverage 설정(N·방법·씨앗·반복 수)·입력 지문(`coverage.export_fingerprint`, 백엔드와 같은 식)과 다르면 중단, 판정자 명시. `check_run_environment.py`(자 SHA·패키지 버전), `render_adjudication_images.py`(AI 입력 그림, 가림 규칙), 프롬프트 초안·연습 계획 문서.
 - 안 (a) 연결: 묶음 생성 시 `coverage_iterations`·`coverage_seed`로 고정 재표본 합집합을 최종 분석과 같은 경로로 계산해 `bootstrap_coverage`(설정·입력 지문·추가 id)를 지문에 고정. 추가 후보가 판정 목록·저장·내보내기(`coverage_extra`, `judging`)에 들고 K와 분리. 보조 표본은 확장 목록에서 추출. `paired_cluster_bootstrap(require_judged_top_n=True)`가 재표본 상위 N의 미판정을 거부(보류는 판정). 연결 검사: 확장 목록 판정 = 전량 판정.
 - 미판정 후보 문제: `bootstrap.iter_resamples` 생성기 분리(난수 순서 불변, 검사로 고정), `paired_cluster_bootstrap`이 재표본 상위 N의 미판정 수 보고(처리 불변), `evaluation/coverage.py`(고정 재표본에서 상위 N 합집합·추가 판정량), `sim_unjudged.py`(sha256 동점 키·규칙 밖 K·세 방법 합집합, 합성 결과 `planning_evidence/sim_unjudged_2026-09-27.json`), 회귀 검사 8건. 문서 `docs/unjudged-bootstrap-review-2026-09-27.md`, 조사 보고서 `docs/literature-review-2026-09-27.md`. 분석 방식·사전 등록은 미확정, val 미개봉.
 - Codex 검토 반영: v2 기존 라벨 층에서 AIDA 평가 순서를 `1 − label_iou` 점수로 바꿔 `tie_key`가 두 방법에 같이 작동(`order_basis=score_1_minus_label_iou`), v1·누락 층은 제품 순위 유지. 누락 층 내보내기가 등록된 세 방법을 허용(`descriptive_only` 유지). 실행 순서 문서 정정.
