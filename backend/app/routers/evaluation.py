@@ -924,8 +924,12 @@ def _exclusion_reason(candidate: EvaluationCandidate, scope: str, mode: str) -> 
     return "기존 라벨 후보 — 누락 층에 속하지 않는다"
 
 
+AIDA_V2_LABELLED_BASIS = "score_1_minus_label_iou"
+
+
 def method_order(candidates: list[EvaluationCandidate],
-                 method: str) -> dict[str, float] | None:
+                 method: str, ranking_version: str = RANKING_V1,
+                 scope: str | None = None) -> dict[str, float] | None:
     """방법이 후보를 줄 세우는 값. **클수록 먼저다.** 못 매기면 `None`.
 
     **모집단은 방법마다 다르다** (docs/next-work-2026-09-15.md W3). AIDA는 자기 규칙이
@@ -946,8 +950,19 @@ def method_order(candidates: list[EvaluationCandidate],
     """
     if method == AIDA:
         mine = [c for c in candidates if c.source == SOURCE_AIDA]
+        if not mine:
+            return None
+        if ranking_version == RANKING_V2 and scope == LABELLED:
+            # **v2 기존 라벨 층의 평가 순서는 점수 `1 − label_iou`다** (사전 등록 D9). 제품의
+            # `aida_rank`는 같은 점수를 이미지 이름·라벨 번호로 잘라 매긴 것이라, 그것을 쓰면
+            # 동점 씨앗이 AIDA에는 작동하지 않고 `all_label_iou`에만 작동한다. 점수로 돌리면 같은
+            # 후보가 두 방법에서 같은 `tie_key`를 받아 동점 순서가 방법 간에 일관된다. 화면의
+            # 제품 순위는 그대로이고, 평가만 이 순서를 쓴다 — docs/qa-preregistration-proposal.
+            if any(c.scores.get(IOU_BASELINE) is None for c in mine):
+                return None
+            return {c.canonical_candidate_id: c.scores[IOU_BASELINE] for c in mine}
         ranks = [c.aida_rank for c in mine]
-        if not mine or any(r is None for r in ranks) or len(set(ranks)) != len(ranks):
+        if any(r is None for r in ranks) or len(set(ranks)) != len(ranks):
             return None
         return {c.canonical_candidate_id: -float(c.aida_rank) for c in mine}
     mine = [c for c in candidates if method in c.scores]
@@ -1014,7 +1029,7 @@ def judge_ids(snapshot: EvaluationSnapshot) -> set[str] | None:
     for scope in (LABELLED, MISSING):
         layer = [c for c in snapshot.candidates if _in_scope(c, scope)]
         for method in SCOPE_METHODS[scope]:
-            order = method_order(layer, method)
+            order = method_order(layer, method, snapshot_ranking_version(snapshot), scope)
             if order is None:
                 if method == AIDA and any(c.source == SOURCE_AIDA for c in layer):
                     raise HTTPException(
@@ -1104,7 +1119,7 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
     # 1차 지표로 올리려면 가설·점수·동점·Δ를 따로 사전 등록해야 한다.
     comparison_allowed = scope == LABELLED
 
-    if not comparison_allowed and any(m not in (AIDA, UNMATCHED_CONFIDENCE) for m in methods):
+    if not comparison_allowed and any(m not in SCOPE_METHODS[scope] for m in methods):
         # 비교군이 없는 층에 임의의 기준선을 붙이면, 그 자체로 "견줄 수 있다"는
         # 뜻이 되어 버린다.
         raise ExportBlocked(
@@ -1127,7 +1142,7 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
 
     orders: dict[str, dict[str, float]] = {}
     for method in methods:
-        order = method_order(included, method)
+        order = method_order(included, method, snapshot_ranking_version(snapshot), scope)
         if order is None:
             raise ExportBlocked(
                 f"'{method}'로 줄 세울 후보가 없습니다. AIDA는 후보마다 진단의 제품 "
@@ -1226,7 +1241,11 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
         "auxiliary_sample": ({k: v for k, v in snapshot.auxiliary_sample.items() if k != "candidate_ids"}
                              if snapshot.auxiliary_sample else None),
         "methods": methods,
-        "order_basis": {m: ("product_rank" if m == AIDA else "score")
+        # AIDA의 순서 근거. v1은 제품 순위(`aida_rank`), v2 기존 라벨 층은 점수 `1 − label_iou`
+        # (동점 키 공유). 나머지 방법은 점수다.
+        "order_basis": {m: (("product_rank" if not (snapshot_ranking_version(snapshot) == RANKING_V2
+                                                    and scope == LABELLED)
+                             else AIDA_V2_LABELLED_BASIS) if m == AIDA else "score")
                         for m in methods},
         # 동점 규칙 (D9). 씨앗이 있으면 각 순위 줄에 `tie_key`가 붙고 집계는 그것으로 자른다.
         "tie_seed": snapshot.tie_seed,

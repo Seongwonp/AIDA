@@ -61,11 +61,24 @@
 4. 묶음 나누기(세 묶음 또는 넷)와 세션 계획.
 5. 민감도 분석의 정의: 불일치 건을 `hold`로 돌린 뒤 같은 집계를 한 번 더 — 1차 결과와 나란히, 대체하지 않는다.
 
-## 확정 뒤 실행 순서
+## 제품 순위와 평가 순위 (2026-09-27 Codex 검토 반영)
 
+| 층 | 제품 화면 순서 | 평가(선정·내보내기·집계) 순서 |
+|---|---|---|
+| v1 기존 라벨·누락 | `aida_rank` (계통 유형 먼저, 심각도) | 제품 순위 그대로 (`order_basis=product_rank`) |
+| **v2 기존 라벨** | `aida_rank` = `1 − label_iou`를 이미지·라벨 번호로 자른 것 | **점수 `1 − label_iou`** + 공통 `tie_key` (`order_basis=score_1_minus_label_iou`). 제품 순위를 쓰면 동점 씨앗이 AIDA에는 안 걸리고 기준선에만 걸린다 |
+| v2 누락 | `aida_rank` (심각도) | 제품 순위 그대로 |
 
-1. 확정본 커밋 → `nuimages_eval_sample.py`로 val 표집 → 업로드 → 진단(`--ranking aida_v2_candidate_iou`,
-   cleanlab 설치된 `experiment/venv`) → 묶음 얼리기 → 8절 점검표 → 7-1 연습 판정(train fit_check) → 판정.
+누락 층은 등록된 세 방법(`aida`·`unmatched_confidence`·`unmatched_objectlab`) 모두 내보낼 수 있고 `descriptive_only`다.
+
+## 실행 순서 (바로잡음)
+
+1. **train fit_check 연습 판정** — 지침·입력·화면 점검. 분석에 쓰지 않는다.
+2. **지침·AI 프롬프트 고정** — 연습에서 헷갈린 사례를 지침에 넣고 프롬프트 원문을 확정.
+3. **사전 등록 확정본 커밋·푸시** (`qa-preregistration.md`, 값 전부 채움).
+4. `nuimages_eval_sample.py`로 **val 표집** → 업로드 → 진단(`--ranking aida_v2_candidate_iou`, `?ruler=nuimages_car_v1_e100`, cleanlab 설치된 `experiment/venv`).
+5. **묶음 얼리기·점검** — 8절 점검표. 이때만 알 수 있는 실제 건수(판정 대상 수, 보조 표본 수, 높이 제외 수, IoU 0 수, cleanlab 버전, 자 SHA)는 사전 등록이 아니라 **별도 실행 기록**(`docs/qa-run-record.md`, 묶음 지문과 함께)에 남긴다. 사전 등록 파일은 고치지 않는다.
+6. **본 판정** — 사람 전량, AI 보조 표본. 판정 뒤 집계·감사·결과 문서.
 
 ## 이 제안이 정하지 않는 것
 

@@ -7,6 +7,7 @@
 - 인수인계·조언·대회 준비 문서 20개를 `docs/archive/`로 이동, 저장소 전체 링크 갱신.
 - Cleanlab ObjectLab 기준선: `experiment/objectlab_baseline.py`(cleanlab 기본값, 선택 의존성), 진단 결과 `all_labels[].objectlab_score`·`unmatched_predictions[].objectlab_overlooked`·`objectlab` 메타. 백엔드 평가 방법 `all_label_objectlab`(기존 라벨 층)·`unmatched_objectlab`(누락 층) 추가.
 - Q-A 사전 등록 D1~D9 제안값 문서 추가(확정 아님).
+- Codex 검토 반영: v2 기존 라벨 층에서 AIDA 평가 순서를 `1 − label_iou` 점수로 바꿔 `tie_key`가 두 방법에 같이 작동(`order_basis=score_1_minus_label_iou`), v1·누락 층은 제품 순위 유지. 누락 층 내보내기가 등록된 세 방법을 허용(`descriptive_only` 유지). 실행 순서 문서 정정.
 - 사전 등록 구현 4건: **D2** 기존 라벨 높이 필터(`min_label_height_px`, 묶음 얼릴 때만, 누락 층 제외, 제외 수 기록·지문). **D8** 판정자별 판정 파일 분리(`adjudications.<id>.json`), `queue`·`adjudications`·`export`의 `adjudicator`, 보조 표본(`auxiliary_sample_fraction`·`_seed`, 올림, 판정 대상 확정 뒤 추출), `GET .../agreement`(hold 수·일치율·Cohen κ·분모). **D9** `tie_seed`와 `sha256(tie_seed:후보 id)` 동점 키 — 선정·내보내기·집계·부트스트랩 공유, IoU 0 라벨 보고. **외부 자 선택** `?ruler=nuimages_car_v1_e100`(경로·SHA-256을 자 기록·서브프로세스·결과에 남기고 불일치면 거부, 없으면 404), `GET /api/datasets/rulers`, `experiment/ruler_check.py`. val 표본 요약에 소비한 기록 목록.
 
 ## 2026-09-09
