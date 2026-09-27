@@ -18,6 +18,7 @@ from PIL import Image
 from ultralytics import YOLO
 
 import config
+import objectlab_baseline
 from label_diagnosis import (
     match_boxes,Box, BoxFinding, diagnose_image, label_rows, unmatched_prediction_rows,
     order_basis, order_risk, present_types,
@@ -121,6 +122,8 @@ def run(images_dir: Path, labels_dir: Path, limit: int | None = None,
 
     findings: list[BoxFinding] = []
     population: dict[str, list[dict]] = {"all_labels": [], "unmatched_predictions": []}
+    # ObjectLab 기준선 입력. 모집단을 모을 때만 쓴다.
+    ol_images: list[dict] = []
     total_labels = 0
     # 기준 모델 적합도. 라벨이 맞다고 가정하지 않는 값들만 모은다.
     fit: dict = {"matched_labels": 0, "predictions": 0, "confidences": [],
@@ -185,6 +188,10 @@ def run(images_dir: Path, labels_dir: Path, limit: int | None = None,
             # 규칙에 걸린 후보 **밖**까지. 클래스 인자는 진단과 같은 것을 준다 —
             # 다르면 짝짓기가 달라져 두 목록이 같은 세계를 말하지 않는다.
             if collect_population:
+                ol_images.append({"image": path.name, "labels": labels,
+                                  "label_classes": label_classes if class_aware else None,
+                                  "predictions": predictions, "confidences": confs,
+                                  "pred_classes": pred_classes if class_aware else None})
                 population["all_labels"].extend(label_rows(
                     path.name, predictions, labels,
                     label_classes=label_classes if class_aware else None,
@@ -196,6 +203,10 @@ def run(images_dir: Path, labels_dir: Path, limit: int | None = None,
                     class_names=config.CLASS_NAMES if class_aware else None))
 
     if collect_population:
+        # 상용 도구 기준선. 점수는 cleanlab 기본값 그대로이고, 없으면 붙지 않는다.
+        num_classes = len(config.CLASS_NAMES) if class_aware else 1
+        scored = objectlab_baseline.score(ol_images, num_classes)
+        population["objectlab"] = objectlab_baseline.attach(population, ol_images, scored)
         return findings, total_labels, fit, population
     return findings, total_labels, fit
 
@@ -275,7 +286,9 @@ def build_result(name: str, findings: list[BoxFinding], total_labels: int,
         # 규칙 밖까지의 모집단. **없으면 키 자체를 넣지 않는다** — 옛 결과와 구분되어야
         # 후보 생성 비교(Q-A)·누락 기준선(Q-C)을 못 돌린다고 말할 수 있다.
         **({"all_labels": population["all_labels"],
-            "unmatched_predictions": population["unmatched_predictions"]}
+            "unmatched_predictions": population["unmatched_predictions"],
+            # ObjectLab 점수가 붙었는지·어느 버전인지. 없으면 그 방법은 묶음에 안 생긴다.
+            "objectlab": population.get("objectlab", {"available": False})}
            if population else {}),
         "caveat": (
             "기준 모델(clean)의 예측과 라벨을 대조한 결과입니다. 모델 예측 자체도 "

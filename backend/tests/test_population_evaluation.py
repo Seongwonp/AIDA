@@ -451,3 +451,42 @@ def test_집계가_묶음_단위로_재표집한다(client, uploads):
     result = paired_cluster_bootstrap(adjudications, rankings, "all_label_iou", "aida",
                                       budget=1, iterations=10, require_same_candidates=False)
     assert result["clusters"] == {DATASET: 1}
+
+
+# ── ObjectLab 기준선 ──────────────────────────────────────────────────────────
+
+def diagnosis_with_objectlab() -> dict:
+    data = diagnosis()
+    data["all_labels"] = [dict(r) for r in ALL_LABELS]
+    data["all_labels"][1]["objectlab_score"] = 0.2      # a.png#1 — 가장 의심
+    data["all_labels"][3]["objectlab_score"] = 0.9      # b.png#1
+    data["unmatched_predictions"] = [dict(r) for r in UNMATCHED]
+    data["unmatched_predictions"][0]["objectlab_overlooked"] = 0.0
+    data["objectlab"] = {"available": True, "cleanlab_version": "2.9.0"}
+    return data
+
+
+def test_objectlab_점수가_있는_행에만_그_방법이_붙는다(client, uploads):
+    write(uploads, diagnosis_with_objectlab())
+    snap = start(client)
+    k = by_key(snap)
+    assert k["a.png#1"]["scores"]["all_label_objectlab"] == pytest.approx(0.8)
+    assert k["b.png#1"]["scores"]["all_label_objectlab"] == pytest.approx(0.1)
+    assert "all_label_objectlab" not in k["a.png#0"]["scores"]
+    assert k["a.png#50.0"]["scores"]["unmatched_objectlab"] == pytest.approx(1.0)
+    assert "unmatched_objectlab" not in k["a.png#70.0"]["scores"]
+
+
+def test_objectlab_방법의_모집단은_점수가_붙은_행뿐이다(client, uploads):
+    write(uploads, diagnosis_with_objectlab())
+    start(client)
+    body = export(client, "aida,all_label_iou,all_label_objectlab",
+                  mode="candidate_generation_included").json()
+    assert body["method_population"] == {"aida": 2, "all_label_iou": 4, "all_label_objectlab": 2}
+
+
+def test_objectlab_점수가_없는_진단에는_그_방법이_생기지_않는다(client, uploads):
+    write(uploads, diagnosis())
+    snap = start(client)
+    assert not any("all_label_objectlab" in c["scores"] or "unmatched_objectlab" in c["scores"]
+                   for c in snap["candidates"])

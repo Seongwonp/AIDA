@@ -5,6 +5,8 @@
 - 방향 결정: 연구 논문으로 정리. 창업·제품 목표는 접는다.
 - `label_diagnosis.parse_yolo_labels` 추가 — 형식이 틀린 라벨 줄은 파일·줄 번호를 말하며 `LabelParseError`. `diagnose_labels.run`은 그 이미지를 건너뛰고 `summary.skipped_images`에 남긴다. 예전에는 `ValueError`로 진단 전체가 죽었고, 짧은 줄은 조용히 건너뛰어 `label_index`가 백엔드 줄 번호와 어긋날 수 있었다.
 - 인수인계·조언·대회 준비 문서 20개를 `docs/archive/`로 이동, 저장소 전체 링크 갱신.
+- Cleanlab ObjectLab 기준선: `experiment/objectlab_baseline.py`(cleanlab 기본값, 선택 의존성), 진단 결과 `all_labels[].objectlab_score`·`unmatched_predictions[].objectlab_overlooked`·`objectlab` 메타. 백엔드 평가 방법 `all_label_objectlab`(기존 라벨 층)·`unmatched_objectlab`(누락 층) 추가.
+- Q-A 사전 등록 D1~D9 제안값 문서 추가(확정 아님).
 
 ## 2026-09-09
 

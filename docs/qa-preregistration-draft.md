@@ -10,6 +10,8 @@
 
 ## 0. 사용자가 정할 것 — 한눈에
 
+> **제안값(2026-09-27):** [qa-preregistration-proposal-2026-09-27.md](qa-preregistration-proposal-2026-09-27.md). 확정은 사용자가 한다.
+
 | # | 무엇 | 선행 | 이 초안의 절 |
 |---|---|---|---|
 | D1 | 데이터셋·라이선스 확인 결과·개발/최종 경계 | W1 | 2 |
@@ -75,6 +77,8 @@
 | 기존 라벨 (1차) | `all_label_iou` | 모든 기존 라벨 | `1 − label_iou` |
 | 누락 (보조) | `aida` | AIDA 누락 후보 | 제품 순위 |
 | 누락 (보조) | `unmatched_confidence` | 필터 전 미매칭 예측 전부 | 확신도 |
+| 기존 라벨 (1차) | `all_label_objectlab` | ObjectLab이 점수를 낸 기존 라벨 | `1 − min(badloc, swap)` — cleanlab 기본값 |
+| 누락 (보조) | `unmatched_objectlab` | ObjectLab이 overlooked 점수를 낸 미매칭 예측 | `1 − overlooked` |
 
 **판정 뒤에 방법을 더하거나 빼지 않는다.** `iou_baseline`(AIDA 후보 안 재정렬)은 1차에 넣지 않는다
 — 넣으려면 판정 전에 보조로 적는다. D4가 v2면 코드가 그 비교를 막는다.

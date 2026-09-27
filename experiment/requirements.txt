@@ -8,3 +8,4 @@ requests>=2.31.0
 tqdm>=4.66.0
 python-dotenv>=1.0
 pytest>=8.0
+cleanlab>=2.7   # ObjectLab 기준선 (없어도 진단은 돈다, 점수만 안 붙는다)

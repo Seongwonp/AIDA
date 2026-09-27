@@ -281,6 +281,9 @@ IOU_BASELINE = "iou_baseline"
 # **모집단이 AIDA 후보보다 넓다** — 규칙이 놓친 라벨과 필터가 버린 예측까지 본다.
 ALL_LABEL_IOU = "all_label_iou"            # 모든 기존 라벨을 1 − label_iou로
 UNMATCHED_CONFIDENCE = "unmatched_confidence"   # 필터 전 미매칭 예측을 확신도로
+# Cleanlab ObjectLab 기준선 (experiment/objectlab_baseline.py). 진단이 점수를 적어 준 행에만 붙는다.
+ALL_LABEL_OBJECTLAB = "all_label_objectlab"       # 모든 기존 라벨을 1 − objectlab_score로
+UNMATCHED_OBJECTLAB = "unmatched_objectlab"       # 미매칭 예측을 1 − objectlab_overlooked로
 
 # 후보의 출처. 무엇을 AIDA의 성과로 셀 수 있는지가 여기서 갈린다.
 SOURCE_AIDA = "aida_candidate"
@@ -292,7 +295,7 @@ WITHIN_AIDA = "within_aida_candidates"            # AIDA 후보 안의 재정렬
 GENERATION_INCLUDED = "candidate_generation_included"   # 후보 생성까지 포함
 COMPARISON_MODES = (WITHIN_AIDA, GENERATION_INCLUDED)
 # 그 모드에서만 쓸 수 있는 방법 — 모집단이 AIDA 후보 밖으로 넓어지기 때문이다.
-POPULATION_METHODS = (ALL_LABEL_IOU, UNMATCHED_CONFIDENCE)
+POPULATION_METHODS = (ALL_LABEL_IOU, UNMATCHED_CONFIDENCE, ALL_LABEL_OBJECTLAB, UNMATCHED_OBJECTLAB)
 
 
 def _scores(item: dict) -> dict[str, float]:
@@ -347,16 +350,21 @@ def _population_candidates(candidates: list[EvaluationCandidate],
             # 점수를 지어내지 않는다. 그 라벨은 이 방법의 모집단에 못 들어간다.
             continue
         score = round(1.0 - float(value), 4)
+        scores = {ALL_LABEL_IOU: score}
+        ol = row.get("objectlab_score")
+        if ol is not None:
+            # 낮을수록 의심이라 뒤집는다. 없는 행은 이 방법의 모집단에 없다.
+            scores[ALL_LABEL_OBJECTLAB] = round(1.0 - float(ol), 4)
         found = by_label.get((row.get("image", ""), row.get("label_index")))
         if found is not None:
-            found.scores[ALL_LABEL_IOU] = score
+            found.scores.update(scores)
             continue
         out.append(EvaluationCandidate(
             canonical_candidate_id=canonical_id(
                 row.get("image", ""), row.get("label_index"), "", row.get("box")),
             image=row.get("image", ""), label_index=row.get("label_index"),
             suspicion="", box=row.get("box"), class_name=row.get("class_name"),
-            scores={ALL_LABEL_IOU: score}, source=SOURCE_LABEL))
+            scores=scores, source=SOURCE_LABEL))
 
     seen_boxes: set[tuple] = set()
     for row in predictions or []:
@@ -374,9 +382,13 @@ def _population_candidates(candidates: list[EvaluationCandidate],
                      f"({row.get('image', '')} {row.get('box')}). 판정자가 둘을 구분할 "
                      "수 없어 얼리지 않습니다 — 진단 결과를 확인하세요.")
         seen_boxes.add(key)
+        scores = {UNMATCHED_CONFIDENCE: confidence}
+        ol = row.get("objectlab_overlooked")
+        if ol is not None:
+            scores[UNMATCHED_OBJECTLAB] = round(1.0 - float(ol), 4)
         found = by_box.get(key)
         if found is not None:
-            found.scores[UNMATCHED_CONFIDENCE] = confidence
+            found.scores.update(scores)
             found.confidence = confidence
             continue
         out.append(EvaluationCandidate(
@@ -384,7 +396,7 @@ def _population_candidates(candidates: list[EvaluationCandidate],
                 row.get("image", ""), None, "", row.get("box")),
             image=row.get("image", ""), label_index=None, suspicion="",
             box=row.get("box"), class_name=row.get("class_name"),
-            scores={UNMATCHED_CONFIDENCE: confidence}, confidence=confidence,
+            scores=scores, confidence=confidence,
             source=SOURCE_PREDICTION))
     return out
 
@@ -708,8 +720,8 @@ ALL_DESCRIPTIVE = "all_descriptive"
 SCOPES = (LABELLED, MISSING, ALL_DESCRIPTIVE)
 # 층마다 정의된 방법. 여기 없는 방법을 그 층에 붙이면 거부한다 — 층이 다르면
 # 같은 이름이라도 다른 것을 잰다.
-SCOPE_METHODS = {LABELLED: (AIDA, IOU_BASELINE, ALL_LABEL_IOU),
-                 MISSING: (AIDA, UNMATCHED_CONFIDENCE),
+SCOPE_METHODS = {LABELLED: (AIDA, IOU_BASELINE, ALL_LABEL_IOU, ALL_LABEL_OBJECTLAB),
+                 MISSING: (AIDA, UNMATCHED_CONFIDENCE, UNMATCHED_OBJECTLAB),
                  ALL_DESCRIPTIVE: (AIDA,)}
 
 _LIMITATION = {

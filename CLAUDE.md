@@ -11,7 +11,12 @@
 > 2026-09-27 노트북 작업: 라벨 파일의 깨진 줄 하나가 진단 전체를 죽이던 결함을 고쳤다
 > (`label_diagnosis.parse_yolo_labels`, 이미지 단위로 건너뛰고 `summary.skipped_images`에
 > 기록). 인수인계·조언·대회 문서 20개를 [`docs/archive/`](docs/archive/README.md)로 옮기고
-> 링크 371개를 검사했다(깨진 것 0). 아래 09-16 상태는 그대로 유효하다.
+> 링크 371개를 검사했다(깨진 것 0). **ObjectLab 기준선을 구현했다** — `experiment/objectlab_baseline.py`가
+> 진단 모집단 행에 `objectlab_score`·`objectlab_overlooked`를 붙이고, 백엔드 방법
+> `all_label_objectlab`·`unmatched_objectlab`이 그것으로 줄 세운다(cleanlab 없으면 방법이 안 생긴다).
+> D1~D9 제안값은 [`docs/qa-preregistration-proposal-2026-09-27.md`](docs/qa-preregistration-proposal-2026-09-27.md).
+> 확정 전 남은 구현: 높이 필터(D2), 판정자 ID·이중 판정(D8), 동점 씨앗(D9), nuImages 자 선택 경로.
+> 아래 09-16 상태는 그대로 유효하다.
 
 ## 그 전 상태 — 2026-09-16
 
