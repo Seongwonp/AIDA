@@ -680,6 +680,45 @@ def rescore(findings: list[BoxFinding], summary: dict) -> list[BoxFinding]:
     ]
 
 
+class LabelParseError(ValueError):
+    """라벨 파일의 한 줄이 YOLO 형식(class cx cy w h)이 아니다.
+
+    어느 파일 몇 번째 줄인지가 메시지에 들어간다. 조용히 건너뛰지 않는 이유는
+    두 가지다 — 건너뛰면 `label_index`(목록 위치)가 백엔드의 줄 번호와 어긋나고,
+    판정자가 화면에서 다른 상자를 보게 된다. 그리고 사전 등록한 평가에서 "라벨
+    몇 개를 읽었는가"가 소리 없이 달라지면 안 된다.
+    """
+
+
+def parse_yolo_labels(text: str, img_w: int, img_h: int,
+                      source: str = "") -> tuple[list[Box], list[int]]:
+    """YOLO 정규화 라벨 텍스트를 (픽셀 Box 목록, 클래스 목록)으로 바꾼다.
+
+    공백뿐인 줄은 건너뛴다(끝의 개행 등). **내용이 있는데 형식이 틀린 줄은
+    LabelParseError**다 — 예전에는 짧은 줄은 건너뛰고 숫자가 아니면 `ValueError`로
+    진단 전체가 죽었다. 한 파일의 한 줄 때문에 데이터셋 전체 진단을 잃지 않도록,
+    호출하는 쪽이 이 예외를 이미지 단위로 잡아 기록한다(diagnose_labels.run).
+    """
+    boxes: list[Box] = []
+    classes: list[int] = []
+    for lineno, line in enumerate(text.splitlines(), start=1):
+        parts = line.split()
+        if not parts:
+            continue
+        where = f"{source or '라벨'} {lineno}번째 줄"
+        if len(parts) < 5:
+            raise LabelParseError(f"{where}: 값이 {len(parts)}개뿐입니다 (class cx cy w h 필요): {line!r}")
+        try:
+            cls = int(float(parts[0]))
+            cx, cy, w, h = (float(v) for v in parts[1:5])
+        except ValueError as exc:
+            raise LabelParseError(f"{where}: 숫자가 아닙니다: {line!r}") from exc
+        cx, cy, w, h = cx * img_w, cy * img_h, w * img_w, h * img_h
+        boxes.append((cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2))
+        classes.append(cls)
+    return boxes, classes
+
+
 def center_size(box: Box) -> tuple[float, float, float, float]:
     left, top, right, bottom = box
     return (left + right) / 2, (top + bottom) / 2, right - left, bottom - top

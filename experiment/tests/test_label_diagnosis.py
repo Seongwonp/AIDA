@@ -18,6 +18,8 @@ from error_injector import (  # noqa: E402
     apply_width,
 )
 from label_diagnosis import (  # noqa: E402
+    LabelParseError,
+    parse_yolo_labels,
     BoxFinding,
     CLASS_VULNERABILITY,
     CONFIDENCE_WEIGHTED_TYPES,
@@ -494,3 +496,47 @@ def test_기준선은_유형을_모른다():
                               labels=[label])
     values = {f.label_iou for f in findings if f.label_index is not None}
     assert len(values) == 1
+
+
+# ── 라벨 파일 파싱 ──────────────────────────────────────────────────────────
+#
+# 예전에는 한 줄이 숫자가 아니면 `float()`의 ValueError로 **데이터셋 전체 진단이
+# 죽었다.** 짧은 줄은 조용히 건너뛰어 label_index가 백엔드의 줄 번호와 어긋났다.
+
+NL = chr(10)
+
+
+def test_정상_라벨은_픽셀_상자와_클래스로_바뀐다():
+    text = NL.join(['0 0.5 0.5 0.2 0.4', '1 0.25 0.25 0.1 0.1', ''])
+    boxes, classes = parse_yolo_labels(text, 100, 200)
+    assert classes == [0, 1]
+    assert boxes[0] == pytest.approx((40.0, 60.0, 60.0, 140.0))
+    assert boxes[1] == pytest.approx((20.0, 40.0, 30.0, 60.0))
+
+
+def test_공백_줄은_건너뛴다():
+    text = NL.join(['', '0 0.5 0.5 0.2 0.4', '   ', ''])
+    boxes, classes = parse_yolo_labels(text, 100, 100)
+    assert len(boxes) == 1 and classes == [0]
+
+
+def test_숫자가_아닌_줄은_파일과_줄_번호를_말하며_실패한다():
+    text = NL.join(['0 0.5 0.5 0.2 0.4', '0 abc 0.5 0.2 0.4'])
+    with pytest.raises(LabelParseError) as exc:
+        parse_yolo_labels(text, 100, 100, source='a.txt')
+    assert 'a.txt' in str(exc.value) and '2번째 줄' in str(exc.value)
+
+
+def test_값이_모자란_줄은_건너뛰지_않고_실패한다():
+    """건너뛰면 그 뒤 라벨의 label_index가 한 칸 당겨져 백엔드 줄 번호와 어긋난다."""
+    text = NL.join(['0 0.5 0.5', '0 0.5 0.5 0.2 0.4'])
+    with pytest.raises(LabelParseError):
+        parse_yolo_labels(text, 100, 100)
+
+
+def test_진단_실행기는_깨진_라벨을_이미지_단위로_잡아_기록한다():
+    """diagnose_labels는 ultralytics를 import해서 여기서 못 돌린다 — 소스로 확인한다."""
+    src = (Path(__file__).resolve().parent.parent / 'diagnose_labels.py').read_text(encoding='utf-8')
+    assert 'except LabelParseError' in src
+    assert 'fit["skipped_images"].append' in src
+    assert 'summary["skipped_images"]' in src

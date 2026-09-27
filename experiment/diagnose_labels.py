@@ -22,7 +22,8 @@ from label_diagnosis import (
     match_boxes,Box, BoxFinding, diagnose_image, label_rows, unmatched_prediction_rows,
     order_basis, order_risk, present_types,
     rank_findings, ranking_metadata, diagnosis_filename, refuse_cross_version_overwrite,
-    RANKING_V1, RANKING_VERSIONS, RankingError, review_value, summarize, candidate_rows)
+    RANKING_V1, RANKING_VERSIONS, RankingError, review_value, summarize, candidate_rows,
+    LabelParseError, parse_yolo_labels)
 
 # 진단이 "자"로 쓰는 모델. 기본은 오류 없는 라벨로 학습한 clean 모델이다.
 #
@@ -50,20 +51,14 @@ def load_yolo_labels_with_classes(
     예전에는 클래스를 그냥 버렸다. 단일 클래스에서는 문제가 없었지만
     다중 클래스에서는 사람 라벨에 자동차 예측이 붙는 짝이 생겨서, 없는
     기하 오류를 만들어냈다(docs/21 L 참고).
+
+    파일이 없으면 빈 목록이다 — 라벨 없는 이미지는 오류가 아니다. 형식이
+    틀린 줄은 `LabelParseError`를 올린다(label_diagnosis.parse_yolo_labels).
     """
     if not label_path.exists():
         return [], []
-    boxes: list[Box] = []
-    classes: list[int] = []
-    for line in label_path.read_text().splitlines():
-        parts = line.split()
-        if len(parts) < 5:
-            continue
-        cx, cy, w, h = (float(v) for v in parts[1:5])
-        cx, cy, w, h = cx * img_w, cy * img_h, w * img_w, h * img_h
-        boxes.append((cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2))
-        classes.append(int(float(parts[0])))
-    return boxes, classes
+    return parse_yolo_labels(label_path.read_text(encoding="utf-8"), img_w, img_h,
+                             source=label_path.name)
 
 
 def resolve_dataset(args) -> tuple[Path, Path, str]:
@@ -128,7 +123,9 @@ def run(images_dir: Path, labels_dir: Path, limit: int | None = None,
     population: dict[str, list[dict]] = {"all_labels": [], "unmatched_predictions": []}
     total_labels = 0
     # 기준 모델 적합도. 라벨이 맞다고 가정하지 않는 값들만 모은다.
-    fit: dict = {"matched_labels": 0, "predictions": 0, "confidences": []}
+    fit: dict = {"matched_labels": 0, "predictions": 0, "confidences": [],
+                 # 라벨 파일이 깨져 진단에서 뺀 이미지. 비어 있는 것이 정상이다.
+                 "skipped_images": []}
 
     # 이미지를 한 장씩 넘기면 GPU 호출 오버헤드가 커서, 배치로 끊어 예측한다.
     batch_size = 16
@@ -144,8 +141,15 @@ def run(images_dir: Path, labels_dir: Path, limit: int | None = None,
         for path, result in zip(batch, results):
             with Image.open(path) as img:
                 img_w, img_h = img.width, img.height
-            labels, label_classes = load_yolo_labels_with_classes(
-                labels_dir / f"{path.stem}.txt", img_w, img_h)
+            try:
+                labels, label_classes = load_yolo_labels_with_classes(
+                    labels_dir / f"{path.stem}.txt", img_w, img_h)
+            except LabelParseError as exc:
+                # 이 이미지는 통째로 뺀다. 라벨을 비운 채 진단하면 예측이 전부
+                # "누락"으로 잡혀 없는 오류를 만든다. 뺐다는 사실은 결과에 남긴다.
+                print(f"[건너뜀] {path.name}: {exc}")
+                fit["skipped_images"].append({"image": path.name, "reason": str(exc)})
+                continue
             total_labels += len(labels)
 
             xyxy = result.boxes.xyxy.tolist() if result.boxes is not None else []
@@ -253,6 +257,9 @@ def build_result(name: str, findings: list[BoxFinding], total_labels: int,
             "predictions": fit["predictions"],
             "median_confidence": round(statistics.median(confs), 4) if confs else None,
         }
+        # 라벨 파일이 깨져 뺀 이미지. 사전 등록한 표본 수와 실제 진단 수가 다르면
+        # 여기서 설명돼야 한다.
+        summary["skipped_images"] = list(fit.get("skipped_images", []))
 
     return {
         "dataset": name,
