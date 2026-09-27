@@ -15,7 +15,8 @@
 > 진단 모집단 행에 `objectlab_score`·`objectlab_overlooked`를 붙이고, 백엔드 방법
 > `all_label_objectlab`·`unmatched_objectlab`이 그것으로 줄 세운다(cleanlab 없으면 방법이 안 생긴다).
 > D1~D9 제안값은 [`docs/qa-preregistration-proposal-2026-09-27.md`](docs/qa-preregistration-proposal-2026-09-27.md).
-> 확정 전 남은 구현: 높이 필터(D2), 판정자 ID·이중 판정(D8), 동점 씨앗(D9), nuImages 자 선택 경로.
+> D8(사람 전량 + AI 보조 30%)·D9(가: IoU 0 포함, 고정 씨앗 동점)는 사용자 검토로 정리됐다.
+> 확정 전 남은 구현: 높이 필터(D2), 판정자 ID·보조 표본·이중 판정(D8), 동점 씨앗(D9), nuImages 자 선택 경로.
 > 아래 09-16 상태는 그대로 유효하다.
 
 ## 그 전 상태 — 2026-09-16
