@@ -1,0 +1,664 @@
+{
+ "synthetic": true,
+ "note": "합성 자료. 메커니즘과 추가 판정량의 크기 감만 본다. 실제 데이터의 값이 아니다.",
+ "settings": {
+  "N": 90,
+  "K": 50,
+  "iterations": 2000,
+  "bootstrap_seed": 42,
+  "tie_seed": 20260929,
+  "random_sample_seed": 20260928
+ },
+ "results": [
+  {
+   "seed": 1,
+   "labels": 1195,
+   "aida_candidates": 638,
+   "judged_pool": 242,
+   "observed_yield": {
+    "aida": 35,
+    "all_label_iou": 38,
+    "all_label_objectlab": 21
+   },
+   "difference_sign": "baseline - aida",
+   "iou_minus_aida": {
+    "current_code": {
+     "observed": 3,
+     "ci": [
+      -5.0,
+      11.0
+     ],
+     "unjudged_in_top_n": {
+      "all_label_iou": {
+       "mean": 0.63,
+       "max": 12,
+       "share_of_resamples_with_any": 0.332
+      },
+      "aida": {
+       "mean": 3.868,
+       "max": 25,
+       "share_of_resamples_with_any": 0.4835
+      }
+     }
+    },
+    "oracle_all_judged": {
+     "observed": 3,
+     "ci": [
+      -5.0,
+      8.0
+     ],
+     "unjudged_in_top_n": {
+      "all_label_iou": {
+       "mean": 0.0,
+       "max": 0,
+       "share_of_resamples_with_any": 0.0
+      },
+      "aida": {
+       "mean": 0.0,
+       "max": 0,
+       "share_of_resamples_with_any": 0.0
+      }
+     }
+    }
+   },
+   "objectlab_minus_aida": {
+    "current_code": {
+     "observed": -14,
+     "ci": [
+      -29.0,
+      2.0
+     ],
+     "unjudged_in_top_n": {
+      "all_label_objectlab": {
+       "mean": 2.899,
+       "max": 27,
+       "share_of_resamples_with_any": 0.4565
+      },
+      "aida": {
+       "mean": 3.868,
+       "max": 25,
+       "share_of_resamples_with_any": 0.4835
+      }
+     }
+    },
+    "oracle_all_judged": {
+     "observed": -14,
+     "ci": [
+      -29.0,
+      0.0
+     ],
+     "unjudged_in_top_n": {
+      "all_label_objectlab": {
+       "mean": 0.0,
+       "max": 0,
+       "share_of_resamples_with_any": 0.0
+      },
+      "aida": {
+       "mean": 0.0,
+       "max": 0,
+       "share_of_resamples_with_any": 0.0
+      }
+     }
+    }
+   },
+   "coverage": {
+    "budget": 90,
+    "iterations": 2000,
+    "seed": 42,
+    "judged_pool_size": 242,
+    "required_total": 295,
+    "additional_beyond_pool": 53,
+    "additional_candidate_keys": [
+     "d/log00_img1/L1",
+     "d/log01_img2/L1",
+     "d/log02_img0/L1",
+     "d/log02_img1/L0",
+     "d/log02_img1/L1",
+     "d/log02_img4/L1",
+     "d/log02_img6/L2",
+     "d/log03_img1/L2",
+     "d/log03_img5/L4",
+     "d/log05_img6/L5",
+     "d/log05_img7/L3",
+     "d/log05_img9/L2",
+     "d/log06_img0/L1",
+     "d/log08_img1/L3",
+     "d/log09_img0/L1",
+     "d/log09_img4/L3",
+     "d/log10_img1/L0",
+     "d/log13_img2/L1",
+     "d/log13_img6/L1",
+     "d/log13_img6/L4",
+     "d/log13_img8/L1",
+     "d/log14_img1/L1",
+     "d/log14_img9/L1",
+     "d/log15_img6/L1",
+     "d/log16_img4/L2",
+     "d/log17_img5/L0",
+     "d/log18_img0/L2",
+     "d/log18_img8/L0",
+     "d/log19_img6/L2",
+     "d/log20_img2/L1",
+     "d/log24_img3/L4",
+     "d/log24_img5/L1",
+     "d/log24_img5/L2",
+     "d/log24_img6/L4",
+     "d/log24_img9/L1",
+     "d/log25_img3/L3",
+     "d/log27_img1/L0",
+     "d/log27_img3/L4",
+     "d/log28_img4/L2",
+     "d/log28_img5/L1",
+     "d/log30_img0/L1",
+     "d/log30_img7/L2",
+     "d/log30_img7/L3",
+     "d/log31_img3/L5",
+     "d/log31_img4/L4",
+     "d/log32_img1/L2",
+     "d/log32_img4/L0",
+     "d/log32_img4/L3",
+     "d/log32_img8/L1",
+     "d/log32_img9/L3",
+     "d/log33_img2/L2",
+     "d/log33_img5/L3",
+     "d/log34_img8/L0"
+    ],
+    "methods": {
+     "aida": {
+      "original_top_n": 90,
+      "union_over_resamples": 120,
+      "beyond_original_top_n": 30,
+      "beyond_pool": 18,
+      "unjudged_in_top_n_per_resample": {
+       "mean": 2.51,
+       "max": 13,
+       "share_with_any": 0.4835
+      },
+      "union_size_at": {
+       "100": 111,
+       "500": 115,
+       "1000": 117,
+       "2000": 120
+      }
+     },
+     "all_label_iou": {
+      "original_top_n": 90,
+      "union_over_resamples": 127,
+      "beyond_original_top_n": 37,
+      "beyond_pool": 16,
+      "unjudged_in_top_n_per_resample": {
+       "mean": 0.449,
+       "max": 8,
+       "share_with_any": 0.332
+      },
+      "union_size_at": {
+       "100": 116,
+       "500": 122,
+       "1000": 127,
+       "2000": 127
+      }
+     },
+     "all_label_objectlab": {
+      "original_top_n": 90,
+      "union_over_resamples": 121,
+      "beyond_original_top_n": 31,
+      "beyond_pool": 29,
+      "unjudged_in_top_n_per_resample": {
+       "mean": 1.9345,
+       "max": 17,
+       "share_with_any": 0.4565
+      },
+      "union_size_at": {
+       "100": 108,
+       "500": 117,
+       "1000": 118,
+       "2000": 121
+      }
+     }
+    }
+   }
+  },
+  {
+   "seed": 2,
+   "labels": 1080,
+   "aida_candidates": 596,
+   "judged_pool": 245,
+   "observed_yield": {
+    "aida": 29,
+    "all_label_iou": 29,
+    "all_label_objectlab": 29
+   },
+   "difference_sign": "baseline - aida",
+   "iou_minus_aida": {
+    "current_code": {
+     "observed": 0,
+     "ci": [
+      -7.0,
+      5.0
+     ],
+     "unjudged_in_top_n": {
+      "all_label_iou": {
+       "mean": 0.78,
+       "max": 9,
+       "share_of_resamples_with_any": 0.333
+      },
+      "aida": {
+       "mean": 1.866,
+       "max": 14,
+       "share_of_resamples_with_any": 0.494
+      }
+     }
+    },
+    "oracle_all_judged": {
+     "observed": 0,
+     "ci": [
+      -6.0,
+      5.0
+     ],
+     "unjudged_in_top_n": {
+      "all_label_iou": {
+       "mean": 0.0,
+       "max": 0,
+       "share_of_resamples_with_any": 0.0
+      },
+      "aida": {
+       "mean": 0.0,
+       "max": 0,
+       "share_of_resamples_with_any": 0.0
+      }
+     }
+    }
+   },
+   "objectlab_minus_aida": {
+    "current_code": {
+     "observed": 0,
+     "ci": [
+      -13.0,
+      14.0
+     ],
+     "unjudged_in_top_n": {
+      "all_label_objectlab": {
+       "mean": 3.844,
+       "max": 28,
+       "share_of_resamples_with_any": 0.4965
+      },
+      "aida": {
+       "mean": 1.866,
+       "max": 14,
+       "share_of_resamples_with_any": 0.494
+      }
+     }
+    },
+    "oracle_all_judged": {
+     "observed": 0,
+     "ci": [
+      -12.0,
+      12.024999999999864
+     ],
+     "unjudged_in_top_n": {
+      "all_label_objectlab": {
+       "mean": 0.0,
+       "max": 0,
+       "share_of_resamples_with_any": 0.0
+      },
+      "aida": {
+       "mean": 0.0,
+       "max": 0,
+       "share_of_resamples_with_any": 0.0
+      }
+     }
+    }
+   },
+   "coverage": {
+    "budget": 90,
+    "iterations": 2000,
+    "seed": 42,
+    "judged_pool_size": 245,
+    "required_total": 306,
+    "additional_beyond_pool": 61,
+    "additional_candidate_keys": [
+     "d/log00_img0/L1",
+     "d/log00_img1/L5",
+     "d/log01_img5/L0",
+     "d/log01_img6/L1",
+     "d/log02_img0/L0",
+     "d/log02_img0/L3",
+     "d/log02_img1/L2",
+     "d/log02_img2/L1",
+     "d/log02_img2/L4",
+     "d/log03_img0/L2",
+     "d/log03_img5/L3",
+     "d/log04_img0/L1",
+     "d/log04_img2/L3",
+     "d/log04_img7/L2",
+     "d/log04_img8/L4",
+     "d/log05_img2/L2",
+     "d/log05_img5/L0",
+     "d/log07_img6/L2",
+     "d/log08_img3/L0",
+     "d/log08_img4/L0",
+     "d/log09_img2/L0",
+     "d/log09_img2/L1",
+     "d/log10_img1/L4",
+     "d/log10_img7/L0",
+     "d/log12_img0/L1",
+     "d/log12_img4/L1",
+     "d/log12_img7/L0",
+     "d/log13_img0/L0",
+     "d/log13_img4/L5",
+     "d/log14_img4/L4",
+     "d/log15_img5/L0",
+     "d/log16_img2/L3",
+     "d/log16_img4/L1",
+     "d/log17_img2/L0",
+     "d/log17_img9/L1",
+     "d/log19_img3/L1",
+     "d/log20_img1/L3",
+     "d/log21_img3/L0",
+     "d/log22_img2/L0",
+     "d/log24_img8/L2",
+     "d/log24_img9/L1",
+     "d/log25_img1/L5",
+     "d/log25_img5/L3",
+     "d/log25_img5/L4",
+     "d/log26_img0/L1",
+     "d/log27_img2/L1",
+     "d/log28_img1/L2",
+     "d/log28_img5/L1",
+     "d/log29_img1/L0",
+     "d/log29_img3/L1",
+     "d/log29_img4/L0",
+     "d/log31_img0/L1",
+     "d/log32_img0/L1",
+     "d/log32_img4/L1",
+     "d/log33_img0/L0",
+     "d/log33_img4/L1",
+     "d/log33_img7/L4",
+     "d/log34_img2/L3",
+     "d/log34_img6/L0",
+     "d/log34_img6/L2",
+     "d/log34_img8/L2"
+    ],
+    "methods": {
+     "aida": {
+      "original_top_n": 90,
+      "union_over_resamples": 146,
+      "beyond_original_top_n": 56,
+      "beyond_pool": 20,
+      "unjudged_in_top_n_per_resample": {
+       "mean": 1.312,
+       "max": 11,
+       "share_with_any": 0.494
+      },
+      "union_size_at": {
+       "100": 119,
+       "500": 133,
+       "1000": 140,
+       "2000": 146
+      }
+     },
+     "all_label_iou": {
+      "original_top_n": 90,
+      "union_over_resamples": 141,
+      "beyond_original_top_n": 51,
+      "beyond_pool": 11,
+      "unjudged_in_top_n_per_resample": {
+       "mean": 0.5385,
+       "max": 5,
+       "share_with_any": 0.333
+      },
+      "union_size_at": {
+       "100": 119,
+       "500": 127,
+       "1000": 132,
+       "2000": 141
+      }
+     },
+     "all_label_objectlab": {
+      "original_top_n": 90,
+      "union_over_resamples": 129,
+      "beyond_original_top_n": 39,
+      "beyond_pool": 38,
+      "unjudged_in_top_n_per_resample": {
+       "mean": 2.6095,
+       "max": 20,
+       "share_with_any": 0.4965
+      },
+      "union_size_at": {
+       "100": 117,
+       "500": 123,
+       "1000": 127,
+       "2000": 129
+      }
+     }
+    }
+   }
+  },
+  {
+   "seed": 3,
+   "labels": 1059,
+   "aida_candidates": 581,
+   "judged_pool": 233,
+   "observed_yield": {
+    "aida": 28,
+    "all_label_iou": 27,
+    "all_label_objectlab": 24
+   },
+   "difference_sign": "baseline - aida",
+   "iou_minus_aida": {
+    "current_code": {
+     "observed": -1,
+     "ci": [
+      -6.0,
+      7.0
+     ],
+     "unjudged_in_top_n": {
+      "all_label_iou": {
+       "mean": 0.3305,
+       "max": 11,
+       "share_of_resamples_with_any": 0.143
+      },
+      "aida": {
+       "mean": 1.553,
+       "max": 14,
+       "share_of_resamples_with_any": 0.433
+      }
+     }
+    },
+    "oracle_all_judged": {
+     "observed": -1,
+     "ci": [
+      -7.0,
+      6.0
+     ],
+     "unjudged_in_top_n": {
+      "all_label_iou": {
+       "mean": 0.0,
+       "max": 0,
+       "share_of_resamples_with_any": 0.0
+      },
+      "aida": {
+       "mean": 0.0,
+       "max": 0,
+       "share_of_resamples_with_any": 0.0
+      }
+     }
+    }
+   },
+   "objectlab_minus_aida": {
+    "current_code": {
+     "observed": -4,
+     "ci": [
+      -14.0,
+      7.0
+     ],
+     "unjudged_in_top_n": {
+      "all_label_objectlab": {
+       "mean": 3.627,
+       "max": 35,
+       "share_of_resamples_with_any": 0.4815
+      },
+      "aida": {
+       "mean": 1.553,
+       "max": 14,
+       "share_of_resamples_with_any": 0.433
+      }
+     }
+    },
+    "oracle_all_judged": {
+     "observed": -4,
+     "ci": [
+      -15.0,
+      7.0
+     ],
+     "unjudged_in_top_n": {
+      "all_label_objectlab": {
+       "mean": 0.0,
+       "max": 0,
+       "share_of_resamples_with_any": 0.0
+      },
+      "aida": {
+       "mean": 0.0,
+       "max": 0,
+       "share_of_resamples_with_any": 0.0
+      }
+     }
+    }
+   },
+   "coverage": {
+    "budget": 90,
+    "iterations": 2000,
+    "seed": 42,
+    "judged_pool_size": 233,
+    "required_total": 304,
+    "additional_beyond_pool": 71,
+    "additional_candidate_keys": [
+     "d/log00_img2/L1",
+     "d/log02_img2/L0",
+     "d/log02_img3/L2",
+     "d/log02_img4/L0",
+     "d/log03_img2/L3",
+     "d/log03_img3/L3",
+     "d/log04_img5/L1",
+     "d/log05_img5/L2",
+     "d/log06_img1/L1",
+     "d/log06_img4/L2",
+     "d/log06_img7/L2",
+     "d/log07_img2/L2",
+     "d/log08_img1/L1",
+     "d/log08_img1/L2",
+     "d/log08_img8/L3",
+     "d/log09_img3/L3",
+     "d/log09_img5/L3",
+     "d/log09_img6/L2",
+     "d/log09_img7/L3",
+     "d/log10_img1/L0",
+     "d/log11_img5/L1",
+     "d/log11_img5/L2",
+     "d/log12_img5/L0",
+     "d/log13_img1/L1",
+     "d/log13_img1/L2",
+     "d/log13_img9/L3",
+     "d/log14_img1/L5",
+     "d/log14_img5/L5",
+     "d/log15_img4/L1",
+     "d/log15_img7/L0",
+     "d/log15_img7/L3",
+     "d/log15_img8/L2",
+     "d/log16_img1/L4",
+     "d/log17_img0/L3",
+     "d/log17_img3/L1",
+     "d/log19_img5/L0",
+     "d/log19_img5/L1",
+     "d/log20_img0/L3",
+     "d/log20_img3/L4",
+     "d/log21_img0/L0",
+     "d/log21_img4/L2",
+     "d/log21_img7/L2",
+     "d/log22_img6/L1",
+     "d/log22_img7/L0",
+     "d/log23_img0/L0",
+     "d/log23_img6/L2",
+     "d/log24_img1/L3",
+     "d/log25_img2/L0",
+     "d/log25_img4/L2",
+     "d/log25_img4/L4",
+     "d/log26_img0/L1",
+     "d/log26_img6/L2",
+     "d/log27_img2/L2",
+     "d/log27_img5/L1",
+     "d/log28_img0/L3",
+     "d/log28_img4/L3",
+     "d/log28_img5/L4",
+     "d/log28_img6/L1",
+     "d/log28_img6/L5",
+     "d/log28_img7/L1",
+     "d/log28_img8/L1",
+     "d/log29_img4/L0",
+     "d/log29_img7/L0",
+     "d/log31_img0/L4",
+     "d/log32_img3/L1",
+     "d/log32_img3/L4",
+     "d/log33_img3/L4",
+     "d/log33_img6/L0",
+     "d/log33_img6/L2",
+     "d/log33_img6/L3",
+     "d/log34_img0/L2"
+    ],
+    "methods": {
+     "aida": {
+      "original_top_n": 90,
+      "union_over_resamples": 141,
+      "beyond_original_top_n": 51,
+      "beyond_pool": 19,
+      "unjudged_in_top_n_per_resample": {
+       "mean": 1.093,
+       "max": 9,
+       "share_with_any": 0.433
+      },
+      "union_size_at": {
+       "100": 125,
+       "500": 141,
+       "1000": 141,
+       "2000": 141
+      }
+     },
+     "all_label_iou": {
+      "original_top_n": 90,
+      "union_over_resamples": 138,
+      "beyond_original_top_n": 48,
+      "beyond_pool": 8,
+      "unjudged_in_top_n_per_resample": {
+       "mean": 0.2095,
+       "max": 7,
+       "share_with_any": 0.143
+      },
+      "union_size_at": {
+       "100": 127,
+       "500": 136,
+       "1000": 136,
+       "2000": 138
+      }
+     },
+     "all_label_objectlab": {
+      "original_top_n": 90,
+      "union_over_resamples": 142,
+      "beyond_original_top_n": 52,
+      "beyond_pool": 48,
+      "unjudged_in_top_n_per_resample": {
+       "mean": 2.414,
+       "max": 26,
+       "share_with_any": 0.4815
+      },
+      "union_size_at": {
+       "100": 114,
+       "500": 137,
+       "1000": 138,
+       "2000": 142
+      }
+     }
+    }
+   }
+  }
+ ]
+}

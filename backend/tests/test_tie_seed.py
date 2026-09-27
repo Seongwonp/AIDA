@@ -129,3 +129,9 @@ def test_입력_순서가_달라도_같은_순서다(client, uploads):
     (uploads / DATASET / "label_diagnosis.json").write_text(json.dumps(diagnosis()), encoding="utf-8")
     b, _ = top_iou(client, start(client, "e2", tie_seed=20260929)["evaluation_id"])
     assert a == b
+
+
+def test_동점_키_식은_집계_모듈과_같다():
+    import hashlib
+    from evaluation.coverage import tie_key as agg_tie_key
+    assert E.tie_key(20260929, "Lx") == agg_tie_key(20260929, "Lx") == hashlib.sha256(b"20260929:Lx").hexdigest()

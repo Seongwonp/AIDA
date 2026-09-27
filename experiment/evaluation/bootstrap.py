@@ -88,6 +88,39 @@ def _resample(clusters: list[str], by_cluster: dict[str, list[Adjudication]],
     return facts, rankings
 
 
+def iter_resamples(adjudications: list[Adjudication], rankings: list[Ranking],
+                   iterations: int, seed: int):
+    """사전에 고정된 재표본 열. `(반복 번호, 데이터셋, facts, rankings)`를 낸다.
+
+    **`paired_cluster_bootstrap`과 `coverage.resample_top_n_union`이 이 생성기를 같이 쓴다.**
+    같은 씨앗·반복 수면 두 곳이 정확히 같은 재표본을 본다 — 난수를 소비하는 순서(반복마다
+    데이터셋 이름순)가 여기 한 곳에만 있기 때문이다.
+    """
+    if not isinstance(iterations, int) or iterations < 1:
+        raise ValidationError(f"반복 수는 1 이상이다: {iterations!r}")
+    by_dataset: dict[str, list[Adjudication]] = defaultdict(list)
+    for a in adjudications:
+        by_dataset[a.dataset_id].append(a)
+    rankings_by_key: dict[str, list[Ranking]] = defaultdict(list)
+    for r in rankings:
+        rankings_by_key[r.candidate_key].append(r)
+    datasets = sorted(by_dataset)
+    clusters_of = {}
+    for name in datasets:
+        grouped: dict[str, list[Adjudication]] = defaultdict(list)
+        for a in by_dataset[name]:
+            grouped[a.cluster].append(a)
+        if not grouped:
+            raise ValidationError(f"재표집할 묶음이 없다: {name}")
+        clusters_of[name] = (sorted(grouped), grouped)
+    rng = random.Random(seed)
+    for i in range(iterations):
+        for name in datasets:
+            clusters, grouped = clusters_of[name]
+            facts, ranks = _resample(clusters, grouped, rankings_by_key, rng)
+            yield i, name, facts, ranks
+
+
 def paired_cluster_bootstrap(
     adjudications: list[Adjudication], rankings: list[Ranking],
     method: str, baseline: str, budget: int | None = None,
@@ -129,18 +162,34 @@ def paired_cluster_bootstrap(
         if not grouped:
             raise ValidationError(f"재표집할 묶음이 없다: {name}")
 
-    rng = random.Random(seed)
     draws: list[float] = []
-    for _ in range(iterations):
-        per_dataset: list[float] = []
-        for name in datasets:
-            clusters, grouped = clusters_of[name]
-            facts, ranks = _resample(clusters, grouped, rankings_by_key, rng)
-            # **처음부터 다시 계산한다** — 순위도 중복 제거도.
-            per_dataset.append(
-                paired_difference(facts, ranks, method, baseline, budget,
-                                  require_same_candidates)["difference"])
-        draws.append(mean(per_dataset))          # 데이터셋 동등 가중
+    # 재표본 상위 N에 든 **미판정** 후보 수 (방법별). 원래 상위 N 밖에 있던 후보가 재표집으로
+    # 올라오면 `summarise`는 그것을 예산에는 넣고 판정에는 못 넣는다 — 그 자리는 수확 0으로
+    # 세어진다. 그 수를 여기서 남긴다(docs/unjudged-bootstrap-review-2026-09-27.md). **처리를
+    # 바꾸지는 않는다.**
+    unjudged = {method: [], baseline: []}
+    per_dataset: list[float] = []
+    current = -1
+    for i, name, facts, ranks in iter_resamples(adjudications, rankings, iterations, seed):
+        if i != current:
+            if per_dataset:
+                draws.append(mean(per_dataset))      # 데이터셋 동등 가중
+            per_dataset = []
+            current = i
+        # **처음부터 다시 계산한다** — 순위도 중복 제거도.
+        diff = paired_difference(facts, ranks, method, baseline, budget,
+                                 require_same_candidates)
+        per_dataset.append(diff["difference"])
+        for m, key in ((method, "method_summary"), (baseline, "baseline_summary")):
+            summ = diff[key]
+            unjudged[m].append(summ["in_budget"] - summ["judged"])
+    if per_dataset:
+        draws.append(mean(per_dataset))
+
+    def _stats(values: list[int]) -> dict:
+        return {"mean": (sum(values) / len(values)) if values else 0.0,
+                "max": max(values, default=0),
+                "share_of_resamples_with_any": (sum(1 for v in values if v) / len(values)) if values else 0.0}
 
     return {
         "method": method, "baseline": baseline, "budget": budget,
@@ -153,6 +202,9 @@ def paired_cluster_bootstrap(
         "datasets": datasets,
         "clusters": {name: len(clusters_of[name][0]) for name in datasets},
         "weighting": "데이터셋 동등 가중",
+        # 재표본 상위 N에 든 미판정 후보(데이터셋·재표본 단위). 0이 아니면 구간에 "미판정 =
+        # 수확 0" 처리가 들어가 있다. 이 값은 보고용이고 구간 계산을 바꾸지 않는다.
+        "unjudged_in_top_n": {m: _stats(v) for m, v in unjudged.items()},
     }
 
 
