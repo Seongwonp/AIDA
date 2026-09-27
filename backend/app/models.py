@@ -393,6 +393,10 @@ class EvaluationSnapshot(BaseModel):
     # 얼린 AIDA 순서의 순위 버전 (docs/adr-ranking-separation.md). **옛 묶음에는 없고
     # v1으로 읽는다** — 없을 때는 지문 재료에도 넣지 않아 옛 지문이 그대로다(prelim1).
     ranking_version: str | None = None
+    # 기존 라벨 층의 높이 필터 (사전 등록 D2). 원본 이미지 좌표 기준 상자 높이가
+    # `min_height_px` 미만인 **기존 라벨 후보**를 평가 범위에서 뺀 기록. 누락 층(예측)에는
+    # 적용하지 않는다. 없으면 필터를 안 건 묶음이다(옛 묶음 전부).
+    label_height_filter: dict | None = None
 
 
 class EvaluationAdjudication(BaseModel):

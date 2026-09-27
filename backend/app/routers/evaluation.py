@@ -83,7 +83,8 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
                       total_in_queue: int | None = None,
                       ranking_version: str | None = None,
                       random_sample_size: int | None = None,
-                      random_sample_seed: int | None = None) -> dict:
+                      random_sample_seed: int | None = None,
+                      label_height_filter: dict | None = None) -> dict:
     """지문을 만들 재료. **판정에 영향을 주는 것만, 전부.**
 
     빠지면 안 되는 것과 들어가면 안 되는 것이 둘 다 있다.
@@ -142,6 +143,9 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
     if random_sample_size is not None:
         payload["random_sample"] = {"size": random_sample_size,
                                     "seed": random_sample_seed}
+    if label_height_filter is not None:
+        # 범위가 다르면 다른 묶음이다 — 옛 묶음(필터 없음)의 지문은 그대로다.
+        payload["label_height_filter"] = label_height_filter
     return payload
 
 
@@ -401,6 +405,62 @@ def _population_candidates(candidates: list[EvaluationCandidate],
     return out
 
 
+def _box_height(box) -> float | None:
+    if not box or len(box) < 4:
+        return None
+    return float(box[3]) - float(box[1])
+
+
+def _apply_label_height_filter(candidates: list[EvaluationCandidate],
+                               min_height_px: float | None,
+                               ) -> tuple[list[EvaluationCandidate], dict | None]:
+    """기존 라벨 층의 높이 필터 (사전 등록 D2).
+
+    **어디에 거는가.** 진단이 아니라 묶음을 얼릴 때다. 진단에서 작은 라벨을 지우면 그
+    자리의 예측이 짝을 잃어 **없던 누락 후보가 생긴다.** 여기서는 진단이 낸 후보·모집단을
+    그대로 두고 평가 범위만 좁힌다 — 원본 라벨은 손대지 않는다.
+
+    **무엇에 거는가.** `label_index`가 있는 후보 전부 — AIDA 후보, `all_label_iou`·ObjectLab
+    모집단, 그리고 그 뒤에 뽑는 무작위 표본 K까지 같은 범위다. **누락 층(예측)에는 걸지
+    않는다.** 작은 예측의 처리는 누락 층의 기존 규칙(AIDA는 확신도·가림 문턱, 기준선은
+    필터 전 전부)을 그대로 따른다.
+
+    높이는 후보의 `box`(원본 이미지 픽셀 좌표, y2 − y1)다. 경계값은 **미만 제외, 이상 포함**.
+    상자가 없는 기존 라벨 후보는 높이를 알 수 없어 거부한다 — 조용히 남기면 범위가 어긋난다.
+    """
+    if min_height_px is None:
+        return candidates, None
+    if isinstance(min_height_px, bool) or not isinstance(min_height_px, (int, float)) \
+            or not math.isfinite(min_height_px) or min_height_px <= 0:
+        raise HTTPException(400, "기존 라벨 높이 필터는 0보다 큰 유한한 픽셀 값입니다.")
+    kept: list[EvaluationCandidate] = []
+    excluded = {SOURCE_AIDA: 0, SOURCE_LABEL: 0}
+    for c in candidates:
+        if c.label_index is None:
+            kept.append(c)
+            continue
+        h = _box_height(c.box)
+        if h is None:
+            raise HTTPException(
+                409, f"상자가 없는 기존 라벨 후보가 있어 높이 필터를 걸 수 없습니다: "
+                     f"{c.image} 라벨 {c.label_index}")
+        if h < min_height_px:
+            excluded[c.source] = excluded.get(c.source, 0) + 1
+            continue
+        kept.append(c)
+    record = {
+        "min_height_px": float(min_height_px),
+        "coordinate_space": "원본 이미지 픽셀 (box[3] − box[1])",
+        "rule": "높이 < min_height_px 인 기존 라벨 후보 제외. 이상은 포함",
+        "applies_to": "기존 라벨 층 전부 (AIDA 후보·all_label_iou·ObjectLab 모집단·무작위 표본 K)",
+        "not_applied_to": "누락 층 (예측) — 작은 예측은 누락 층의 기존 규칙대로",
+        "excluded_aida_candidates": excluded.get(SOURCE_AIDA, 0),
+        "excluded_labels": excluded.get(SOURCE_LABEL, 0),
+        "kept_labelled": sum(1 for c in kept if c.label_index is not None),
+    }
+    return kept, record
+
+
 def _mark_random_sample(candidates: list[EvaluationCandidate],
                         size: int | None, seed: int | None) -> None:
     """규칙 밖 라벨에서 K건을 씨앗으로 뽑아 표시한다.
@@ -456,7 +516,8 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
                    ranking_version: str | None = None,
                    random_sample_size: int | None = None,
                    random_sample_seed: int | None = None,
-                   groups: dict[str, str] | None = None) -> EvaluationSnapshot:
+                   groups: dict[str, str] | None = None,
+                   min_label_height_px: float | None = None) -> EvaluationSnapshot:
     """진단 결과를 얼려 평가 묶음을 만든다.
 
     **재진단해도 이 묶음은 안 바뀐다.** 판정 도중에 후보가 바뀌면 이미 내린
@@ -501,6 +562,8 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
     # 규칙 밖 모집단(모든 기존 라벨·필터 전 미매칭 예측)과 무작위 표본.
     candidates = _population_candidates(candidates, diagnosis)
     _reject_duplicates(candidates)
+    # 높이 필터는 무작위 표본보다 **앞**이다 — 표본도 같은 범위에서 뽑아야 한다.
+    candidates, height_filter = _apply_label_height_filter(candidates, min_label_height_px)
     _mark_random_sample(candidates, random_sample_size, random_sample_seed)
     candidates = _assign_groups(candidates, groups)
     snapshot = EvaluationSnapshot(
@@ -512,6 +575,7 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
         candidate_pool=pool, total_in_queue=total, judge_budget=judge_budget,
         ranking_version=ranking_version,
         random_sample_size=random_sample_size, random_sample_seed=random_sample_seed,
+        label_height_filter=height_filter,
     )
     # 예산이 있으면 여기서 판정 대상을 한 번 골라 본다 — 못 고르는 묶음을 얼리지 않는다.
     judge_ids(snapshot)
@@ -520,7 +584,8 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
                                 judge_budget=judge_budget, candidate_pool=pool,
                                 total_in_queue=total, ranking_version=ranking_version,
                                 random_sample_size=random_sample_size,
-                                random_sample_seed=random_sample_seed)
+                                random_sample_seed=random_sample_seed,
+                                label_height_filter=height_filter)
     return snapshot.model_copy(
         update={"candidate_set_hash": candidate_set_hash(payload)})
 
@@ -1029,6 +1094,8 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
             "seed": snapshot.random_sample_seed,
             "in_scope": sum(1 for c in included if c.random_sample),
         },
+        # 기존 라벨 층의 높이 필터 기록 (D2). 없으면 필터 없는 묶음이다.
+        "label_height_filter": snapshot.label_height_filter,
         "total_candidates": len(snapshot.candidates),
         "included_candidates": len(included),
         "excluded_candidates": len(excluded),
@@ -1054,6 +1121,9 @@ class StartEvaluation(BaseModel):
     # 후보 생성이 놓친 오류 비율을 재는 별도 층이다 — 방법 간 비교에 섞지 않는다.
     random_sample_size: int | None = None
     random_sample_seed: int | None = None
+    # 기존 라벨 층의 높이 필터 (사전 등록 D2). 원본 픽셀 기준 이 값 미만의 기존 라벨 후보를
+    # 평가 범위에서 뺀다. 누락 층에는 걸지 않는다. 없으면 필터 없음(옛 동작).
+    min_label_height_px: float | None = None
 
 
 class SaveAdjudications(BaseModel):
@@ -1084,7 +1154,8 @@ def start_evaluation(dataset_id: str, body: StartEvaluation) -> EvaluationSnapsh
                               ranking_version=body.ranking_version,
                               random_sample_size=body.random_sample_size,
                               random_sample_seed=body.random_sample_seed,
-                              groups=load_groups(dataset_id))
+                              groups=load_groups(dataset_id),
+                              min_label_height_px=body.min_label_height_px)
     save_snapshot(dataset_id, snapshot)
     return snapshot
 

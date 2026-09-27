@@ -261,8 +261,8 @@ def test_무작위_표본은_방법의_순서나_예산을_바꾸지_않는다(u
 
 # ── 내보내기 ─────────────────────────────────────────────────────────────────
 
-def export(client, methods, scope="labelled_candidates", mode=None):
-    url = f"/api/datasets/{DATASET}/evaluations/e1/export?methods={methods}&scope={scope}"
+def export(client, methods, scope="labelled_candidates", mode=None, evaluation_id="e1"):
+    url = f"/api/datasets/{DATASET}/evaluations/{evaluation_id}/export?methods={methods}&scope={scope}"
     if mode:
         url += f"&mode={mode}"
     return client.get(url)
@@ -490,3 +490,78 @@ def test_objectlab_점수가_없는_진단에는_그_방법이_생기지_않는�
     snap = start(client)
     assert not any("all_label_objectlab" in c["scores"] or "unmatched_objectlab" in c["scores"]
                    for c in snap["candidates"])
+
+
+# ── 기존 라벨 높이 필터 (D2) ───────────────────────────────────────────────────
+#
+# 상자 높이: a.png#0 50, a.png#1 50, b.png#0 50, b.png#1 50 (ALL_LABELS·AIDA_CANDIDATES),
+# 누락 후보 a.png 상자 [50,50,60,60] 높이 10, 미매칭 예측 높이 10·10·10.
+
+def diagnosis_with_small_labels() -> dict:
+    data = diagnosis()
+    labels = [dict(r) for r in ALL_LABELS]
+    labels[1]["box"] = [20.0, 20.0, 70.0, 49.9]      # a.png#1 높이 29.9 — 미만
+    labels[3]["box"] = [30.0, 30.0, 80.0, 60.0]      # b.png#1 높이 30.0 — 경계, 포함
+    data["all_labels"] = labels
+    aida = [dict(r) for r in AIDA_CANDIDATES]
+    aida[1]["box"] = [10.0, 10.0, 60.0, 30.0]        # b.png#0 AIDA 후보 높이 20 — 미만
+    data["review_queue"] = aida
+    data["all_candidates"] = aida
+    return data
+
+
+def test_높이_필터는_미만을_빼고_경계값은_남긴다(client, uploads):
+    write(uploads, diagnosis_with_small_labels())
+    snap = start(client, min_label_height_px=30)
+    k = by_key(snap)
+    assert "a.png#1" not in k and "b.png#0" not in k
+    assert "b.png#1" in k and "a.png#0" in k
+    rec = snap["label_height_filter"]
+    assert rec["min_height_px"] == 30.0
+    assert rec["excluded_aida_candidates"] == 1 and rec["excluded_labels"] == 1
+    assert rec["kept_labelled"] == 2
+
+
+def test_높이_필터는_누락_층을_건드리지_않는다(client, uploads):
+    write(uploads, diagnosis_with_small_labels())
+    snap = start(client, min_label_height_px=30)
+    missing = [c for c in snap["candidates"] if c["label_index"] is None]
+    assert len(missing) == 3           # 높이 10짜리 예측이 전부 남는다
+
+
+def test_무작위_표본은_필터_뒤_범위에서_뽑힌다(client, uploads):
+    write(uploads, diagnosis_with_small_labels())
+    # 규칙 밖 라벨은 a.png#1(제외)·b.png#1(포함) → 표본 풀 1건
+    r = client.post(f"/api/datasets/{DATASET}/evaluations",
+                    json={"evaluation_id": "e2", "min_label_height_px": 30,
+                          "random_sample_size": 2, "random_sample_seed": 1})
+    assert r.status_code == 400 and "1건" in r.json()["detail"]
+    snap = start(client, min_label_height_px=30, random_sample_size=1, random_sample_seed=1)
+    sampled = [c for c in snap["candidates"] if c["random_sample"]]
+    assert [ (c["image"], c["label_index"]) for c in sampled ] == [("b.png", 1)]
+
+
+def test_필터가_없으면_옛_동작_그대로다(client, uploads):
+    write(uploads, diagnosis_with_small_labels())
+    snap = start(client)
+    assert snap["label_height_filter"] is None
+    assert len([c for c in snap["candidates"] if c["label_index"] is not None]) == 4
+
+
+def test_높이_필터는_지문을_바꾸고_내보내기에_남는다(client, uploads):
+    write(uploads, diagnosis_with_small_labels())
+    a = start(client, evaluation_id="e1")
+    b = start(client, evaluation_id="e2", min_label_height_px=30)
+    assert a["candidate_set_hash"] != b["candidate_set_hash"]
+    body = export(client, "aida,all_label_iou", mode="candidate_generation_included",
+                  evaluation_id="e2").json()
+    assert body["label_height_filter"]["min_height_px"] == 30.0
+    assert body["method_population"] == {"aida": 1, "all_label_iou": 2}
+
+
+def test_잘못된_높이_값은_거부한다(client, uploads):
+    write(uploads, diagnosis())
+    for bad in (0, -1, "x"):
+        r = client.post(f"/api/datasets/{DATASET}/evaluations",
+                        json={"evaluation_id": "e9", "min_label_height_px": bad})
+        assert r.status_code in (400, 422), bad
