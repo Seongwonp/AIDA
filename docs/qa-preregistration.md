@@ -235,7 +235,7 @@
 
 | 항목 | 값 | 어디서 |
 |---|---|---|
-| 자 `car_v1_e100` 가중치 SHA-256 | **[미기입]** | 데스크탑 `check_run_environment.py` 또는 `GET /api/datasets/rulers` |
+| 자 `car_v1_e100` 가중치 SHA-256 | `fffecf529a6df1a87d5f10ec2f5613d55adaf69ec09fd48996ecd467584110cc` (2026-09-29 데스크탑, `experiment/planning_evidence/desktop_environment.json`; 연습 진단 응답과 일치) | 데스크탑 `check_run_environment.py` 또는 `GET /api/datasets/rulers` |
 | AI 판정자 모델 식별자·버전·스냅샷 날짜·온도·입력 해상도 | **[미기입 — 임의로 채우지 않는다]** | 연습 4단계에서 정해 적는다. UI가 노출하지 않는 값은 "설정 불가/미노출" |
 | AI 판정 프롬프트 원문 | **[미기입]** — [ai-adjudicator-prompt-draft.md](ai-adjudicator-prompt-draft.md)를 연습 뒤 고정해 여기 그대로 붙인다 | 연습 뒤 |
 | 판정 상한 C (건) | **[미기입]** | 연습의 후보당 시간 × 계획 세션 수 |
