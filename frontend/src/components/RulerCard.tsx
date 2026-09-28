@@ -29,6 +29,18 @@ export function RulerCard({ result }: { result: LabelDiagnosisResult }) {
                   <th scope="row">기준 모델</th>
                   <td>{result.ruler.profile_label}</td>
                 </tr>
+                {/* 외부 자를 명시적으로 골랐을 때만 온다 (사전 등록 D1).
+                    어느 가중치로 잰 결과인지 해시로 대조할 수 있게 남긴다. */}
+                {result.ruler.ruler_id && (
+                  <tr>
+                    <th scope="row">자 ID</th>
+                    <td>
+                      {result.ruler.ruler_id}
+                      {result.ruler.weights_sha256 &&
+                        ` (가중치 SHA-256 ${result.ruler.weights_sha256.slice(0, 12)}…)`}
+                    </td>
+                  </tr>
+                )}
                 <tr>
                   <th scope="row">아는 클래스</th>
                   <td>{result.ruler.classes.join(", ")}</td>

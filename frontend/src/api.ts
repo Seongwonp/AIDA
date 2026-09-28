@@ -4,6 +4,7 @@ import type {
   ConditionMetricAgg,
   DatasetSummary,
   DiagnosisResult,
+  ExternalRuler,
   LabelDiagnosisResult,
   DatasetHistoryItem,
   VerdictMap,
@@ -69,12 +70,27 @@ export const diagnoseDataset = (datasetId: string) =>
 // profile은 유형 신뢰도 보정 프로파일 이름. 빈 값이면 기본값(KITTI Car 실측).
 // 유형 신뢰도가 도메인을 타기 때문에 고를 수 있게 해둔 것이다 (docs/21 L).
 // ranking은 재검수 순위 버전(docs/adr-ranking-separation.md). 늘 명시해 보낸다.
-export const diagnoseDatasetLabels = (datasetId: string, profile = "", ranking: string = RANKING_V1) =>
+// ruler는 외부 자의 ruler_id(사전 등록 D1). 비우면 기본 기준 모델로 잰다.
+// 서버가 profile과 ruler를 같이 받으면 거부하므로, 외부 자를 고르면 profile은 보내지 않는다.
+export const diagnoseDatasetLabels = (
+  datasetId: string,
+  profile = "",
+  ranking: string = RANKING_V1,
+  ruler = "",
+) =>
   client
     .post<LabelDiagnosisResult>(`/api/datasets/${datasetId}/diagnose-labels`, null, {
-      params: profile ? { profile, ranking } : { ranking },
+      params: ruler
+        ? { ranking, ruler }
+        : profile
+          ? { profile, ranking }
+          : { ranking },
     })
     .then((res) => res.data);
+
+/** 고를 수 있는 외부 자 목록. 서버에 가중치가 없는 것도 available=false로 함께 온다. */
+export const listRulers = () =>
+  client.get<ExternalRuler[]>("/api/datasets/rulers").then((res) => res.data);
 
 export const getReliabilityProfiles = () =>
   client

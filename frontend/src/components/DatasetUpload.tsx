@@ -5,6 +5,7 @@ import {
   getLabelDiagnosis,
   getDatasetReportUrl,
   getReliabilityProfiles,
+  listRulers,
   uploadDataset,
 } from "../api";
 import { ReviewQueue } from "./ReviewQueue";
@@ -13,6 +14,7 @@ import { RulerCard } from "./RulerCard";
 import { RankingNote } from "./RankingNote";
 import { RANKING_V1, RANKING_VERSIONS, rankingLabel } from "../ranking";
 import type {
+  ExternalRuler,
   LabelDiagnosisResult,
   ReliabilityProfile,
   UploadDiagnosisResult,
@@ -33,6 +35,9 @@ export function DatasetUpload() {
   const [profile, setProfile] = useState("");
   // 재검수 순위 버전 (docs/adr-ranking-separation.md). 기본은 지금까지의 제품 순서(v1).
   const [ranking, setRanking] = useState<string>(RANKING_V1);
+  // 외부 자 (사전 등록 D1). 빈 문자열이면 기본 기준 모델 — 서버에 ruler를 보내지 않는다.
+  const [rulers, setRulers] = useState<ExternalRuler[]>([]);
+  const [ruler, setRuler] = useState("");
   // 추천에 따라 자동으로 바꿔 쓴 경우의 사유. 빈 문자열이면 안 바꿨다.
   const [autoProfile, setAutoProfile] = useState("");
   // 서버가 알려준 실패 사유. 없으면 일반 안내로 돌아간다.
@@ -44,6 +49,8 @@ export function DatasetUpload() {
   useEffect(() => {
     // 프로파일을 못 불러와도 진단 자체는 기본값으로 돌아가야 하므로 조용히 넘긴다
     getReliabilityProfiles().then(setProfiles).catch(() => setProfiles([]));
+    // 외부 자 목록도 마찬가지다 — 못 불러오면 기본 기준 모델로만 돌린다.
+    listRulers().then(setRulers).catch(() => setRulers([]));
   }, []);
 
   const busy = status === "uploading" || status === "diagnosing";
@@ -97,13 +104,14 @@ export function DatasetUpload() {
       // 흔적이 없어 "문제 없음"과 구별이 안 된다. 사용자가 직접 고르지 않은
       // 경우에만 추천을 따르고, 무엇을 왜 바꿨는지 표시한다. 명시적으로 고른
       // 프로파일은 건드리지 않는다.
-      const used = profile || info.suggested_profile || "";
-      setAutoProfile(!profile && info.suggested_profile ? info.suggestion_reason : "");
+      // 외부 자를 골랐으면 프로파일을 섞지 않는다 — 서버도 둘을 같이 받지 않는다.
+      const used = ruler ? "" : profile || info.suggested_profile || "";
+      setAutoProfile(!ruler && !profile && info.suggested_profile ? info.suggestion_reason : "");
       setStatus("diagnosing");
       // 박스 단위 진단이 실제 재검수 목록을 만드는 핵심이고, 데이터셋 단위
       // 진단은 성능 패턴 DB와의 비교 근거를 함께 보여주기 위해 같이 돌린다.
       const [labels, diagnosis] = await Promise.all([
-        diagnoseDatasetLabels(info.dataset_id, used, ranking),
+        diagnoseDatasetLabels(info.dataset_id, used, ranking, ruler),
         diagnoseDataset(info.dataset_id),
       ]);
       setLabelResult(labels);
@@ -182,6 +190,28 @@ export function DatasetUpload() {
             </option>
           ))}
         </select>
+        {rulers.length > 0 && (
+          <>
+            <label htmlFor="ruler-select" className="sr-only">
+              기준 모델(자) 선택
+            </label>
+            <select
+              id="ruler-select"
+              className="profile-select"
+              value={ruler}
+              onChange={(e) => setRuler(e.target.value)}
+              disabled={busy}
+            >
+              <option value="">기본 기준 모델</option>
+              {rulers.map((r) => (
+                <option key={r.ruler_id} value={r.ruler_id} disabled={!r.available}>
+                  {r.label}
+                  {r.available ? "" : " — 이 서버에 가중치 없음"}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
         <button className="refresh-button" onClick={handleRun} disabled={!file || busy}>
           {status === "uploading" ? "업로드 중..." : status === "diagnosing" ? "진단 중..." : "업로드 & 진단"}
         </button>

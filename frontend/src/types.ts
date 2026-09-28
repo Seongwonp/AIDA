@@ -239,6 +239,21 @@ export interface ReliabilityProfile {
   available: boolean;
 }
 
+/**
+ * 명시적으로 고를 수 있는 외부 자 (사전 등록 D1).
+ * 신뢰도 프로파일과 달리 가중치 파일을 직접 가리키므로 SHA-256이 같이 온다.
+ */
+export interface ExternalRuler {
+  ruler_id: string;
+  label: string;
+  classes: string[];
+  dataset: string;
+  weights_path: string;
+  /** 이 가중치가 서버에 있는가. false면 고를 수 없다. */
+  available: boolean;
+  weights_sha256: string | null;
+}
+
 /** 지난 진단 하나. 목록에서 골라 다시 열 수 있게 최소한만 담는다. */
 export interface DatasetHistoryItem {
   dataset_id: string;
