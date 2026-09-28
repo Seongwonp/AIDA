@@ -100,6 +100,8 @@
 | 누락 (보조) | `unmatched_confidence` | 필터 전 미매칭 예측 전부 | 확신도 | `descriptive_only` |
 | 누락 (보조) | `unmatched_objectlab` | overlooked 점수가 있는 미매칭 예측 | `1 − overlooked` | `descriptive_only` |
 
+**`unmatched_objectlab` — 사용자 결정 (a), 2026-09-29.** cleanlab 기본 `high_probability_threshold=0.95`를 넘는 미매칭 예측이 연습 묶음(train fit_check)에서 0건이었다(자 예측 최대 확신도 0.93). 문턱을 낮추면 ObjectLab 기본값 기준선이 아니므로 **바꾸지 않는다.** val에서도 모집단이 0건이면 이 방법은 **"측정 불가"로 보고**하고 Q-C는 `aida` 대 `unmatched_confidence` 기술 통계만 낸다. 0건이 아니면 그대로 센다. `experiment/planning_evidence/practice1_bundle_2026-09-29.json`.
+
 - **판정 뒤에 방법을 더하거나 빼지 않는다.** `iou_baseline`(AIDA 후보 안 재정렬)은 넣지 않는다 — v2에서는 같은 순서라 코드가 막는다.
 - ObjectLab은 예측이 없는 라벨을 깨끗(1.0)으로 두고 `all_label_iou`는 맨 위에 둔다. 셋을 한 표에서 견주면 "자가 못 본 라벨"의 몫이 드러난다.
 - cleanlab 버전과 "기본값 그대로"를 실행 기록에 적는다(진단 결과의 `objectlab` 항목).
