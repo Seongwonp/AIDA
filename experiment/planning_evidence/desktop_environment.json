@@ -1,0 +1,18 @@
+{
+ "python": "3.14.0",
+ "platform": "Windows-11-10.0.26200-SP0",
+ "git_commit": "cdb30a3b4e8eae591fa9f5baff1ee8e07aeca245",
+ "ruler": {
+  "path": "runs_nuimages/car_v1_e100/weights/best.pt",
+  "exists": true,
+  "sha256": "fffecf529a6df1a87d5f10ec2f5613d55adaf69ec09fd48996ecd467584110cc",
+  "size_bytes": 6233578
+ },
+ "packages": {
+  "cleanlab": "2.9.0",
+  "ultralytics": "8.4.90",
+  "torch": "2.12.1+cu126",
+  "numpy": "2.4.4"
+ },
+ "note": "가중치가 없으면 sha256은 None이다. 다른 자로 대체하지 않는다."
+}
