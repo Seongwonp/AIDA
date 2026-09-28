@@ -1,0 +1,156 @@
+{
+  "purpose": "연습 묶음(practice1) 실행 기록. train fit_check 자료이고 val이 아니다. 분석에 쓰지 않는다 — 지침·입력·화면·프롬프트 점검과 판정량 가늠에만 쓴다.",
+  "date": "2026-09-29",
+  "machine": "desktop",
+  "git_commit": "7471c1eaa3531d2de50ffcc98aa8caf749d9f582",
+  "split": {
+    "name": "fit_check",
+    "nuimages_version": "v1.0-train",
+    "val_opened": false,
+    "note": "nuImages v1.0-val은 열지 않았다."
+  },
+  "dataset": {
+    "dataset_id": "006e49d2cbc9",
+    "num_images": 620,
+    "num_labels": 620,
+    "label_class_ids": [0],
+    "classes": ["Car"],
+    "subset_rule": "없음 — fit_check 620장 전부. zip 113,737,286바이트로 업로드 상한(MAX_UPLOAD_BYTES 200MB) 아래라 부분집합이 필요 없었다.",
+    "groups_json": "fit_check 폴더에 groups.json이 없어 같은 폴더의 nuimages_manifest.json rows에서 {image: log_token}으로 다시 만들어 zip에 넣었다 (nuimages_to_yolo.py가 쓰는 규칙과 같다). 620장 전부 덮었다.",
+    "total_labels_in_diagnosis": 1728
+  },
+  "ruler": {
+    "requested": "nuimages_car_v1_e100",
+    "weights_sha256_returned": "fffecf529a6df1a87d5f10ec2f5613d55adaf69ec09fd48996ecd467584110cc",
+    "matches_desktop_environment_json": true
+  },
+  "diagnosis": {
+    "endpoint": "POST /api/datasets/{id}/diagnose-labels?ranking=aida_v2_candidate_iou&ruler=nuimages_car_v1_e100",
+    "ranking_version": "aida_v2_candidate_iou",
+    "elapsed_sec": 21.5,
+    "total_labels": 1728,
+    "total_findings": 566
+  },
+  "evaluation": {
+    "evaluation_id": "practice1",
+    "body": {
+      "evaluation_id": "practice1",
+      "judge_budget": 20,
+      "ranking_version": "aida_v2_candidate_iou",
+      "min_label_height_px": 30,
+      "tie_seed": 1,
+      "random_sample_size": 10,
+      "random_sample_seed": 2,
+      "coverage_iterations": 200,
+      "coverage_seed": 3,
+      "auxiliary_sample_fraction": 0.3,
+      "auxiliary_sample_seed": 4
+    },
+    "candidate_set_hash": "d8f5a531686ee590aef2c2c3c3a7af8e8d13632fd9fc638ad86dec93522a74c9",
+    "total_candidates": 1658,
+    "candidates_by_source": {
+      "aida_candidate": 394,
+      "label": 866,
+      "unmatched_prediction": 398
+    },
+    "candidates_by_layer": {
+      "labelled_candidates": 1239,
+      "missing_candidates": 419
+    },
+    "label_height_filter": {
+      "min_height_px": 30.0,
+      "excluded_aida_candidates": 172,
+      "excluded_labels": 317,
+      "kept_labelled": 1239
+    }
+  },
+  "judging": {
+    "comparison_budget_n": 20,
+    "per_method_top_n_size": {
+      "labelled_candidates:aida": 20,
+      "labelled_candidates:iou_baseline": 20,
+      "labelled_candidates:all_label_iou": 20,
+      "labelled_candidates:all_label_objectlab": 20,
+      "missing_candidates:aida": 20,
+      "missing_candidates:unmatched_confidence": 20,
+      "missing_candidates:unmatched_objectlab": null
+    },
+    "original_top_n_union": {
+      "labelled": 60,
+      "missing": 20,
+      "total": 80
+    },
+    "random_sample_k": 10,
+    "k_overlap_with_top_n_union": 1,
+    "base_pool_top_n_union_or_k": 89,
+    "resample_added_candidates": 83,
+    "resample_overlap_with_base_pool": 0,
+    "total_to_judge": 172,
+    "pct_added_over_base_pool": 93.3,
+    "pct_of_total_judging_list": 48.3,
+    "note": "합성 시뮬레이션의 +22~30%보다 훨씬 크다. N=20으로 작고 모집단(1239)이 넓어 재표본마다 상위 20이 크게 흔들리기 때문으로 보인다. 본 판정의 N에서 다시 재야 한다."
+  },
+  "bootstrap_coverage": {
+    "iterations": 200,
+    "seed": 3,
+    "budget": 20,
+    "methods": ["aida", "all_label_iou", "all_label_objectlab"],
+    "scope": "labelled_candidates",
+    "mode": "candidate_generation_included",
+    "input_fingerprint": "b173c4709e9ccdb4cbb459dcdfb05377a67dc41c53844d909114f1c42e1fc9d5",
+    "base_pool_size": 89,
+    "additional_count": 83,
+    "per_method": {
+      "aida": {"original_top_n": 20, "union_over_resamples": 51, "beyond_original_top_n": 31, "beyond_pool": 29},
+      "all_label_iou": {"original_top_n": 20, "union_over_resamples": 56, "beyond_original_top_n": 36, "beyond_pool": 36},
+      "all_label_objectlab": {"original_top_n": 20, "union_over_resamples": 41, "beyond_original_top_n": 21, "beyond_pool": 18}
+    }
+  },
+  "export_checks": {
+    "labelled_generation_included": {
+      "methods": ["aida", "all_label_iou", "all_label_objectlab"],
+      "method_population": {"aida": 373, "all_label_iou": 1239, "all_label_objectlab": 1239},
+      "included_candidates": 1239,
+      "excluded_candidates": 419,
+      "comparison_allowed": true
+    },
+    "missing_descriptive": {
+      "methods": ["aida"],
+      "method_population": {"aida": 21},
+      "included_candidates": 419,
+      "comparison_allowed": false
+    }
+  },
+  "queues": {
+    "primary_length": 172,
+    "ai_length": 52,
+    "auxiliary_sample": {"fraction": 0.3, "seed": 4, "rounding": "ceil", "pool_size": 172, "size": 52},
+    "verdicts_present": 0,
+    "note": "판정은 하나도 넣지 않았다. 모든 verdict은 null이다 — 판정은 사람이 한다."
+  },
+  "rendered_images": {
+    "tool": "experiment/render_adjudication_images.py",
+    "input": "GET .../queue?adjudicator=ai",
+    "candidates": 52,
+    "files": 105,
+    "by_task": {"labelled": 47, "missing": 5},
+    "margin": 0.5,
+    "checks": [
+      "점수·순위·방법·출처·표본 여부는 그림에도 파일 이름에도 없다. 가림 목록에 그 필드가 없어 렌더러가 통과시켰다.",
+      "5쌍(크롭+전체 장면)을 직접 열어 봤다. 크롭이 manifest의 crop_xyxy_px 영역과 전체 장면에서 같은 자리다.",
+      "기존 라벨은 빨강 실선, 누락 지목은 빨강 점선, 같은 이미지의 다른 라벨은 파랑으로 구분된다.",
+      "amodal 상자가 보인다 — 공사 가림막 뒤 차의 라벨이 가려진 부분까지 덮는 사례를 확인했다.",
+      "크롭 여백은 상자 크기의 0.5배(최소 40px)라 주변 맥락이 같이 보인다. 작은 상자도 최소 여백 덕에 판단할 만하다."
+    ],
+    "not_done": ["AI 모델 호출은 하지 않았다. 프롬프트 형식 점검과 모델 식별자 확정은 남아 있다."]
+  },
+  "tests": {
+    "backend_pytest": {"passed": 368, "failed": 0, "skipped": 0, "seconds": 15.8},
+    "experiment_pytest_subset": {"selector": "render or adjud or coverage", "passed": 20, "deselected": 528}
+  },
+  "open_issues": [
+    "missing_candidates 층의 unmatched_objectlab 순서가 만들어지지 않았다(method_order None). cleanlab 2.9.0이 깔려 있는데도 누락 층에는 ObjectLab 점수가 안 붙는 것으로 보인다 — 본 판정 전에 확인이 필요하다.",
+    "missing 층에서 aida와 unmatched_confidence의 상위 20이 같아 합집합이 20이다. 누락 AIDA 후보 모집단이 21건뿐이라 생긴 일이고, 연습 규모의 특성이다.",
+    "재표본 추가분이 기준 풀 대비 +93.3%다. 판정 상한 C를 정할 때 이 비율을 본 판정 N에서 다시 재야 한다."
+  ]
+}
