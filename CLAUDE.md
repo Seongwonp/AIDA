@@ -48,6 +48,8 @@
 > 층별 집계·사전 등록 뒤에만 도는 val 표집을 구현했다. 업로드 진단에서 nuImages 자를 고르는 길은
 > 2026-09-29에 프론트까지 이었다(자 선택 칸·`listRulers`·결과에 자 ID/가중치 해시 앞 12자). **남은 구현 없음** (AI 보조 판정자·묶음 설정은 API/CLI 경로만 있고 화면은 없다 — 의도한 범위).
 > **지금 막힌 곳은 W5 사전 등록(사용자 결정)이다.** val은 그 커밋 전까지 열지 않는다.
+> **2026-09-29 데스크탑:** 환경 확인(자 SHA `fffecf52…`, cleanlab 2.9.0)·연습 묶음 `practice1`(train fit_check, 판정 대상 172 = 상위N∪K 89 + 재표본 추가 83, 판정 0건) 완료 —
+> `experiment/planning_evidence/practice1_bundle_2026-09-29.json`. **새 사용자 결정:** Q-C의 `unmatched_objectlab` 모집단이 0건(cleanlab 문턱 0.95, 자 최대 확신도 0.93) — (a) 측정 불가 보고 / (b) 문턱 변형 별도 방법 / (c) Q-C에서 제외. 다음은 사용자 연습 판정(20~60건).
 > W2~W4(1차 질문 선택·최소 구현·경로 드라이런)는 2026-09-16에 끝났다. 같은 날 저녁에 결정이
 > 필요 없는 일을 마쳤다 — **자 기록 버전별 분리(S3), access violation 조사(S4), 판정 API 부하 측정,
 > 사전 등록 초안** [`docs/qa-preregistration-draft.md`](docs/qa-preregistration-draft.md)(값은 전부 빈칸),

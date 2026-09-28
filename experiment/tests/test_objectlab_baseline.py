@@ -32,6 +32,30 @@ def test_다중_클래스면_예측이_클래스별로_갈린다():
     assert preds[0][0].shape == (1, 5) and preds[0][1].shape == (1, 5)
 
 
+def test_예측_차례는_cleanlab이_클래스별로_이어붙인_순서다():
+    # cleanlab은 클래스별 배열을 이어붙여 번호를 매긴다. 예측이 클래스 순이 아니면
+    # cleanlab의 i번째 점수는 원래 i번째 예측의 것이 아니다 — 그 상자에 남의 점수가
+    # 붙은 적이 있어 남긴다.
+    im = {"image": "a.png", "predictions": [(0, 0, 1, 1)] * 3, "pred_classes": [1, 0, 0]}
+    assert OL.prediction_order(im, 2) == [1, 2, 0]
+    # 클래스가 하나면 차례가 그대로다 (Car 단일 클래스 실행이 바뀌지 않는다)
+    im1 = {"image": "a.png", "predictions": [(0, 0, 1, 1)] * 3, "pred_classes": None}
+    assert OL.prediction_order(im1, 1) == [0, 1, 2]
+
+
+def test_overlooked는_cleanlab_기본_문턱_아래_예측에_붙지_않는다():
+    # 관측: 미매칭 예측 419건 전부에 점수가 없었다. cleanlab 기본
+    # high_probability_threshold=0.95 아래 예측은 NaN이라 **이 방법의 모집단에 없다**.
+    # 문턱을 AIDA에 맞추면 기준선이 아니므로 값을 지어내지 않는 이 동작을 고정한다.
+    pytest.importorskip("cleanlab")
+    base = {"image": "a.png", "labels": [(0, 0, 50, 50)], "label_classes": None,
+            "predictions": [(0, 0, 50, 50), (400, 400, 460, 460)], "pred_classes": None}
+    below = OL.score([dict(base, confidences=[0.99, 0.93])], 1)
+    above = OL.score([dict(base, confidences=[0.99, 0.96])], 1)
+    assert below["pred_scores"] == {}
+    assert ("a.png", 1) in above["pred_scores"]
+
+
 def test_cleanlab이_없으면_붙이지_않고_그_사실을_남긴다():
     pop = {"all_labels": [{"image": "a.png", "label_index": 0}], "unmatched_predictions": []}
     meta = OL.attach(pop, IMAGES, {"available": False, "reason": "cleanlab 없음"})

@@ -13,8 +13,12 @@
     "dataset_id": "006e49d2cbc9",
     "num_images": 620,
     "num_labels": 620,
-    "label_class_ids": [0],
-    "classes": ["Car"],
+    "label_class_ids": [
+      0
+    ],
+    "classes": [
+      "Car"
+    ],
     "subset_rule": "없음 — fit_check 620장 전부. zip 113,737,286바이트로 업로드 상한(MAX_UPLOAD_BYTES 200MB) 아래라 부분집합이 필요 없었다.",
     "groups_json": "fit_check 폴더에 groups.json이 없어 같은 폴더의 nuimages_manifest.json rows에서 {image: log_token}으로 다시 만들어 zip에 넣었다 (nuimages_to_yolo.py가 쓰는 규칙과 같다). 620장 전부 덮었다.",
     "total_labels_in_diagnosis": 1728
@@ -94,29 +98,60 @@
     "iterations": 200,
     "seed": 3,
     "budget": 20,
-    "methods": ["aida", "all_label_iou", "all_label_objectlab"],
+    "methods": [
+      "aida",
+      "all_label_iou",
+      "all_label_objectlab"
+    ],
     "scope": "labelled_candidates",
     "mode": "candidate_generation_included",
     "input_fingerprint": "b173c4709e9ccdb4cbb459dcdfb05377a67dc41c53844d909114f1c42e1fc9d5",
     "base_pool_size": 89,
     "additional_count": 83,
     "per_method": {
-      "aida": {"original_top_n": 20, "union_over_resamples": 51, "beyond_original_top_n": 31, "beyond_pool": 29},
-      "all_label_iou": {"original_top_n": 20, "union_over_resamples": 56, "beyond_original_top_n": 36, "beyond_pool": 36},
-      "all_label_objectlab": {"original_top_n": 20, "union_over_resamples": 41, "beyond_original_top_n": 21, "beyond_pool": 18}
+      "aida": {
+        "original_top_n": 20,
+        "union_over_resamples": 51,
+        "beyond_original_top_n": 31,
+        "beyond_pool": 29
+      },
+      "all_label_iou": {
+        "original_top_n": 20,
+        "union_over_resamples": 56,
+        "beyond_original_top_n": 36,
+        "beyond_pool": 36
+      },
+      "all_label_objectlab": {
+        "original_top_n": 20,
+        "union_over_resamples": 41,
+        "beyond_original_top_n": 21,
+        "beyond_pool": 18
+      }
     }
   },
   "export_checks": {
     "labelled_generation_included": {
-      "methods": ["aida", "all_label_iou", "all_label_objectlab"],
-      "method_population": {"aida": 373, "all_label_iou": 1239, "all_label_objectlab": 1239},
+      "methods": [
+        "aida",
+        "all_label_iou",
+        "all_label_objectlab"
+      ],
+      "method_population": {
+        "aida": 373,
+        "all_label_iou": 1239,
+        "all_label_objectlab": 1239
+      },
       "included_candidates": 1239,
       "excluded_candidates": 419,
       "comparison_allowed": true
     },
     "missing_descriptive": {
-      "methods": ["aida"],
-      "method_population": {"aida": 21},
+      "methods": [
+        "aida"
+      ],
+      "method_population": {
+        "aida": 21
+      },
       "included_candidates": 419,
       "comparison_allowed": false
     }
@@ -124,7 +159,13 @@
   "queues": {
     "primary_length": 172,
     "ai_length": 52,
-    "auxiliary_sample": {"fraction": 0.3, "seed": 4, "rounding": "ceil", "pool_size": 172, "size": 52},
+    "auxiliary_sample": {
+      "fraction": 0.3,
+      "seed": 4,
+      "rounding": "ceil",
+      "pool_size": 172,
+      "size": 52
+    },
     "verdicts_present": 0,
     "note": "판정은 하나도 넣지 않았다. 모든 verdict은 null이다 — 판정은 사람이 한다."
   },
@@ -133,7 +174,10 @@
     "input": "GET .../queue?adjudicator=ai",
     "candidates": 52,
     "files": 105,
-    "by_task": {"labelled": 47, "missing": 5},
+    "by_task": {
+      "labelled": 47,
+      "missing": 5
+    },
     "margin": 0.5,
     "checks": [
       "점수·순위·방법·출처·표본 여부는 그림에도 파일 이름에도 없다. 가림 목록에 그 필드가 없어 렌더러가 통과시켰다.",
@@ -142,15 +186,36 @@
       "amodal 상자가 보인다 — 공사 가림막 뒤 차의 라벨이 가려진 부분까지 덮는 사례를 확인했다.",
       "크롭 여백은 상자 크기의 0.5배(최소 40px)라 주변 맥락이 같이 보인다. 작은 상자도 최소 여백 덕에 판단할 만하다."
     ],
-    "not_done": ["AI 모델 호출은 하지 않았다. 프롬프트 형식 점검과 모델 식별자 확정은 남아 있다."]
+    "not_done": [
+      "AI 모델 호출은 하지 않았다. 프롬프트 형식 점검과 모델 식별자 확정은 남아 있다."
+    ]
   },
   "tests": {
-    "backend_pytest": {"passed": 368, "failed": 0, "skipped": 0, "seconds": 15.8},
-    "experiment_pytest_subset": {"selector": "render or adjud or coverage", "passed": 20, "deselected": 528}
+    "backend_pytest": {
+      "passed": 368,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 15.8
+    },
+    "experiment_pytest_subset": {
+      "selector": "render or adjud or coverage",
+      "passed": 20,
+      "deselected": 528
+    }
   },
   "open_issues": [
     "missing_candidates 층의 unmatched_objectlab 순서가 만들어지지 않았다(method_order None). cleanlab 2.9.0이 깔려 있는데도 누락 층에는 ObjectLab 점수가 안 붙는 것으로 보인다 — 본 판정 전에 확인이 필요하다.",
     "missing 층에서 aida와 unmatched_confidence의 상위 20이 같아 합집합이 20이다. 누락 AIDA 후보 모집단이 21건뿐이라 생긴 일이고, 연습 규모의 특성이다.",
     "재표본 추가분이 기준 풀 대비 +93.3%다. 판정 상한 C를 정할 때 이 비율을 본 판정 N에서 다시 재야 한다."
-  ]
+  ],
+  "unmatched_objectlab_finding": {
+    "population": 0,
+    "cause": "cleanlab 기본 high_probability_threshold=0.95를 넘는 미매칭 예측이 0건(자 예측 최대 확신도 0.9291). NaN 예측은 이 방법의 모집단에 없다 — 설계대로, 코드 버그 아님.",
+    "user_decision_pending": [
+      "(a) 모집단 0 = 측정 불가로 보고",
+      "(b) 문턱을 바꾼 별도 이름의 변형 방법 추가(ObjectLab 기본값 기준선이 아님을 표기)",
+      "(c) Q-C에서 ObjectLab을 빼고 2자 비교"
+    ],
+    "side_fix": "objectlab_baseline.score()가 다중 클래스에서 cleanlab 클래스별 이어붙인 차례를 원래 예측 번호로 잘못 읽던 버그 수정 — Car 단일 클래스 결과는 불변"
+  }
 }

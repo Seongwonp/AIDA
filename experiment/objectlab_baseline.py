@@ -40,6 +40,18 @@ def build_inputs(images: list[dict], num_classes: int):
     return labels, preds
 
 
+def prediction_order(image: dict, num_classes: int) -> list[int]:
+    """cleanlab이 이 이미지의 예측을 세는 **차례**를 원래 예측 번호로 돌려준다.
+
+    cleanlab은 클래스별 배열을 그대로 이어붙여(`_separate_prediction_single_box`)
+    번호를 매긴다. 그래서 예측이 클래스 순으로 정렬돼 있지 않으면 cleanlab의 i번째
+    점수는 원래 i번째 예측의 것이 **아니다.** 클래스가 하나뿐이면 차례가 같아 티가
+    안 나지만, 여러 클래스에서는 남의 상자에 점수가 붙는다.
+    """
+    pc = image.get("pred_classes") or [0] * len(image["predictions"])
+    return [j for k in range(num_classes) for j, c in enumerate(pc) if int(c) == k]
+
+
 def score(images: list[dict], num_classes: int) -> dict:
     """이미지별 점수. cleanlab이 없으면 {"available": False}."""
     try:
@@ -56,8 +68,9 @@ def score(images: list[dict], num_classes: int) -> dict:
     for im, b, s, o in zip(images, badloc, swap, overlooked):
         for i in range(len(im["labels"])):
             label_scores[(im["image"], i)] = round(float(min(b[i], s[i])), 4)
-        for j in range(len(im["predictions"])):
-            v = float(o[j]) if j < len(o) else float("nan")
+        # cleanlab 차례(i) → 원래 예측 번호(j). 클래스가 여럿이면 둘이 다르다.
+        for i, j in enumerate(prediction_order(im, num_classes)):
+            v = float(o[i]) if i < len(o) else float("nan")
             if not math.isnan(v):
                 pred_scores[(im["image"], j)] = round(v, 4)
     return {"available": True, "cleanlab_version": cleanlab.__version__,
