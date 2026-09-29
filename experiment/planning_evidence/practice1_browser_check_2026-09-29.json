@@ -1,0 +1,169 @@
+{
+  "check": "practice1 blind adjudication screen — real browser rendering and save check",
+  "date": "2026-09-29",
+  "dataset_id": "006e49d2cbc9",
+  "evaluation_id": "practice1",
+  "handoff_item": "docs/desktop-handoff-2026-09-27.md item 4 (브라우저 판정 화면의 실제 렌더링·저장 점검)",
+  "scope": {
+    "ran": "backend (uvicorn, port 8000) and frontend (vite dev, port 5173) from .claude/launch.json; opened the blind adjudication route in a real browser",
+    "not_ran": "no diagnosis, no inference, no nuImages val access, no verdict saved, no repo code change, no commit",
+    "verdict_policy": "no hit/miss/hold button was ever clicked; only the 이전/다음 navigation buttons were used"
+  },
+  "route": {
+    "form": "http://localhost:5173/?evaluate=<dataset_id>:<evaluation_id>",
+    "component": "frontend/src/components/BlindAdjudication.tsx, mounted from App.tsx by the ?evaluate query only (not a product tab)"
+  },
+  "a_queue_size": {
+    "expected": 172,
+    "api_queue_candidates": 172,
+    "ui_counter_text": "0 / 172 판정 (남은 172)",
+    "candidate_set_hash": "d8f5a531686ee590aef2c2c3c3a7af8e8d13632fd9fc638ad86dec93522a74c9",
+    "existing_label_candidates": 152,
+    "missing_object_candidates": 20,
+    "snapshot_total_candidates": 1658,
+    "result": "pass"
+  },
+  "b_blinding": {
+    "queue_payload_item_keys": [
+      "canonical_candidate_id",
+      "image",
+      "label_index",
+      "box",
+      "class_name",
+      "verdict",
+      "unique_error_id"
+    ],
+    "absent_from_payload": [
+      "scores",
+      "aida_rank",
+      "suspicion",
+      "severity",
+      "source",
+      "random_sample",
+      "confidence",
+      "group_id",
+      "adjudicator"
+    ],
+    "dom_text_search": {
+      "searched_terms": [
+        "score", "점수", "rank", "순위", "severity", "suspicion", "의심", "source",
+        "random_sample", "confidence", "신뢰도", "group_id", "adjudicator",
+        "aida_rank", "systematic", "label_iou", "objectlab", "표본"
+      ],
+      "hits_in_visible_text": ["점수", "순위", "의심"],
+      "hits_explanation": "all three come from the fixed disclaimer sentence '방법·점수·원래 순위·세부 의심 유형을 가립니다.' — no candidate value is shown",
+      "hits_in_full_dom_html": ["score"],
+      "hits_in_full_dom_html_explanation": "'score' matches only the CSS class '.score-card' / '.score-value' in the dev-injected stylesheet, not candidate data",
+      "no_numeric_leak": true
+    },
+    "result": "pass"
+  },
+  "c_rendering_first_3": {
+    "renderer": "AdjudicationView draws a square crop of the full image on a 340x340 canvas; red solid outline = the candidate label, blue = other existing labels on the same image",
+    "items": [
+      {
+        "index": 1,
+        "image": "n015-...CAM_BACK_LEFT...jpg",
+        "label_index": 3,
+        "screenshot_description": "suburban street scene crop: a white car parked in front of a striped-facade building, wrapped by a red box; two blue boxes on neighbouring labelled objects at left and right; legend line below the canvas",
+        "canvas_pixel_probe": {"width": 340, "height": 340, "non_white_px": 113526, "red_px": 840, "blue_px": 17},
+        "result": "image and box overlay render"
+      },
+      {
+        "index": 2,
+        "image": "n015-...CAM_FRONT_RIGHT...jpg",
+        "label_index": 1,
+        "screenshot_description": "city street crop: brown/red car in the middle with blue boxes on it and on the car at left; the red candidate box sits to the right of the brown car covering a partly visible vehicle",
+        "result": "image and box overlay render"
+      },
+      {
+        "index": 3,
+        "image": "n008-...CAM_BACK_LEFT...jpg",
+        "label_index": 8,
+        "screenshot_description": "urban crop: white car in the foreground inside a large blue box, a long blue box across the background, and a small red candidate box on a distant object near the centre",
+        "result": "image and box overlay render"
+      }
+    ],
+    "navigation_buttons_reviewed_in_code": "이전 / 다음 / 다음 미판정 only call setCursor and log.record (activity event); they do not call putAdjudications — verified in BlindAdjudication.tsx and confirmed by the network log (no PUT adjudications request was ever made)",
+    "result": "pass"
+  },
+  "d_console_and_network": {
+    "console": [
+      "[debug] [vite] connecting... / connected (x2, one per page load)",
+      "[info] React DevTools suggestion (x2)",
+      "[error] Failed to load resource: the server responded with a status of 409 (Conflict) — the first activity POST"
+    ],
+    "no_react_errors_or_warnings": true,
+    "queue_request": "GET /api/datasets/006e49d2cbc9/evaluations/practice1/queue -> 200 OK (issued twice; React StrictMode double-mounts the effect in dev)",
+    "image_requests": "GET .../images/<file> and GET .../label-boxes/<file> -> 200 OK for each of the first 3 items",
+    "put_adjudications_requests": 0,
+    "activity_409": {
+      "observed": "the first POST .../activity returned 409 Conflict, later POSTs returned 200",
+      "cause": "the StrictMode first-mount cleanup flushes the logger before the queue response sets candidate_set_hash, so the batch is sent with an empty hash and the server rejects a mismatched bundle",
+      "impact": "none — makeActivityLogger keeps an unacknowledged batch in localStorage and resends it with the same event_id; the rejected events (session_started, queue_load_started) are present in the stored activity log",
+      "dev_only": "StrictMode double-mount does not happen in a production build; not treated as a bug"
+    },
+    "result": "pass with a noted transient 409"
+  },
+  "ruler_select_upload_screen": {
+    "element_id": "ruler-select",
+    "options": [
+      {"value": "", "label": "기본 기준 모델", "disabled": false},
+      {"value": "nuimages_car_v1_e100", "label": "nuImages Car 자 car_v1_e100 (100에폭 학습, best=93)", "disabled": false}
+    ],
+    "nuimages_option_available": true,
+    "diagnosis_run": false,
+    "result": "pass"
+  },
+  "verdict_free_confirmation": {
+    "adjudications_file_present": false,
+    "files_in_evaluation_dir_after_check": ["snapshot.json", "activity.jsonl"],
+    "queue_candidates_with_non_null_verdict": 0,
+    "export_adjudication_rows": 373,
+    "export_rows_with_non_null_verdict": 0,
+    "note": "the export pool (373) is larger than the blind queue (172) because it covers judge_ids ∪ random sample ∪ fixed resample; every row is still unjudged"
+  },
+  "side_effects": {
+    "activity_jsonl_written": true,
+    "event_counts": {
+      "session_started": 2,
+      "queue_load_started": 2,
+      "queue_load_succeeded": 1,
+      "candidate_opened": 3,
+      "moved_next": 2,
+      "focus_changed": 2,
+      "visibility_changed": 1,
+      "session_ended": 1
+    },
+    "sessions": 1,
+    "verdict_or_save_events": 0,
+    "disclosure": "merely opening the blind screen records activity events; this check added one machine session (14 events) to practice1/activity.jsonl. No verdict, no save event. If the user wants the practice timing log to contain only their own session, this file can be removed before they start."
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "info",
+      "title": "class_name is null for every candidate, so the judging question reads '이 객체 라벨이…' instead of '이 Car 라벨이…'",
+      "where": "upstream — label_diagnosis.aida_v2_candidate_iou.json review_queue rows already carry class_name: null; the snapshot and the queue simply pass it through",
+      "impact": "the dataset is single-class (classes.txt = Car), so nothing is ambiguous, but the class name is not actually visible on the judging screen even though the design lists it as a visible field",
+      "action": "not fixed — the cause is in diagnosis output, not in the rendering; changing it is a data/behaviour decision for the user"
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "title": "the browser judging screen shows the crop only; there is no full-scene view",
+      "where": "AdjudicationView renders one 340x340 crop centred on the candidate box, with other labels drawn in blue",
+      "impact": "handoff item 4 asks to check both the full scene and the crop; the full-scene file exists only for the AI adjudicator manifest (full_file), not for the human screen. Other labels visible inside the crop are drawn, so nearby context is partly covered, but objects outside the crop are not.",
+      "action": "not fixed — design decision, reported for the user"
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "title": "first activity POST returns 409 in dev",
+      "detail": "see d_console_and_network.activity_409 — self-healing, no data loss, StrictMode-only"
+    }
+  ],
+  "no_rendering_bug_found": true,
+  "frontend_code_changed": false,
+  "servers_stopped": true
+}
