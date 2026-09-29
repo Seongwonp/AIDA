@@ -37,7 +37,7 @@ TIE_SEED, K_SEED = 20260929, 20260928
 AIDA, IOU, OL = "aida", "all_label_iou", "all_label_objectlab"
 
 
-def make_population(seed, n_logs=35, imgs_per_log=(6, 10), labels_per_img=(2, 6), keep_rate=0.45):
+def make_population(seed, n_logs=35, imgs_per_log=(6, 10), labels_per_img=(2, 6), keep_rate=0.45, err_scale=1.0):
     rng = random.Random(seed)
     rows, truth, score_iou, score_ol, in_aida = [], {}, {}, {}, set()
     for g in range(n_logs):
@@ -46,7 +46,7 @@ def make_population(seed, n_logs=35, imgs_per_log=(6, 10), labels_per_img=(2, 6)
             for l in range(rng.randint(*labels_per_img)):
                 iou = 0.0 if rng.random() < 0.10 else min(1.0, max(0.0, rng.gauss(0.82, 0.13)))
                 s = 1 - iou
-                p_err = 0.35 if iou == 0.0 else min(0.9, 0.02 + 1.6 * s ** 2)
+                p_err = min(0.95, err_scale * (0.35 if iou == 0.0 else min(0.9, 0.02 + 1.6 * s ** 2)))
                 a = Adjudication("d", img, f"L{l}", "box", label_index=l, group_id=f"log{g:02d}")
                 rows.append(a)
                 truth[a.key] = rng.random() < p_err
