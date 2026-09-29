@@ -1,0 +1,82 @@
+{
+  "label": "SYNTHETIC VERDICTS — NOT A RESULT. Pipeline dry run only; no human or AI adjudication happened. Numbers below measure nothing about AIDA, all_label_iou or ObjectLab.",
+  "date": "2026-09-29",
+  "code_commit": "624c602b2e0b1cda6dab4afb09373c265e8faefc",
+  "dataset_id": "006e49d2cbc9 (nuImages train fit_check, practice data; val not opened)",
+  "evaluation_used": "practice1_synthetic_dryrun (scratch evaluation, same StartEvaluation body as practice1)",
+  "practice1_untouched": {
+    "checked_after_run": true,
+    "practice1_files": ["activity.jsonl", "snapshot.json"],
+    "adjudications_json_present": false
+  },
+  "snapshot_identity": {
+    "candidate_set_hash_practice1": "d8f5a531686ee590aef2c2c3c3a7af8e8d13632fd9fc638ad86dec93522a74c9",
+    "candidate_set_hash_dryrun": "d8f5a531686ee590aef2c2c3c3a7af8e8d13632fd9fc638ad86dec93522a74c9",
+    "equal": true,
+    "fields_that_differ": ["evaluation_id", "created_at", "code_commit"],
+    "bootstrap_coverage": {"iterations": 200, "seed": 3, "budget": 20,
+      "methods": ["aida", "all_label_iou", "all_label_objectlab"],
+      "input_fingerprint": "b173c4709e9ccdb4cbb459dcdfb05377a67dc41c53844d909114f1c42e1fc9d5",
+      "base_pool_size": 89, "additional_count": 83},
+    "auxiliary_sample": {"fraction": 0.3, "seed": 4, "pool_size": 172, "size": 52}
+  },
+  "synthetic_verdict_rule": {
+    "rule": "u = int(sha256('synthetic-verdict-v2:{seed}:{candidate_id}')[:12], 16) / 16**12; hit if u < 0.25, hold if u < 0.28, else miss. Queue items are blinded (no label_iou), so the hash rule was used for every candidate. Missing-candidate hits get unique_error_id M1, M2, ... per image.",
+    "primary_seed": 1,
+    "ai_seed": 2,
+    "first_attempt_discarded": "The first run hashed '{seed}:{candidate_id}' with seed 1, which is exactly the D9 tie key sha256('{tie_seed}:{candidate_id}') with tie_seed=1. Among the 90 tied IoU-0 labels the smallest tie keys are the smallest hashes, so all 20 all_label_iou top-N were synthetic hits (difference 14 [4, 15]). Artifact of the synthetic rule, not of the pipeline; rerun with a salted hash. Lesson for any future synthetic check: never derive synthetic verdicts from sha256('{tie_seed}:{id}')."
+  },
+  "commands": [
+    "backend/venv python, PYTHONPATH=backend, UPLOADS_DIR default (backend/app/data/uploads): FastAPI TestClient script (scratch) — GET queue (primary, ai) → PUT adjudications (primary seed 1, ai seed 2) → GET export ×3 → GET agreement?secondary=ai",
+    "experiment/venv python experiment/analyze_qa.py --export export_labelled.json --budget 20 --iterations 200 --seed 3 --methods aida all_label_iou all_label_objectlab --adjudicator primary --out analysis_ok.json",
+    "same command on export_labelled_one_unjudged.json (copy with the verdict of one aida original top-20 candidate set to null)",
+    "experiment/venv python: evaluation.importer.load_export + evaluation.strata.height_strata_from_export + summarise_by_stratum(budget=20) for all_label_iou, aida, all_label_objectlab"
+  ],
+  "put_adjudications": {
+    "primary": {"status": 200, "queue_len": 172, "hit": 50, "hold": 4, "miss": 118},
+    "ai": {"status": 200, "queue_len": 52, "hit": 12, "hold": 2, "miss": 38}
+  },
+  "exports": {
+    "labelled": {"query": "methods=aida,all_label_iou,all_label_objectlab&scope=labelled_candidates&mode=candidate_generation_included&adjudicator=primary",
+      "status": 200, "adjudication_rows": 1239,
+      "rankings_per_method": {"aida": 373, "all_label_iou": 1239, "all_label_objectlab": 1239},
+      "judging": {"comparison_budget_n": 20, "total_judging_list": 172, "coverage_extra_in_scope": 83},
+      "iou_zero_labels": {"in_scope_labels": 90, "in_top_n_all_label_iou": 20, "n": 20}},
+    "missing_preregistered_query": {"query": "methods=aida,unmatched_confidence,unmatched_objectlab&scope=missing_candidates&mode=candidate_generation_included&adjudicator=primary",
+      "status": 409,
+      "failure": "ExportBlocked → HTTP 409 in GET .../export (backend/app/routers/evaluation.py get_export): \"'unmatched_objectlab'로 줄 세울 후보가 없습니다. ...\" — the empty unmatched_objectlab population (cleanlab threshold 0.95 > ruler max confidence 0.93) makes the whole preregistered missing-layer export fail, not just that method's column.",
+      "consequence": "The D7 step-1 missing-layer query as written in the preregistration cannot run on this ruler. The user decision (a) 'unmatched_objectlab: report as not measurable' needs either a query without unmatched_objectlab or an export mode that reports an empty population; which one is a user/prereg decision, not changed here."},
+    "missing_without_unmatched_objectlab": {"query": "methods=aida,unmatched_confidence&scope=missing_candidates&mode=candidate_generation_included&adjudicator=primary",
+      "status": 200, "adjudication_rows": 419,
+      "rankings_per_method": {"aida": 21, "unmatched_confidence": 419}}
+  },
+  "analyze_qa": {
+    "fully_judged_export": {"exit": 0, "runtime_s_approx": 16,
+      "summaries_at_N20": {"aida": {"hit_candidates": 4, "holds": 2, "decided": 18},
+                           "all_label_iou": {"hit_candidates": 5, "holds": 0, "decided": 20},
+                           "all_label_objectlab": {"hit_candidates": 9, "holds": 0, "decided": 20}},
+      "comparisons": {"all_label_iou_minus_aida": {"observed": 1, "ci": [-5.0, 4.0]},
+                      "all_label_objectlab_minus_aida": {"observed": 5, "ci": [0.0, 8.0]}},
+      "same_candidate_set": false, "judged_top_n_required": true,
+      "unjudged_in_top_n_resamples": 0,
+      "note": "Intervals are from synthetic coin flips; they say nothing about the methods."},
+    "one_top_n_verdict_removed_copy": {"exit": 2, "refused": true,
+      "message": "중단: 원래 표본의 'aida' 상위 N에 미판정 후보가 있다",
+      "output_written": false}
+  },
+  "agreement_primary_vs_ai": {
+    "status": 200, "sample_size": 52, "both_judged": 52, "both_decided": 49,
+    "primary_holds": 1, "secondary_holds": 2,
+    "three_way": {"agree": 32, "n": 52, "rate": 0.6154, "kappa": 0.1558},
+    "decided_only": {"agree": 32, "n": 49, "rate": 0.6531, "kappa": 0.1873},
+    "confusion_primary_x_ai": {"hit/hit": 6, "hit/miss": 12, "miss/hit": 5, "miss/miss": 26, "miss/hold": 2, "hold/hit": 1},
+    "note": "Two independent synthetic seeds; the low agreement is by construction."
+  },
+  "height_strata_top20": {
+    "all_label_iou": {"30-60": {"in_budget": 11, "hit": 3}, "60-120": {"in_budget": 8, "hit": 1}, "120+": {"in_budget": 1, "hit": 1}},
+    "aida": {"30-60": {"in_budget": 12, "hit": 2, "holds": 1}, "60-120": {"in_budget": 4, "hit": 1, "holds": 1}, "120+": {"in_budget": 4, "hit": 1}},
+    "all_label_objectlab": {"30-60": {"in_budget": 16, "hit": 6}, "60-120": {"in_budget": 2, "hit": 2}, "120+": {"in_budget": 2, "hit": 1}},
+    "check": "stratum hit sums equal the analyze_qa summaries (5, 4, 9); no 0-30 band (height filter)."
+  },
+  "outputs": "Exports, analysis JSONs, strata output and the verdict script were kept only in the session scratch directory. Synthetic verdict files remain in the scratch evaluation practice1_synthetic_dryrun (adjudications.json, adjudications.ai.json); practice1 has none."
+}
