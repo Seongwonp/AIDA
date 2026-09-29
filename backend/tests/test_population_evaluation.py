@@ -485,6 +485,32 @@ def test_objectlab_방법의_모집단은_점수가_붙은_행뿐이다(client, 
     assert body["method_population"] == {"aida": 2, "all_label_iou": 4, "all_label_objectlab": 2}
 
 
+def test_누락_층에서_모집단이_빈_objectlab은_측정_불가로_내보낸다(client, uploads):
+    """사용자 결정 (a): cleanlab 문턱을 넘는 미매칭 예측이 0건이면 값을 지어내지 않고 "측정 불가"로
+    보고한다. 나머지 두 방법의 기술 통계는 그대로 나간다."""
+    data = diagnosis_with_objectlab()
+    for row in data["unmatched_predictions"]:
+        row.pop("objectlab_overlooked", None)          # 문턱 아래 → 점수 없음
+    write(uploads, data)
+    start(client)
+    body = export(client, "aida,unmatched_confidence,unmatched_objectlab", scope="missing_candidates",
+                  mode="candidate_generation_included").json()
+    assert body["method_population"] == {"aida": 1, "unmatched_confidence": 3, "unmatched_objectlab": 0}
+    assert body["not_measurable_methods"] == ["unmatched_objectlab"]
+    assert body["descriptive_only"] is True
+    assert not any(r["method"] == "unmatched_objectlab" for r in body["rankings"])
+
+
+def test_비교_층에서는_모집단이_빈_방법을_그대로_막는다(client, uploads):
+    data = diagnosis_with_objectlab()
+    for row in data["all_labels"]:
+        row.pop("objectlab_score", None)
+    write(uploads, data)
+    start(client)
+    assert export(client, "aida,all_label_iou,all_label_objectlab",
+                  mode="candidate_generation_included").status_code == 409
+
+
 def test_objectlab_점수가_없는_진단에는_그_방법이_생기지_않는다(client, uploads):
     write(uploads, diagnosis())
     snap = start(client)

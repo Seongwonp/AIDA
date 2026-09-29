@@ -1236,8 +1236,15 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
             raise ExportBlocked(truncated)
 
     orders: dict[str, dict[str, float]] = {}
+    # 모집단이 비어 "측정 불가"로 보고하는 방법 (사전 등록 4절, 사용자 결정 (a) 2026-09-29).
+    # **누락 층(기술 통계)에서만** 허용한다 — 비교 층에서 모집단이 비면 그대로 막는다.
+    not_measurable: list[str] = []
     for method in methods:
         order = method_order(included, method, snapshot_ranking_version(snapshot), scope)
+        if order is None and scope == MISSING and method != AIDA:
+            not_measurable.append(method)
+            orders[method] = {}
+            continue
         if order is None:
             raise ExportBlocked(
                 f"'{method}'로 줄 세울 후보가 없습니다. AIDA는 후보마다 진단의 제품 "
@@ -1360,6 +1367,9 @@ def export_for_aggregation(snapshot: EvaluationSnapshot,
         # 어느 모집단을 잰 내보내기인가. 모드가 다르면 같은 방법 이름이라도 다른 질문이다.
         "comparison_mode": mode,
         "method_population": {m: len(orders[m]) for m in methods},
+        # 누락 층에서 점수 붙은 후보가 하나도 없어 줄 세우지 못한 방법. 값을 지어내지 않고
+        # 결과 문서에 "측정 불가"로 적는다 — cleanlab 기본 문턱을 낮추지 않는다.
+        "not_measurable_methods": not_measurable,
         "random_sample": {
             "size": snapshot.random_sample_size,
             "seed": snapshot.random_sample_seed,
