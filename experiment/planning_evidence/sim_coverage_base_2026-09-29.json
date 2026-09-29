@@ -1,0 +1,6069 @@
+{
+ "synthetic": true,
+ "note": "합성 자료. sim_unjudged.py 생성 과정의 한 조건이며 실제 데이터의 값이 아니다.",
+ "settings": {
+  "scenario": "base",
+  "scenario_params": {},
+  "N": 90,
+  "K": 50,
+  "bootstrap_iterations": 2000,
+  "bootstrap_seed": 42,
+  "tie_seed": 20260929,
+  "replicates": 200,
+  "rep_seed_start": 1000,
+  "theta_replicates": 5000,
+  "theta_seed_start": 100000,
+  "difference_sign": "baseline - aida",
+  "interval": "95% percentile, paired log-cluster"
+ },
+ "theta": {
+  "all_label_iou - aida": {
+   "mean": -0.407,
+   "sd_across_datasets": 3.239
+  },
+  "all_label_objectlab - aida": {
+   "mean": -7.53,
+   "sd_across_datasets": 6.034
+  }
+ },
+ "summary": {
+  "all_label_iou - aida": {
+   "theta": -0.407,
+   "unjudged_zero": {
+    "coverage_of_theta": 0.985,
+    "coverage_mc_se": 0.009,
+    "mean_width": 13.39,
+    "mean_midpoint_minus_theta": -0.37,
+    "share_ci_excludes_zero": 0.0
+   },
+   "fixed_union": {
+    "coverage_of_theta": 0.99,
+    "coverage_mc_se": 0.007,
+    "mean_width": 13.41,
+    "mean_midpoint_minus_theta": -0.55,
+    "share_ci_excludes_zero": 0.0
+   },
+   "share_reps_where_intervals_differ": 0.59
+  },
+  "all_label_objectlab - aida": {
+   "theta": -7.53,
+   "unjudged_zero": {
+    "coverage_of_theta": 0.97,
+    "coverage_mc_se": 0.012,
+    "mean_width": 24.06,
+    "mean_midpoint_minus_theta": -0.36,
+    "share_ci_excludes_zero": 0.215
+   },
+   "fixed_union": {
+    "coverage_of_theta": 0.98,
+    "coverage_mc_se": 0.01,
+    "mean_width": 23.81,
+    "mean_midpoint_minus_theta": -0.15,
+    "share_ci_excludes_zero": 0.2
+   },
+   "share_reps_where_intervals_differ": 0.745
+  }
+ },
+ "replicates": [
+  {
+   "seed": 1000,
+   "seconds": 171.2,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 2,
+      "lo": -7.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": 2,
+      "lo": -7.0,
+      "hi": 11.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -8,
+      "lo": -20.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -8,
+      "lo": -21.0,
+      "hi": 2.0249999999998636
+     }
+    }
+   }
+  },
+  {
+   "seed": 1001,
+   "seconds": 173.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 0,
+      "lo": -7.0,
+      "hi": 9.0
+     },
+     "fixed_union": {
+      "observed": 0,
+      "lo": -7.0,
+      "hi": 11.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -20,
+      "lo": -36.0,
+      "hi": -4.0
+     },
+     "fixed_union": {
+      "observed": -20,
+      "lo": -36.0,
+      "hi": -4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1002,
+   "seconds": 172.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 6,
+      "lo": -2.0,
+      "hi": 13.0
+     },
+     "fixed_union": {
+      "observed": 6,
+      "lo": -1.0,
+      "hi": 13.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -17.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -17.0,
+      "hi": 7.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1003,
+   "seconds": 173.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -11.0,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -10.0,
+      "hi": 2.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -17.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -17.0,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1004,
+   "seconds": 170.1,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -8.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -8.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -11,
+      "lo": -23.0,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -11,
+      "lo": -22.0,
+      "hi": 0.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1005,
+   "seconds": 172.3,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 2,
+      "lo": -3.0,
+      "hi": 9.024999999999864
+     },
+     "fixed_union": {
+      "observed": 2,
+      "lo": -3.0,
+      "hi": 10.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -17.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -17.0,
+      "hi": 4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1006,
+   "seconds": 177.1,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 3,
+      "lo": -3.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": 3,
+      "lo": -5.0,
+      "hi": 9.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -10,
+      "lo": -24.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -10,
+      "lo": -26.0,
+      "hi": 2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1007,
+   "seconds": 178.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -8.0,
+      "hi": 11.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -8.0,
+      "hi": 10.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -11,
+      "lo": -25.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -11,
+      "lo": -25.0,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1008,
+   "seconds": 185.0,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -6.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -7.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": 0,
+      "lo": -13.0,
+      "hi": 13.0
+     },
+     "fixed_union": {
+      "observed": 0,
+      "lo": -12.0,
+      "hi": 11.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1009,
+   "seconds": 174.5,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -6.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -6.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -15.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -14.0,
+      "hi": 6.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1010,
+   "seconds": 168.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 0,
+      "lo": -7.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": 0,
+      "lo": -7.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -18.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -17.0,
+      "hi": 4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1011,
+   "seconds": 180.5,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -8.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -8.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -14.0,
+      "hi": 11.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -13.0,
+      "hi": 12.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1012,
+   "seconds": 174.5,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 4,
+      "lo": -5.0,
+      "hi": 8.0
+     },
+     "fixed_union": {
+      "observed": 4,
+      "lo": -4.0,
+      "hi": 8.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": 3,
+      "lo": -8.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": 3,
+      "lo": -8.0,
+      "hi": 10.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1013,
+   "seconds": 180.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 3,
+      "lo": -5.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": 3,
+      "lo": -6.0,
+      "hi": 9.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -12,
+      "lo": -24.0,
+      "hi": 0.0
+     },
+     "fixed_union": {
+      "observed": -12,
+      "lo": -23.0,
+      "hi": 0.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1014,
+   "seconds": 185.5,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -8.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -10.0,
+      "hi": 2.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -15,
+      "lo": -28.0,
+      "hi": -1.0
+     },
+     "fixed_union": {
+      "observed": -15,
+      "lo": -27.0,
+      "hi": -1.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1015,
+   "seconds": 170.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -12.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -11.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -11,
+      "lo": -24.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -11,
+      "lo": -22.0,
+      "hi": 6.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1016,
+   "seconds": 160.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -8.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -9.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": 3,
+      "lo": -9.0,
+      "hi": 16.0
+     },
+     "fixed_union": {
+      "observed": 3,
+      "lo": -10.0,
+      "hi": 16.024999999999864
+     }
+    }
+   }
+  },
+  {
+   "seed": 1017,
+   "seconds": 175.5,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -7.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -7.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -20,
+      "lo": -29.0,
+      "hi": -12.0
+     },
+     "fixed_union": {
+      "observed": -20,
+      "lo": -29.0,
+      "hi": -12.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1018,
+   "seconds": 174.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 2,
+      "lo": -3.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": 2,
+      "lo": -4.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -9.0,
+      "hi": 11.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -9.0,
+      "hi": 11.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1019,
+   "seconds": 164.5,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -7.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -7.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -6,
+      "lo": -20.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -6,
+      "lo": -19.0,
+      "hi": 7.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1020,
+   "seconds": 168.9,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -10.0,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -10.0,
+      "hi": 1.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -20.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -19.0,
+      "hi": 8.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1021,
+   "seconds": 153.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 3,
+      "lo": -3.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": 3,
+      "lo": -3.0,
+      "hi": 10.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -13,
+      "lo": -22.0,
+      "hi": -2.0
+     },
+     "fixed_union": {
+      "observed": -13,
+      "lo": -22.0,
+      "hi": -1.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1022,
+   "seconds": 174.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 5,
+      "lo": -2.0,
+      "hi": 14.0
+     },
+     "fixed_union": {
+      "observed": 5,
+      "lo": -2.0,
+      "hi": 11.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -6,
+      "lo": -22.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -6,
+      "lo": -22.0,
+      "hi": 5.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1023,
+   "seconds": 168.2,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -8.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -9.0,
+      "hi": 3.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -21.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -20.0,
+      "hi": 2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1024,
+   "seconds": 182.1,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -7.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -7.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -9,
+      "lo": -20.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -9,
+      "lo": -20.0,
+      "hi": 2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1025,
+   "seconds": 161.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -10.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -10.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -8,
+      "lo": -20.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -8,
+      "lo": -20.0,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1026,
+   "seconds": 169.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 4,
+      "lo": -2.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": 4,
+      "lo": -4.0,
+      "hi": 8.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -6,
+      "lo": -17.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -6,
+      "lo": -18.0,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1027,
+   "seconds": 173.1,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -7.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -7.0,
+      "hi": 10.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -10,
+      "lo": -20.0,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -10,
+      "lo": -19.0,
+      "hi": 2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1028,
+   "seconds": 167.1,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -11.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -11.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -9,
+      "lo": -22.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -9,
+      "lo": -22.0,
+      "hi": 2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1029,
+   "seconds": 165.0,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 6,
+      "lo": -5.0,
+      "hi": 12.0
+     },
+     "fixed_union": {
+      "observed": 6,
+      "lo": -4.0,
+      "hi": 11.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -15.0,
+      "hi": 11.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -15.024999999999999,
+      "hi": 10.024999999999864
+     }
+    }
+   }
+  },
+  {
+   "seed": 1030,
+   "seconds": 165.3,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -8.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -9.0,
+      "hi": 3.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -8,
+      "lo": -21.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -8,
+      "lo": -22.0,
+      "hi": 2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1031,
+   "seconds": 170.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 3.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -6,
+      "lo": -16.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -6,
+      "lo": -16.0,
+      "hi": 4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1032,
+   "seconds": 150.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -9.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -9.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -19,
+      "lo": -32.0,
+      "hi": -6.0
+     },
+     "fixed_union": {
+      "observed": -19,
+      "lo": -32.0,
+      "hi": -6.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1033,
+   "seconds": 170.3,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -5.0,
+      "hi": 8.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -6.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -14,
+      "lo": -23.0,
+      "hi": -3.0
+     },
+     "fixed_union": {
+      "observed": -14,
+      "lo": -23.0,
+      "hi": -3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1034,
+   "seconds": 161.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 6,
+      "lo": 0.0,
+      "hi": 15.0
+     },
+     "fixed_union": {
+      "observed": 6,
+      "lo": -1.0,
+      "hi": 13.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -15.0,
+      "hi": 15.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -15.0,
+      "hi": 14.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1035,
+   "seconds": 165.0,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -7.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -8.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -10.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -10.0,
+      "hi": 10.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1036,
+   "seconds": 160.5,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 3.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -15.0,
+      "hi": 11.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -15.0,
+      "hi": 10.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1037,
+   "seconds": 172.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 0,
+      "lo": -4.0,
+      "hi": 9.0
+     },
+     "fixed_union": {
+      "observed": 0,
+      "lo": -4.0,
+      "hi": 10.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -16,
+      "lo": -27.0,
+      "hi": -4.0
+     },
+     "fixed_union": {
+      "observed": -16,
+      "lo": -26.0,
+      "hi": -4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1038,
+   "seconds": 155.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -7.024999999999999,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -7.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -14.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -14.0,
+      "hi": 10.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1039,
+   "seconds": 162.1,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -7.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -7.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -16,
+      "lo": -27.0,
+      "hi": -4.0
+     },
+     "fixed_union": {
+      "observed": -16,
+      "lo": -26.0,
+      "hi": -4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1040,
+   "seconds": 154.5,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -6,
+      "lo": -11.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -6,
+      "lo": -11.0,
+      "hi": 2.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -17,
+      "lo": -26.025,
+      "hi": -5.0
+     },
+     "fixed_union": {
+      "observed": -17,
+      "lo": -27.0,
+      "hi": -5.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1041,
+   "seconds": 165.0,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -9.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -10.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -18.0,
+      "hi": 11.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -18.0,
+      "hi": 10.024999999999864
+     }
+    }
+   }
+  },
+  {
+   "seed": 1042,
+   "seconds": 160.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -16.025,
+      "hi": 0.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -16.0,
+      "hi": 0.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -20.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -19.0,
+      "hi": 7.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1043,
+   "seconds": 170.1,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -11.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -11.0,
+      "hi": 3.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -11,
+      "lo": -22.0,
+      "hi": 0.024999999999863576
+     },
+     "fixed_union": {
+      "observed": -11,
+      "lo": -22.0,
+      "hi": 0.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1044,
+   "seconds": 158.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 5,
+      "lo": -3.0,
+      "hi": 9.0
+     },
+     "fixed_union": {
+      "observed": 5,
+      "lo": -4.0,
+      "hi": 9.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -18.0,
+      "hi": 8.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -17.0,
+      "hi": 8.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1045,
+   "seconds": 173.2,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -8.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -9.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -23,
+      "lo": -33.0,
+      "hi": -10.0
+     },
+     "fixed_union": {
+      "observed": -23,
+      "lo": -34.0,
+      "hi": -9.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1046,
+   "seconds": 159.9,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 3,
+      "lo": -4.0,
+      "hi": 8.0
+     },
+     "fixed_union": {
+      "observed": 3,
+      "lo": -4.0,
+      "hi": 10.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -15.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -15.0,
+      "hi": 5.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1047,
+   "seconds": 162.5,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -5.0,
+      "hi": 8.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -5.0,
+      "hi": 8.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -10,
+      "lo": -24.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -10,
+      "lo": -23.025,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1048,
+   "seconds": 181.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -9,
+      "lo": -14.0,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -9,
+      "lo": -14.0,
+      "hi": 0.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -11,
+      "lo": -21.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -11,
+      "lo": -21.0,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1049,
+   "seconds": 183.3,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -8.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -8.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -9,
+      "lo": -18.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -9,
+      "lo": -18.0,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1050,
+   "seconds": 190.0,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -6.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -7.0,
+      "hi": 3.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -11.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -11.0,
+      "hi": 10.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1051,
+   "seconds": 183.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -5.024999999999999,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -9.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": 5,
+      "lo": -6.0,
+      "hi": 17.0
+     },
+     "fixed_union": {
+      "observed": 5,
+      "lo": -8.0,
+      "hi": 17.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1052,
+   "seconds": 162.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -6,
+      "lo": -12.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -6,
+      "lo": -12.0,
+      "hi": 0.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -16.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -16.0,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1053,
+   "seconds": 180.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -11.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -11.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -6,
+      "lo": -18.025,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -6,
+      "lo": -18.0,
+      "hi": 5.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1054,
+   "seconds": 188.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 1.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -15,
+      "lo": -28.0,
+      "hi": -5.0
+     },
+     "fixed_union": {
+      "observed": -15,
+      "lo": -27.0,
+      "hi": -5.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1055,
+   "seconds": 181.1,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 0,
+      "lo": -7.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": 0,
+      "lo": -7.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -17.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -16.0,
+      "hi": 8.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1056,
+   "seconds": 191.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -8.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -8.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -9,
+      "lo": -22.025,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -9,
+      "lo": -22.0,
+      "hi": 4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1057,
+   "seconds": 188.5,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -8.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -8.0,
+      "hi": 3.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -8,
+      "lo": -18.025,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -8,
+      "lo": -18.0,
+      "hi": 2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1058,
+   "seconds": 186.5,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 0,
+      "lo": -7.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": 0,
+      "lo": -7.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -22.0,
+      "hi": 8.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -22.0,
+      "hi": 8.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1059,
+   "seconds": 197.2,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 3,
+      "lo": -3.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": 3,
+      "lo": -3.0,
+      "hi": 9.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -19.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -19.0,
+      "hi": 10.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1060,
+   "seconds": 185.0,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -8.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -9.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -13,
+      "lo": -26.0,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -13,
+      "lo": -25.0,
+      "hi": 2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1061,
+   "seconds": 195.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -13,
+      "lo": -22.0,
+      "hi": -1.0
+     },
+     "fixed_union": {
+      "observed": -13,
+      "lo": -24.0,
+      "hi": -1.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1062,
+   "seconds": 200.9,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -6,
+      "lo": -12.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -6,
+      "lo": -12.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -17,
+      "lo": -26.0,
+      "hi": -5.0
+     },
+     "fixed_union": {
+      "observed": -17,
+      "lo": -26.0,
+      "hi": -4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1063,
+   "seconds": 177.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -8.0,
+      "hi": 9.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -7.0,
+      "hi": 8.024999999999864
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -12.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -12.0,
+      "hi": 10.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1064,
+   "seconds": 173.1,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 3,
+      "lo": -6.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": 3,
+      "lo": -5.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": 2,
+      "lo": -13.0,
+      "hi": 15.0
+     },
+     "fixed_union": {
+      "observed": 2,
+      "lo": -11.0,
+      "hi": 15.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1065,
+   "seconds": 177.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -9.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -9.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -17.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -17.0,
+      "hi": 5.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1066,
+   "seconds": 192.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 6,
+      "lo": -2.0,
+      "hi": 12.0
+     },
+     "fixed_union": {
+      "observed": 6,
+      "lo": -2.0,
+      "hi": 12.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -15.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -14.0,
+      "hi": 6.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1067,
+   "seconds": 188.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 3,
+      "lo": -7.0,
+      "hi": 11.0
+     },
+     "fixed_union": {
+      "observed": 3,
+      "lo": -7.0,
+      "hi": 11.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -10,
+      "lo": -20.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -10,
+      "lo": -20.0,
+      "hi": 2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1068,
+   "seconds": 187.3,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -18.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -18.0,
+      "hi": 10.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1069,
+   "seconds": 177.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -7.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -9.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -19.0,
+      "hi": 11.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -19.0,
+      "hi": 11.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1070,
+   "seconds": 167.9,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -9.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -9.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -19.0,
+      "hi": 12.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -19.0,
+      "hi": 12.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1071,
+   "seconds": 183.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -8.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -8.0,
+      "hi": 3.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -15.0,
+      "hi": 11.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -14.0,
+      "hi": 11.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1072,
+   "seconds": 178.0,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 0,
+      "lo": -7.0,
+      "hi": 9.024999999999864
+     },
+     "fixed_union": {
+      "observed": 0,
+      "lo": -7.0,
+      "hi": 9.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -10,
+      "lo": -19.025,
+      "hi": -1.0
+     },
+     "fixed_union": {
+      "observed": -10,
+      "lo": -19.0,
+      "hi": 0.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1073,
+   "seconds": 178.0,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -10.0,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -9.0,
+      "hi": 2.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -19,
+      "lo": -28.0,
+      "hi": -5.0
+     },
+     "fixed_union": {
+      "observed": -19,
+      "lo": -27.0,
+      "hi": -4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1074,
+   "seconds": 190.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -7.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -7.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -10,
+      "lo": -25.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -10,
+      "lo": -25.0,
+      "hi": 4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1075,
+   "seconds": 160.2,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -9.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -8.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -17.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -16.0,
+      "hi": 7.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1076,
+   "seconds": 178.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -7.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -7.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -9,
+      "lo": -21.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -9,
+      "lo": -20.0,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1077,
+   "seconds": 180.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -7.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -10.0,
+      "hi": 2.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": 3,
+      "lo": -11.0,
+      "hi": 15.0
+     },
+     "fixed_union": {
+      "observed": 3,
+      "lo": -11.0,
+      "hi": 15.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1078,
+   "seconds": 170.2,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 4,
+      "lo": -2.0,
+      "hi": 12.0
+     },
+     "fixed_union": {
+      "observed": 4,
+      "lo": -2.0,
+      "hi": 11.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -14,
+      "lo": -23.0,
+      "hi": -3.0
+     },
+     "fixed_union": {
+      "observed": -14,
+      "lo": -22.0,
+      "hi": -3.9750000000001364
+     }
+    }
+   }
+  },
+  {
+   "seed": 1079,
+   "seconds": 178.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -6.0,
+      "hi": 9.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -6.0,
+      "hi": 9.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -15.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -14.0,
+      "hi": 10.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1080,
+   "seconds": 192.2,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -5.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -5.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -6,
+      "lo": -18.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -6,
+      "lo": -19.0,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1081,
+   "seconds": 195.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -6.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -7.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -9,
+      "lo": -21.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -9,
+      "lo": -21.0,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1082,
+   "seconds": 187.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -5.0,
+      "hi": 8.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -4.0,
+      "hi": 8.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -14.0,
+      "hi": 9.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -13.0,
+      "hi": 9.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1083,
+   "seconds": 181.0,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -6.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -6.0,
+      "hi": 8.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -14,
+      "lo": -26.0,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -14,
+      "lo": -25.0,
+      "hi": 1.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1084,
+   "seconds": 196.5,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -4.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -4.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -11,
+      "lo": -22.0,
+      "hi": 0.0
+     },
+     "fixed_union": {
+      "observed": -11,
+      "lo": -23.0,
+      "hi": -1.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1085,
+   "seconds": 186.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -11.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -11.0,
+      "hi": 2.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -11,
+      "lo": -22.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -11,
+      "lo": -21.0,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1086,
+   "seconds": 187.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -8.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -7.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -10,
+      "lo": -20.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -10,
+      "lo": -20.0,
+      "hi": 2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1087,
+   "seconds": 189.1,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -10.0,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -10.0,
+      "hi": 0.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -13,
+      "lo": -27.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -13,
+      "lo": -27.0,
+      "hi": 2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1088,
+   "seconds": 212.3,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -10.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -9.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -17.0,
+      "hi": 12.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -18.0,
+      "hi": 12.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1089,
+   "seconds": 202.2,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 2,
+      "lo": -4.0,
+      "hi": 9.0
+     },
+     "fixed_union": {
+      "observed": 2,
+      "lo": -4.0,
+      "hi": 9.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -6,
+      "lo": -17.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -6,
+      "lo": -17.0,
+      "hi": 6.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1090,
+   "seconds": 191.3,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -9.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -9.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -14,
+      "lo": -24.0,
+      "hi": -4.0
+     },
+     "fixed_union": {
+      "observed": -14,
+      "lo": -24.0,
+      "hi": -4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1091,
+   "seconds": 189.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -10.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -10.0,
+      "hi": 3.0249999999998636
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -14,
+      "lo": -23.0,
+      "hi": -4.0
+     },
+     "fixed_union": {
+      "observed": -14,
+      "lo": -23.0,
+      "hi": -4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1092,
+   "seconds": 199.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -12.0,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -12.024999999999999,
+      "hi": 1.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -15.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -15.0,
+      "hi": 10.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1093,
+   "seconds": 184.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -7.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -7.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -12,
+      "lo": -29.0,
+      "hi": -1.0
+     },
+     "fixed_union": {
+      "observed": -12,
+      "lo": -28.0,
+      "hi": -1.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1094,
+   "seconds": 189.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -10.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -10.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -12,
+      "lo": -25.025,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -12,
+      "lo": -25.0,
+      "hi": 1.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1095,
+   "seconds": 178.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -7.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -7.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -15.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -14.0,
+      "hi": 11.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1096,
+   "seconds": 183.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -5.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -6.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -10,
+      "lo": -24.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -10,
+      "lo": -24.0,
+      "hi": 5.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1097,
+   "seconds": 170.5,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -10.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -12.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -9,
+      "lo": -20.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -9,
+      "lo": -20.0,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1098,
+   "seconds": 173.0,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -6.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -6.0,
+      "hi": 9.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -13.0,
+      "hi": 13.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -11.024999999999999,
+      "hi": 13.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1099,
+   "seconds": 185.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -9.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -7.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": 11,
+      "lo": -2.0,
+      "hi": 20.0
+     },
+     "fixed_union": {
+      "observed": 11,
+      "lo": -1.0,
+      "hi": 20.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1100,
+   "seconds": 182.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -3.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -4.0,
+      "hi": 9.024999999999864
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -15.0,
+      "hi": 12.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -13.0,
+      "hi": 10.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1101,
+   "seconds": 187.1,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -8.0,
+      "hi": 8.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -8.0,
+      "hi": 8.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -20.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -20.0,
+      "hi": 11.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1102,
+   "seconds": 176.3,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -9.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -9.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -9,
+      "lo": -20.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -9,
+      "lo": -19.0,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1103,
+   "seconds": 165.2,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 0,
+      "lo": -3.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": 0,
+      "lo": -3.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -21,
+      "lo": -32.0,
+      "hi": -9.0
+     },
+     "fixed_union": {
+      "observed": -21,
+      "lo": -31.0,
+      "hi": -8.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1104,
+   "seconds": 180.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -11.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -11.0,
+      "hi": 2.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -17.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -16.0,
+      "hi": 7.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1105,
+   "seconds": 190.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -9.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -9.024999999999999,
+      "hi": 2.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -20.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -21.0,
+      "hi": 5.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1106,
+   "seconds": 178.1,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -7.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -7.0,
+      "hi": 2.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -12.0,
+      "hi": 9.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -12.0,
+      "hi": 9.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1107,
+   "seconds": 177.0,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -6.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -6.0,
+      "hi": 9.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -18.0,
+      "hi": 8.024999999999864
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -19.0,
+      "hi": 8.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1108,
+   "seconds": 179.0,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -8.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -8.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": 0,
+      "lo": -10.0,
+      "hi": 9.0
+     },
+     "fixed_union": {
+      "observed": 0,
+      "lo": -9.0,
+      "hi": 9.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1109,
+   "seconds": 186.9,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -8,
+      "lo": -21.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -8,
+      "lo": -20.0,
+      "hi": 7.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1110,
+   "seconds": 188.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 5,
+      "lo": 0.0,
+      "hi": 9.0
+     },
+     "fixed_union": {
+      "observed": 5,
+      "lo": 0.0,
+      "hi": 9.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -19.0,
+      "hi": 2.0249999999998636
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -19.0,
+      "hi": 2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1111,
+   "seconds": 203.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 2,
+      "lo": -6.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": 2,
+      "lo": -6.0,
+      "hi": 10.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -14,
+      "lo": -23.0,
+      "hi": -3.0
+     },
+     "fixed_union": {
+      "observed": -14,
+      "lo": -23.0,
+      "hi": -4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1112,
+   "seconds": 189.2,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -8.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -8.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -15,
+      "lo": -27.0,
+      "hi": -2.0
+     },
+     "fixed_union": {
+      "observed": -15,
+      "lo": -27.0,
+      "hi": -1.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1113,
+   "seconds": 193.3,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -7.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -7.024999999999999,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -13,
+      "lo": -24.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -13,
+      "lo": -24.0,
+      "hi": 1.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1114,
+   "seconds": 175.3,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -11.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -11.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -17.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -17.0,
+      "hi": 4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1115,
+   "seconds": 187.1,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -8.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -8.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -10.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -10.0,
+      "hi": 10.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1116,
+   "seconds": 171.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -12.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -11.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -6,
+      "lo": -20.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -6,
+      "lo": -20.0,
+      "hi": 6.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1117,
+   "seconds": 191.3,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -9,
+      "lo": -18.0,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -9,
+      "lo": -18.0,
+      "hi": 1.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -18.0,
+      "hi": 11.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -18.0,
+      "hi": 10.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1118,
+   "seconds": 178.3,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -7.0,
+      "hi": 11.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -7.0,
+      "hi": 11.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -10,
+      "lo": -21.0,
+      "hi": -1.0
+     },
+     "fixed_union": {
+      "observed": -10,
+      "lo": -19.0,
+      "hi": 0.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1119,
+   "seconds": 189.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -4.0,
+      "hi": 8.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -4.0,
+      "hi": 8.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -16.0,
+      "hi": 8.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -16.0,
+      "hi": 8.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1120,
+   "seconds": 194.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -6.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -6.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -9,
+      "lo": -21.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -9,
+      "lo": -21.0,
+      "hi": 4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1121,
+   "seconds": 203.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -6.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -7.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -10,
+      "lo": -24.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -10,
+      "lo": -23.0,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1122,
+   "seconds": 195.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 4,
+      "lo": -3.0,
+      "hi": 11.0
+     },
+     "fixed_union": {
+      "observed": 4,
+      "lo": -3.0,
+      "hi": 11.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -12,
+      "lo": -22.0,
+      "hi": 0.0
+     },
+     "fixed_union": {
+      "observed": -12,
+      "lo": -22.0,
+      "hi": 0.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1123,
+   "seconds": 186.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -6,
+      "lo": -12.0,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -6,
+      "lo": -12.0,
+      "hi": 1.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -14,
+      "lo": -28.0,
+      "hi": -1.0
+     },
+     "fixed_union": {
+      "observed": -14,
+      "lo": -28.0,
+      "hi": -1.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1124,
+   "seconds": 178.5,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 0,
+      "lo": -6.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": 0,
+      "lo": -6.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -10,
+      "lo": -21.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -10,
+      "lo": -21.0,
+      "hi": 2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1125,
+   "seconds": 170.5,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 2,
+      "lo": -4.0,
+      "hi": 12.0
+     },
+     "fixed_union": {
+      "observed": 2,
+      "lo": -4.0,
+      "hi": 11.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -14,
+      "lo": -27.0,
+      "hi": -1.0
+     },
+     "fixed_union": {
+      "observed": -14,
+      "lo": -26.0,
+      "hi": 0.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1126,
+   "seconds": 200.0,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 0,
+      "lo": -9.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": 0,
+      "lo": -9.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -8,
+      "lo": -20.0,
+      "hi": 1.0249999999998636
+     },
+     "fixed_union": {
+      "observed": -8,
+      "lo": -19.0,
+      "hi": 2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1127,
+   "seconds": 206.2,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -11.0,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -11.0,
+      "hi": 2.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -17.0,
+      "hi": 11.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -15.0,
+      "hi": 12.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1128,
+   "seconds": 185.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -8.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -10.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -18.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -20.0,
+      "hi": 7.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1129,
+   "seconds": 184.9,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -7.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -7.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -10,
+      "lo": -23.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -10,
+      "lo": -23.0,
+      "hi": 5.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1130,
+   "seconds": 191.3,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -6.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -6.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": 3,
+      "lo": -13.0,
+      "hi": 20.0
+     },
+     "fixed_union": {
+      "observed": 3,
+      "lo": -13.0,
+      "hi": 21.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1131,
+   "seconds": 179.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -4.0,
+      "hi": 8.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -4.0,
+      "hi": 8.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -11,
+      "lo": -24.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -11,
+      "lo": -23.025,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1132,
+   "seconds": 200.9,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -9.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -9.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": 3,
+      "lo": -9.0,
+      "hi": 14.0
+     },
+     "fixed_union": {
+      "observed": 3,
+      "lo": -9.0,
+      "hi": 14.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1133,
+   "seconds": 200.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -14.0,
+      "hi": 8.024999999999864
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -13.0,
+      "hi": 9.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1134,
+   "seconds": 174.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -9.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -9.0,
+      "hi": 5.024999999999864
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -6,
+      "lo": -19.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -6,
+      "lo": -18.0,
+      "hi": 7.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1135,
+   "seconds": 195.1,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 2,
+      "lo": -6.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": 2,
+      "lo": -6.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -14.0,
+      "hi": 13.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -12.0,
+      "hi": 14.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1136,
+   "seconds": 189.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -11.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -11.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -18.0,
+      "hi": 8.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -18.0,
+      "hi": 8.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1137,
+   "seconds": 187.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -13.0,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -12.0,
+      "hi": 1.0249999999998636
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -16,
+      "lo": -30.0,
+      "hi": -2.0
+     },
+     "fixed_union": {
+      "observed": -16,
+      "lo": -30.0,
+      "hi": -1.9750000000001364
+     }
+    }
+   }
+  },
+  {
+   "seed": 1138,
+   "seconds": 194.2,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -8.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -9.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -13.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -13.0,
+      "hi": 10.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1139,
+   "seconds": 181.3,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -20,
+      "lo": -31.0,
+      "hi": -8.0
+     },
+     "fixed_union": {
+      "observed": -20,
+      "lo": -30.0,
+      "hi": -7.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1140,
+   "seconds": 187.2,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -11.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -11.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -10,
+      "lo": -23.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -10,
+      "lo": -22.0,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1141,
+   "seconds": 171.9,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 4,
+      "lo": -7.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": 4,
+      "lo": -7.0,
+      "hi": 11.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -23.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -22.0,
+      "hi": 5.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1142,
+   "seconds": 171.3,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -8.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -8.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": 2,
+      "lo": -12.0,
+      "hi": 14.0
+     },
+     "fixed_union": {
+      "observed": 2,
+      "lo": -12.0,
+      "hi": 15.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1143,
+   "seconds": 163.9,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 2,
+      "lo": -4.0,
+      "hi": 9.0
+     },
+     "fixed_union": {
+      "observed": 2,
+      "lo": -5.0,
+      "hi": 9.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -10,
+      "lo": -19.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -10,
+      "lo": -20.0,
+      "hi": 2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1144,
+   "seconds": 190.0,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -14.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -14.0,
+      "hi": 3.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -10,
+      "lo": -24.025,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -10,
+      "lo": -24.0,
+      "hi": 5.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1145,
+   "seconds": 176.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 0,
+      "lo": -7.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": 0,
+      "lo": -7.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -17,
+      "lo": -29.0,
+      "hi": -6.0
+     },
+     "fixed_union": {
+      "observed": -17,
+      "lo": -29.0,
+      "hi": -5.975000000000136
+     }
+    }
+   }
+  },
+  {
+   "seed": 1146,
+   "seconds": 172.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -8.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -8.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -6,
+      "lo": -17.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -6,
+      "lo": -16.025,
+      "hi": 5.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1147,
+   "seconds": 190.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -7.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -7.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -13,
+      "lo": -24.0,
+      "hi": -2.0
+     },
+     "fixed_union": {
+      "observed": -13,
+      "lo": -24.0,
+      "hi": -1.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1148,
+   "seconds": 196.0,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 2,
+      "lo": -4.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": 2,
+      "lo": -5.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -14,
+      "lo": -26.0,
+      "hi": -1.0
+     },
+     "fixed_union": {
+      "observed": -14,
+      "lo": -24.0,
+      "hi": -1.9750000000001364
+     }
+    }
+   }
+  },
+  {
+   "seed": 1149,
+   "seconds": 181.9,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 0,
+      "lo": -7.0,
+      "hi": 9.0
+     },
+     "fixed_union": {
+      "observed": 0,
+      "lo": -7.0,
+      "hi": 8.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -10,
+      "lo": -19.0,
+      "hi": -1.0
+     },
+     "fixed_union": {
+      "observed": -10,
+      "lo": -19.0,
+      "hi": -1.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1150,
+   "seconds": 187.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -4.0,
+      "hi": 9.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -4.0,
+      "hi": 8.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -8,
+      "lo": -20.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -8,
+      "lo": -21.0,
+      "hi": 6.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1151,
+   "seconds": 182.2,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 2,
+      "lo": -4.0,
+      "hi": 8.0
+     },
+     "fixed_union": {
+      "observed": 2,
+      "lo": -5.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -15.0,
+      "hi": 9.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -15.0,
+      "hi": 8.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1152,
+   "seconds": 190.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -11.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -11.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -15,
+      "lo": -29.0,
+      "hi": -1.0
+     },
+     "fixed_union": {
+      "observed": -15,
+      "lo": -29.0,
+      "hi": -0.9750000000001364
+     }
+    }
+   }
+  },
+  {
+   "seed": 1153,
+   "seconds": 189.5,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -7.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -8.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": 2,
+      "lo": -9.0,
+      "hi": 12.0
+     },
+     "fixed_union": {
+      "observed": 2,
+      "lo": -8.0,
+      "hi": 12.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1154,
+   "seconds": 196.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -6.0,
+      "hi": 8.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -7.0,
+      "hi": 8.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -14,
+      "lo": -24.0,
+      "hi": -5.0
+     },
+     "fixed_union": {
+      "observed": -14,
+      "lo": -23.0,
+      "hi": -5.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1155,
+   "seconds": 204.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 2,
+      "lo": -7.0,
+      "hi": 8.0
+     },
+     "fixed_union": {
+      "observed": 2,
+      "lo": -8.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -20.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -20.0,
+      "hi": 4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1156,
+   "seconds": 183.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -9.0,
+      "hi": 2.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -11,
+      "lo": -24.0,
+      "hi": 1.0249999999998636
+     },
+     "fixed_union": {
+      "observed": -11,
+      "lo": -24.0,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1157,
+   "seconds": 184.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -10.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -9.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -10,
+      "lo": -21.0,
+      "hi": 0.0
+     },
+     "fixed_union": {
+      "observed": -10,
+      "lo": -19.0,
+      "hi": 1.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1158,
+   "seconds": 177.9,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 2,
+      "lo": -4.0,
+      "hi": 9.0
+     },
+     "fixed_union": {
+      "observed": 2,
+      "lo": -4.0,
+      "hi": 9.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -14,
+      "lo": -27.0,
+      "hi": -3.0
+     },
+     "fixed_union": {
+      "observed": -14,
+      "lo": -27.0,
+      "hi": -2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1159,
+   "seconds": 190.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 3,
+      "lo": -4.0,
+      "hi": 10.0
+     },
+     "fixed_union": {
+      "observed": 3,
+      "lo": -4.0,
+      "hi": 9.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -18,
+      "lo": -32.0,
+      "hi": -4.0
+     },
+     "fixed_union": {
+      "observed": -18,
+      "lo": -32.0,
+      "hi": -5.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1160,
+   "seconds": 167.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 0,
+      "lo": -7.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": 0,
+      "lo": -6.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -8,
+      "lo": -22.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -8,
+      "lo": -20.0,
+      "hi": 6.024999999999864
+     }
+    }
+   }
+  },
+  {
+   "seed": 1161,
+   "seconds": 160.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -11.0,
+      "hi": 0.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -11.0,
+      "hi": 0.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -18.0,
+      "hi": 8.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -17.0,
+      "hi": 8.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1162,
+   "seconds": 168.1,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -8.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -8.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -16.025,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -15.0,
+      "hi": 6.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1163,
+   "seconds": 153.5,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -5.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -6.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -18.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -17.0,
+      "hi": 5.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1164,
+   "seconds": 161.3,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -8.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -9.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -15.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -15.0,
+      "hi": 5.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1165,
+   "seconds": 165.9,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 3.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -14,
+      "lo": -26.0,
+      "hi": -1.0
+     },
+     "fixed_union": {
+      "observed": -14,
+      "lo": -26.0,
+      "hi": -1.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1166,
+   "seconds": 151.2,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -8.0,
+      "hi": 8.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -8.0,
+      "hi": 6.024999999999864
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -16,
+      "lo": -27.0,
+      "hi": -3.0
+     },
+     "fixed_union": {
+      "observed": -16,
+      "lo": -27.0,
+      "hi": -4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1167,
+   "seconds": 165.2,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -9.0,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -9.0,
+      "hi": 1.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -16.0,
+      "hi": 8.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -16.0,
+      "hi": 9.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1168,
+   "seconds": 150.5,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -6,
+      "lo": -11.024999999999999,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -6,
+      "lo": -11.0,
+      "hi": 3.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -15,
+      "lo": -24.0,
+      "hi": -4.0
+     },
+     "fixed_union": {
+      "observed": -15,
+      "lo": -23.0,
+      "hi": -4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1169,
+   "seconds": 156.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -9.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -9.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -13,
+      "lo": -25.0,
+      "hi": -1.0
+     },
+     "fixed_union": {
+      "observed": -13,
+      "lo": -24.0,
+      "hi": -2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1170,
+   "seconds": 163.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 4,
+      "lo": -1.0,
+      "hi": 12.0
+     },
+     "fixed_union": {
+      "observed": 4,
+      "lo": -3.0,
+      "hi": 10.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -18.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -19.0,
+      "hi": 2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1171,
+   "seconds": 156.9,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -10.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -10.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": 1,
+      "lo": -12.0,
+      "hi": 14.0
+     },
+     "fixed_union": {
+      "observed": 1,
+      "lo": -12.0,
+      "hi": 13.024999999999864
+     }
+    }
+   }
+  },
+  {
+   "seed": 1172,
+   "seconds": 162.1,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -11.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -12.0,
+      "hi": 2.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -8,
+      "lo": -21.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -8,
+      "lo": -22.0,
+      "hi": 4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1173,
+   "seconds": 149.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -6,
+      "lo": -9.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -6,
+      "lo": -9.0,
+      "hi": 3.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -10,
+      "lo": -20.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -10,
+      "lo": -19.0,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1174,
+   "seconds": 165.8,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 2.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": 0,
+      "lo": -13.0,
+      "hi": 13.0
+     },
+     "fixed_union": {
+      "observed": 0,
+      "lo": -12.0,
+      "hi": 14.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1175,
+   "seconds": 163.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -11.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -10.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -11,
+      "lo": -23.0,
+      "hi": 0.0
+     },
+     "fixed_union": {
+      "observed": -11,
+      "lo": -22.0,
+      "hi": 0.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1176,
+   "seconds": 156.2,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -9.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -9.0,
+      "hi": 2.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -12,
+      "lo": -24.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -12,
+      "lo": -22.0,
+      "hi": 2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1177,
+   "seconds": 161.3,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 6,
+      "lo": -4.0,
+      "hi": 13.0
+     },
+     "fixed_union": {
+      "observed": 6,
+      "lo": -3.0,
+      "hi": 13.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -14,
+      "lo": -27.0,
+      "hi": -2.0
+     },
+     "fixed_union": {
+      "observed": -14,
+      "lo": -26.0,
+      "hi": -1.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1178,
+   "seconds": 160.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -8.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -8.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -10,
+      "lo": -22.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -10,
+      "lo": -22.0,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1179,
+   "seconds": 165.0,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 7,
+      "lo": 0.0,
+      "hi": 13.0
+     },
+     "fixed_union": {
+      "observed": 7,
+      "lo": 0.0,
+      "hi": 13.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": 2,
+      "lo": -12.0,
+      "hi": 13.0
+     },
+     "fixed_union": {
+      "observed": 2,
+      "lo": -10.0,
+      "hi": 14.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1180,
+   "seconds": 173.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 0,
+      "lo": -6.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": 0,
+      "lo": -6.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -11,
+      "lo": -24.0,
+      "hi": 0.0
+     },
+     "fixed_union": {
+      "observed": -11,
+      "lo": -21.0,
+      "hi": 1.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1181,
+   "seconds": 153.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -6.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -6.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -10,
+      "lo": -22.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -10,
+      "lo": -22.0,
+      "hi": 4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1182,
+   "seconds": 156.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -8.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -9.0,
+      "hi": 3.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -11,
+      "lo": -22.0,
+      "hi": 0.0
+     },
+     "fixed_union": {
+      "observed": -11,
+      "lo": -22.025,
+      "hi": 0.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1183,
+   "seconds": 159.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -13.0,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -13.0,
+      "hi": 1.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -11,
+      "lo": -21.025,
+      "hi": -2.0
+     },
+     "fixed_union": {
+      "observed": -11,
+      "lo": -21.0,
+      "hi": -3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1184,
+   "seconds": 166.2,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -11.0,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -13.0,
+      "hi": 0.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -8,
+      "lo": -21.0,
+      "hi": 2.0
+     },
+     "fixed_union": {
+      "observed": -8,
+      "lo": -20.0,
+      "hi": 0.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1185,
+   "seconds": 151.1,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 4,
+      "lo": -4.0,
+      "hi": 9.0
+     },
+     "fixed_union": {
+      "observed": 4,
+      "lo": -4.0,
+      "hi": 9.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -6,
+      "lo": -22.0,
+      "hi": 9.0
+     },
+     "fixed_union": {
+      "observed": -6,
+      "lo": -21.0,
+      "hi": 10.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1186,
+   "seconds": 157.6,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -3,
+      "lo": -9.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -3,
+      "lo": -9.0,
+      "hi": 3.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -16.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -16.0,
+      "hi": 7.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1187,
+   "seconds": 151.2,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -7.0,
+      "hi": 4.024999999999864
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -9.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -7,
+      "lo": -19.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -7,
+      "lo": -19.0,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1188,
+   "seconds": 158.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -7.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -7.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -13,
+      "lo": -25.0,
+      "hi": -1.0
+     },
+     "fixed_union": {
+      "observed": -13,
+      "lo": -24.0,
+      "hi": 0.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1189,
+   "seconds": 169.1,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 2,
+      "lo": -5.0,
+      "hi": 11.0
+     },
+     "fixed_union": {
+      "observed": 2,
+      "lo": -5.0,
+      "hi": 8.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -13,
+      "lo": -29.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -13,
+      "lo": -29.0,
+      "hi": 2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1190,
+   "seconds": 167.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -5.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -6.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -6,
+      "lo": -19.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -6,
+      "lo": -20.0,
+      "hi": 5.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1191,
+   "seconds": 159.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -11.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -10.0,
+      "hi": 4.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -18.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -16.0,
+      "hi": 7.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1192,
+   "seconds": 133.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -6,
+      "lo": -9.0,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -6,
+      "lo": -9.0,
+      "hi": 5.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -11,
+      "lo": -22.0,
+      "hi": 3.0
+     },
+     "fixed_union": {
+      "observed": -11,
+      "lo": -21.0,
+      "hi": 3.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1193,
+   "seconds": 144.1,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 0,
+      "lo": -7.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": 0,
+      "lo": -6.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -11,
+      "lo": -23.0,
+      "hi": 1.0
+     },
+     "fixed_union": {
+      "observed": -11,
+      "lo": -22.0,
+      "hi": 2.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1194,
+   "seconds": 132.9,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 0,
+      "lo": -7.0,
+      "hi": 6.024999999999864
+     },
+     "fixed_union": {
+      "observed": 0,
+      "lo": -7.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -5,
+      "lo": -14.024999999999999,
+      "hi": 4.0
+     },
+     "fixed_union": {
+      "observed": -5,
+      "lo": -14.0,
+      "hi": 4.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1195,
+   "seconds": 136.4,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -7.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -9.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -9,
+      "lo": -19.0,
+      "hi": 1.0249999999998636
+     },
+     "fixed_union": {
+      "observed": -9,
+      "lo": -21.0,
+      "hi": 1.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1196,
+   "seconds": 128.0,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 2,
+      "lo": -5.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": 2,
+      "lo": -6.0,
+      "hi": 6.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -12,
+      "lo": -25.0,
+      "hi": -1.0
+     },
+     "fixed_union": {
+      "observed": -12,
+      "lo": -25.0,
+      "hi": -1.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1197,
+   "seconds": 123.2,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": -1,
+      "lo": -8.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": -1,
+      "lo": -9.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -8,
+      "lo": -20.0,
+      "hi": 6.0
+     },
+     "fixed_union": {
+      "observed": -8,
+      "lo": -20.0,
+      "hi": 5.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1198,
+   "seconds": 118.1,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 3,
+      "lo": -3.0,
+      "hi": 11.0
+     },
+     "fixed_union": {
+      "observed": 3,
+      "lo": -4.024999999999999,
+      "hi": 9.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -2,
+      "lo": -11.0,
+      "hi": 8.0
+     },
+     "fixed_union": {
+      "observed": -2,
+      "lo": -11.0,
+      "hi": 6.0
+     }
+    }
+   }
+  },
+  {
+   "seed": 1199,
+   "seconds": 114.7,
+   "by_baseline": {
+    "all_label_iou": {
+     "unjudged_zero": {
+      "observed": 0,
+      "lo": -6.0,
+      "hi": 7.0
+     },
+     "fixed_union": {
+      "observed": 0,
+      "lo": -7.0,
+      "hi": 7.0
+     }
+    },
+    "all_label_objectlab": {
+     "unjudged_zero": {
+      "observed": -4,
+      "lo": -14.0,
+      "hi": 5.0
+     },
+     "fixed_union": {
+      "observed": -4,
+      "lo": -14.0,
+      "hi": 5.0
+     }
+    }
+   }
+  }
+ ]
+}
