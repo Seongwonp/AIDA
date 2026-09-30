@@ -1,6 +1,6 @@
 """조건별 magnitude → 평균 IoU 감소율 매핑표 (사후 계산, 재학습 불필요).
 
-김성호 교수님 피드백(docs/archive/11-professor-feedback.md 3번): 오류 강도를 단순 길이
+외부 자문 교수 피드백(docs/archive/11-professor-feedback.md 3번): 오류 강도를 단순 길이
 증감(%, 도)이 아니라 원본 참값과의 IoU 감소량으로도 제시하면 설득력이 높아진다.
 이 스크립트는 이미 만들어진 labels_gt/train(참값)에 각 조건의 변형 함수를 그대로
 적용해, "이 조건이 실제로 원본 박스를 얼마나 밀어내는가"를 IoU로 정량화한다.

@@ -42,7 +42,7 @@ PPT(`../AIDA_발표자료_v2(결과반영).pptx`)에 반영할 시각자료를 �
 
 ### 3. [신규·필수] 조건별 IoU 감소율 — magnitude 대비 오류 강도 검증표
 
-- **왜**: 김성호 교수님 피드백 3번([11-professor-feedback.md](./11-professor-feedback.md)) —
+- **왜**: 외부 자문 교수 피드백 3번([11-professor-feedback.md](./11-professor-feedback.md)) —
   "단순 길이 증감(%)보다 IoU 감소량 기준이 더 설득력 있다"는 지적에 대한
   직접 대응. 재학습 없이 `experiment/compute_iou_table.py`로 바로 계산 가능.
 - **형태**: 표 또는 선 그래프. 가로축 = magnitude(%또는 도), 세로축 = 평균

@@ -80,7 +80,6 @@
 | 문서 | 무엇 |
 |---|---|
 | [07-roadmap.md](./archive/07-roadmap.md) | 사업화 로드맵 (사업계획서 기준) |
-| [08-professor-review-email.md](./archive/08-professor-review-email.md) | 교수님 기술 검토 요청 메일 |
 | [10-competition-brief.md](./archive/10-competition-brief.md) | 대회 일정·평가기준 요약 |
 | [11-professor-feedback.md](./archive/11-professor-feedback.md) | 교수님 검토 회신과 대응 |
 | [13-ppt-visuals-checklist.md](./archive/13-ppt-visuals-checklist.md) | PPT 그래프 체크리스트 |

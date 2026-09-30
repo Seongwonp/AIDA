@@ -54,7 +54,7 @@ def main():
     
     pdf.set_font("Malgun", "", 12)
     pdf.set_text_color(71, 85, 105)
-    pdf.cell(pdf.epw, 8, "김성호 교수님 피드백 반영 및 21개 조건 실측 평가 결과", align="C")
+    pdf.cell(pdf.epw, 8, "외부 자문 교수 피드백 반영 및 21개 조건 실측 평가 결과", align="C")
     pdf.ln(10)
     
     pdf.set_draw_color(226, 232, 240)
