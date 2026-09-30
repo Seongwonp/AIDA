@@ -1,4 +1,11 @@
-# AIDA — AI 데이터 품질 진단 (연구 프로토타입)
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/aida-logo-dark.svg">
+    <img src="docs/assets/aida-logo.svg" alt="AIDA — AI Data Assurance" width="360">
+  </picture>
+</p>
+
+# AIDA — 객체탐지 라벨 오류 진단 (연구 프로토타입)
 
 [![CI](https://github.com/Seongwonp/AIDA/actions/workflows/ci.yml/badge.svg)](https://github.com/Seongwonp/AIDA/actions/workflows/ci.yml)
 

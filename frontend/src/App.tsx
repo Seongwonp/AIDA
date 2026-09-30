@@ -5,6 +5,7 @@ import { ConditionsTable } from "./components/ConditionsTable";
 import { DatasetUpload } from "./components/DatasetUpload";
 import { ErrorReportTable } from "./components/ErrorReportTable";
 import { BlindAdjudication } from "./components/BlindAdjudication";
+import { Guide } from "./components/Guide";
 import { Landing } from "./components/Landing";
 import { MethodCard } from "./components/MethodCard";
 import { ObbComparisonChart } from "./components/ObbComparisonChart";
@@ -30,7 +31,7 @@ function App() {
   const [classes, setClasses] = useState("Car");
   // 제품(진단)과 연구 근거를 갈라 놓는다. 기본은 진단 — 이 페이지에 처음
   // 온 사람이 하려는 일이다.
-  const [tab, setTab] = useState<"diagnose" | "evidence">("diagnose");
+  const [tab, setTab] = useState<"diagnose" | "evidence" | "guide">("diagnose");
   // 처음 온 사람에게는 랜딩을, 한 번 시작한 뒤에는 바로 도구를 보여준다.
   const [view, setView] = useState<"landing" | "app">("landing");
   // 화면을 오래 들여다보는 도구라 어두운 쪽을 원하는 사람이 있다.
@@ -114,11 +115,14 @@ function App() {
       <header className="app-header">
         <button className="brand" onClick={() => setView("landing")}
                 aria-label="처음 화면으로">
-          <span className="app-kicker">AI 데이터 품질 인증 플랫폼</span>
-          {/* 로고는 사이트 이름이지 페이지 제목이 아니다. 페이지의 h1은
-              랜딩의 히어로 문장이 갖는다 — 한 화면에 h1이 둘이면 스크린
-              리더가 문서 구조를 잘못 읽는다. */}
-          <span className="brand-name">AIDA</span>
+          <img className="brand-mark" src="/favicon.svg" alt="" width="44" height="44" />
+          <span className="brand-text">
+            <span className="app-kicker">객체탐지 라벨 오류 진단 · 연구 프로토타입</span>
+            {/* 로고는 사이트 이름이지 페이지 제목이 아니다. 페이지의 h1은
+                랜딩의 히어로 문장이 갖는다 — 한 화면에 h1이 둘이면 스크린
+                리더가 문서 구조를 잘못 읽는다. */}
+            <span className="brand-name">AIDA</span>
+          </span>
         </button>
         <div className="header-controls">
           {view === "app" && profiles.length > 1 && (
@@ -185,10 +189,26 @@ function App() {
           근거
           <span className="tab-hint">그 판단이 무엇에 기반하는지</span>
         </button>
+        <button
+          role="tab"
+          aria-selected={tab === "guide"}
+          className={`tab ${tab === "guide" ? "tab-active" : ""}`}
+          onClick={() => setTab("guide")}
+        >
+          가이드
+          <span className="tab-hint">어떻게 분석하나요?</span>
+        </button>
       </nav>
       )}
 
-      {view === "app" && summary && diagnosis && roiEstimate && (
+      {/* 가이드는 백엔드 없이도 읽을 수 있어야 한다 — 연결이 안 될 때 가장 필요한 화면이다. */}
+      {view === "app" && tab === "guide" && (
+        <main className="app-grid">
+          <Guide />
+        </main>
+      )}
+
+      {view === "app" && tab !== "guide" && summary && diagnosis && roiEstimate && (
         <main className="app-grid">
           {tab === "diagnose" ? (
             <DatasetUpload />

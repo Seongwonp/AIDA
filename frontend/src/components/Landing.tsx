@@ -13,7 +13,7 @@ import { useReveal } from "../useReveal";
 const STATS = [
   { value: 94.0, decimals: 1, suffix: "%", label: "상위 10% 재검수 정밀도", note: "자기 도메인 기준 모델 · 조건 29개 · 시드 7개" },
   { value: 27, decimals: 0, suffix: "종", label: "실측한 라벨 오류 조건", note: "기하·누락·중복·클래스 오기입" },
-  { value: 10.2, decimals: 1, suffix: "σ", label: "기준 모델 선택의 효과", note: "도메인이 맞는 자 vs 어긋난 자" },
+  { value: 26.0, decimals: 1, suffix: "%", label: "어긋난 기준 모델의 상위 10% 정밀도", note: "KITTI 자로 COCO 진단 · 시드 3개 — 자 선택이 결과를 좌우한다" },
 ];
 
 const ERROR_TYPES = [

@@ -1,13 +1,16 @@
 /* 색은 전부 토큰으로 둔다. 다크 모드에서 토큰만 바꾸면 되고, 어딘가에
    #000을 직접 박아두면 그 자리만 안 바뀌어 티가 난다. */
 :root {
-  --black: #000000;   /* 전경 — 글자와 테두리 */
+  /* 로고(docs/assets/aida-logo.svg)의 남색·청록에 맞춘다. 이름은 옛 토큰 그대로 둔다 —
+     --black은 "전경", --neon은 "강조"라는 역할 이름이다. */
+  --black: #0f2a4a;   /* 전경 — 글자와 테두리 (로고 남색) */
   --white: #ffffff;   /* 배경 */
-  --neon: #ccff00;    /* 강조. 이 제품의 정체성이라 다크에서도 유지한다 */
-  --gray: #595959;    /* 보조 글자 */
-  --muted: #8c8c8c;   /* 더 약한 글자 */
-  --hair: #e0e0e0;    /* 표 구분선 */
-  --raise: #fafafa;   /* 살짝 떠 보이게 하는 면 */
+  --neon: #2ec4b6;    /* 강조 면 (로고 청록). 위에는 항상 어두운 글씨 */
+  --accent-ink: #0f766e; /* 글자로 쓰는 강조 — 청록 면은 흰 배경 위 글자로는 대비가 모자라다 */
+  --gray: #4a5b6e;    /* 보조 글자 */
+  --muted: #6b7c8f;   /* 더 약한 글자 */
+  --hair: #dce3ea;    /* 표 구분선·카드 테두리 */
+  --raise: #f5f8fb;   /* 살짝 떠 보이게 하는 면 */
 
   color-scheme: light;
   font: 16px/1.5 "Apple SD Gothic Neo", system-ui, sans-serif;
@@ -19,23 +22,25 @@
 /* 고르지 않았으면 시스템 설정을 따른다. 고른 뒤에는 data-theme이 이긴다. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --black: #f2f2f2;
-    --white: #121212;
-    --gray: #a6a6a6;
-    --muted: #737373;
-    --hair: #2e2e2e;
-    --raise: #1c1c1c;
+    --black: #e6eef6;
+    --white: #0b1624;
+    --accent-ink: #5eead4;
+    --gray: #9fb3c8;
+    --muted: #7d91a6;
+    --hair: #1f3347;
+    --raise: #11223a;
     color-scheme: dark;
   }
 }
 
 :root[data-theme="dark"] {
-  --black: #f2f2f2;
-  --white: #121212;
-  --gray: #a6a6a6;
-  --muted: #737373;
-  --hair: #2e2e2e;
-  --raise: #1c1c1c;
+  --black: #e6eef6;
+  --white: #0b1624;
+  --accent-ink: #5eead4;
+  --gray: #9fb3c8;
+  --muted: #7d91a6;
+  --hair: #1f3347;
+  --raise: #11223a;
   color-scheme: dark;
 }
 
@@ -60,7 +65,7 @@ h2 {
 .badge-certified,
 .icon-button:hover,
 .tab-active .tab-badge {
-  color: #000;
+  color: #0b1624;
 }
 
 /* 키보드로 옮겨 다닐 때 어디 있는지 보여야 한다 */

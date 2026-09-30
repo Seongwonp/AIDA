@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="96" viewBox="0 0 360 96" role="img" aria-label="AIDA — AI Data Assurance">
+  <g transform="translate(16 16)">
+    <rect width="64" height="64" rx="14" fill="#0F2A4A"/>
+    <path d="M14 24V14h10M40 14h10v10M50 40v10H40M24 50H14V40" fill="none" stroke="#2EC4B6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M23 33l6.5 6.5L42 26" fill="none" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="100" y="54" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="44" font-weight="800" letter-spacing="2" fill="#E6EEF6">AIDA</text>
+  <text x="102" y="76" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="14" font-weight="600" letter-spacing="1.5" fill="#9FB3C8">AI DATA ASSURANCE</text>
+</svg>

@@ -4,6 +4,7 @@ import { getBlindQueue, postActivity, putAdjudications } from "../api";
 import { makeActivityLogger, queueKey } from "./activityLog";
 import { API_BASE_URL } from "../api";
 import { AdjudicationView } from "./AdjudicationView";
+import { JudgingGuideline } from "./JudgingGuideline";
 import {
   ALL_JUDGED_MESSAGE,
   blockedIds,
@@ -284,6 +285,11 @@ export function BlindAdjudication({
       {/* **머리글을 짧게 둔다.** 후보마다 스크롤해야 버튼이 보이면 시간이
           늘고 엉뚱한 버튼을 누른다. 자세한 설명은 화면 아래에 있다. */}
       <p className="muted">방법·점수·원래 순위·세부 의심 유형을 가립니다.</p>
+      {/* 접어 둔다 — 펼쳐 두면 후보마다 버튼까지 스크롤이 길어진다(위 주석). */}
+      <details className="guide-details">
+        <summary>판정 지침 보기</summary>
+        <JudgingGuideline />
+      </details>
 
       {damaged && <p className="warn" role="alert">{DAMAGED_MESSAGE}</p>}
       {conflict && <p className="error" role="alert">{HASH_CONFLICT_MESSAGE}</p>}
@@ -416,7 +422,7 @@ export function BlindAdjudication({
       <p className="muted">
         <strong>기존 라벨 검수인지 누락 객체 검수인지는 가리지 않습니다</strong>{" "}
         — 판정 작업 자체가 달라 숨기면 판정할 수 없습니다.{" "}
-        <strong>판정자는 아직 개발자이며, 독립된 판정이 아닙니다.</strong>
+        <strong>판정은 판정자마다 따로 저장되고, 다른 판정자의 판정은 보이지 않습니다.</strong>
       </p>
 
       {blocked.length > 0 && (
