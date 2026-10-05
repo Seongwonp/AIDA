@@ -25,20 +25,24 @@
 | OBB에서는 회전 조건 저하가 사라짐 | AABB rot_m15 −5.71% vs OBB −0.81% 등, 3시드에서 ±방향 차이 기각 | `backend/app/data/metrics_obb.csv`·`metrics_obb_multi_seed.csv`, `docs/21-next-plan.md` "OBB 실험 결과 요약" | 문서 값 인용, CSV 존재 확인. 초안에서는 "회전 조건은 AABB 표현 한계" 근거로만 |
 | 임계값·신뢰도 상수의 보정 출처 | 같은 27~29개 조건에서 잰 값 | `experiment/label_diagnosis.py` 상수 주석 | 코드 확인 — **in-sample** 한계로 적는다 |
 
-## A2. 통제 기준선 2단계 — 재추론 (2026-10-06 데스크탑, 초안 미반영)
+## A2. 통제 기준선 2단계 — 재추론 (2026-10-06 데스크탑, 초안 6절 반영)
 
-**전부 합성 주입 오류에 대한 채점이다 — 사람 판정·자연 오류가 아니며, 이 8개 자·조건 밖으로 일반화하지 않는다.** 값은 `experiment/planning_evidence/controlled_baseline_stage2_2026-10-06.json`(집계 `experiment/analyze_controlled_baseline_stage2.py`)에서 읽었다. 합성 주입 조건, 공통 예산 k = max(1, ⌊0.1 × AIDA finding⌋), 기존 라벨 층은 `missing_*` 제외 조건 평균 → 시드 평균 ± 표본SD. 상세: [명세 6절](controlled-baseline-spec.md).
+**전부 합성 주입 오류에 대한 채점이다 — 사람 판정·자연 오류가 아니며, 이 8개 자·조건 밖으로 일반화하지 않는다.** 값은 확정 동점 규칙(고정 씨앗 해시, 1차 씨앗 20260929)으로 다시 집계한 `experiment/planning_evidence/controlled_baseline_stage2_tieseed_2026-10-06.json`(집계 `experiment/analyze_controlled_baseline_stage2.py`)에서 읽었다. 옛 동점 규칙 값은 같은 파일 `*_tie_name_index`와 원래 파일 `controlled_baseline_stage2_2026-10-06.json`(같은 값). 공통 예산 k = max(1, ⌊0.1 × AIDA finding⌋), 후보 < k여도 분모 k(사용자 확정). 기존 라벨 층은 `missing_*` 제외 조건 평균 → 시드 평균 ± 표본SD. C·D는 단일 시드, C는 신뢰도 프로파일 없이 돌림. AIDA 열은 finding 단위, 전체 라벨 열은 고유 라벨 단위. 상세: [명세 6절·6.5절](controlled-baseline-spec.md).
 
 | 주장 후보 | 값 | 근거 키 | 조건 |
 |---|---|---|---|
-| 재추론이 seeded 값을 재현 | legacy P@10% 조건별 일치 **A 812/812 · B 156/156**; C·D 지목 수·TP 29/29 · 26/26 | `groups.*.rulers.*.seeds.*.repro_vs_seeded` / `flagged_tp_vs_eval` | 프로파일 없음, limit 80. **C는 원래 self 평가와 달리 신뢰도 프로파일 없이** 돌렸다(지목·TP만 대조) |
-| 자기 도메인 자: AIDA current vs 전체 라벨 기준선 | current **0.984 ± 0.004** · 전체 라벨 무작위 0.288 · 1−IoU 0.294 ± 0.006 · ObjectLab 0.329 ± 0.009 | `groups.A.rulers.matched.existing_label_layer` | A, 7시드, 26조건 (C·D는 단일 시드) |
-| 어긋난 자 3종(약한·먼 이동·넓은 자): AIDA current | 0.779 ± 0.065 · 0.827 ± 0.007 · 0.929 ± 0.018; 전체 라벨 기준선 0.274~0.302 | `groups.A.rulers.{shifted,far,broad}.existing_label_layer` | 7시드 |
-| AIDA legacy 순서 (같은 k, 기존 라벨 층) | 자기 도메인 0.933 ± 0.025 · 약한 0.624 ± 0.059 · 먼 0.630 ± 0.032 · 넓은 0.596 ± 0.032 | 같은 키 `aida_legacy` | 7시드 |
-| COCO: 자기 vs KITTI→COCO | current 0.942 ± 0.034 vs **0.386 ± 0.047**; KITTI→COCO의 ObjectLab 0.352 ± 0.016 · 무작위 0.301 · legacy 0.194 ± 0.012 | `groups.B.rulers.*.existing_label_layer` | 3시드, 23조건 |
-| AIDA 안 무작위(기대값) / IoU 재정렬 | 자기 도메인 0.607 / 0.498, KITTI→COCO 0.326 / 0.355 (모든 자에서 current보다 낮음) | `aida_random_expected`, `aida_iou_reorder` | finding 단위 |
-| 전체 라벨 1−IoU가 무작위 수준 | 8개 자 0.274~0.300 대 무작위 0.288~0.301 | `all_label_iou`, `all_label_random_expected` | label_iou = 0 라벨이 작은 k를 채움(사후 관찰). IoU 0 제외 변형(`all_label_iou_excl0_posthoc`)은 명세 밖 사후 분석이라 **결론에 쓰지 않는다** |
-| 누락 층 ObjectLab 측정 불가 | 점수 있는 미매칭 예측 0~2% (예: A 먼 이동 10/3,758) | `seeds.*.missing_layer_objectlab_scored_total` / `_unmatched_total` | cleanlab 기본 문턱 0.95. 누락 층 ObjectLab 값은 성능이 아니라 거의 빈 모집단의 결과다 |
+| 재추론이 seeded 값을 재현 | legacy P@10% 조건별 일치 **A 812/812 · B 156/156**; C·D 지목 수·TP 29/29 · 26/26 | `groups.*.rulers.*.seeds.*.repro_vs_seeded` (C·D 대조는 원래 파일 `flagged_tp_vs_eval`) | 프로파일 없음, limit 80. **C는 원래 self 평가와 달리 신뢰도 프로파일 없이** 돌렸다(지목·TP만 대조) |
+| 두 순서 — 전 조건 상위 10%(seeded `top10`과 같은 정의), 초안 표 1 | legacy: 자기 도메인 0.940 ± 0.022 · 먼 이동 0.658 ± 0.026 · 약한 0.646 ± 0.054 · 넓은 0.613 ± 0.033. current: 0.985 ± 0.004 · 0.808 ± 0.013 · 0.762 ± 0.058 · **0.907 ± 0.022** | `groups.A.rulers.*.all_conditions_finding_unit` | A, 7시드, 29조건, finding 단위. 동점 규칙 무관 |
+| 두 순서에서 시드별 자기 도메인 최고 여부 | 시드 7개 모두 자기 도메인이 최고: legacy 최저 0.912 대 다른 자 최고 0.706, current 최저 0.977 대 다른 자 최고 0.936 | `groups.A.rulers.*.seeds.*.mean_all_conditions` | 같음 |
+| 두 순서 — COCO, 초안 표 2 | legacy 자기 0.824 ± 0.076 · KITTI→COCO **0.260 ± 0.018**; current 0.921 ± 0.043 · **0.391 ± 0.064** | `groups.B.rulers.*.all_conditions_finding_unit` | 3시드, 26조건 |
+| 기존 라벨 층 같은 k — 자기 도메인 | legacy 0.933 ± 0.025 · current **0.984 ± 0.004** · AIDA 안 무작위 0.607 · 전체 라벨 무작위 0.288 · 1−IoU 0.295 ± 0.006 · ObjectLab 0.329 ± 0.009 | `groups.A.rulers.matched.existing_label_layer` | A, 26조건 |
+| 기존 라벨 층 — 어긋난 자 3종(약한·먼·넓은) | current 0.779 ± 0.065 · 0.827 ± 0.007 · **0.929 ± 0.018**; legacy 0.624 · 0.630 · 0.596; 전체 라벨 기준선(1차 씨앗) 0.244~0.302 | `groups.A.rulers.{shifted,far,broad}.existing_label_layer` | 7시드 |
+| 기존 라벨 층 — KITTI→COCO | current 0.386 ± 0.047 · legacy 0.194 ± 0.012 · AIDA 안 무작위 0.326 · ObjectLab 0.352 ± 0.016 · 1−IoU 0.295 ± 0.012 · 무작위 0.301 | `groups.B.rulers.kitti_on_coco.existing_label_layer` | 3시드, 23조건 |
+| AIDA 안 무작위 / IoU 재정렬 | 자기 도메인 0.607 / 0.498, KITTI→COCO 0.326 / 0.355 (모든 자에서 current보다 낮음) | `aida_random_expected`, `aida_iou_reorder` | finding 단위 |
+| 전체 라벨 1−IoU의 동점 민감도 | 씨앗 1~10 헤드라인 평균 범위: KITTI→COCO 0.213~0.369, 넓은 자 0.248~0.313, 먼 이동 0.259~0.307, 약한 0.256~0.297, 자기 도메인 0.292~0.298, D 0.300~0.300 | `groups.*.rulers.*.tie_seed_sensitivity.existing_label_layer.all_label_iou` | label_iou = 0 동점 라벨이 상위 k를 채움 — 경계 동점 조건 A 어긋난 자 182/182, B 69/69 (`n_boundary_tie`). ObjectLab·IoU 재정렬 범위 폭 ≤ 0.004 |
+| 분모 부족분(후보 < k) | 기존 라벨 층 모든 방법 0건. 누락 층 `unmatched_objectlab`만: A 19/21·19/21·21/21·19/21, B 7/9·9/9, C 3/3, D 3/3 | `groups.*.rulers.*.denominator_shortfall` | 실제 후보 수 분모 변형(후보 0건 제외): 1.000(자기 도메인)·0.832·1.000·0.577, B 자기 1.000, D 1.000 — `mean_actual_denominator`, 부록용 |
+| 누락 층 ObjectLab 측정 불가 | 점수 있는 미매칭 예측 0~2% (예: A 먼 이동 10/3,758) | 원래 파일 `seeds.*.missing_layer_objectlab_scored_total` / `_unmatched_total` | cleanlab 기본 문턱 0.95. 누락 층 ObjectLab 값은 성능이 아니라 거의 빈 모집단의 결과다 |
+| IoU 0 제외 변형 | (사후, 명세 밖) | `all_label_iou_excl0_posthoc` | **결론에 쓰지 않는다** |
 
 ## B. prelim1 — 탐색 비교 (초안 7절)
 

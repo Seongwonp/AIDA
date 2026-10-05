@@ -1,5 +1,7 @@
 # AIDA 작업 안내
 
+> **2026-10-06 데스크탑(초안 반영):** 사용자 결정 반영 — 초안에 두 채점 순서(legacy·current)를 나란히, 기준선 표 6 추가, 명세 규칙 확정(분모 k, 고정 씨앗 동점 20260929·민감도 씨앗 1~10). 기존 라벨 층 분모 부족 0건. 1−IoU 기준선은 동점 씨앗에 따라 0.21~0.37로 흔들린다. 검토 2회 반영. 남은 확인: 초안 6.4·9절 수치(+0.41 등)가 어느 순서 값인지 미재확인(`docs/paper/open_items.md`).
+
 > **2026-10-06 데스크탑(2단계):** 재추론 1,023회 완료(49분) — 과거 순서로 seeded 값 **812/812·156/156** 재현, self·KITTI Car 지목·TP 29/29·26/26. 같은 k에서 AIDA 현재 순서는 8개 자 모두 전체 라벨 기준선(무작위·1−IoU·ObjectLab 0.27~0.35)보다 높다 — [명세 6절](docs/paper/controlled-baseline-spec.md), 근거표 A2. **사용자 결정:** 초안 수치를 legacy/current 중 어느 순서로 쓸지·기준선 표 반영(`docs/paper/open_items.md` 6절), 명세의 제안 규칙 2개(후보<k일 때 분모 k, 동점 키) 확정. 검사 experiment 608.
 
 > **2026-10-06 데스크탑:** 통제 기준선 1단계 재현 확인 **통과** — 과거 순서 `legacy_severity_v0`로 자기 도메인 자·시드 42·29조건이 seeded 값과 **29/29 일치**. 09-05의 캐시↔seeded 불일치 원인은 신뢰도 프로파일(캐시 실행만 `reliability_profile_mc.json` 사용) — [명세](docs/paper/controlled-baseline-spec.md), `experiment/planning_evidence/controlled_baseline_stage1_repro_2026-10-06.json`. **2단계(재추론 약 1,023회·1.3~2.2시간)는 별도 승인 대기.** 검사 experiment 604.
