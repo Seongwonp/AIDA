@@ -298,7 +298,10 @@ class BoxFinding:
 
 
 def _absolute_present_types(summary: dict) -> set[str]:
-    """절대 문턱만으로 고른 계통적 유형들. present_types와 order_basis가 같이 쓴다."""
+    """절대 문턱만으로 고른 계통적 유형들. present_types와 order_basis가 같이 쓴다.
+
+    상대 문턱 물러남(ba937f9c, 2026-09-06)이 들어오기 전의 present_types와 같다.
+    """
     return {
         t["suspicion"] for t in summary.get("by_type", [])
         if t["ratio"] >= SYSTEMATIC_ERROR_RATIO
@@ -659,7 +662,8 @@ def unmatched_prediction_rows(image: str, predictions: list[Box],
     ]
 
 
-def rescore(findings: list[BoxFinding], summary: dict) -> list[BoxFinding]:
+def rescore(findings: list[BoxFinding], summary: dict,
+            present: set[str] | None = None) -> list[BoxFinding]:
     """데이터셋 전체를 본 뒤 severity를 다시 매긴다.
 
     diagnose_image는 이미지 한 장씩 처리하므로 "이 데이터셋에 어떤 오류가
@@ -668,8 +672,12 @@ def rescore(findings: list[BoxFinding], summary: dict) -> list[BoxFinding]:
 
     계통적 수준의 유형이 하나도 없으면 아무것도 바꾸지 않는다 — 근거가 약한
     상태에서 특정 유형을 밀어올리면 오류가 증폭되기 때문이다.
+
+    `present`를 주면 그 집합으로 승격한다(과거 순서 재현용 — 절대 문턱만 쓰던
+    2026-09-06 이전 규칙, evaluate_box_accuracy.ORDER_LEGACY_SEVERITY_V0).
     """
-    present = present_types(summary)
+    if present is None:
+        present = present_types(summary)
     if not present:
         return findings
     return [

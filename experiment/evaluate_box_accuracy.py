@@ -30,8 +30,36 @@ from PIL import Image
 
 import config
 from diagnose_labels import IMAGE_SUFFIXES, load_yolo_labels
-from label_diagnosis import (CLASS_VULNERABILITY, iou, present_types, rescore, review_order,
-                             severity_for, summarize)
+from label_diagnosis import (CLASS_VULNERABILITY, _absolute_present_types, iou, present_types,
+                             rescore, review_order, severity_for, summarize)
+
+# ── 채점 순서 버전 (통제 기준선 재현, docs/paper/controlled-baseline-spec.md) ──
+#
+# 순서가 다르면 다른 버전 ID다. 기본(ordering=None)은 지금까지와 똑같이 돈다 —
+# 새 추론은 review_order, --reuse-cache는 -severity. 이름을 주면 그 버전으로
+# 채점하고 행에 "ordering"을 남긴다.
+#
+#   legacy_severity_v0  2026-09-06 이전 규칙. 승격(rescore)은 절대 문턱만으로
+#                       고른 유형(_absolute_present_types), 정렬은 -severity
+#                       안정 정렬(동점은 진단이 낸 순서 = 이미지 이름 순 →
+#                       이미지 안 진단 순). seeded_*.json·box_accuracy_eval_*.json
+#                       (09-02~09-04)이 이 규칙으로 나왔다고 본다.
+#   review_order_v1     현재 규칙. 승격은 present_types(상대 문턱 물러남 포함),
+#                       정렬은 (계통 유형이 아님, -severity) 안정 정렬.
+ORDER_LEGACY_SEVERITY_V0 = "legacy_severity_v0"
+ORDER_REVIEW_V1 = "review_order_v1"
+ORDERINGS = (ORDER_LEGACY_SEVERITY_V0, ORDER_REVIEW_V1)
+
+
+def order_for_scoring(findings: list, summary: dict, ordering: str) -> tuple[list, set[str]]:
+    """승격·정렬을 순서 버전대로 한다. (정렬된 findings, 승격한 유형 집합)."""
+    if ordering == ORDER_LEGACY_SEVERITY_V0:
+        present = _absolute_present_types(summary)
+        rescored = rescore(findings, summary, present=present)
+        return sorted(rescored, key=lambda f: -f.severity), present
+    if ordering == ORDER_REVIEW_V1:
+        return review_order(rescore(findings, summary), summary), present_types(summary)
+    raise ValueError(f"알 수 없는 순서 버전: {ordering!r} (가능: {ORDERINGS})")
 
 # 누락 의심 예측 박스가 "지워진 그 박스"를 가리키는 것으로 인정할 최소 IoU.
 # 위치가 이 정도로 겹치면 같은 객체를 지목했다고 본다.
@@ -107,25 +135,88 @@ def ruler_for(condition: config.Condition):
     return config.RUNS_DIR / (condition.name + suffix) / "weights" / "best.pt"
 
 
-def score_condition(condition: config.Condition, limit: int | None) -> dict:
-    """조건 하나에 대해 박스 단위 TP/FP/FN을 센다."""
+def score_condition(condition: config.Condition, limit: int | None, *,
+                    ordering: str | None = None,
+                    collect_population: bool = False) -> dict:
+    """조건 하나에 대해 박스 단위 TP/FP/FN을 센다.
+
+    ordering      None이면 기존 동작. 이름(ORDERINGS)을 주면 그 순서 버전으로 채점.
+    collect_population  True면 진단 규칙 밖의 모집단(전체 라벨·미매칭 예측·
+                  ObjectLab)을 정답 표시와 함께 행의 "population"에 붙인다.
+                  False(기본)면 행은 예전과 같다.
+    """
     from diagnose_labels import run  # 지연 import — GPU 없는 환경에서도 모듈 로드는 되게
 
     root = config.CONDITIONS_DIR / condition.name
     images_dir, labels_dir = root / "images" / "train", root / "labels" / "train"
-    findings, total_labels, fit = run(images_dir, labels_dir, limit,
-                                      weights=ruler_for(condition))
-    return score_findings(condition, findings, total_labels, limit, fit)
+    if collect_population:
+        findings, total_labels, fit, population = run(
+            images_dir, labels_dir, limit, weights=ruler_for(condition),
+            collect_population=True)
+    else:
+        findings, total_labels, fit = run(images_dir, labels_dir, limit,
+                                          weights=ruler_for(condition))
+    row = score_findings(condition, findings, total_labels, limit, fit, ordering=ordering)
+    if collect_population:
+        row["population"] = label_population_truth(condition, population)
+    return row
+
+
+def label_population_truth(condition: config.Condition, population: dict) -> dict:
+    """모집단 행에 주입 정답을 붙인다(원본 행은 고치지 않고 사본).
+
+    기존 라벨: `injected_error` — finding 채점과 같은 규칙(_errored_index_for,
+    중복 쌍 인정). 미매칭 예측: `matches_dropped` — 누락 채점과 같은 IoU 문턱
+    (MISSING_MATCH_IOU)으로 지워진 박스와 겹치는지. 두 층은 섞지 않는다.
+    """
+    record = load_injection_record(condition.name)
+    images_dir = config.CONDITIONS_DIR / condition.name / "images" / "train"
+    labels = []
+    for r in population.get("all_labels", []):
+        entry = record.get(Path(r["image"]).stem, {"errored": [], "dropped": []})
+        hit = _errored_index_for(condition.type, r.get("label_index"), entry["errored"])
+        labels.append({**r, "injected_error": hit is not None})
+    preds = []
+    sizes: dict[str, tuple[int, int]] = {}
+    for r in population.get("unmatched_predictions", []):
+        entry = record.get(Path(r["image"]).stem, {"errored": [], "dropped": []})
+        if r["image"] not in sizes:
+            with Image.open(images_dir / r["image"]) as img:
+                sizes[r["image"]] = (img.width, img.height)
+        preds.append({**r, "matches_dropped":
+                      _dropped_hit(r["box"], entry["dropped"], *sizes[r["image"]]) is not None})
+    out = {"all_labels": labels, "unmatched_predictions": preds}
+    if "objectlab" in population:
+        out["objectlab"] = population["objectlab"]
+    return out
+
+
+def _dropped_hit(box, dropped: list, img_w: int, img_h: int) -> int | None:
+    """누락 채점과 같은 규칙: IoU가 MISSING_MATCH_IOU 이상인 것 중 가장 큰 지운 박스."""
+    hit_index = None
+    best = MISSING_MATCH_IOU
+    for i, (cx, cy, w, h) in enumerate(dropped):
+        gt = ((cx - w / 2) * img_w, (cy - h / 2) * img_h,
+              (cx + w / 2) * img_w, (cy + h / 2) * img_h)
+        v = iou(box, gt)
+        if v >= best:
+            best, hit_index = v, i
+    return hit_index
 
 
 def score_findings(condition: config.Condition, findings: list, total_labels: int,
-                   limit: int | None, fit: dict | None = None) -> dict:
+                   limit: int | None, fit: dict | None = None,
+                   ordering: str | None = None) -> dict:
     """이미 얻은 findings를 정답지와 대조해 채점한다.
 
     score_condition에서 떼어냈다. 자 여러 대의 findings를 합쳐서 채점하는
     실험(합의, docs/22 계획 1번)이 **같은 채점 규칙**을 써야 하기 때문이다 —
     규칙이 다르면 합의가 좋아 보이는 게 규칙 때문인지 합의 때문인지 모른다.
+
+    ordering이 None이면 기존 동작(CLASS_WEIGHTED면 옛 정렬, 아니면 review_order).
     """
+    if ordering is not None and ordering not in ORDERINGS:
+        raise ValueError(f"알 수 없는 순서 버전: {ordering!r} (가능: {ORDERINGS})")
     root = config.CONDITIONS_DIR / condition.name
     images_dir = root / "images" / "train"
     fit = fit or {"matched_labels": 0, "predictions": 0, "confidences": []}
@@ -137,7 +228,11 @@ def score_findings(condition: config.Condition, findings: list, total_labels: in
     summary = summarize(findings, total_labels)
     predicted_dominant = summary["dominant_type"] if summary["systematic"] else None
     # 제품과 같은 2패스를 거쳐야 실제로 고객이 보는 순서를 평가하게 된다
-    findings = rescore(findings, summary)
+    promoted: set[str] | None = None
+    if ordering is None:
+        findings = rescore(findings, summary)
+    else:
+        findings, promoted = order_for_scoring(findings, summary, ordering)
 
     # 평가 대상 이미지만 정답지에서 추린다 (limit을 걸면 일부만 돌기 때문)
     scanned = sorted(p for p in images_dir.iterdir() if p.suffix.lower() in IMAGE_SUFFIXES)
@@ -157,8 +252,9 @@ def score_findings(condition: config.Condition, findings: list, total_labels: in
 
     # 제품과 같은 순서로 채점해야 실제로 고객이 보는 목록을 재는 게 된다.
     # CLASS_WEIGHTED는 R의 실험 잔재라 켤 때만 옛 정렬을 쓴다.
-    findings = (sorted(findings, key=_sort_key) if CLASS_WEIGHTED
-                else review_order(findings, summary))
+    if ordering is None:
+        findings = (sorted(findings, key=_sort_key) if CLASS_WEIGHTED
+                    else review_order(findings, summary))
     for f in findings:
         stem = Path(f.image).stem
         entry = record.get(stem, {"errored": [], "dropped": []})
@@ -218,7 +314,7 @@ def score_findings(condition: config.Condition, findings: list, total_labels: in
     recall = caught / total_injected if total_injected else 0.0
     f1 = 2 * precision * recall / (precision + recall) if (precision + recall) else 0.0
 
-    return {
+    row = {
         "condition": condition.name,
         "type": condition.type,
         "predicted_dominant": predicted_dominant,
@@ -236,7 +332,7 @@ def score_findings(condition: config.Condition, findings: list, total_labels: in
         "type_accuracy": round(type_correct / tp, 4) if tp else 0.0,
         # 캐시로 순위를 다시 매길 때 필요하다 — 이게 없으면 어떤 유형이
         # 승격 대상이었는지 복원할 수 없다.
-        "present_types": sorted(present_types(summary)),
+        "present_types": sorted(present_types(summary) if promoted is None else promoted),
         "verdicts_by_rank": verdicts_by_rank,
         # 정답 없이 재는 값. 자가 이 데이터를 보고 있는지의 대리 지표다 —
         # 제품이 화면에 띄우는 것과 같은 수치이고, 여기서 그것이 진단 품질을
@@ -245,6 +341,9 @@ def score_findings(condition: config.Condition, findings: list, total_labels: in
                                 if total_labels else None),
         "total_labels": total_labels,
     }
+    if ordering is not None:
+        row["ordering"] = ordering
+    return row
 
 
 def load_cached_rows(wanted: list[str]) -> list[dict]:
@@ -386,6 +485,9 @@ def main():
                         help="추론을 다시 돌리지 않고 지난 채점 기록으로 순위만 "
                              "다시 계산한다 (심각도 공식·신뢰도 상수 조정용). "
                              "TP/FP 판정은 심각도와 무관하므로 그대로 쓴다.")
+    parser.add_argument("--ordering", choices=ORDERINGS, default=None,
+                        help="채점 순서 버전. 안 주면 지금 기본 경로 그대로. "
+                             "legacy_severity_v0는 2026-09-06 이전 결과 재현용이다")
     parser.add_argument("--write-profile", metavar="PATH",
                         help="실측한 유형 신뢰도를 프로파일 JSON으로 저장 "
                              "(AIDA_RELIABILITY_PROFILE로 지정해 쓰면 됨)")
@@ -407,6 +509,10 @@ def main():
                    + config.REVIEW_SIM_CONDITIONS + config.REFINED_CONDITIONS}
         conditions = [by_name[n] for n in args.conditions]
 
+    if args.reuse_cache and args.ordering is not None:
+        # 캐시 재사용 경로는 캐시의 present_types로만 다시 매긴다 — 순서 버전을 받으면
+        # 조용히 다른 규칙이 섞인다.
+        raise SystemExit("--ordering은 --reuse-cache와 함께 쓸 수 없습니다 (추론 경로에서만)")
     if args.reuse_cache:
         rows = load_cached_rows([c.name for c in conditions])
         print(f"캐시에서 {len(rows)}개 조건을 읽어 심각도만 다시 계산합니다 "
@@ -415,7 +521,7 @@ def main():
         rows = []
         for i, condition in enumerate(conditions, 1):
             print(f"[{i}/{len(conditions)}] {condition.name} ...", flush=True)
-            rows.append(score_condition(condition, args.limit))
+            rows.append(score_condition(condition, args.limit, ordering=args.ordering))
 
     print(f"\n{'조건':<14} {'주입':>5} {'지목':>5} {'TP':>5} {'FP':>5} {'놓침':>5} "
           f"{'정밀도':>7} {'재현율':>7} {'F1':>6} {'유형정확':>8}")

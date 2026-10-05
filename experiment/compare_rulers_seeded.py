@@ -96,7 +96,8 @@ def verify_seeds_differ(kinds: list[str]) -> None:
         print(f"  {RULERS[kind][0]:<12} 학습 시드 {seen}")
 
 
-def measure(kind: str, seed: int, limit: int) -> dict | None:
+def measure(kind: str, seed: int, limit: int, ordering: str | None = None) -> dict | None:
+    """ordering이 None이면 기존 동작(score_condition 기본 순서)."""
     w = ruler_path(kind, seed)
     if not w.exists():
         print(f"  [{kind} seed={seed}] {w} 없음 — 건너뜀")
@@ -108,7 +109,8 @@ def measure(kind: str, seed: int, limit: int) -> dict | None:
     per_condition_fit: dict[str, float] = {}
     silent = []
     for name in CONDITIONS:
-        r = E.score_condition(config._BY_NAME[name], limit)
+        r = (E.score_condition(config._BY_NAME[name], limit) if ordering is None
+             else E.score_condition(config._BY_NAME[name], limit, ordering=ordering))
         tp += r["tp"]
         fp += r["fp"]
         # 정답 없이 재는 값. 같은 채점에서 같이 나오므로 여기서 남긴다 —
@@ -167,6 +169,9 @@ def main() -> None:
     ap.add_argument("--seeds", type=int, nargs="+", default=SEEDS,
                     help="학습 시드 목록 (기본: 42 123 2024). n=3에서는 표준편차 "
                          "추정 자체가 흔들리므로 늘려 확인할 때 쓴다")
+    # 순서 버전(evaluate_box_accuracy.ORDERINGS). 안 주면 기존 동작이다.
+    ap.add_argument("--ordering", choices=list(E.ORDERINGS), default=None,
+                    help="채점 순서 버전 (legacy_severity_v0 = 09-06 이전 재현)")
     ap.add_argument("--out", type=Path, default=None,
                     help="조건별 점수까지 담은 JSON 저장 경로")
     args = ap.parse_args()
@@ -196,7 +201,7 @@ def main() -> None:
         rows = []
         for seed in SEEDS:
             print(f"[{label} seed={seed}] 진단 중...", flush=True)
-            m = measure(kind, seed, args.limit)
+            m = measure(kind, seed, args.limit, ordering=args.ordering)
             if m:
                 rows.append(m)
                 print(f"    정밀도 {m['precision']*100:.1f}%  "
@@ -247,6 +252,7 @@ def main() -> None:
             "conditions": CONDITIONS,
             "seeds": SEEDS,
             "limit": args.limit,
+            "ordering": args.ordering or "default(review_order_v1)",
             "rulers": {label: rows for label, rows in out.items()},
         }, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"\n조건별 점수 저장 → {args.out}")
