@@ -49,6 +49,8 @@ experiment/*.log
 # 박스 단위 채점 원시 판정 캐시 — 재생성 가능한 중간 산출물
 # 채점 캐시 — 진단을 다시 돌리면 만들어진다. 수십 MB라 커밋할 이유가 없다.
 experiment/box_accuracy_verdicts*.json
+# 통제 기준선 2단계 원시 기록(조건별 모집단·순위, 재생성 가능). 요약만 planning_evidence에 둔다.
+experiment/controlled_baseline_stage2/
 
 # 실행 로그와 임시 실행 스크립트
 experiment/*.log

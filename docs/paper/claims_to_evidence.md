@@ -25,6 +25,21 @@
 | OBB에서는 회전 조건 저하가 사라짐 | AABB rot_m15 −5.71% vs OBB −0.81% 등, 3시드에서 ±방향 차이 기각 | `backend/app/data/metrics_obb.csv`·`metrics_obb_multi_seed.csv`, `docs/21-next-plan.md` "OBB 실험 결과 요약" | 문서 값 인용, CSV 존재 확인. 초안에서는 "회전 조건은 AABB 표현 한계" 근거로만 |
 | 임계값·신뢰도 상수의 보정 출처 | 같은 27~29개 조건에서 잰 값 | `experiment/label_diagnosis.py` 상수 주석 | 코드 확인 — **in-sample** 한계로 적는다 |
 
+## A2. 통제 기준선 2단계 — 재추론 (2026-10-06 데스크탑, 초안 미반영)
+
+값은 `experiment/planning_evidence/controlled_baseline_stage2_2026-10-06.json`(집계 `experiment/analyze_controlled_baseline_stage2.py`)에서 읽었다. 합성 주입 조건, 공통 예산 k = max(1, ⌊0.1 × AIDA finding⌋), 기존 라벨 층은 `missing_*` 제외 조건 평균 → 시드 평균 ± 표본SD. 상세: [명세 6절](controlled-baseline-spec.md).
+
+| 주장 후보 | 값 | 근거 키 | 조건 |
+|---|---|---|---|
+| 재추론이 seeded 값을 재현 | legacy P@10% 조건별 일치 **A 812/812 · B 156/156**; C·D 지목 수·TP 29/29 · 26/26 | `groups.*.rulers.*.seeds.*.repro_vs_seeded` / `flagged_tp_vs_eval` | 프로파일 없음, limit 80 |
+| 자기 도메인 자: AIDA current vs 전체 라벨 기준선 | current **0.984 ± 0.004** · 전체 라벨 무작위 0.288 · 1−IoU 0.294 ± 0.006 · ObjectLab 0.329 ± 0.009 | `groups.A.rulers.matched.existing_label_layer` | 7시드, 26조건 |
+| 어긋난 자 3종(약한·먼 이동·넓은 자): AIDA current | 0.779 ± 0.065 · 0.827 ± 0.007 · 0.929 ± 0.018; 전체 라벨 기준선 0.274~0.302 | `groups.A.rulers.{shifted,far,broad}.existing_label_layer` | 7시드 |
+| AIDA legacy 순서 (같은 k, 기존 라벨 층) | 자기 도메인 0.933 ± 0.025 · 약한 0.624 ± 0.059 · 먼 0.630 ± 0.032 · 넓은 0.596 ± 0.032 | 같은 키 `aida_legacy` | 7시드 |
+| COCO: 자기 vs KITTI→COCO | current 0.942 ± 0.034 vs **0.386 ± 0.047**; KITTI→COCO의 ObjectLab 0.352 ± 0.016 · 무작위 0.301 · legacy 0.194 ± 0.012 | `groups.B.rulers.*.existing_label_layer` | 3시드, 23조건 |
+| AIDA 안 무작위(기대값) / IoU 재정렬 | 자기 도메인 0.607 / 0.498, KITTI→COCO 0.326 / 0.355 (모든 자에서 current보다 낮음) | `aida_random_expected`, `aida_iou_reorder` | finding 단위 |
+| 전체 라벨 1−IoU가 무작위 수준 | 8개 자 0.274~0.300 대 무작위 0.288~0.301 | `all_label_iou`, `all_label_random_expected` | label_iou = 0 라벨이 작은 k를 채움(사후 관찰) |
+| 누락 층 ObjectLab 측정 불가 | 점수 있는 미매칭 예측 0~2% (예: A 먼 이동 10/3,758) | `seeds.*.missing_layer_objectlab_scored_total` / `_unmatched_total` | cleanlab 기본 문턱 0.95 |
+
 ## B. prelim1 — 탐색 비교 (초안 7절)
 
 | 초안 주장 | 값 | 근거 파일 | 재계산 |

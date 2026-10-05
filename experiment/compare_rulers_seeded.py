@@ -96,21 +96,38 @@ def verify_seeds_differ(kinds: list[str]) -> None:
         print(f"  {RULERS[kind][0]:<12} 학습 시드 {seen}")
 
 
-def measure(kind: str, seed: int, limit: int, ordering: str | None = None) -> dict | None:
-    """ordering이 None이면 기존 동작(score_condition 기본 순서)."""
+def measure(kind: str, seed: int, limit: int, ordering: str | None = None, *,
+            orderings: list[str] | tuple | None = None, collect_population: bool = False,
+            store: "ConditionStore | None" = None) -> dict | None:
+    """ordering이 None이면 기존 동작(score_condition 기본 순서).
+
+    orderings를 주면(통제 기준선 2단계) 조건마다 추론 한 번으로 그 순서 버전을 모두
+    채점하고 {순서 ID: 요약}을 돌려준다 — measure_orderings 참고. 기본 경로는 그대로다.
+    """
     w = ruler_path(kind, seed)
     if not w.exists():
         print(f"  [{kind} seed={seed}] {w} 없음 — 건너뜀")
         return None
     E.RULER_PATH = w
+    if orderings is not None:
+        return measure_orderings(CONDITIONS, limit, orderings,
+                                 collect_population=collect_population, store=store)
+    results = []
+    for name in CONDITIONS:
+        r = (E.score_condition(config._BY_NAME[name], limit) if ordering is None
+             else E.score_condition(config._BY_NAME[name], limit, ordering=ordering))
+        results.append((name, r))
+    return _summarize(results)
+
+
+def _summarize(results: list[tuple[str, dict]]) -> dict:
+    """조건별 채점 행 → 자·시드 하나의 요약. measure의 원래 집계 그대로."""
     tp = fp = 0
     p10 = []
     per_condition: dict[str, float] = {}
     per_condition_fit: dict[str, float] = {}
     silent = []
-    for name in CONDITIONS:
-        r = (E.score_condition(config._BY_NAME[name], limit) if ordering is None
-             else E.score_condition(config._BY_NAME[name], limit, ordering=ordering))
+    for name, r in results:
         tp += r["tp"]
         fp += r["fp"]
         # 정답 없이 재는 값. 같은 채점에서 같이 나오므로 여기서 남긴다 —
@@ -142,6 +159,77 @@ def measure(kind: str, seed: int, limit: int, ordering: str | None = None) -> di
             # 조건별 적합도. 정밀도와 짝이 맞아야 AL 같은 분석을 다시 할 수 있다.
             "per_condition_fit": per_condition_fit,
             "silent": silent}
+
+
+class ConditionStore:
+    """(자, 시드)별 폴더에 조건 하나당 `<조건>.json.gz` 한 개. 있으면 다시 돌리지 않는다.
+
+    통제 기준선 2단계는 1,000회가 넘는 추론이라 중간에 끊겨도 이어서 돌 수 있어야 한다.
+    쓰기는 임시 파일 → 이름 바꾸기라 반쯤 쓴 파일이 '끝난 조건'으로 읽히지 않는다.
+    기존 파일은 덮지 않는다(save가 거부).
+    """
+
+    def __init__(self, folder: Path):
+        self.folder = Path(folder)
+
+    def path(self, name: str) -> Path:
+        return self.folder / f"{name}.json.gz"
+
+    def load(self, name: str) -> dict | None:
+        import gzip
+        p = self.path(name)
+        if not p.exists():
+            return None
+        with gzip.open(p, "rt", encoding="utf-8") as fh:
+            return json.load(fh)
+
+    def save(self, name: str, record: dict) -> Path:
+        import gzip
+        p = self.path(name)
+        if p.exists():
+            raise FileExistsError(f"{p} 이미 있음 — 덮지 않는다")
+        self.folder.mkdir(parents=True, exist_ok=True)
+        tmp = p.with_name(p.name + ".tmp")
+        with gzip.open(tmp, "wt", encoding="utf-8") as fh:
+            json.dump(record, fh, ensure_ascii=False)
+        tmp.replace(p)
+        return p
+
+
+def measure_orderings(conditions: list[str], limit: int, orderings, *,
+                      collect_population: bool = False,
+                      store: ConditionStore | None = None,
+                      on_condition=None) -> dict[str, dict]:
+    """조건마다 추론 한 번 → 순서 버전별 채점. {순서 ID: _summarize 결과}.
+
+    자는 호출 전에 E.RULER_PATH / E.RULER로 정해 둔다(measure가 그렇게 한다).
+    store가 있으면 끝난 조건은 저장본을 읽고 건너뛴다. 저장 기록: 순서별 행
+    (verdicts_by_rank + finding_ids_by_rank)과 모집단(collect_population일 때).
+    on_condition(name, record, reused)는 진행 기록용.
+    """
+    orderings = list(orderings)
+    per: dict[str, list] = {o: [] for o in orderings}
+    for name in conditions:
+        rec = store.load(name) if store is not None else None
+        reused = rec is not None
+        if rec is None:
+            res = E.score_condition_orderings(config._BY_NAME[name], limit, orderings,
+                                              collect_population=collect_population,
+                                              with_identity=True)
+            rec = {"condition": name, "limit": limit, "orderings": orderings,
+                   "rows": res["rows"]}
+            if collect_population:
+                rec["population"] = res["population"]
+            if store is not None:
+                store.save(name, rec)
+        missing = [o for o in orderings if o not in rec["rows"]]
+        if missing:
+            raise RuntimeError(f"{name}: 저장본에 순서 {missing} 없음")
+        for o in orderings:
+            per[o].append((name, rec["rows"][o]))
+        if on_condition is not None:
+            on_condition(name, rec, reused)
+    return {o: _summarize(per[o]) for o in orderings}
 
 
 def main() -> None:

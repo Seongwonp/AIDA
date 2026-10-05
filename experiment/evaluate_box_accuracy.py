@@ -206,7 +206,7 @@ def _dropped_hit(box, dropped: list, img_w: int, img_h: int) -> int | None:
 
 def score_findings(condition: config.Condition, findings: list, total_labels: int,
                    limit: int | None, fit: dict | None = None,
-                   ordering: str | None = None) -> dict:
+                   ordering: str | None = None, with_identity: bool = False) -> dict:
     """이미 얻은 findings를 정답지와 대조해 채점한다.
 
     score_condition에서 떼어냈다. 자 여러 대의 findings를 합쳐서 채점하는
@@ -214,6 +214,8 @@ def score_findings(condition: config.Condition, findings: list, total_labels: in
     규칙이 다르면 합의가 좋아 보이는 게 규칙 때문인지 합의 때문인지 모른다.
 
     ordering이 None이면 기존 동작(CLASS_WEIGHTED면 옛 정렬, 아니면 review_order).
+    with_identity=True면 행에 `finding_ids_by_rank`([이미지, 라벨 인덱스], verdicts_by_rank와
+    같은 순서)를 붙인다 — 모집단 행(label_iou)과 잇는 통제 기준선용. 기본은 꺼짐.
     """
     if ordering is not None and ordering not in ORDERINGS:
         raise ValueError(f"알 수 없는 순서 버전: {ordering!r} (가능: {ORDERINGS})")
@@ -249,6 +251,7 @@ def score_findings(condition: config.Condition, findings: list, total_labels: in
     # 신뢰도가 얼마나 다른지 분석하는 데 쓴다.
     # (정답여부, 의심유형, 심각도, 예측대표유형과일치, 원시신호)
     verdicts_by_rank: list[tuple] = []
+    finding_ids_by_rank: list[list] = []
 
     # 제품과 같은 순서로 채점해야 실제로 고객이 보는 목록을 재는 게 된다.
     # CLASS_WEIGHTED는 R의 실험 잔재라 켤 때만 옛 정렬을 쓴다.
@@ -258,6 +261,7 @@ def score_findings(condition: config.Condition, findings: list, total_labels: in
     for f in findings:
         stem = Path(f.image).stem
         entry = record.get(stem, {"errored": [], "dropped": []})
+        finding_ids_by_rank.append([f.image, f.label_index])
 
         if f.suspicion == "missing":
             # 지워진 박스 좌표와 겹치는지로 판정
@@ -343,7 +347,36 @@ def score_findings(condition: config.Condition, findings: list, total_labels: in
     }
     if ordering is not None:
         row["ordering"] = ordering
+    if with_identity:
+        row["finding_ids_by_rank"] = finding_ids_by_rank
     return row
+
+
+def score_condition_orderings(condition: config.Condition, limit: int | None,
+                              orderings: tuple | list, *, collect_population: bool = False,
+                              with_identity: bool = False) -> dict:
+    """추론 **한 번**으로 여러 순서 버전을 채점한다(통제 기준선 2단계).
+
+    지목·TP 판정은 순서와 무관하므로 같은 findings를 순서 버전마다 score_findings에
+    넘긴다(rescore는 findings를 고치지 않고 새 목록을 만든다).
+    반환: {"rows": {순서 ID: 행}, "population": 모집단(collect_population일 때만)}.
+    """
+    from diagnose_labels import run  # 지연 import
+
+    for o in orderings:
+        if o not in ORDERINGS:
+            raise ValueError(f"알 수 없는 순서 버전: {o!r} (가능: {ORDERINGS})")
+    root = config.CONDITIONS_DIR / condition.name
+    images_dir, labels_dir = root / "images" / "train", root / "labels" / "train"
+    out = run(images_dir, labels_dir, limit, weights=ruler_for(condition),
+              collect_population=collect_population)
+    findings, total_labels, fit = out[:3]
+    result = {"rows": {o: score_findings(condition, findings, total_labels, limit, fit,
+                                         ordering=o, with_identity=with_identity)
+                       for o in orderings}}
+    if collect_population:
+        result["population"] = label_population_truth(condition, out[3])
+    return result
 
 
 def load_cached_rows(wanted: list[str]) -> list[dict]:
