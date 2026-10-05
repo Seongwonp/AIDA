@@ -15,7 +15,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from PIL import Image
-from ultralytics import YOLO
 
 import config
 import objectlab_baseline
@@ -110,6 +109,8 @@ def run(images_dir: Path, labels_dir: Path, limit: int | None = None,
     if not image_paths:
         raise RuntimeError(f"{images_dir}에 이미지가 없습니다")
 
+    # 무거운 의존성은 추론할 때만 — 채점 모듈을 ultralytics 없이(CI) 불러올 수 있게 한다.
+    from ultralytics import YOLO
     model = YOLO(str(weights))
     # 기준 모델이 이 데이터와 같은 클래스 집합을 아는가.
     #
