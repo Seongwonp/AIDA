@@ -1,5 +1,7 @@
 # AIDA 작업 안내
 
+> **2026-10-06 데스크탑(2단계):** 재추론 1,023회 완료(49분) — 과거 순서로 seeded 값 **812/812·156/156** 재현, self·KITTI Car 지목·TP 29/29·26/26. 같은 k에서 AIDA 현재 순서는 8개 자 모두 전체 라벨 기준선(무작위·1−IoU·ObjectLab 0.27~0.35)보다 높다 — [명세 6절](docs/paper/controlled-baseline-spec.md), 근거표 A2. **사용자 결정:** 초안 수치를 legacy/current 중 어느 순서로 쓸지·기준선 표 반영(`docs/paper/open_items.md` 6절), 명세의 제안 규칙 2개(후보<k일 때 분모 k, 동점 키) 확정. 검사 experiment 608.
+
 > **2026-10-06 데스크탑:** 통제 기준선 1단계 재현 확인 **통과** — 과거 순서 `legacy_severity_v0`로 자기 도메인 자·시드 42·29조건이 seeded 값과 **29/29 일치**. 09-05의 캐시↔seeded 불일치 원인은 신뢰도 프로파일(캐시 실행만 `reliability_profile_mc.json` 사용) — [명세](docs/paper/controlled-baseline-spec.md), `experiment/planning_evidence/controlled_baseline_stage1_repro_2026-10-06.json`. **2단계(재추론 약 1,023회·1.3~2.2시간)는 별도 승인 대기.** 검사 experiment 604.
 
 > **2026-10-05 데스크탑:** 통제 기준선 읽기 전용 목록 조사 완료 — [데스크탑 목록](docs/paper/controlled-baseline-desktop-inventory.md). 자료 복구 필요 없음(확인 범위), 박스 단위 기준선은 기존 가중치 재추론 필요(약 1,023회·82k장·1.3~2.2시간, **미승인·미실행**). 캐시가 seeded 시드 42 값을 재현하지 못하는 조건이 많다(원인 미상). 검사 backend 370 · experiment 594 · frontend 191 · typecheck/lint/build 0. 다음: 노트북 기준선 명세(과거 순서 재현 여부·범위) → 재추론 승인.
