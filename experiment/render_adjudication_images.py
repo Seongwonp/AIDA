@@ -1,7 +1,8 @@
 """보조(AI) 판정자 입력 이미지 — 가림 판정 목록(`GET .../queue?adjudicator=<id>`)을 그림으로.
 
-사람 화면과 같은 규칙으로 그린다(docs/manual-timing-pilot.md): 판정할 기존 라벨은 **빨강 실선**, 누락
-지목 자리는 **빨강 점선**, 그 이미지의 다른 라벨은 **파랑**. 점수·순위·방법·출처·다른 판정자의 판정은
+사람 화면(`frontend/src/components/AdjudicationView.tsx`)과 같은 색으로 그린다: 판정할 기존 라벨은 **빨강 실선**,
+누락 지목 자리는 **주황 점선**, 그 이미지의 다른 라벨은 **파랑**. 지침 문서(docs/manual-timing-pilot.md)는 누락을 "빨강 점선"이라
+적었지만 사람 화면은 timing1 뒤 주황으로 바뀌었고, AI 입력도 그 화면에 맞춘다(2026-10-06, open_items P9). 점수·순위·방법·출처·다른 판정자의 판정은
 목록에 없으므로 그림에도 없다. 좌표는 그림 아래에 글로 병기한다(문헌: 좌표만 주는 것보다 그림이 낫다).
 
 사용법:
@@ -17,7 +18,8 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-RED, BLUE = (220, 30, 30), (30, 90, 220)
+# 사람 화면의 CANDIDATE_COLOR #e11d48, MISSING_COLOR #d97706, CONTEXT_COLOR #2563eb 와 같은 값
+RED, ORANGE, BLUE = (225, 29, 72), (217, 119, 6), (37, 99, 235)
 
 
 def read_labels(path: Path, w: int, h: int) -> list[tuple[float, float, float, float]]:
@@ -57,7 +59,7 @@ def render_one(image_path: Path, label_path: Path, candidate: dict, margin: floa
     if is_label:
         draw.rectangle(box, outline=RED, width=3)
     else:
-        dashed_rect(draw, box, RED)
+        dashed_rect(draw, box, ORANGE)
     bw, bh = box[2] - box[0], box[3] - box[1]
     pad_w, pad_h = max(40, bw * margin), max(40, bh * margin)
     crop = (max(0, int(box[0] - pad_w)), max(0, int(box[1] - pad_h)),
@@ -68,7 +70,7 @@ def render_one(image_path: Path, label_path: Path, candidate: dict, margin: floa
     meta = {"canonical_candidate_id": candidate["canonical_candidate_id"], "image": candidate["image"],
             "task": "labelled" if is_label else "missing", "class_name": candidate.get("class_name"),
             "box_xyxy_px": [round(v, 1) for v in box], "image_size": [w, h], "crop_xyxy_px": list(crop),
-            "caption": (f"{'기존 라벨(빨강 실선)' if is_label else '누락 지목 자리(빨강 점선)'} "
+            "caption": (f"{'기존 라벨(빨강 실선)' if is_label else '누락 지목 자리(주황 점선)'} "
                         f"x1={box[0]:.0f} y1={box[1]:.0f} x2={box[2]:.0f} y2={box[3]:.0f} "
                         f"(원본 {w}×{h}px, 파랑=이 이미지의 다른 라벨)")}
     return view, meta

@@ -74,3 +74,16 @@ def test_library_rejects_unblinded_inputs_before_writing(tmp_path, extra):
     with pytest.raises(ValueError):
         R.render_queue(q, tmp_path, tmp_path, tmp_path / "out")
     assert not (tmp_path / "out").exists()
+
+
+def test_누락_점선은_사람_화면과_같은_주황이다(tmp_path):
+    # 사람 판정 화면(AdjudicationView MISSING_COLOR #d97706)과 같은 색 — open_items P9
+    ds = make_dataset(tmp_path)
+    queue = {"candidates": [{"canonical_candidate_id": "C1", "image": "a.png", "label_index": None,
+                             "box": [80.0, 10.0, 110.0, 40.0], "class_name": "Car"}]}
+    m = R.render_queue(queue, ds / "images", ds / "labels", tmp_path / "out")
+    assert "주황 점선" in m[0]["caption"]
+    img = Image.open(tmp_path / "out" / "C1.png").convert("RGB")
+    crop = m[0]["crop_xyxy_px"]
+    r, g, b = img.getpixel((82 - crop[0], 10 - crop[1]))   # 위쪽 변의 첫 점선 조각
+    assert (r, g, b) == R.ORANGE == (217, 119, 6)
