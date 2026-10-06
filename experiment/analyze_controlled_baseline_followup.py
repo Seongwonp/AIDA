@@ -70,8 +70,15 @@ def precision_top(flags: list, k: int) -> float:
     return sum(bool(x) for x in top) / len(top) if top else 0.0
 
 
+# t 분포 0.975 분위수(scipy.stats.t.ppf와 소수 9자리까지 같음). CI에는 scipy가 없어 표로 둔다.
+_T975 = {1: 12.706204736, 2: 4.302652730, 3: 3.182446305, 4: 2.776445105, 5: 2.570581836,
+         6: 2.446911851, 7: 2.364624252, 8: 2.306004135, 9: 2.262157163, 10: 2.228138852}
+
+
 def t_quantile(df: int) -> float:
-    from scipy.stats import t
+    if df in _T975:
+        return _T975[df]
+    from scipy.stats import t   # 표 밖은 scipy가 있을 때만
     return float(t.ppf(0.975, df))
 
 
