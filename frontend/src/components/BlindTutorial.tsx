@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 /**
  * 가림 판정 첫 방문 튜토리얼.
@@ -48,14 +48,14 @@ function ColorsFigure() {
 function TasksFigure() {
   return (
     <svg className="tut-figure" viewBox="0 0 300 120" role="img"
-         aria-label="왼쪽은 차를 덜 감싼 빨강 상자, 오른쪽은 라벨 없는 차를 가리킨 주황 점선">
+         aria-label="왼쪽은 차 앞부분이 빠진 빨강 상자, 오른쪽은 파랑 상자 없는 차를 가리킨 주황 점선 — 둘 다 오류였다">
       <Car x={20} y={40} />
-      {/* 앞부분이 밖으로 나간 상자 — "고쳐야 하는가"를 묻는다 */}
+      {/* 앞부분이 밖으로 나간 상자 — "고쳐야 하는가"를 묻는다. 답까지 적어 두 질문의 "예"가 같은 단추임을 보인다. */}
       <path className="tut-red" d={box(16, 44, 62, 40)} />
-      <text className="tut-caption" x="70" y="108" textAnchor="middle">잘 감쌌나?</text>
+      <text className="tut-caption" x="70" y="108" textAnchor="middle">앞이 잘림 → 오류였다</text>
       <Car x={180} y={40} />
       <path className="tut-orange" d={box(174, 44, 92, 44)} />
-      <text className="tut-caption" x="220" y="108" textAnchor="middle">라벨이 빠졌나?</text>
+      <text className="tut-caption" x="220" y="108" textAnchor="middle">파랑 없음 → 오류였다</text>
     </svg>
   );
 }
@@ -80,6 +80,10 @@ const STEPS: { title: string; body: ReactNode }[] = [
     title: "상자 색이 뜻하는 것",
     body: (
       <>
+        <p className="tut-lead">
+          사진 속 차에 사람이 그려 둔 상자를 <b>라벨</b>이라고 한다. 이 화면은 후보를 하나씩 보여 주고, 후보마다
+          질문 하나에 답하게 한다.
+        </p>
         <ColorsFigure />
         <ul>
           <li><b>빨강 실선</b> — 지금 판정하는 기존 라벨.</li>
@@ -110,7 +114,7 @@ const STEPS: { title: string; body: ReactNode }[] = [
         <NumberingFigure />
         <ul>
           <li>누락을 <b>오류였다</b>로 고르면 "어느 객체인가"를 정해야 저장된다.</li>
-          <li>처음 보는 객체면 <b>새 객체</b> — M1, M2… 순으로 번호가 붙는다.</li>
+          <li>처음 보는 객체면 <b>새 객체</b> — M1, M2… 순으로 번호가 붙는다. 번호는 사진마다 M1부터 다시 시작한다.</li>
           <li>다른 후보가 <b>같은 실제 객체</b>를 가리키면 이미 있는 번호(예: M1)를 고른다. 그래야 한 객체가 두 번 세지지 않는다.</li>
         </ul>
       </>
@@ -128,6 +132,10 @@ const STEPS: { title: string; body: ReactNode }[] = [
         </ul>
         <p>글자를 입력하는 칸에 있을 때는 단축키가 동작하지 않는다.</p>
         <p>
+          판정 단추를 누르면 <b>바로 저장</b>되고 단추 아래에 "저장됨"이 뜬다. 다음 후보로 저절로 넘어가지 않는다 —{" "}
+          <kbd>→</kbd> 또는 <b>다음</b>을 누른다.
+        </p>
+        <p>
           후보를 누가·어떻게 골랐는지, 점수와 원래 순위는 <b>일부러 보여 주지 않는다</b>. 판정이 그 정보에 끌려가지 않게 하려는
           것이다. 판정 기준은 화면의 "판정 지침 보기"에 있다.
         </p>
@@ -139,23 +147,58 @@ const STEPS: { title: string; body: ReactNode }[] = [
 export function BlindTutorial({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState(0);
   const primaryRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  // 연 자리(예: "튜토리얼 다시 보기"). 첫 그리기 때 잡는다 — 아래 effect가 초점을 대화 상자로 옮기기 전이다.
+  const openerRef = useRef<Element | null>(
+    typeof document === "undefined" ? null : document.activeElement,
+  );
   const last = step === STEPS.length - 1;
+
+  // 닫히면 연 자리로 초점을 돌려준다. 첫 방문처럼 연 자리가 없으면 그대로 둔다.
+  useEffect(() => {
+    const opener = openerRef.current;
+    return () => {
+      if (opener instanceof HTMLElement && opener !== document.body && opener.isConnected) {
+        opener.focus();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     primaryRef.current?.focus();
   }, [step]);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
+    const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  // Tab이 대화 상자 밖(뒤의 판정 단추)으로 나가지 않게 가둔다. 뒤 화면은 `inert`로도 막는다.
+  const trapTab = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== "Tab") return;
+    const items = Array.from(
+      dialogRef.current?.querySelectorAll<HTMLElement>("button:not(:disabled)") ?? [],
+    );
+    if (items.length === 0) return;
+    const first = items[0];
+    const end = items[items.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && active === first) {
+      e.preventDefault();
+      end.focus();
+    } else if (!e.shiftKey && active === end) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
+
   return (
     <div className="tut-backdrop">
-      <div className="tut-dialog" role="dialog" aria-modal="true" aria-labelledby="tut-title">
+      <div className="tut-dialog" role="dialog" aria-modal="true" aria-labelledby="tut-title"
+           ref={dialogRef} onKeyDown={trapTab}>
         <p className="tut-count">{step + 1} / {STEPS.length}</p>
         <h3 id="tut-title">{STEPS[step].title}</h3>
         <div className="tut-body">{STEPS[step].body}</div>

@@ -1434,8 +1434,18 @@ code {
    단축키 표시는 data-key로 그린다 — 버튼 글자(접근 이름)는 판정 이름만 남긴다. */
 .blind-adjudication {
   --judge-error: #e11d48;   /* AdjudicationView CANDIDATE_COLOR와 같은 계열 */
-  --judge-ok: #0f766e;      /* 로고 청록의 진한 쪽 */
+  --judge-ok: #0f766e;      /* 로고 청록의 진한 쪽 — 채운 면(흰 글씨 5.5:1) */
+  --judge-ok-ink: #0f766e;  /* 글자·테두리로 쓸 때 */
   --judge-unsure: var(--gray);
+}
+/* 어두운 바탕에서 #0f766e 글자는 대비 3.3:1로 4.5:1에 못 미쳤다 — 글자로 쓸 때만 밝은 청록으로 바꾼다. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .blind-adjudication {
+    --judge-ok-ink: #5eead4;
+  }
+}
+:root[data-theme="dark"] .blind-adjudication {
+  --judge-ok-ink: #5eead4;
 }
 .judge-header {
   display: flex;
@@ -1512,9 +1522,9 @@ code {
   font: inherit;
   font-size: 17px;
   font-weight: 800;
-  color: var(--tone);
+  color: var(--tone-ink, var(--tone));
   background: var(--white);
-  border: 2px solid var(--tone);
+  border: 2px solid var(--tone-ink, var(--tone));
   border-radius: 10px;
   cursor: pointer;
   transition: background 0.1s, color 0.1s;
@@ -1524,14 +1534,17 @@ code {
 }
 .verdict-miss {
   --tone: var(--judge-ok);
+  --tone-ink: var(--judge-ok-ink);
 }
 .verdict-button:hover {
   background: var(--raise);
 }
+/* 고른 판정은 "채운 면 + ✓"로만 보인다. 바깥 고리는 **키보드 초점 전용**으로 남긴다 — 예전에는
+   고른 단추에도 고리를 둘러, 초점이 있는 단추와 고른 단추가 같은 모양(청록 이중 고리)으로 보였다. */
 .verdict-button[aria-pressed="true"] {
   background: var(--tone);
+  border-color: var(--tone);
   color: #ffffff;
-  box-shadow: 0 0 0 3px var(--white), 0 0 0 5px var(--tone);
 }
 .verdict-button[aria-pressed="true"]::before {
   content: "✓ ";
@@ -1636,7 +1649,7 @@ code {
   background: var(--raise);
 }
 .save-saved {
-  color: var(--judge-ok);
+  color: var(--judge-ok-ink);
   background: rgba(46, 196, 182, 0.14);
 }
 .save-saved::before {
@@ -1649,6 +1662,109 @@ code {
 @media (max-width: 560px) {
   .verdict-row {
     grid-template-columns: 1fr;
+  }
+}
+
+/* 키보드 초점 — 전역 고리(청록 #2ec4b6)는 흰 바탕에서 대비 2.2:1이라 3:1에 못 미치고, 고른 단추의
+   모양과도 헷갈렸다. 판정 화면과 튜토리얼에서는 전경색(남색/밝은 회청)으로 굵게, 떨어뜨려 그린다. */
+.blind-adjudication :where(button, summary, a):focus-visible {
+  outline: 3px solid var(--black);
+  outline-offset: 3px;
+}
+.blind-adjudication summary:focus-visible {
+  border-radius: 4px;
+}
+
+/* 후보 머리 줄 — 위치(섞인 순서의 몇 번째)와 파일 이름. 둘 다 보조 정보다. */
+.judge-card > .judge-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--gray);
+  word-break: break-all;
+}
+.judge-position {
+  font-weight: 700;
+  color: var(--black);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+/* 그림 — 기본 figure 여백(좌우 40px)이 휴대폰 폭에서 그림을 화면 밖으로 밀어 오른쪽(후보 박스가
+   있을 수 있는 쪽)이 잘렸다. 여백을 없애고 좁은 화면에서는 폭에 맞춰 줄인다(비율 유지). */
+.judge-figure {
+  margin: 0;
+}
+.judge-figure canvas {
+  display: block;
+  max-inline-size: 100%;
+  block-size: auto;
+  border-radius: 6px;
+}
+.adj-legend {
+  display: grid;
+  gap: 2px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--black);
+}
+.adj-mark {
+  margin-right: 6px;
+}
+.judge-controls {
+  margin-top: 12px;
+}
+.judge-question {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 800;
+}
+.judge-help {
+  margin: 0;
+  font-size: 14px;
+  color: var(--gray);
+}
+.judge-controls .save-row {
+  min-height: 36px;
+  flex-wrap: wrap;
+}
+.save-idle {
+  font-weight: 400;
+  color: var(--gray);
+}
+.missing-hint {
+  flex-basis: 100%;
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--gray);
+}
+.judge-footnote {
+  font-size: 13px;
+  color: var(--gray);
+}
+/* 넓은 화면에서는 그림 옆에 질문·단추를 둔다 — 위아래로 쌓으면 노트북 화면(높이 약 650px)에서
+   판정 단추가 첫 화면 아래로 내려가 후보마다 스크롤해야 했다. 그림 크기(340px)는 그대로다. */
+@media (min-width: 900px) {
+  .judge-split {
+    display: grid;
+    grid-template-columns: 340px minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+  }
+  .judge-split .judge-controls {
+    margin-top: 0;
+  }
+  .judge-split .verdict-button {
+    font-size: 16px;
+    padding-right: 26px;
+  }
+}
+/* 손가락으로 쓰는 화면에는 키보드 단축키 표시가 소음이다. */
+@media (hover: none) and (pointer: coarse) {
+  .verdict-button::after,
+  .judge-nav-button[data-key]::after {
+    display: none;
   }
 }
 
@@ -1683,7 +1799,7 @@ code {
   color: var(--accent-ink);
 }
 .tut-body {
-  min-height: 330px; /* 단계마다 높이가 달라 버튼이 움직이면 엉뚱한 단추를 누른다 */
+  min-height: 350px; /* 단계마다 높이가 달라 버튼이 움직이면 엉뚱한 단추를 누른다 */
 }
 .tut-body ul {
   margin: 8px 0;
@@ -1694,6 +1810,13 @@ code {
 }
 .tut-body p {
   font-size: 14px;
+}
+.tut-lead {
+  margin: 0 0 10px;
+}
+.tut-dialog :where(button):focus-visible {
+  outline: 3px solid var(--black);
+  outline-offset: 3px;
 }
 .tut-keys {
   list-style: none;

@@ -298,13 +298,20 @@ export function BlindAdjudication({
   // 이동도 버튼과 단축키가 **같은 함수**를 부른다 — 기록(`moved_*`)이 갈리지 않게.
   const canPrevious = cursor !== null && cursor > 0;
   const canNext = cursor !== null && cursor < candidates.length - 1;
+  // 옮기면 "저장됨"을 지운다 — 남겨 두면 아직 판정 안 한 다음 후보 아래에 "저장됨"이 떠서
+  // 그 후보도 저장된 것처럼 읽힌다. 저장 중·실패는 그대로 둔다(실패는 다시 시도해야 한다).
+  // 화면 표시만 바꾼다 — 저장 요청·기록은 건드리지 않는다.
+  const moveTo = (index: number | null) => {
+    setSave((s) => (s === "saved" ? "idle" : s));
+    setCursor(index);
+  };
   const goPrevious = () => {
     log.record("moved_previous");
-    setCursor((cursor ?? 0) - 1);
+    moveTo((cursor ?? 0) - 1);
   };
   const goNext = () => {
     log.record("moved_next");
-    setCursor((cursor ?? 0) + 1);
+    moveTo((cursor ?? 0) + 1);
   };
 
   /**
@@ -345,9 +352,21 @@ export function BlindAdjudication({
 
   if (error) return <p className="error">{error}</p>;
 
+  // 저장 칸이 비어 있을 때의 안내. 판정 결과는 말하지 않고 "저장되는지"만 말한다.
+  const currentId = current?.canonical_candidate_id;
+  const idleHint = !currentId || blocked.includes(currentId)
+    ? ""
+    : judgements[currentId]?.verdict
+      ? "이 후보의 판정은 저장되어 있습니다."
+      : "판정을 누르면 바로 저장됩니다.";
+  const saveText = save === "idle" ? idleHint : saveMessage(save);
+
   return (
     <section className="blind-adjudication">
       {tutorial && <BlindTutorial onClose={closeTutorial} />}
+      {/* 튜토리얼이 떠 있으면 뒤 화면을 `inert`로 막는다 — Tab으로 뒤의 판정 단추에 닿아
+          Enter·Space로 판정이 눌리지 않게(단축키 1·2·3은 이미 막혀 있다). */}
+      <div className="judge-body" inert={tutorial}>
       <div className="judge-header">
         <h2>가림 판정</h2>
         <button type="button" className="judge-text-button" onClick={() => setTutorial(true)}>
@@ -382,19 +401,26 @@ export function BlindAdjudication({
 
       {current && (
         <article key={current.canonical_candidate_id} className="judge-card">
-          <p>{current.image}</p>
+          {/* 위치는 섞인 순서의 몇 번째인지일 뿐이다(서버가 고정 씨앗으로 섞는다) — 원래 순위가 아니다. */}
+          <p className="judge-meta">
+            <span className="judge-position">후보 {(cursor ?? 0) + 1} / {candidates.length}</span>
+            <span>{current.image}</span>
+          </p>
+          <div className="judge-split">
           <AdjudicationView
+            className="judge-figure"
             datasetId={datasetId}
             image={current.image}
             box={current.box}
             labelIndex={current.label_index}
           />
-          <p>
+          <div className="judge-controls">
+          <p className="judge-question">
             {current.label_index === null
               ? `여기 ${current.class_name ?? "객체"}가 있는데 라벨이 빠졌는가?`
               : `이 ${current.class_name ?? "객체"} 라벨이 잘 감쌌는가?`}
           </p>
-          <p className="muted">
+          <p className="muted judge-help">
             {current.label_index === null
               ? "실제 객체가 있는데 라벨이 없으면 오류였다, 객체가 아니거나 라벨 대상이 아니면 오류 아니었다, 가림·해상도 때문에 불명확하면 모르겠다."
               : "실무상 고쳐야 할 만큼 어긋났으면 오류였다, 이대로 써도 되면 오류 아니었다, 경계가 애매하거나 객체를 확인할 수 없으면 모르겠다."}
@@ -416,18 +442,33 @@ export function BlindAdjudication({
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            className="judge-text-button"
-            onClick={() => judge(current.canonical_candidate_id, null)}
-          >
-            판정 취소
-          </button>
+          {/* 저장 상태는 **판정 단추 바로 아래 고정 높이 줄**에 둔다 — 단추 가까이 있어 찾으러
+              가지 않고, 문구가 생겨도 단추가 밀리지 않는다(브라우저 확인에서 밀린 단추를 잘못
+              누른 적이 있다). */}
+          <div className="save-row">
+            <button
+              type="button"
+              className="judge-text-button"
+              onClick={() => judge(current.canonical_candidate_id, null)}
+            >
+              판정 취소
+            </button>
+            <p aria-live="polite" className={`save-status save-${save}`}>{saveText}</p>
+            {save === "failed" && (
+              <button type="button" className="judge-nav-button" onClick={retry}>
+                다시 시도
+              </button>
+            )}
+          </div>
 
           {current.label_index === null &&
             judgements[current.canonical_candidate_id]?.verdict === "hit" && (
               <fieldset className="missing-object">
                 <legend>어느 객체인가</legend>
+                <p className="missing-hint">
+                  이 사진에서 이미 번호를 붙인 차와 <b>같은 차</b>면 그 번호를, 처음 보는 차면
+                  <b> 새 객체</b>를 고릅니다. 골라야 저장됩니다.
+                </p>
                 {missingObjects(candidates, judgements, current.image).map((name) => (
                   <button
                     key={name}
@@ -455,6 +496,8 @@ export function BlindAdjudication({
                 </button>
               </fieldset>
             )}
+          </div>
+          </div>
         </article>
       )}
 
@@ -471,7 +514,7 @@ export function BlindAdjudication({
               // **되돌아보는 것은 의도한 작업이다.** 그 시간은 그 후보의
               // 판정 시간으로 기록된다 — 재개 시의 통과 시간과 다르다.
               log.record("moved_previous");
-              setCursor(0);
+              moveTo(0);
             }}
           >
             처음부터 다시 보기
@@ -506,7 +549,7 @@ export function BlindAdjudication({
           disabled={left === 0}
           onClick={() => {
             log.record("moved_next");
-            setCursor(nextUnjudgedIndex(candidates, judgements, cursor ?? -1));
+            moveTo(nextUnjudgedIndex(candidates, judgements, cursor ?? -1));
           }}
         >
           다음 미판정 ({left})
@@ -518,21 +561,22 @@ export function BlindAdjudication({
           {MISSING_NEEDS_OBJECT} <strong>아직 저장되지 않은 판정 {blocked.length}건</strong>
         </p>
       )}
-      {/* 저장 상태는 이동 버튼 바로 아래 — 마지막 판정 뒤 "저장됨"을 찾으러 내려가지 않게. */}
-      <div className="save-row">
-        <p aria-live="polite" className={`save-status save-${save}`}>{saveMessage(save)}</p>
-        {save === "failed" && (
+      {/* 후보가 없는 화면(완료·불러오는 중)에서도 저장 실패는 보여야 다시 시도할 수 있다. */}
+      {!current && save === "failed" && (
+        <div className="save-row">
+          <p aria-live="polite" className="save-status save-failed">{saveMessage(save)}</p>
           <button type="button" className="judge-nav-button" onClick={retry}>
             다시 시도
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
-      <p className="muted">
+      <p className="muted judge-footnote">
         <strong>기존 라벨 검수인지 누락 객체 검수인지는 가리지 않습니다</strong>{" "}
         — 판정 작업 자체가 달라 숨기면 판정할 수 없습니다.{" "}
         <strong>판정은 판정자마다 따로 저장되고, 다른 판정자의 판정은 보이지 않습니다.</strong>
       </p>
+      </div>
     </section>
   );
 }

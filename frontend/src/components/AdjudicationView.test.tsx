@@ -179,3 +179,35 @@ describe("범례", () => {
     expect(screen.getByText(/박스 품질을 보는/)).toBeTruthy();
   });
 });
+
+describe("누락 표시 글자", () => {
+  test("박스가 그림 오른쪽 끝에 붙어도 '라벨 없음?' 표시가 그림 안에 들어온다", async () => {
+    const fills: number[][] = [];
+    const ctx = HTMLCanvasElement.prototype.getContext.call(document.createElement("canvas"), "2d") as unknown as {
+      fillRect: (...a: number[]) => void;
+    };
+    ctx.fillRect = (...a: number[]) => void fills.push(a);
+    // 이미지 오른쪽 끝(1000px)에 붙은 박스 — 자른 그림의 오른쪽 끝에 놓인다.
+    show({ labelIndex: null, box: [990, 300, 1000, 360] });
+    await waitFor(() => expect(loadImage).toBeTruthy());
+    loadImage!();
+
+    expect(fills).toHaveLength(1);
+    const [x, , w] = fills[0];
+    expect(x).toBeGreaterThanOrEqual(0);
+    expect(x + w).toBeLessThanOrEqual(340);
+  });
+});
+
+describe("범례 대비", () => {
+  test("색은 표시(▬)에만 쓰고 글자에는 쓰지 않는다", async () => {
+    show({ labelIndex: null });
+    const marks = Array.from(document.querySelectorAll(".adj-mark"));
+    expect(marks.length).toBe(2);
+    marks.forEach((m) => expect(m.getAttribute("aria-hidden")).toBe("true"));
+    // 글자를 감싼 칸에는 색이 없다 — 주황·파랑 글자는 4.5:1을 못 채웠다.
+    Array.from(document.querySelectorAll(".adj-legend > span")).forEach((s) => {
+      expect((s as HTMLElement).style.color).toBe("");
+    });
+  });
+});

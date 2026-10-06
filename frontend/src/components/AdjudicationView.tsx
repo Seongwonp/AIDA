@@ -125,11 +125,13 @@ export function AdjudicationView({
       if (missing) {
         // 박스 위에 무엇을 묻는지 적는다. 색과 점선만으로는 "지금 보는 라벨"과
         // 헷갈릴 수 있다.
-        const [tx, ty] = toView(x1, y1);
+        const [bx, ty] = toView(x1, y1);
         const text = "라벨 없음?";
         ctx.font = "bold 14px sans-serif";
         const pad = 4;
         const width = ctx.measureText(text).width + pad * 2;
+        // 박스가 그림 오른쪽 끝에 붙으면 글자가 잘려 "라벨 없"만 보였다 — 그림 안으로 당긴다.
+        const tx = Math.max(0, Math.min(bx, VIEW - width));
         const top = Math.max(0, ty - 20);
         ctx.fillStyle = MISSING_COLOR;
         ctx.fillRect(tx, top, width, 18);
@@ -163,18 +165,24 @@ export function AdjudicationView({
         role="img"
         aria-label={`${image}의 판정 대상 박스와 주변 기존 라벨`}
       />
-      <figcaption>
+      {/* 색은 표시(▬)에만 쓰고 글자는 본문 색으로 둔다 — 주황·파랑 글자는 흰 바탕·어두운 바탕에서
+          글자 대비(4.5:1)를 못 채웠다. 한 줄에 한 항목씩 둔다. */}
+      <figcaption className="adj-legend">
         {labelIndex === null ? (
-          <span style={{ color: MISSING_COLOR }}>
-            ▬ 주황 점선 = <strong>여기 라벨이 빠졌는가</strong> (박스 품질을 보는
-            것이 아닙니다)
+          <span>
+            <span className="adj-mark" style={{ color: MISSING_COLOR }} aria-hidden="true">▬</span>
+            주황 점선 = <strong>여기 라벨이 빠졌는가</strong> (박스 품질을 보는 것이 아닙니다)
           </span>
         ) : (
-          <span style={{ color: CANDIDATE_COLOR }}>
-            ▬ 빨강 실선 = <strong>지금 보는 라벨</strong>
+          <span>
+            <span className="adj-mark" style={{ color: CANDIDATE_COLOR }} aria-hidden="true">▬</span>
+            빨강 실선 = <strong>지금 보는 라벨</strong>
           </span>
-        )}{" "}
-        <span style={{ color: CONTEXT_COLOR }}>▬ 파랑 = 이미 붙어 있는 다른 라벨</span>
+        )}
+        <span>
+          <span className="adj-mark" style={{ color: CONTEXT_COLOR }} aria-hidden="true">▬</span>
+          파랑 = 이미 붙어 있는 다른 라벨
+        </span>
       </figcaption>
     </figure>
   );

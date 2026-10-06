@@ -357,3 +357,113 @@ describe("가림", () => {
     expect(document.body.textContent ?? "").not.toMatch(/\d+위|점수:|순위:|출처:/);
   });
 });
+
+describe("튜토리얼 접근성", () => {
+  test("떠 있는 동안 뒤 화면은 inert이고, 닫으면 풀린다", async () => {
+    localStorage.removeItem(TUTORIAL_KEY);
+    getBlindQueue.mockResolvedValue(queue([cand()]));
+    show();
+    await screen.findByRole("dialog");
+    const body = document.querySelector(".judge-body")!;
+    // 뒤의 판정 단추가 Tab·Enter로 눌리지 않게 막는다.
+    expect(body.hasAttribute("inert")).toBe(true);
+    expect(body.contains(screen.getByRole("dialog"))).toBe(false);
+
+    await act(async () => screen.getByRole("button", { name: "건너뛰기" }).click());
+    expect(body.hasAttribute("inert")).toBe(false);
+  });
+
+  test("Tab이 대화 상자 안에서 돈다", async () => {
+    localStorage.removeItem(TUTORIAL_KEY);
+    getBlindQueue.mockResolvedValue(queue([cand()]));
+    show();
+    const dialog = await screen.findByRole("dialog");
+    const skip = screen.getByRole("button", { name: "건너뛰기" });
+    const next = screen.getByRole("button", { name: "다음 단계" });
+    expect(document.activeElement).toBe(next);
+
+    // 마지막 단추에서 Tab → 첫 단추, 첫 단추에서 Shift+Tab → 마지막 단추.
+    fireEvent.keyDown(next, { key: "Tab" });
+    expect(document.activeElement).toBe(skip);
+    fireEvent.keyDown(skip, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(next);
+    expect(dialog.contains(document.activeElement)).toBe(true);
+  });
+
+  test("다시 보기로 열었다 닫으면 그 단추로 초점이 돌아간다", async () => {
+    getBlindQueue.mockResolvedValue(queue([cand()]));
+    show();
+    await screen.findByText("a.jpg");
+    const opener = screen.getByRole("button", { name: "튜토리얼 다시 보기" });
+    opener.focus();
+    await act(async () => opener.click());
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "다음 단계" }));
+
+    await press("Escape");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(opener);
+  });
+});
+
+describe("저장 상태 안내", () => {
+  test("옮기면 '저장됨'이 다음 후보에 따라가지 않고, 판정한 후보로 돌아오면 저장돼 있다고 말한다", async () => {
+    getBlindQueue.mockResolvedValue(queue([
+      cand({ canonical_candidate_id: "A" }),
+      cand({ canonical_candidate_id: "B", image: "b.jpg" }),
+    ]));
+    show();
+    await screen.findByText("a.jpg");
+    screen.getByText("판정을 누르면 바로 저장됩니다.");
+
+    await act(async () => screen.getByRole("button", { name: "오류였다" }).click());
+    await screen.findByText("저장됨");
+
+    await press("ArrowRight");
+    await screen.findByText("b.jpg");
+    expect(screen.queryByText("저장됨")).toBeNull();
+    screen.getByText("판정을 누르면 바로 저장됩니다.");
+
+    await press("ArrowLeft");
+    await screen.findByText("a.jpg");
+    screen.getByText("이 후보의 판정은 저장되어 있습니다.");
+    // 화면 표시만 바꿨다 — 저장은 처음 한 번뿐이다.
+    expect(putAdjudications).toHaveBeenCalledTimes(1);
+  });
+
+  test("저장 실패는 옮겨도 남아 다시 시도할 수 있다", async () => {
+    putAdjudications.mockRejectedValueOnce(new Error("끊김"));
+    getBlindQueue.mockResolvedValue(queue([
+      cand({ canonical_candidate_id: "A" }),
+      cand({ canonical_candidate_id: "B", image: "b.jpg" }),
+    ]));
+    show();
+    await screen.findByText("a.jpg");
+    await act(async () => screen.getByRole("button", { name: "오류였다" }).click());
+    await screen.findByText(/^저장 실패/);
+
+    await press("ArrowRight");
+    await screen.findByText("b.jpg");
+    screen.getByText(/^저장 실패/);
+    screen.getByRole("button", { name: "다시 시도" });
+  });
+});
+
+describe("후보 위치", () => {
+  test("몇 번째 후보인지 보여 준다", async () => {
+    getBlindQueue.mockResolvedValue(queue([
+      cand({ canonical_candidate_id: "A", verdict: "hit" }),
+      cand({ canonical_candidate_id: "B", image: "b.jpg" }),
+    ]));
+    show();
+    await screen.findByText("b.jpg");
+    screen.getByText("후보 2 / 2");
+  });
+
+  test("누락 오류에서 어느 객체인지 고르는 법을 적는다", async () => {
+    getBlindQueue.mockResolvedValue(queue([cand({ label_index: null })]));
+    show();
+    await screen.findByText("a.jpg");
+    await act(async () => screen.getByRole("button", { name: "오류였다" }).click());
+    expect(document.querySelector(".missing-hint")?.textContent).toMatch(/같은 차.*새 객체/);
+  });
+});
