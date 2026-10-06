@@ -43,6 +43,24 @@
 자세한 원리는 [docs/01-technology.md](docs/01-technology.md), 개선 이력과
 실측 근거는 [docs/21-next-plan.md](docs/21-next-plan.md).
 
+## 판정 화면
+
+평가 묶음의 후보를 방법·점수·원래 순위를 가린 채 한 건씩 판정하는 화면이다(`?evaluate=<데이터셋>:<묶음>`).
+
+<p>
+  <img src="docs/assets/judging-tutorial-colors.png" alt="튜토리얼 1단계 — 상자 색이 뜻하는 것" width="360">
+  <img src="docs/assets/judging-tutorial-missing.png" alt="튜토리얼 3단계 — 누락 객체 번호" width="360">
+</p>
+
+- **튜토리얼 1단계** — 처음 열면 상자 색(빨강 실선 = 판정할 라벨, 주황 점선 = 라벨이 빠졌다고 지목된 자리, 파랑 = 다른 라벨)을 먼저 보여 준다.
+- **튜토리얼 3단계** — 누락을 오류로 고르면 같은 실제 객체끼리 같은 번호(M1, M2…)를 붙여 한 객체를 두 번 세지 않게 한다.
+
+<img src="docs/assets/judging-screen.png" alt="누락 후보를 판정하는 화면 — 사진은 흐리게 처리됨" width="720">
+
+- **판정 화면** — 질문 하나, 판정 버튼 셋(단축키 1·2·3), 누락이면 객체 번호, 진행률과 저장 상태를 한 화면에 둔다. 위 화면은 train 연습 묶음이다.
+
+> 사진은 일부러 흐리게 처리했고 파일명도 바꿨다. nuImages 이미지는 비상업 조건(CC BY-NC-SA)이라 재배포하지 않는다.
+
 ## 지금 어디까지 왔나
 
 "데모"라고 하기엔 실측 근거와 동작하는 기능이 쌓였고, "제품"이라고 하기엔
