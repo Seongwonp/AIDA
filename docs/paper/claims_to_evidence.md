@@ -44,6 +44,24 @@
 | 누락 층 ObjectLab 측정 불가 | 점수 있는 미매칭 예측 0~2% (예: A 먼 이동 10/3,758) | 원래 파일 `seeds.*.missing_layer_objectlab_scored_total` / `_unmatched_total` | cleanlab 기본 문턱 0.95. 누락 층 ObjectLab 값은 성능이 아니라 거의 빈 모집단의 결과다 |
 | IoU 0 제외 변형 | (사후, 명세 밖) | `all_label_iou_excl0_posthoc` | **결론에 쓰지 않는다** |
 
+## A3. 통제 기준선 후속 분석 — 짝지은 차이·k 민감도·+0.41 대체 자료 (2026-10-06 데스크탑, 재집계만)
+
+**합성 주입 오류에 대한 채점이다 — 사람 판정·자연 오류가 아니다.** 설계 [followup-plan](controlled-baseline-followup-plan.md). 값은 `experiment/planning_evidence/controlled_baseline_followup_2026-10-06.json`(집계 `experiment/analyze_controlled_baseline_followup.py`)에서 읽었다. 재추론·GPU 없음. 1차 동점 씨앗 20260929, 씨앗 1~10은 따로(학습 시드와 합치지 않음). 차이는 같은 조건·같은 시드에서 내고 시드별 조건 평균 → 시드 간 평균, 조건은 재표집하지 않는다. 구간은 시드별 평균의 **탐색적** t 구간(자유도 = 시드 − 1), C·D는 단일 시드라 구간 없음. **구간이 0을 빼는 것만으로 우위를 말하지 않는다.**
+
+| 주장 후보 | 값 | 근거 키 | 조건 |
+|---|---|---|---|
+| 원시 기록 완전성 | 1,023/1,023 존재, 읽기 실패·필수 필드 누락·길이/summary 불일치·finding↔라벨 ID 깨짐·ObjectLab 점수 없는 라벨 **모두 0**, 제외 0 | `controlled_baseline_followup_completeness_2026-10-06.json` → `totals`, `exclusions` | summary.json 36개의 조건별 P@10%(두 순서)와 대조 |
+| 표 6 재현 | 1,023/1,023 조건의 k·조건별 값(4자리)과 8개 자의 기존 라벨 층 평균·SD가 tieseed 파일과 같음 | 같은 파일 `table6_reproduction` | 1차 동점 씨앗, 같은 k |
+| A — current − ObjectLab (같은 k) | 자기 도메인 +0.655 [0.650, 0.660] · 약한 +0.477 [0.417, 0.537] · 먼 +0.547 [0.525, 0.570] · 넓은 +0.632 [0.604, 0.661] (모두 7/7 시드 양수, 조건 26/26·23/26·25/26·26/26) · COCO 자기 +0.617 [0.481, 0.754] (3/3, 23/23) · C +0.606 · D +0.709 | `A_paired_differences.<묶음/자>.aida_current_minus_all_label_objectlab.primary_tie_seed` | 기존 라벨 층(missing_* 제외), current는 finding 단위·기준선은 고유 라벨 단위(고유 라벨 단위 current와 같은 값 — `unique_label_unit_check`, 1,023/1,023 조건에서 같음) |
+| A — **KITTI→COCO current − ObjectLab** | **+0.034, 탐색적 t 구간 [−0.046, 0.114]**, 양수 시드 2/3(시드별 +0.062 · +0.041 · −0.002), 양수 조건 14/23 (음수 9) | `A_paired_differences.B/kitti_on_coco.aida_current_minus_all_label_objectlab.primary_tie_seed` | ObjectLab 동점 씨앗 1~10에서 평균 폭 0 |
+| A — KITTI→COCO current − 1−IoU / − 무작위 | 1−IoU +0.091 [0.004, 0.178], 3/3, 16/23 (동점 씨앗 1~10 평균 +0.017~+0.174, 양수 시드 2/3~3/3); 무작위 +0.085 [−0.031, 0.201], 3/3, 15/23 | `...aida_current_minus_all_label_iou`, `..._random_expected` | 1−IoU는 동점 규칙이 값을 정한다(표 6 주석과 같음) |
+| A — 다른 자의 current − 1−IoU / − 무작위 | 1−IoU +0.507~+0.696, 무작위 +0.491~+0.697 (A·B 자기 모두 양수 시드 전부) | 같은 키 | 1−IoU 동점 씨앗 범위는 `tie_seed_sensitivity` |
+| B — k 민감도, 8개 중 7개 자 | AIDA 지목 수 5·10·20·50%와 전체 라벨 1·2·5% 일곱 k 모두에서 current(고유 라벨 단위) − 세 기준선의 평균이 양수, 양수 시드 전부 | `B_k_sensitivity.<묶음/자>.paired_unique_current_minus_baseline.<f5…l5>` | 차이는 지목 50%에서 가장 작다(예: 약한 이동 − ObjectLab +0.203, 그때 ObjectLab 0.451) |
+| B — **KITTI→COCO k 민감도** | current − ObjectLab: f5 +0.037 (2/3) · f10 +0.034 (2/3) · f20 +0.076 (3/3) · f50 +0.002 (1/3) · **l1 −0.022 (1/3)** · l2 +0.032 (2/3) · l5 +0.081 (3/3); current 0.308~0.392 대 ObjectLab 0.298~0.391 | 같은 키 `B/kitti_on_coco`, 값은 `unique_label_unit.<k>` | 전체 라벨 1% k에서 평균 부호가 바뀐다. 시드 3개 |
+| B — 분모 부족·IoU 0 | 일곱 k 모두 기존 라벨 층 모든 방법 후보 부족 0건(전체 라벨 5%도 AIDA 지목 수 이하). k > IoU 0 라벨 수인 조건 실행: 자기 도메인 f10 134/182 · f20·f50·l5 182/182 · f5·l1·l2 0; 어긋난 자는 f50에서만(약한 178/182, 넓은 167/182, 먼 0/182); COCO 자기 f20 7/69 · f50 69/69; KITTI→COCO 모든 k 0/69; C f10 3 · f20 19 · f50 26 · l5 17 /26; D f10·f20·f50·l5 23/23 · l2 2/23 | `B_k_sensitivity.*.{finding_unit,unique_label_unit}.<k>.<방법>.n_short`, `iou0.<k>` | IoU 0 라벨은 빼지 않았다 |
+| B — 지목 50%에서 legacy ≥ current | 약한 이동 0.671 대 0.654, KITTI→COCO 0.339 대 0.308, C 0.690 대 0.676 | `B_k_sensitivity.*.finding_unit.f50` | 두 순서는 같은 지목 집합 — k가 커지면 순서 차이가 줄어든다 |
+| C — legacy → current, 저장된 자별 (전 조건) | @k(P@10%) 차이: 자기 도메인 +0.045 · 약한 +0.116 · 먼 +0.151 · 넓은 +0.294 · COCO 자기 +0.098 · KITTI→COCO +0.131 · C +0.018 · D −0.039. @5 차이: +0.086 · +0.321 · +0.310 · +0.573 · +0.113 · +0.141 · +0.048 · −0.039 | `C_plus041_replacement_material.<묶음/자>.diff_at_k`, `.diff_at5` | **@k와 @5는 다른 지표.** 시드 평균(A 7, B 3, C·D 1). legacy @5가 `rank_fix_seed*.json` `before["5"]`와 9/9 일치(`per_seed.*.rank_fix_before_at5_equals_legacy_at5`). 기존 +0.41의 broad 자전거 3종은 재추론에 없어 같은 5종 구성은 낼 수 없다 — **초안 +0.41은 고치지 않았다** |
+
 ## B. prelim1 — 탐색 비교 (초안 7절)
 
 | 초안 주장 | 값 | 근거 파일 | 재계산 |

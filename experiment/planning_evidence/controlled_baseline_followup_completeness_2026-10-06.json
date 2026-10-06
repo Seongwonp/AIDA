@@ -1,0 +1,304 @@
+{
+ "purpose": "controlled baseline follow-up, section 0: raw-record completeness and table 6 reproduction (tie seed 20260929, same k) before any new aggregation",
+ "plan": "docs/paper/controlled-baseline-followup-plan.md",
+ "git_head_at_analysis": "02507b9158994fb9087fd0c9aa11bfc59298d10d",
+ "inputs": {
+  "raw_root": "experiment/controlled_baseline_stage2",
+  "raw_files_hashed": 1064,
+  "raw_files_listing_sha256": "ef00ccc34898d28c0a79e7f498dafbf90699f81b0c456ae823d0c00ee57bbb92",
+  "raw_files_listing_format": "sorted lines '<relative path>  <sha256>' joined by \\n",
+  "tieseed_json": "experiment/planning_evidence/controlled_baseline_stage2_tieseed_2026-10-06.json",
+  "tieseed_json_sha256": "05459bc2eb2dd74f876faca6e2a04a93bb2a1654afe927ec01120c4a3d460500",
+  "rank_fix_seed42_sha256": "51cefaae5437f5a062c98c22d66c9536592a70e654b278748fd60c062666c6aa",
+  "rank_fix_seed123_sha256": "3facfe5b5d53f7bb7f39bd0cbf63d9b5e8289383175c2262adc073ebd0c9a32e",
+  "rank_fix_seed2024_sha256": "cbafb9545eb58ededef2f550aefd4eb0cd2e4e083a637bcab4c9eca895cca9b0"
+ },
+ "required_fields": {
+  "rows.<ordering>": [
+   "verdicts_by_rank",
+   "finding_ids_by_rank",
+   "tp",
+   "flagged"
+  ],
+  "rows.review_order_v1": [
+   "present_types"
+  ],
+  "population": [
+   "all_labels[image,label_index,label_iou,injected_error]",
+   "unmatched_predictions[image,box,confidence,matches_dropped]",
+   "objectlab.available"
+  ]
+ },
+ "checks": {
+  "length": "len(verdicts) == len(finding_ids) == flagged; sum(verdict) == tp; legacy/current same finding-id multiset; objectlab.labels_scored == labels with objectlab_score",
+  "summary": "summary.json per_condition (P@10%, both orderings) == recomputed; silent listed",
+  "finding_label_id_breaks": "findings with a label index whose (image, label_index) is not in population.all_labels",
+  "finding_type_mismatch": "'missing' finding with a label index or non-missing finding without one"
+ },
+ "totals": {
+  "expected": 1023,
+  "present": 1023,
+  "missing": 0,
+  "read_failed": 0,
+  "missing_fields": 0,
+  "length_or_summary_mismatch_runs": 0,
+  "finding_label_id_breaks_rows": 0,
+  "finding_label_id_breaks_runs": 0,
+  "finding_type_mismatch_rows": 0,
+  "labels_without_objectlab_score": 0,
+  "expected_runs_by_spec": 1023
+ },
+ "exclusions": [],
+ "groups": {
+  "A": {
+   "n_conditions_run_meta": 29,
+   "n_conditions_expected": 29,
+   "rulers": {
+    "matched": {
+     "7": {
+      "summary_json": true
+     },
+     "42": {
+      "summary_json": true
+     },
+     "123": {
+      "summary_json": true
+     },
+     "777": {
+      "summary_json": true
+     },
+     "2024": {
+      "summary_json": true
+     },
+     "2025": {
+      "summary_json": true
+     },
+     "31337": {
+      "summary_json": true
+     }
+    },
+    "shifted": {
+     "7": {
+      "summary_json": true
+     },
+     "42": {
+      "summary_json": true
+     },
+     "123": {
+      "summary_json": true
+     },
+     "777": {
+      "summary_json": true
+     },
+     "2024": {
+      "summary_json": true
+     },
+     "2025": {
+      "summary_json": true
+     },
+     "31337": {
+      "summary_json": true
+     }
+    },
+    "far": {
+     "7": {
+      "summary_json": true
+     },
+     "42": {
+      "summary_json": true
+     },
+     "123": {
+      "summary_json": true
+     },
+     "777": {
+      "summary_json": true
+     },
+     "2024": {
+      "summary_json": true
+     },
+     "2025": {
+      "summary_json": true
+     },
+     "31337": {
+      "summary_json": true
+     }
+    },
+    "broad": {
+     "7": {
+      "summary_json": true
+     },
+     "42": {
+      "summary_json": true
+     },
+     "123": {
+      "summary_json": true
+     },
+     "777": {
+      "summary_json": true
+     },
+     "2024": {
+      "summary_json": true
+     },
+     "2025": {
+      "summary_json": true
+     },
+     "31337": {
+      "summary_json": true
+     }
+    }
+   }
+  },
+  "B": {
+   "n_conditions_run_meta": 26,
+   "n_conditions_expected": 26,
+   "rulers": {
+    "coco_self": {
+     "42": {
+      "summary_json": true
+     },
+     "123": {
+      "summary_json": true
+     },
+     "2024": {
+      "summary_json": true
+     }
+    },
+    "kitti_on_coco": {
+     "42": {
+      "summary_json": true
+     },
+     "123": {
+      "summary_json": true
+     },
+     "2024": {
+      "summary_json": true
+     }
+    }
+   }
+  },
+  "C": {
+   "n_conditions_run_meta": 29,
+   "n_conditions_expected": 29,
+   "rulers": {
+    "self": {
+     "42": {
+      "summary_json": true
+     }
+    }
+   }
+  },
+  "D": {
+   "n_conditions_run_meta": 26,
+   "n_conditions_expected": 26,
+   "rulers": {
+    "kitti_car_clean": {
+     "42": {
+      "summary_json": true
+     }
+    }
+   }
+  }
+ },
+ "table6_reproduction": {
+  "rule": "per condition: k and 4-decimal methods equal to tieseed per_condition; per ruler: existing_label_layer mean/sd equal",
+  "reproduced": true,
+  "by_ruler": {
+   "A/matched": {
+    "conditions_matched": 203,
+    "conditions_total": 203,
+    "mismatched": [],
+    "existing_label_layer_equal": true,
+    "headline": {
+     "aida_current": 0.9836,
+     "all_label_objectlab": 0.3286,
+     "all_label_iou": 0.2949,
+     "all_label_random_expected": 0.2885
+    }
+   },
+   "A/shifted": {
+    "conditions_matched": 203,
+    "conditions_total": 203,
+    "mismatched": [],
+    "existing_label_layer_equal": true,
+    "headline": {
+     "aida_current": 0.7792,
+     "all_label_objectlab": 0.3023,
+     "all_label_iou": 0.2728,
+     "all_label_random_expected": 0.2885
+    }
+   },
+   "A/far": {
+    "conditions_matched": 203,
+    "conditions_total": 203,
+    "mismatched": [],
+    "existing_label_layer_equal": true,
+    "headline": {
+     "aida_current": 0.8269,
+     "all_label_objectlab": 0.2798,
+     "all_label_iou": 0.244,
+     "all_label_random_expected": 0.2885
+    }
+   },
+   "A/broad": {
+    "conditions_matched": 203,
+    "conditions_total": 203,
+    "mismatched": [],
+    "existing_label_layer_equal": true,
+    "headline": {
+     "aida_current": 0.9295,
+     "all_label_objectlab": 0.2972,
+     "all_label_iou": 0.2757,
+     "all_label_random_expected": 0.2885
+    }
+   },
+   "B/coco_self": {
+    "conditions_matched": 78,
+    "conditions_total": 78,
+    "mismatched": [],
+    "existing_label_layer_equal": true,
+    "headline": {
+     "aida_current": 0.9416,
+     "all_label_objectlab": 0.3243,
+     "all_label_iou": 0.3187,
+     "all_label_random_expected": 0.3011
+    }
+   },
+   "B/kitti_on_coco": {
+    "conditions_matched": 78,
+    "conditions_total": 78,
+    "mismatched": [],
+    "existing_label_layer_equal": true,
+    "headline": {
+     "aida_current": 0.3862,
+     "all_label_objectlab": 0.3524,
+     "all_label_iou": 0.2954,
+     "all_label_random_expected": 0.3011
+    }
+   },
+   "C/self": {
+    "conditions_matched": 29,
+    "conditions_total": 29,
+    "mismatched": [],
+    "existing_label_layer_equal": true,
+    "headline": {
+     "aida_current": 0.8861,
+     "all_label_objectlab": 0.2804,
+     "all_label_iou": 0.2717,
+     "all_label_random_expected": 0.2915
+    }
+   },
+   "D/kitti_car_clean": {
+    "conditions_matched": 26,
+    "conditions_total": 26,
+    "mismatched": [],
+    "existing_label_layer_equal": true,
+    "headline": {
+     "aida_current": 0.9964,
+     "all_label_objectlab": 0.2876,
+     "all_label_iou": 0.3004,
+     "all_label_random_expected": 0.2991
+    }
+   }
+  }
+ }
+}

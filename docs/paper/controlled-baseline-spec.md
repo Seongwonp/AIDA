@@ -147,3 +147,11 @@ k = max(1, ⌊0.1 × AIDA finding 수⌋)를 조건마다 정해 모든 방법�
 - **AIDA 제품 순서의 경계 동점(반올림 심각도 기준 상한, 다시 자르지 않음):** legacy·current 각각 자당 0~10조건(예: A 약한 이동 current 10/182).
 - **분모 부족분(후보 < k):** 기존 라벨 층은 **모든 방법·모든 묶음에서 0건**이다(최소 후보 수가 k 이상). 누락 층은 `unmatched_objectlab`만 부족했다 — 조건 실행 수 기준 A 자기 도메인 19/21(후보 0건 1) · 약한 이동 19/21(3) · 먼 이동 21/21(12) · 넓은 자 19/21(6) · B COCO 자기 7/9(4) · KITTI→COCO 9/9(9) · C 3/3(3) · D 3/3(1). `aida_missing`·`unmatched_confidence`는 0건.
 - **부록 변형(실제 후보 수 분모, 후보 0건 조건 제외):** `unmatched_objectlab`은 A 자기 도메인 1.000 ± 0.000(7시드) · 약한 이동 0.832 ± 0.225(7) · 먼 이동 1.000 ± 0.000(5) · 넓은 자 0.577 ± 0.382(6) · B COCO 자기 1.000 ± 0.000(3) · D 1.000(1), KITTI→COCO·C는 후보가 전부 0건이라 정의되지 않는다. 즉 분모 k에서의 낮은 값(0.000~0.497)은 점수를 받은 소수 예측의 정밀도가 아니라 모집단이 비어서 생긴다(6.3과 같은 해석). 누락 층 `unmatched_objectlab` 민감도는 넓은 자 0.166~0.189 외에는 폭 0이다.
+
+### 6.6 후속 분석 — 짝지은 차이·k 민감도·+0.41 대체 자료 (2026-10-06, 재집계만)
+
+설계는 [followup-plan](controlled-baseline-followup-plan.md), 근거는 `experiment/planning_evidence/controlled_baseline_followup_2026-10-06.json`(완전성·표 6 재현은 `controlled_baseline_followup_completeness_2026-10-06.json`, 집계 `experiment/analyze_controlled_baseline_followup.py`). 원시 기록 1,023/1,023, 제외 0, 표 6 조건별 값 1,023/1,023 재현. 수치는 [근거표 A3](claims_to_evidence.md), 판단 항목은 `open_items.md` 6절.
+
+- 짝지은 차이(같은 k): current − ObjectLab은 KITTI→COCO 밖 7개 자에서 +0.48~+0.71(모든 시드 양수), KITTI→COCO +0.034, 탐색적 t 구간 [−0.046, 0.114], 양수 시드 2/3, 양수 조건 14/23.
+- k 민감도(지목 5·10·20·50%, 전체 라벨 1·2·5%): 7개 자는 모든 k·모든 시드에서 current가 세 기준선보다 높다. KITTI→COCO의 current − ObjectLab은 −0.022(전체 라벨 1%)~+0.081. 기존 라벨 층 후보 부족 0건. 6.2절의 "k를 다르게 잡으면 … 확인하지 않았다"는 이것으로 닫는다.
+- +0.41 대체 자료: 자별 legacy → `review_order_v1`의 @k·@5만 준비했다(다른 지표, broad 자전거 3종 없음). 초안은 고치지 않았다.
