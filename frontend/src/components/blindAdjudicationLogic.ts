@@ -197,7 +197,7 @@ export function makeAdjudicationSender<T>(
 export function saveMessage(state: "saving" | "saved" | "failed" | "idle"): string {
   if (state === "saving") return "저장 중…";
   if (state === "saved") return "저장됨";
-  if (state === "failed") return "저장하지 못했습니다. 다시 시도를 누르세요.";
+  if (state === "failed") return "저장 실패 — 저장하지 못했습니다. 다시 시도를 누르세요.";
   return "";
 }
 

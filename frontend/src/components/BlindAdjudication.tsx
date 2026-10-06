@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { getBlindQueue, postActivity, putAdjudications } from "../api";
 import { makeActivityLogger, queueKey } from "./activityLog";
 import { API_BASE_URL } from "../api";
 import { AdjudicationView } from "./AdjudicationView";
 import { JudgingGuideline } from "./JudgingGuideline";
+import { BlindTutorial } from "./BlindTutorial";
+import { rememberTutorial, tutorialSeen } from "./blindTutorialStorage";
 import {
   ALL_JUDGED_MESSAGE,
   blockedIds,
@@ -53,6 +55,16 @@ import {
  * 두 모드를 넣으면 가림이 켜졌는지 아닌지가 상태에 달리게 되고, 그건 결과가
  * 휘었는지 나중에 알 수 없다는 뜻이다.
  */
+const VERDICTS = [
+  { verdict: "hit", label: "오류였다", key: "1" },
+  { verdict: "miss", label: "오류 아니었다", key: "2" },
+  { verdict: "hold", label: "모르겠다", key: "3" },
+] as const;
+
+const KEY_VERDICT: Record<string, EvalVerdict | undefined> = Object.fromEntries(
+  VERDICTS.map((v) => [v.key, v.verdict]),
+);
+
 export function BlindAdjudication({
   datasetId,
   evaluationId,
@@ -73,6 +85,12 @@ export function BlindAdjudication({
   const [cursor, setCursor] = useState<number | null>(null);
   // 후보를 화면에 띄운 순간. 후보별 시간은 여기서부터 잰다.
   const openedRef = useRef<string | null>(null);
+  // 첫 방문이면 튜토리얼을 띄운다. 저장소가 막혔으면 `tutorialSeen`이 false라 띄운다.
+  const [tutorial, setTutorial] = useState(() => !tutorialSeen());
+  const closeTutorial = useCallback(() => {
+    rememberTutorial();
+    setTutorial(false);
+  }, []);
 
   // 작업 기록. **계산은 여기서 안 한다** — 무슨 일이 언제 있었는지만 남기고,
   // 시간 계산은 `experiment/evaluation/activity.py`가 나중에 한다
@@ -277,11 +295,65 @@ export function BlindAdjudication({
 
   const retry = () => persist(judgements, true);
 
+  // 이동도 버튼과 단축키가 **같은 함수**를 부른다 — 기록(`moved_*`)이 갈리지 않게.
+  const canPrevious = cursor !== null && cursor > 0;
+  const canNext = cursor !== null && cursor < candidates.length - 1;
+  const goPrevious = () => {
+    log.record("moved_previous");
+    setCursor((cursor ?? 0) - 1);
+  };
+  const goNext = () => {
+    log.record("moved_next");
+    setCursor((cursor ?? 0) + 1);
+  };
+
+  /**
+   * 단축키 — 1 오류였다 · 2 오류 아니었다 · 3 모르겠다 · ←/→ 이전/다음.
+   *
+   * **클릭과 같은 `judge`를 부른다.** 그래야 `verdict_set`·저장 기록이 클릭과 똑같다. 입력칸에서
+   * 글자를 칠 때, 튜토리얼이 떠 있을 때, 키를 누르고 있어 반복될 때는 아무것도 하지 않는다 —
+   * 반복 입력은 같은 판정을 여러 번 저장하고 기록한다.
+   */
+  const keyRef = useRef<(e: KeyboardEvent) => void>(() => undefined);
+  keyRef.current = (e: KeyboardEvent) => {
+    if (tutorial || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    const el = e.target as HTMLElement | null;
+    const tag = el?.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el?.isContentEditable) return;
+
+    if (e.key === "ArrowLeft" && canPrevious) {
+      e.preventDefault();
+      goPrevious();
+      return;
+    }
+    if (e.key === "ArrowRight" && canNext) {
+      e.preventDefault();
+      goNext();
+      return;
+    }
+    const verdict = KEY_VERDICT[e.key];
+    if (verdict && current) {
+      e.preventDefault();
+      judge(current.canonical_candidate_id, verdict);
+    }
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => keyRef.current(e);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   if (error) return <p className="error">{error}</p>;
 
   return (
     <section className="blind-adjudication">
-      <h2>가림 판정</h2>
+      {tutorial && <BlindTutorial onClose={closeTutorial} />}
+      <div className="judge-header">
+        <h2>가림 판정</h2>
+        <button type="button" className="judge-text-button" onClick={() => setTutorial(true)}>
+          튜토리얼 다시 보기
+        </button>
+      </div>
       {/* **머리글을 짧게 둔다.** 후보마다 스크롤해야 버튼이 보이면 시간이
           늘고 엉뚱한 버튼을 누른다. 자세한 설명은 화면 아래에 있다. */}
       <p className="muted">방법·점수·원래 순위·세부 의심 유형을 가립니다.</p>
@@ -294,14 +366,22 @@ export function BlindAdjudication({
       {damaged && <p className="warn" role="alert">{DAMAGED_MESSAGE}</p>}
       {conflict && <p className="error" role="alert">{HASH_CONFLICT_MESSAGE}</p>}
 
-      <p>
-        {stats.judged} / {stats.total} 판정 (남은 {stats.left})
-      </p>
+      {/* 남은 수는 진행 상황이지 판정 결과 요약이 아니다 — 유형별 개수는 띄우지 않는다. */}
+      <div className="judge-progress">
+        <progress
+          value={stats.judged}
+          max={Math.max(stats.total, 1)}
+          aria-label="판정 진행"
+        />
+        <span>
+          {stats.judged} / {stats.total} 판정 (남은 {stats.left})
+        </span>
+      </div>
 
       {loading && <p>불러오는 중…</p>}
 
       {current && (
-        <article key={current.canonical_candidate_id}>
+        <article key={current.canonical_candidate_id} className="judge-card">
           <p>{current.image}</p>
           <AdjudicationView
             datasetId={datasetId}
@@ -320,28 +400,39 @@ export function BlindAdjudication({
               : "실무상 고쳐야 할 만큼 어긋났으면 오류였다, 이대로 써도 되면 오류 아니었다, 경계가 애매하거나 객체를 확인할 수 없으면 모르겠다."}
           </p>
 
-          {(["hit", "miss", "hold"] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              aria-pressed={judgements[current.canonical_candidate_id]?.verdict === v}
-              onClick={() => judge(current.canonical_candidate_id, v)}
-            >
-              {v === "hit" ? "오류였다" : v === "miss" ? "오류 아니었다" : "모르겠다"}
-            </button>
-          ))}
-          <button type="button" onClick={() => judge(current.canonical_candidate_id, null)}>
+          {/* 단축키 표시는 CSS(`data-key`)로 그린다 — 버튼의 접근 이름과 글자는 판정 이름만 남는다. */}
+          <div className="verdict-row">
+            {VERDICTS.map(({ verdict: v, label, key }) => (
+              <button
+                key={v}
+                type="button"
+                className={`verdict-button verdict-${v}`}
+                data-key={key}
+                aria-keyshortcuts={key}
+                aria-pressed={judgements[current.canonical_candidate_id]?.verdict === v}
+                onClick={() => judge(current.canonical_candidate_id, v)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="judge-text-button"
+            onClick={() => judge(current.canonical_candidate_id, null)}
+          >
             판정 취소
           </button>
 
           {current.label_index === null &&
             judgements[current.canonical_candidate_id]?.verdict === "hit" && (
-              <fieldset>
+              <fieldset className="missing-object">
                 <legend>어느 객체인가</legend>
                 {missingObjects(candidates, judgements, current.image).map((name) => (
                   <button
                     key={name}
                     type="button"
+                    className="judge-chip"
                     aria-pressed={
                       judgements[current.canonical_candidate_id]?.missingObject === name
                     }
@@ -352,6 +443,7 @@ export function BlindAdjudication({
                 ))}
                 <button
                   type="button"
+                  className="judge-chip judge-chip-new"
                   onClick={() =>
                     link(
                       current.canonical_candidate_id,
@@ -374,6 +466,7 @@ export function BlindAdjudication({
           {ALL_JUDGED_MESSAGE}{" "}
           <button
             type="button"
+            className="judge-nav-button"
             onClick={() => {
               // **되돌아보는 것은 의도한 작업이다.** 그 시간은 그 후보의
               // 판정 시간으로 기록된다 — 재개 시의 통과 시간과 다르다.
@@ -386,29 +479,30 @@ export function BlindAdjudication({
         </p>
       )}
 
-      <nav>
+      <nav className="judge-nav">
         <button
           type="button"
-          disabled={cursor === null || cursor === 0}
-          onClick={() => {
-            log.record("moved_previous");
-            setCursor((cursor ?? 0) - 1);
-          }}
+          className="judge-nav-button"
+          data-key="←"
+          aria-keyshortcuts="ArrowLeft"
+          disabled={!canPrevious}
+          onClick={goPrevious}
         >
           이전
         </button>
         <button
           type="button"
-          disabled={cursor === null || cursor >= candidates.length - 1}
-          onClick={() => {
-            log.record("moved_next");
-            setCursor((cursor ?? 0) + 1);
-          }}
+          className="judge-nav-button"
+          data-key="→"
+          aria-keyshortcuts="ArrowRight"
+          disabled={!canNext}
+          onClick={goNext}
         >
           다음
         </button>
         <button
           type="button"
+          className="judge-nav-button"
           disabled={left === 0}
           onClick={() => {
             log.record("moved_next");
@@ -419,23 +513,26 @@ export function BlindAdjudication({
         </button>
       </nav>
 
-      <p className="muted">
-        <strong>기존 라벨 검수인지 누락 객체 검수인지는 가리지 않습니다</strong>{" "}
-        — 판정 작업 자체가 달라 숨기면 판정할 수 없습니다.{" "}
-        <strong>판정은 판정자마다 따로 저장되고, 다른 판정자의 판정은 보이지 않습니다.</strong>
-      </p>
-
       {blocked.length > 0 && (
         <p className="warn" role="alert">
           {MISSING_NEEDS_OBJECT} <strong>아직 저장되지 않은 판정 {blocked.length}건</strong>
         </p>
       )}
-      <p aria-live="polite">{saveMessage(save)}</p>
-      {save === "failed" && (
-        <button type="button" onClick={retry}>
-          다시 시도
-        </button>
-      )}
+      {/* 저장 상태는 이동 버튼 바로 아래 — 마지막 판정 뒤 "저장됨"을 찾으러 내려가지 않게. */}
+      <div className="save-row">
+        <p aria-live="polite" className={`save-status save-${save}`}>{saveMessage(save)}</p>
+        {save === "failed" && (
+          <button type="button" className="judge-nav-button" onClick={retry}>
+            다시 시도
+          </button>
+        )}
+      </div>
+
+      <p className="muted">
+        <strong>기존 라벨 검수인지 누락 객체 검수인지는 가리지 않습니다</strong>{" "}
+        — 판정 작업 자체가 달라 숨기면 판정할 수 없습니다.{" "}
+        <strong>판정은 판정자마다 따로 저장되고, 다른 판정자의 판정은 보이지 않습니다.</strong>
+      </p>
     </section>
   );
 }
