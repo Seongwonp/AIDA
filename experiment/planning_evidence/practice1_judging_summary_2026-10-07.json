@@ -1,0 +1,48 @@
+{
+  "name": "practice1_judging_summary",
+  "date": "2026-10-07",
+  "label": "연습 판정(train fit_check, practice1) 결과 요약 — 계획용. 분석·논문 결과에 쓰지 않는다. val 미개봉.",
+  "evaluation": "006e49d2cbc9/practice1",
+  "candidate_set_hash_prefix": "d8f5a531",
+  "verdicts": {
+    "total": 172,
+    "hit": 19,
+    "miss": 144,
+    "hold": 9
+  },
+  "by_layer": {
+    "labelled": {
+      "hit": 2,
+      "miss": 141,
+      "hold": 9
+    },
+    "missing": {
+      "hit": 17,
+      "miss": 3,
+      "hold": 0
+    }
+  },
+  "timing": {
+    "source": "evaluation.activity.summarise_activity",
+    "active_seconds": 618.1,
+    "adjudication_seconds": 597.9,
+    "median_seconds_per_candidate": 1.64,
+    "mean_seconds_per_candidate": 2.18,
+    "p75": 2.56,
+    "p90_approx": 4.14,
+    "idle_seconds_excluded": 3298.1,
+    "sessions": 4,
+    "sessions_with_judgements": 1,
+    "timing_usable_flag": false,
+    "note": "timing_usable=False — 끊긴 세션 1개(판정 전 화면 점검 때 생긴 이동 기록)가 섞여 있다. 판정이 있는 세션은 1개뿐이라 연속 판정 길이 근거로는 약하다."
+  },
+  "save": {
+    "save_failures": 0,
+    "save_retries": 0
+  },
+  "not_done": [
+    "AI 보조 판정 호출(모델 미정)",
+    "판정 상한 C 결정(사용자)",
+    "헷갈린 사례 지침 부록(사용자 메모 필요)"
+  ]
+}
