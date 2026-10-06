@@ -568,12 +568,13 @@ AABB에서 rot_m15의 mAP50 저하 5.71%가 OBB에서는 −0.81%(저하 없음)
 | 표 6 | 같은 예산 기준선(합성 주입, 기존 라벨 층) | `controlled_baseline_stage2_tieseed_2026-10-06.json` → `groups.*.rulers.*.existing_label_layer`, `tie_seed_sensitivity` |
 | 표 7 | 짝지은 차이 current − 기준선(같은 k) | `controlled_baseline_followup_2026-10-06.json` → `A_paired_differences` |
 | 표 8 | k 민감도, current − ObjectLab (부록 C) | 같은 파일 → `B_k_sensitivity.*.paired_unique_current_minus_baseline` |
-| (그림 1·2·4는 `docs/paper/figures/make_figures.py`로 결과 파일에서 생성했다. 그림 3·5는 설계안) | | |
+| (그림 1·2·6은 `docs/paper/figures/make_figures.py`로 결과 파일에서 생성했다. 그림 3·4·5는 설계안) | | |
 | 그림 1 | 검수량 10~90에서 두 방법 고유 오류 수(prelim1, 사후 깊이 진단 표시) | `prelim1_results.json` → `labelled_layer.by_budget` |
-| 그림 2 | 과거 순서 → 현재 순서의 상위 k 정밀도 변화(주입 조건), 자 8종 | 표 6과 같은 tieseed 파일의 legacy·current 열; @5·@k 자별 자료는 `controlled_baseline_followup_2026-10-06.json` → `C_plus041_replacement_material` |
+| 그림 2 | 같은 검수량 k에서 AIDA 두 순서와 전체 라벨 기준선, 자 8종 (`figures/fig_baselines.png`) | 표 6과 같은 tieseed 파일의 legacy·current 열; @5·@k 자별 자료는 `controlled_baseline_followup_2026-10-06.json` → `C_plus041_replacement_material` |
 | 그림 3 | 자기 정제 직접 차이(refined − 원본) 13점 | `backend/app/data/metrics_mc_nested*.csv` |
 | 그림 4 | 미판정 진입 기제 모식도 + 합성/연습 추가 판정량 | `sim_unjudged_2026-09-27.json`, `practice1_bundle_2026-09-29.json` (계획용 표시) |
 | 그림 5 | 【Q-A】 | `analyze_qa.py` 산출 |
+| 그림 6 | k에 따른 current − ObjectLab 짝지은 차이(부록 C) | `figures/fig_k_sensitivity.png` ← `controlled_baseline_followup_2026-10-06.json` |
 
 ## 부록 C. 검수 예산 k 민감도 (표 8)
 
@@ -592,7 +593,7 @@ AABB에서 rot_m15의 mAP50 저하 5.71%가 OBB에서는 −0.81%(저하 없음)
 | 조건별 self 자 | +0.603 (1/1) | +0.606 (1/1) | +0.579 (1/1) | +0.344 (1/1) | +0.638 (1/1) | +0.644 (1/1) | +0.588 (1/1) |
 | KITTI Car clean | +0.759 (1/1) | +0.709 (1/1) | +0.686 (1/1) | +0.490 (1/1) | +0.768 (1/1) | +0.742 (1/1) | +0.674 (1/1) |
 
-![그림 4. k에 따른 current − ObjectLab 짝지은 차이(표 8)](figures/fig_k_sensitivity.png)
+![그림 6. k에 따른 current − ObjectLab 짝지은 차이(표 8)](figures/fig_k_sensitivity.png)
 
 - KITTI→COCO를 뺀 7개 자는 일곱 k 모두에서, 모든 시드에서 current가 ObjectLab보다 높았다(1−IoU·무작위도 같다).
 - 차이는 지목 50%에서 가장 작다. 예산이 커지면 기준선도 지목 집합과 겹치는 라벨을 더 많이 담기 때문으로 보인다(추정, 확인하지 않음). 이때 KITTI 자기
