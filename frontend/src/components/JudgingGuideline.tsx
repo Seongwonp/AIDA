@@ -1,3 +1,4 @@
+import { REFLECTION_HOLD, REFLECTION_KO, REFLECTION_SOURCE } from "./reflectionRule";
 /**
  * 가림 판정 지침 — docs/manual-timing-pilot.md "무엇을 보고 무엇을 판단하는가"를 화면에 옮긴 것.
  * 색은 문서가 아니라 실제 화면(`AdjudicationView`의 CANDIDATE/MISSING/CONTEXT_COLOR)을 따른다 —
@@ -43,9 +44,9 @@ export function JudgingGuideline() {
         <li>사이드미러·안테나는 박스에 넣지 않는다.</li>
         <li>높이 10px 미만, 20% 미만으로 보이는 객체는 원래 라벨을 달지 않는다(확신할 수 있으면 예외).</li>
         <li>Car에는 승용차·왜건·밴·미니밴·SUV·지프가 들어간다. 화물용 픽업은 아니다.</li>
-        <li>유리창에 <b>선명하게</b> 비친 차는 라벨 대상이다(nuImages 어노테이션 지침). 비친 상 위의 기존 라벨은 상자가
-          맞으면 <b>오류 없음</b>, 선명히 비친 차에 라벨이 없으면 누락 후보는 <b>오류 있음</b>. 흐릿하거나 차체·물웅덩이
-          등에 비친 모호한 상은 <b>판단 보류</b>.</li>
+        <li>유리 반사 (nuImages 어노테이션 지침 원문): <q lang="en">{REFLECTION_SOURCE}</q>
+          <br />{REFLECTION_KO}
+          <br />{REFLECTION_HOLD}</li>
       </ul>
 
       <h3>망설여지면</h3>
