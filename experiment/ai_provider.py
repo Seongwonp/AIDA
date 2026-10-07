@@ -1,6 +1,9 @@
 """AI 보조 판정자 **호출 경로** (Anthropic Messages API) — 준비만 됐고, 여기서는 돌리지 않는다.
 
-**지금 허용되는 것은 합성 비용 드라이런뿐이다**(사용자 결정 2026-10-07):
+**기본으로 꺼져 있다**(`AI_ADJUDICATION_ENABLED = False`, 사전 등록 5-4절 `ai_adjudication: disabled`, 2026-10-07 val 개봉 전
+사용자 결정). 외부 호출 플래그를 줘도 거부한다. 아래는 나중에 켤 때의 조건이다.
+
+**켜더라도 허용되는 것은 합성 비용 드라이런뿐이다**(사용자 결정 2026-10-07):
 
 * 입력은 `make_synthetic_ai_dryrun.py`가 만든 합성 그림만(`evaluation.provenance.check_synthetic_inputs`) —
   nuImages 그림(val·연습·크롭·썸네일)은 라이선스·외부 전송 허가를 따로 확인하기 전까지 **어떤 경우에도 보내지 않는다.**
@@ -45,6 +48,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ai_adjudicator as A  # noqa: E402
 from evaluation.provenance import (SYNTHETIC_DRYRUN, ProvenanceError,  # noqa: E402
                                    check_synthetic_inputs)
+
+# 사용자 결정(2026-10-07, val 개봉 전): 이 사전 등록 평가에서는 AI 보조 판정을 쓰지 않는다
+# (docs/qa-preregistration.md 5-4절 `ai_adjudication: disabled`). 외부 호출은 이 값이 True일 때만 열린다 —
+# 켜려면 사전 등록 개정·별도 평가 ID·사용자 승인이 먼저다. 네트워크 없는 --dry-run은 막지 않는다.
+AI_ADJUDICATION_ENABLED = False
+DISABLED_REASON = ("AI 보조 판정은 비활성이다(사전 등록 5-4절 ai_adjudication: disabled) — 평가 데이터의 외부 전송 허가 미확인, "
+                   "재현 가능한 API 실행 환경 미확보. 켜려면 사전 등록 개정·별도 평가 ID·사용자 승인이 먼저다")
 
 MODEL_ID = A.MODEL_ID
 TEMPERATURE = A.TEMPERATURE
@@ -243,6 +253,8 @@ def make_anthropic_sender(timeout_seconds: float) -> tuple[Callable[[dict], Any]
     [검증 필요] 오류 클래스 이름(`APITimeoutError`·`APIConnectionError`·`RateLimitError`·`InternalServerError`·
     `APIStatusError`)과 `__version__`은 claude-api 스킬 참조를 따랐다. 실제 SDK에서 확인한다.
     """
+    if not AI_ADJUDICATION_ENABLED:
+        raise ExternalCallRefused(DISABLED_REASON)
     if not os.environ.get("ANTHROPIC_API_KEY"):
         raise ExternalCallRefused("ANTHROPIC_API_KEY가 없다 — 부르지 않는다")
     try:
@@ -323,6 +335,8 @@ def main(argv: list[str] | None = None) -> int:
                       help="사용자가 이번 합성 드라이런의 외부 호출을 승인했다")
     a = ap.parse_args(argv)
 
+    if a.approve_external_call and not AI_ADJUDICATION_ENABLED:
+        raise SystemExit(DISABLED_REASON)
     if a.model != MODEL_ID:
         raise SystemExit(f"모델 식별자는 정확히 {MODEL_ID}: {a.model!r}")
     if not 0 < a.cost_cap <= DRYRUN_COST_CAP_USD:

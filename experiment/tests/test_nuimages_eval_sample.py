@@ -91,7 +91,7 @@ def test_커밋한_뒤_고친_사전_등록이면_val을_열지_않는다(repo):
 
 
 def test_커밋된_사전_등록이면_그_커밋을_돌려준다(repo):
-    (repo / "prereg.md").write_text("N=60\n", encoding="utf-8")
+    (repo / "prereg.md").write_text("N=60\nai_adjudication: disabled\n", encoding="utf-8")
     git(repo, "add", "prereg.md")
     git(repo, "commit", "-q", "-m", "prereg")
     head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"],
@@ -129,7 +129,7 @@ def test_빈칸을_채워_커밋하면_다시_열린다(repo):
     git(repo, "commit", "-q", "-m", "draft")
     with pytest.raises(ValueError):
         V.check_preregistration(repo, "prereg.md")
-    (repo / "prereg.md").write_text("모델 claude-sonnet-5\n", encoding="utf-8")
+    (repo / "prereg.md").write_text("모델 claude-sonnet-5\nai_adjudication: disabled\n", encoding="utf-8")
     git(repo, "commit", "-q", "-am", "filled")
     head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"],
                           capture_output=True, text=True).stdout.strip()
@@ -152,3 +152,75 @@ def test_표본_요약은_소비한_기록과_남은_기록_수를_적는다():
     assert consumed == sorted(consumed) and len(consumed) == summ["logs"]
     assert set(consumed) <= all_logs
     assert summ["unconsumed_logs"] == len(all_logs) - len(consumed)
+
+
+# ── AI 보조 판정 상태와 val 잠금 (사용자 결정 2026-10-07: 이 평가는 disabled) ──
+
+ENABLED_COMPLETE = """# 사전 등록
+ai_adjudication: enabled
+ai_model: claude-sonnet-5
+ai_api_version: 2023-06-01
+ai_sdk_version: 1.0.0
+ai_prompt_sha256: abc
+ai_response_schema_sha256: def
+ai_cost_cap_usd: 10
+"""
+
+
+def commit_prereg(repo, text):
+    (repo / "prereg.md").write_text(text, encoding="utf-8")
+    git(repo, "add", "prereg.md")
+    git(repo, "commit", "-q", "-m", "prereg")
+
+
+def test_AI_disabled면_AI_칸이_없어도_완성본이다(repo):
+    commit_prereg(repo, "# 사전 등록\nN=90\n\n```\nai_adjudication: disabled\n```\n")
+    assert V.check_preregistration(repo, "prereg.md")
+
+
+def test_AI_disabled는_백틱_한_줄로도_인정한다():
+    assert V.ai_state_problems("상태: \n`ai_adjudication: disabled`\n") == []
+
+
+def test_AI_enabled이고_칸이_다_차면_완성본이다(repo):
+    commit_prereg(repo, ENABLED_COMPLETE)
+    assert V.check_preregistration(repo, "prereg.md")
+
+
+@pytest.mark.parametrize("drop", V.AI_REQUIRED_WHEN_ENABLED)
+def test_AI_enabled인데_칸이_빠지면_val을_열지_않는다(repo, drop):
+    text = "\n".join(ln for ln in ENABLED_COMPLETE.splitlines() if not ln.startswith(drop + ":")) + "\n"
+    commit_prereg(repo, text)
+    with pytest.raises(ValueError, match="AI 보조 판정 상태"):
+        V.check_preregistration(repo, "prereg.md")
+
+
+def test_AI_enabled인데_칸이_비면_val을_열지_않는다(repo):
+    commit_prereg(repo, ENABLED_COMPLETE.replace("ai_model: claude-sonnet-5", "ai_model:"))
+    with pytest.raises(ValueError, match="ai_model"):
+        V.check_preregistration(repo, "prereg.md")
+
+
+@pytest.mark.parametrize("text", [
+    "# 사전 등록\nN=90\n",                                   # 상태 줄 없음(지워서 우회)
+    "# 사전 등록\nai_adjudication:\n",                       # 빈 값
+    "# 사전 등록\nai_adjudication:   \n",
+    "# 사전 등록\nai_adjudication: off\n",                   # 정해진 값이 아님
+    "# 사전 등록\nai_adjudication: disabled\nai_adjudication: enabled\n",   # 둘
+])
+def test_AI_상태가_없거나_비었거나_잘못되면_val을_열지_않는다(repo, text):
+    commit_prereg(repo, text)
+    with pytest.raises(ValueError, match="AI 보조 판정 상태"):
+        V.check_preregistration(repo, "prereg.md")
+
+
+def test_AI_disabled여도_AI_밖의_빈칸_표시는_여전히_잠근다(repo):
+    commit_prereg(repo, "ai_adjudication: disabled\n| 판정 화면 지침 | [실행 전 기입] |\n")
+    with pytest.raises(ValueError, match="채우지 않은 칸"):
+        V.check_preregistration(repo, "prereg.md")
+
+
+def test_실제_사전_등록은_AI_disabled_상태를_명시한다():
+    text = (Path(__file__).resolve().parents[2] / "docs" / "qa-preregistration.md").read_text(encoding="utf-8")
+    assert V.ai_fields(text)[V.AI_STATE_KEY] == ["disabled"]
+    assert V.ai_state_problems(text) == []

@@ -16,6 +16,7 @@
 import argparse
 import json
 import random
+import re
 import subprocess
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -46,8 +47,56 @@ def unfilled_markers(text: str) -> list[dict]:
     return found
 
 
+# AI 보조 판정 상태 (사전 등록 5-4절). 사전 등록 본문에 `ai_adjudication: enabled|disabled` 줄이 **정확히 하나** 있어야 한다.
+# 없거나 비었거나 다른 값이면 완성본이 아니다 — 줄을 지워서 관문을 우회할 수 없다.
+# enabled일 때만 아래 칸이 각각 한 번, 비지 않은 값으로 있어야 한다. disabled면 없어도 된다.
+AI_STATE_KEY = "ai_adjudication"
+AI_STATES = ("enabled", "disabled")
+AI_REQUIRED_WHEN_ENABLED = ("ai_model", "ai_api_version", "ai_sdk_version", "ai_prompt_sha256",
+                            "ai_response_schema_sha256", "ai_cost_cap_usd")
+_FIELD_RE = re.compile(r"^\s*`?(ai_[a-z0-9_]+)\s*:\s*(.*?)`?\s*$")
+
+
+def ai_fields(text: str) -> dict[str, list[str]]:
+    """`ai_*: 값` 형태의 줄을 모은다(코드 블록·백틱 한 줄 모두). 키마다 값 목록."""
+    out: dict[str, list[str]] = {}
+    for line in text.splitlines():
+        m = _FIELD_RE.match(line)
+        if m:
+            out.setdefault(m.group(1), []).append(m.group(2).strip())
+    return out
+
+
+def ai_state_problems(text: str) -> list[str]:
+    """AI 보조 판정 상태 규칙 위반 목록. 빈 목록이면 통과."""
+    fields = ai_fields(text)
+    states = fields.get(AI_STATE_KEY, [])
+    if len(states) != 1:
+        return [f"`{AI_STATE_KEY}:` 줄이 정확히 하나 있어야 한다({len(states)}개)"]
+    state = states[0]
+    if state not in AI_STATES:
+        return [f"`{AI_STATE_KEY}` 값은 enabled 또는 disabled여야 한다: {state!r}"]
+    if state == "disabled":
+        return []
+    problems = []
+    for key in AI_REQUIRED_WHEN_ENABLED:
+        values = fields.get(key, [])
+        if len(values) != 1:
+            problems.append(f"AI enabled — `{key}:`가 정확히 하나 있어야 한다({len(values)}개)")
+        elif not values[0] or any(m in values[0] for m in UNFILLED_MARKERS):
+            problems.append(f"AI enabled — `{key}` 값이 비었거나 빈칸 표시다")
+    return problems
+
+
+def preregistration_problems(text: str) -> list[str]:
+    """완성본이 아닌 이유 전부 — 빈칸 표시와 AI 상태 규칙."""
+    problems = [f"{m['line']}행 {m['marker']}" for m in unfilled_markers(text)]
+    return problems + ai_state_problems(text)
+
+
 def check_preregistration(repo: Path, path: str) -> str:
-    """사전 등록 파일이 커밋되어 있고, 바뀌지 않았고, **빈칸 표시가 없으면** 그 파일의 마지막 커밋을 돌려준다."""
+    """사전 등록 파일이 커밋되어 있고, 바뀌지 않았고, **빈칸 표시가 없고 AI 상태가 유효하면** 그 파일의 마지막 커밋을
+    돌려준다."""
     if _git(repo, "ls-files", "--error-unmatch", path).returncode != 0:
         raise ValueError(f"사전 등록 파일이 git에 커밋되어 있지 않다 — val을 열지 않는다: {path}")
     if _git(repo, "diff", "--quiet", "HEAD", "--", path).returncode != 0:
@@ -65,6 +114,9 @@ def check_preregistration(repo: Path, path: str) -> str:
     if left:
         where = ", ".join(f"{m['line']}행 {m['marker']}" for m in left[:10])
         raise ValueError(f"사전 등록에 채우지 않은 칸이 {len(left)}곳 남았다 — val을 열지 않는다: {where}")
+    ai_problems = ai_state_problems(committed)
+    if ai_problems:
+        raise ValueError("사전 등록의 AI 보조 판정 상태가 유효하지 않다 — val을 열지 않는다: " + "; ".join(ai_problems))
     commit = _git(repo, "log", "-1", "--format=%H", "--", path).stdout.strip()
     if not commit:
         raise ValueError(f"사전 등록 파일의 커밋을 찾지 못했다: {path}")

@@ -27,6 +27,9 @@ annotated."(nuscenes-devkit `docs/instructions_nuimages.md`, Bounding Boxes 절)
 
 ## AI 판정 실행 설계값 제안 (2026-10-07) — 사전 등록에 아직 넣지 않았다
 
+> **이 평가에는 해당 없음.** 사용자 결정(2026-10-07, val 개봉 전)으로 AI 보조 판정은 비활성이다(사전 등록 5-4절 `ai_adjudication: disabled`).
+> 아래 값은 나중에 별도 개정으로 켤 때의 참고로만 남긴다.
+
 측정값이 아니라 **설계값**이라 여기에 제안만 둔다. 사용자가 고르면 5-4절의 해당 칸에 옮긴다. 사전 등록 5-4절에는 이 칸들이 아직
 비어 있다.
 
@@ -37,7 +40,7 @@ annotated."(nuscenes-devkit `docs/instructions_nuimages.md`, Bounding Boxes 절)
 | `max_tokens` | **1,024** | 답은 JSON 한 줄. 너무 낮으면 잘려 `ai_format_error`가 된다. 최대 예상 비용 계산에 이 값을 그대로 쓴다 |
 | 사고(thinking) 설정 | **끔(`{"type": "disabled"}`)** | 출력 토큰·비용 변동을 줄이고 한 줄 응답 형식을 지키기 쉽다. 참고 문서상 Sonnet 5는 끔을 받는다(실제 API 미확인). 켜면 사고 토큰이 `max_tokens`를 먹어 형식 오류가 늘 수 있다 |
 
-참고 계산(계획용, 호출 0건): 합성 20건 드라이런의 최대 예상 비용 $0.4187(상한 $1) — `experiment/planning_evidence/ai_cost_dryrun_synthetic_2026-10-07.json`.
+참고 계산(계획용, 호출 0건): 합성 20건 드라이런의 최대 예상 비용 계산은 `experiment/planning_evidence/ai_cost_dryrun_synthetic_2026-10-07.json`에 있다 — 쓴 단가는 공식 가격 페이지로 확인하지 않은 값이라 비용 수치로 인용하지 않는다.
 
 ## 한계로 적을 것
 

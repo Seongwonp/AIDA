@@ -183,7 +183,26 @@ def test_b_합성_그림은_1600x900_전체와_크롭_한_쌍이다(synth):
         assert im.format == "PNG" and im.size[0] < 1600
 
 
+def test_b_AI_보조_판정은_기본으로_꺼져_있어_외부_호출을_거부한다(monkeypatch, synth, tmp_path):
+    assert P.AI_ADJUDICATION_ENABLED is False
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "dummy-not-a-key")
+    with pytest.raises(P.ExternalCallRefused, match="비활성"):
+        P.make_anthropic_sender(60)
+    draft = REPO / "docs" / "ai-adjudicator-prompt-draft.md"
+    sha = A.sha256_text(A.prompt_blocks_from_draft(draft.read_text(encoding="utf-8"))["system"])
+    args = ["--approve-external-call", "--queue", str(synth["root"] / "queue.json"),
+            "--manifest", str(synth["images"] / "manifest.json"), "--prompt-draft", str(draft),
+            "--expected-prompt-sha256", sha, "--model", P.MODEL_ID, "--max-output-tokens", "256",
+            "--thinking", "disabled", "--timeout-seconds", "60", "--max-attempts", "3",
+            "--price-input-per-mtok", "2", "--price-output-per-mtok", "10", "--price-source", "검사용",
+            "--out-dir", str(tmp_path / "o")]
+    with pytest.raises(SystemExit, match="비활성"):
+        P.main(args)
+    assert not (tmp_path / "o").exists()
+
+
 def test_b_SDK나_키가_없으면_부르지_않는다(monkeypatch):
+    monkeypatch.setattr(P, "AI_ADJUDICATION_ENABLED", True)     # 켜졌다고 가정해도 SDK·키 관문이 남는다
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     with pytest.raises(P.ExternalCallRefused, match="ANTHROPIC_API_KEY"):
         P.make_anthropic_sender(60)
