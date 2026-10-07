@@ -64,6 +64,45 @@ def test_판정_화면_코드의_문구_키_저장_값이_사전_등록과_같�
     assert fe["buttons"] == pre["buttons"]
 
 
+# ── 묶음 표시 (5-3절 개정 5 ↔ 백엔드 계획 버전 ↔ 판정 화면 머리글) ─────────────────
+
+ROUTER = REPO / "backend" / "app" / "routers" / "evaluation.py"
+
+
+def _rows_5_3() -> dict:
+    section = _section_5_3(PREREG.read_text(encoding="utf-8"))
+    rows = {}
+    for line in section.splitlines():
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) == 2:
+            rows[cells[0]] = cells[1]
+    return rows
+
+
+def test_사전_등록_5_3절에_묶음_표시가_있다():
+    rows = _rows_5_3()
+    assert "`layer_bundles_v1`" in rows["묶음 표시"]
+    assert "기존 라벨 묶음 2/4 · 37/96" in rows["묶음 표시"] and "누락 묶음 · 12/90" in rows["묶음 표시"]
+    assert "같은 묶음 안의 다음 미판정" in rows["넘김"]
+
+
+@pytest.mark.skipif(not (LOGIC.is_file() and ROUTER.is_file()), reason="코드가 없는 환경")
+def test_묶음_표시_버전과_머리글_문구가_코드와_같다():
+    router = ROUTER.read_text(encoding="utf-8")
+    assert re.search(r'^DISPLAY_PLAN_VERSION = "layer_bundles_v1"', router, re.M)
+    src = LOGIC.read_text(encoding="utf-8")
+    assert '"누락 묶음"' in src and '"기존 라벨 묶음"' in src
+    # 머리글 모양 "<묶음 이름> · <묶음 안 위치>/<묶음 크기>"
+    assert "`${bundleLabel(span)} · ${index - span.start + 1}/${span.size}`" in src
+
+
+def test_사전_등록_5_3절_개정_5_고정_코드_커밋이_적혀_있다():
+    """판정 화면 코드 커밋(40자)을 적어야 판정 화면이 고정된다. 자리표시가 남아 있으면 실패한다."""
+    row = _rows_5_3()["고정 코드 커밋 (개정 5)"]
+    assert "PLACEHOLDER" not in row
+    assert re.fullmatch(r"`[0-9a-f]{40}`", row)
+
+
 # ── 유리 반사 문구 (11-1절 ↔ 판정 화면) ────────────────────────────────────────
 
 REFLECTION_TS = REPO / "frontend" / "src" / "components" / "reflectionRule.ts"
