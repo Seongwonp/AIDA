@@ -1624,6 +1624,35 @@ code {
 .judge-chip-new {
   border-style: dashed;
 }
+/* 묶음 이동 (사전 등록 D5·D6). 지금 묶음은 채워 보이고, 아직 갈 수 없는 묶음은 흐리게. */
+.judge-bundles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+.judge-bundle-chip {
+  font-size: 13px;
+  padding: 4px 10px;
+  font-variant-numeric: tabular-nums;
+}
+.judge-bundle-chip[aria-current="step"] {
+  background: var(--black);
+  color: var(--white);
+}
+.judge-bundle-chip:disabled:not([aria-current="step"]) {
+  color: var(--muted);
+  border-color: var(--hair);
+  cursor: default;
+}
+.bundle-done {
+  padding: 14px 16px;
+  border: 1.5px solid var(--black);
+  border-radius: 10px;
+}
+.bundle-done p {
+  margin: 0 0 10px;
+}
 .save-row {
   display: flex;
   align-items: center;

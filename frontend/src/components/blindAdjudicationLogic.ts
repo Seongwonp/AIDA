@@ -51,7 +51,167 @@ export type BlindCandidate = {
   class_name?: string | null;
   verdict: EvalVerdict | null;
   unique_error_id: string | null;
+  /**
+   * 묶음 표시 계획이 있는 묶음에서만 온다 — `bundles`의 자리(0부터). 층과 목록 안 위치로만 정해지므로
+   * 방법·점수·출처·표본 여부를 드러내지 않는다(사전 등록 D5·D6, 개정 5).
+   */
+  bundle?: number | null;
 };
+
+/** 서버가 주는 묶음 하나. 층과 크기만. */
+export type BlindBundle = {
+  index: number;
+  layer: string;
+  /** 그 층 안에서 몇 번째 묶음인가(1부터). */
+  layer_bundle: number;
+  /** 그 층의 묶음 수. */
+  layer_bundles: number;
+  size: number;
+};
+
+/** 목록 위의 묶음 구간 `[start, end)`. 목록은 묶음 순서로 와서 묶음마다 이어져 있다. */
+export type BundleSpan = BlindBundle & { start: number; end: number };
+
+export const LAYER_LABELLED = "labelled_candidates";
+export const LAYER_MISSING = "missing_candidates";
+
+export const BUNDLE_MISMATCH_MESSAGE =
+  "묶음 정보가 판정 목록과 맞지 않습니다. 판정을 시작하지 말고 묶음 파일을 확인하세요.";
+
+/**
+ * 서버의 묶음 표를 목록 구간으로 바꾼다. 묶음이 없으면 `null`(옛 묶음 — 한 목록).
+ *
+ * **목록과 하나라도 어긋나면 던진다.** 묶음 크기의 합이 목록 길이와 다르거나, 후보의 `bundle`이 자기
+ * 구간과 다르면 어느 후보가 어느 묶음인지 믿을 수 없다 — 화면은 판정을 받지 않는다.
+ */
+export function bundleSpans(
+  candidates: BlindCandidate[],
+  bundles: BlindBundle[] | null | undefined,
+): BundleSpan[] | null {
+  if (!bundles || bundles.length === 0) return null;
+  const spans: BundleSpan[] = [];
+  let start = 0;
+  bundles.forEach((b, i) => {
+    if (b.index !== i || b.size < 1) throw new Error(BUNDLE_MISMATCH_MESSAGE);
+    spans.push({ ...b, start, end: start + b.size });
+    start += b.size;
+  });
+  if (start !== candidates.length) throw new Error(BUNDLE_MISMATCH_MESSAGE);
+  for (const span of spans) {
+    for (let i = span.start; i < span.end; i += 1) {
+      const c = candidates[i];
+      const layerOk = span.layer === LAYER_MISSING ? c.label_index === null : c.label_index !== null;
+      if (c.bundle !== span.index || !layerOk) throw new Error(BUNDLE_MISMATCH_MESSAGE);
+    }
+  }
+  return spans;
+}
+
+/** 목록 자리 `index`가 든 묶음. 묶음이 없거나 범위 밖이면 `null`. */
+export function spanAt(spans: BundleSpan[] | null, index: number | null): BundleSpan | null {
+  if (!spans || index === null) return null;
+  return spans.find((s) => index >= s.start && index < s.end) ?? null;
+}
+
+/** "기존 라벨 묶음 2/4" · "누락 묶음". 그 층에 묶음이 하나면 번호를 붙이지 않는다. */
+export function bundleLabel(span: BlindBundle): string {
+  const name = span.layer === LAYER_MISSING ? "누락 묶음" : "기존 라벨 묶음";
+  return span.layer_bundles > 1 ? `${name} ${span.layer_bundle}/${span.layer_bundles}` : name;
+}
+
+/** 머리글 — "기존 라벨 묶음 2/4 · 37/96". 위치는 묶음 안의 몇 번째인지일 뿐 원래 순위가 아니다. */
+export function bundleHeader(span: BundleSpan, index: number): string {
+  return `${bundleLabel(span)} · ${index - span.start + 1}/${span.size}`;
+}
+
+const isUnjudged = (judgements: Judgements, c: BlindCandidate) =>
+  judgements[c.canonical_candidate_id]?.verdict == null;
+
+/** 묶음 안에서 판정한 수. 진행 상황이지 판정 결과 요약이 아니다. */
+export function judgedInSpan(
+  candidates: BlindCandidate[],
+  judgements: Judgements,
+  span: BundleSpan,
+): number {
+  let n = 0;
+  for (let i = span.start; i < span.end; i += 1) if (!isUnjudged(judgements, candidates[i])) n += 1;
+  return n;
+}
+
+/** 묶음 안에서 `from` 다음의 미판정 — 뒤에 없으면 그 묶음 앞쪽에서 찾는다. 묶음을 넘지 않는다. */
+export function nextUnjudgedInSpan(
+  candidates: BlindCandidate[],
+  judgements: Judgements,
+  from: number,
+  span: BundleSpan,
+): number | null {
+  for (let i = from + 1; i < span.end; i += 1) if (isUnjudged(judgements, candidates[i])) return i;
+  for (let i = span.start; i <= Math.min(from, span.end - 1); i += 1) {
+    if (isUnjudged(judgements, candidates[i])) return i;
+  }
+  return null;
+}
+
+/** 미판정이 남은 가장 앞 묶음. 다 끝났으면 `null`. */
+export function firstIncompleteSpan(
+  candidates: BlindCandidate[],
+  judgements: Judgements,
+  spans: BundleSpan[],
+): BundleSpan | null {
+  return spans.find((s) => judgedInSpan(candidates, judgements, s) < s.size) ?? null;
+}
+
+/**
+ * 다시 열 때 띄울 자리.
+ *
+ * **규칙: 미판정이 남은 가장 앞 묶음의 첫 미판정 후보.** 목록이 묶음 순서라 묶음이 있어도 없어도 "목록의
+ * 첫 미판정"과 같은 자리다. 묶음 완료 화면에서 창을 닫았다면 다음 묶음의 첫 후보에서 바로 이어진다
+ * (완료 화면을 다시 띄우지 않는다). 전부 판정했으면 `null`(완료 화면).
+ */
+export function resumeIndex(
+  candidates: BlindCandidate[],
+  judgements: Judgements,
+  spans: BundleSpan[] | null,
+): number | null {
+  if (!spans) return firstUnjudgedIndex(candidates, judgements);
+  const span = firstIncompleteSpan(candidates, judgements, spans);
+  return span === null ? null : nextUnjudgedInSpan(candidates, judgements, span.start - 1, span);
+}
+
+export type AdvanceTarget =
+  | { kind: "candidate"; index: number }
+  | { kind: "bundle_complete"; bundle: number }
+  | { kind: "done" };
+
+/**
+ * 저장이 성공한 뒤 어디로 가는가.
+ *
+ * - 묶음이 없으면 예전 그대로 — 다음 미판정(뒤에 없으면 앞), 없으면 완료.
+ * - 묶음이 있으면 **그 묶음 안에서만** 다음 미판정을 찾는다. 묶음이 다 찼으면 묶음 완료 화면, 전부
+ *   끝났으면 완료 화면. 다음 묶음으로는 판정자가 "다음 묶음 시작"을 눌러야 간다.
+ */
+export function advanceTarget(
+  candidates: BlindCandidate[],
+  judgements: Judgements,
+  from: number,
+  spans: BundleSpan[] | null,
+): AdvanceTarget {
+  if (!spans) {
+    const index = nextUnjudgedIndex(candidates, judgements, from);
+    return index === null ? { kind: "done" } : { kind: "candidate", index };
+  }
+  const span = spanAt(spans, from);
+  const index = span ? nextUnjudgedInSpan(candidates, judgements, from, span) : null;
+  if (index !== null) return { kind: "candidate", index };
+  if (unjudgedCount(candidates, judgements) === 0) return { kind: "done" };
+  return { kind: "bundle_complete", bundle: span ? span.index : 0 };
+}
+
+/** 묶음 완료 화면 문구. 쉬어도 된다는 것만 말하고 판정 결과는 말하지 않는다. */
+export function bundleCompleteMessage(span: BlindBundle): string {
+  return `${bundleLabel(span)} 판정을 마쳤습니다 (${span.size}건). 여기서 쉬어도 됩니다 — 판정은 이미 ` +
+    "저장되어 있어 창을 닫았다가 다시 열어도 다음 묶음의 첫 미판정 후보에서 이어집니다.";
+}
 
 /** 후보 하나에 대해 화면이 들고 있는 것. */
 export type Judgement = {

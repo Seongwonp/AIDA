@@ -144,8 +144,18 @@ export type BlindQueueResponse = {
     class_name: string | null;
     verdict: "hit" | "miss" | "hold" | null;
     unique_error_id: string | null;
+    // 묶음 표시 계획이 있는 묶음에서만 온다(사전 등록 D5·D6). 층과 위치로만 정해진다.
+    bundle?: number;
   }>;
   damaged: boolean;
+  // 묶음 표시 계획이 있으면 묶음 순서대로 층·크기. 없으면 응답에 없다(한 목록).
+  bundles?: Array<{
+    index: number;
+    layer: string;
+    layer_bundle: number;
+    layer_bundles: number;
+    size: number;
+  }>;
 };
 
 export type AdjudicationRow = {

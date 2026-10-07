@@ -415,6 +415,11 @@ class EvaluationSnapshot(BaseModel):
     # ∪ K) 밖의 것을 `additional_candidate_ids`로 둔다. **비교 예산 N과 점 추정치는 안 바뀐다** —
     # 추가 후보는 부트스트랩 계산용이다. 없으면 이 기능 전의 묶음이다.
     bootstrap_coverage: dict | None = None
+    # 판정 화면의 묶음 나누기 (사전 등록 D5·D6, 2026-10-07 개정 5). 얼린 판정 목록의 가림 순서(씨앗
+    # 순서)에서 층별 상대 순서를 그대로 두고, 기존 라벨 층을 정해진 수의 묶음으로, 누락 층을 별도
+    # 묶음 하나로 나눈 후보 id 목록. **판정 대상·후보·점수·씨앗은 바꾸지 않는다** — 화면에 보이는
+    # 순서와 묶음 경계만 정한다. 없으면 묶음 없이 한 목록으로 보이는 옛 묶음(practice1·qa1)이다.
+    display_plan: dict | None = None
 
 
 class EvaluationAdjudication(BaseModel):
@@ -449,12 +454,30 @@ class BlindCandidate(BaseModel):
     class_name: str | None = None
     verdict: str | None = None
     unique_error_id: str | None = None
+    # 묶음 표시 계획이 있는 묶음에서만 실린다 — `BlindQueue.bundles`의 자리(0부터). 층과 목록 안
+    # 위치로만 정해지므로 방법·점수·출처·표본 여부를 드러내지 않는다. 계획이 없는 옛 묶음의 응답에는
+    # 이 필드가 아예 없다(응답 필드 집합이 예전 그대로).
+    bundle: int | None = None
+
+
+class BlindBundle(BaseModel):
+    """판정 화면의 묶음 하나. 층과 크기만 — 후보 구성은 목록의 `bundle`이 가리킨다."""
+    index: int
+    layer: str                  # labelled_candidates | missing_candidates
+    layer_bundle: int           # 그 층 안에서 몇 번째 묶음인가 (1부터)
+    layer_bundles: int          # 그 층의 묶음 수
+    size: int
 
 
 class BlindQueue(BaseModel):
-    """가림 판정 화면의 목록. 순서는 고정 씨앗으로 섞여 있다."""
+    """가림 판정 화면의 목록. 순서는 고정 씨앗으로 섞여 있다.
+
+    묶음 표시 계획이 있으면 목록은 **묶음 순서**(기존 라벨 묶음들 → 누락 묶음)이고, 각 층 안의
+    상대 순서는 씨앗으로 섞인 순서 그대로다. 계획이 없으면 `bundles`가 응답에 없다.
+    """
     evaluation_id: str
     dataset_id: str
     candidate_set_hash: str
     candidates: list[BlindCandidate] = []
     damaged: bool = False
+    bundles: list[BlindBundle] | None = None

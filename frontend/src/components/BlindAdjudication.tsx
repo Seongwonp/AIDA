@@ -8,11 +8,23 @@ import { JudgingGuideline } from "./JudgingGuideline";
 import { BlindTutorial } from "./BlindTutorial";
 import { rememberTutorial, tutorialSeen } from "./blindTutorialStorage";
 import {
+  advanceTarget,
   ALL_JUDGED_MESSAGE,
   blockedIds,
+  BUNDLE_MISMATCH_MESSAGE,
+  bundleCompleteMessage,
+  bundleHeader,
+  bundleLabel,
+  bundleSpans,
   DAMAGED_MESSAGE,
-  firstUnjudgedIndex,
+  firstIncompleteSpan,
+  judgedInSpan,
+  LAYER_MISSING,
   nextUnjudgedIndex,
+  nextUnjudgedInSpan,
+  resumeIndex,
+  spanAt,
+  type BundleSpan,
   HASH_CONFLICT_MESSAGE,
   MISSING_NEEDS_OBJECT,
   makeAdjudicationSender,
@@ -92,6 +104,12 @@ export function BlindAdjudication({
   judgementsRef.current = judgements;
   const cursorRef = useRef<number | null>(null);
   cursorRef.current = cursor;
+  // 묶음 표시 계획(사전 등록 D5·D6). `null`이면 옛 묶음 — 한 목록 그대로.
+  const [spans, setSpans] = useState<BundleSpan[] | null>(null);
+  const spansRef = useRef<BundleSpan[] | null>(null);
+  spansRef.current = spans;
+  // 방금 마친 묶음. 값이 있고 `cursor`가 `null`이면 묶음 완료 화면이다(쉬어도 되는 자리).
+  const [bundleDone, setBundleDone] = useState<number | null>(null);
   // 저장이 진행 중인 후보. 그 후보에 대한 판정 입력은 응답이 올 때까지 무시한다 — 연타·키 반복으로
   // 같은 판정이 두 번 저장되거나, 자동 이동이 두 번 일어나지 않게.
   const savingIdRef = useRef<string | null>(null);
@@ -136,6 +154,8 @@ export function BlindAdjudication({
     setCandidates([]);
     setJudgements({});
     setCursor(null);
+    setSpans(null);
+    setBundleDone(null);
     openedRef.current = null;
     setHash("");
     setError(null);
@@ -153,14 +173,24 @@ export function BlindAdjudication({
         if (cancelled) return;
         log.record("queue_load_succeeded");
         const restored = toJudgements(data.candidates);
+        let loadedSpans: BundleSpan[] | null;
+        try {
+          loadedSpans = bundleSpans(data.candidates, data.bundles);
+        } catch {
+          // 묶음이 목록과 어긋나면 판정을 받지 않는다 — 어느 후보가 어느 묶음인지 믿을 수 없다.
+          setError(BUNDLE_MISMATCH_MESSAGE);
+          return;
+        }
         setCandidates(data.candidates);
+        setSpans(loadedSpans);
         setHash(data.candidate_set_hash);
         setDamaged(data.damaged);
         setJudgements(restored);
         // **아직 판정 안 한 첫 후보에서 이어 한다.** 0번부터 시작하면 두 번째
         // 세션에서 이미 판정한 후보를 넘기는 시간이 그 후보들의 판정 시간에
-        // 다시 쌓여, 후보당 시간이 부풀고 N이 작아진다.
-        setCursor(firstUnjudgedIndex(data.candidates, restored));
+        // 다시 쌓여, 후보당 시간이 부풀고 N이 작아진다. 묶음이 있으면 미판정이 남은
+        // 가장 앞 묶음의 첫 미판정이다(`resumeIndex`).
+        setCursor(resumeIndex(data.candidates, restored, loadedSpans));
       })
       .catch(() => {
         if (cancelled) return;
@@ -256,12 +286,18 @@ export function BlindAdjudication({
   const stats = progress(candidates, judgements);
   const current = cursor === null ? undefined : candidates[cursor];
   const left = unjudgedCount(candidates, judgements);
-  const done = !loading && candidates.length > 0 && cursor === null;
+  const span = spanAt(spans, cursor);
+  // 묶음 완료 화면: 방금 마친 묶음이 있고 띄운 후보가 없다. 전부 끝났으면 완료 화면이 대신 뜬다.
+  const finishedSpan = cursor === null && bundleDone !== null && spans ? spans[bundleDone] ?? null : null;
+  const upcoming = spans ? firstIncompleteSpan(candidates, judgements, spans) : null;
+  const bundleBreak = !loading && finishedSpan !== null && upcoming !== null;
+  const done = !loading && candidates.length > 0 && cursor === null && !bundleBreak;
 
   /**
    * 판정을 저장한다. `id`는 이 저장을 일으킨 후보, `advance`가 참이면 **저장이 성공한 뒤** 그 후보에서
    * 다음 미판정 후보로 옮긴다(뒤에 없으면 앞에서 찾는다 — "다음 미판정"과 같은 규칙, 전부 판정했으면
-   * 완료 화면).
+   * 완료 화면). 묶음이 있으면 **그 묶음 안에서만** 찾고, 묶음이 다 찼으면 묶음 완료 화면에서 멈춘다
+   * (`advanceTarget`) — 다음 묶음은 판정자가 "다음 묶음 시작"을 눌러야 시작한다.
    *
    * 옮기지 않는 경우:
    * - 저장 실패 — 지금 후보에 남아 "다시 시도"를 누를 수 있게 한다.
@@ -310,12 +346,17 @@ export function BlindAdjudication({
       const settled = id !== null && latest[id]?.verdict != null
         && !blockedIds(list, latest).includes(id);
       if (advance && stillHere && settled) {
-        const target = nextUnjudgedIndex(list, latest, at);
-        log.record("moved_next", null, { auto: true });
+        // 묶음이 있으면 **그 묶음 안에서만** 옮긴다. 묶음이 다 찼으면 묶음 완료 화면에서 멈춘다.
+        const target = advanceTarget(list, latest, at, spansRef.current);
+        const index = target.kind === "candidate" ? target.index : null;
+        log.record("moved_next", null, target.kind === "bundle_complete"
+          ? { auto: true, bundle_complete: target.bundle }
+          : { auto: true });
         // 같은 응답으로 두 번 옮기지 않게 바로 적어 둔다(렌더 전에 또 불려도 `stillHere`가 거짓이 된다).
-        cursorRef.current = target;
-        setSave(target === null ? "saved" : "advanced");
-        setCursor(target);
+        cursorRef.current = index;
+        setBundleDone(target.kind === "bundle_complete" ? target.bundle : null);
+        setSave(index === null ? "saved" : "advanced");
+        setCursor(index);
       } else {
         setSave("saved");
       }
@@ -369,15 +410,38 @@ export function BlindAdjudication({
   };
 
   // 이동도 버튼과 단축키가 **같은 함수**를 부른다 — 기록(`moved_*`)이 갈리지 않게.
-  const canPrevious = cursor !== null && cursor > 0;
-  const canNext = cursor !== null && cursor < candidates.length - 1;
+  // 묶음이 있으면 이전·다음은 **그 묶음 안에서만** 움직인다. 앞 묶음으로 돌아가 고치려면 묶음 단추를 쓴다.
+  const canPrevious = cursor !== null && cursor > (span ? span.start : 0);
+  const canNext = cursor !== null && cursor < (span ? span.end : candidates.length) - 1;
   // 옮기면 "저장됨"을 지운다 — 남겨 두면 아직 판정 안 한 다음 후보 아래에 "저장됨"이 떠서
   // 그 후보도 저장된 것처럼 읽힌다. 저장 중·실패는 그대로 둔다(실패는 다시 시도해야 한다).
   // 화면 표시만 바꾼다 — 저장 요청·기록은 건드리지 않는다.
   const moveTo = (index: number | null) => {
     setSave((s) => (s === "saved" || s === "advanced" ? "idle" : s));
     cursorRef.current = index;
+    setBundleDone(null);
     setCursor(index);
+  };
+  /** 묶음의 첫 미판정으로, 다 판정한 묶음이면 그 묶음의 첫 후보로. */
+  const entryOf = (s: BundleSpan) =>
+    nextUnjudgedInSpan(candidates, judgements, s.start - 1, s) ?? s.start;
+  /**
+   * 묶음 이동. 앞 묶음(고치러 돌아가기)과 미판정이 남은 가장 앞 묶음까지만 갈 수 있다 — 묶음을 건너뛰어
+   * 앞질러 판정하지 않는다(묶음 순서대로). 기록은 기존 이벤트 `moved_previous`/`moved_next`에 묶음
+   * 자리를 붙여 남긴다.
+   */
+  const goBundle = (target: BundleSpan, meta: Record<string, unknown>) => {
+    const from = span?.index ?? bundleDone ?? -1;
+    log.record(target.index < from ? "moved_previous" : "moved_next", null, meta);
+    moveTo(entryOf(target));
+  };
+  const reachable = (s: BundleSpan) => upcoming === null || s.index <= upcoming.index;
+  // "다음 미판정" — 묶음이 있으면 지금 묶음 안에서만(묶음 완료 화면에서는 다음 묶음의 첫 미판정).
+  const spanLeft = span ? span.size - judgedInSpan(candidates, judgements, span) : left;
+  const nextUnjudgedTarget = () => {
+    if (!spans) return nextUnjudgedIndex(candidates, judgements, cursor ?? -1);
+    if (span) return nextUnjudgedInSpan(candidates, judgements, cursor ?? span.start - 1, span);
+    return resumeIndex(candidates, judgements, spans);
   };
   const goPrevious = () => {
     log.record("moved_previous");
@@ -473,13 +537,33 @@ export function BlindAdjudication({
         </span>
       </div>
 
+      {/* 묶음(사전 등록 D5·D6). 층과 묶음 안 진행만 보인다 — 방법·점수·출처·표본 여부는 묶음과 무관하다. */}
+      {spans && (
+        <nav className="judge-bundles" aria-label="묶음 이동">
+          {spans.map((s) => (
+            <button
+              key={s.index}
+              type="button"
+              className="judge-chip judge-bundle-chip"
+              aria-current={span?.index === s.index ? "step" : undefined}
+              disabled={!reachable(s) || span?.index === s.index}
+              onClick={() => goBundle(s, { bundle: s.index })}
+            >
+              {bundleLabel(s)} ({judgedInSpan(candidates, judgements, s)}/{s.size})
+            </button>
+          ))}
+        </nav>
+      )}
+
       {loading && <p>불러오는 중…</p>}
 
       {current && (
         <article key={current.canonical_candidate_id} className="judge-card">
           {/* 위치는 섞인 순서의 몇 번째인지일 뿐이다(서버가 고정 씨앗으로 섞는다) — 원래 순위가 아니다. */}
           <p className="judge-meta">
-            <span className="judge-position">후보 {(cursor ?? 0) + 1} / {candidates.length}</span>
+            <span className="judge-position">
+              {span ? bundleHeader(span, cursor ?? 0) : `후보 ${(cursor ?? 0) + 1} / ${candidates.length}`}
+            </span>
             <span>{current.image}</span>
           </p>
           <div className="judge-split">
@@ -576,6 +660,25 @@ export function BlindAdjudication({
       {/* 저장 상태와 경고는 **판정 버튼 아래**에 둔다. 위에 두면 판정할 때마다
           문구가 생겨 버튼이 밀리고, 연달아 누르는 사람이 엉뚱한 버튼을 누른다
           — 실제로 브라우저 확인에서 그렇게 눌렸다. */}
+      {/* 묶음 완료 화면 — 쉬어도 되는 자리. 다음 묶음은 판정자가 눌러야 시작한다. */}
+      {bundleBreak && finishedSpan && upcoming && (
+        <div className="done bundle-done" role="status">
+          <p>{bundleCompleteMessage(finishedSpan)}</p>
+          {upcoming.layer === LAYER_MISSING && finishedSpan.layer !== LAYER_MISSING && (
+            <p className="muted">
+              다음은 누락 묶음입니다 — 질문이 &ldquo;{questionFor(null)}&rdquo;로 바뀝니다.
+            </p>
+          )}
+          <button
+            type="button"
+            className="judge-nav-button"
+            onClick={() => goBundle(upcoming, { bundle_start: upcoming.index })}
+          >
+            다음 묶음 시작 — {bundleLabel(upcoming)}
+          </button>
+        </div>
+      )}
+
       {done && (
         <p className="done" role="status">
           {ALL_JUDGED_MESSAGE}{" "}
@@ -618,13 +721,13 @@ export function BlindAdjudication({
         <button
           type="button"
           className="judge-nav-button"
-          disabled={left === 0}
+          disabled={spanLeft === 0}
           onClick={() => {
             log.record("moved_next");
-            moveTo(nextUnjudgedIndex(candidates, judgements, cursor ?? -1));
+            moveTo(nextUnjudgedTarget());
           }}
         >
-          다음 미판정 ({left})
+          다음 미판정 ({spanLeft})
         </button>
       </nav>
 

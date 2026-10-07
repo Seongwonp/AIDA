@@ -23,7 +23,7 @@ from ..config import EXPERIMENT_ROOT, UPLOADS_DIR
 from ..ranking import (LEGACY_RANKING_VERSION, RANKING_V1, RANKING_V2, RankingVersionError,
                        diagnosis_filename, ranking_version_of, require_version)
 from ..agreement import agreement_report
-from ..models import (BlindCandidate, BlindQueue, EVALUATION_SCHEMA_VERSION,
+from ..models import (BlindBundle, BlindCandidate, BlindQueue, EVALUATION_SCHEMA_VERSION,
                       EvaluationAdjudication, EvaluationAdjudications,
                       EvaluationCandidate, EvaluationSnapshot)
 
@@ -105,7 +105,8 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
                       label_height_filter: dict | None = None,
                       auxiliary_sample: dict | None = None,
                       tie_seed: int | None = None,
-                      bootstrap_coverage: dict | None = None) -> dict:
+                      bootstrap_coverage: dict | None = None,
+                      display_plan: dict | None = None) -> dict:
     """지문을 만들 재료. **판정에 영향을 주는 것만, 전부.**
 
     빠지면 안 되는 것과 들어가면 안 되는 것이 둘 다 있다.
@@ -179,6 +180,11 @@ def canonical_payload(dataset_id: str, candidates: list[EvaluationCandidate],
         payload["bootstrap_coverage"] = {k: bootstrap_coverage[k] for k in
                                          ("iterations", "seed", "budget", "methods",
                                           "input_fingerprint", "additional_candidate_ids")}
+    if display_plan is not None:
+        # 판정 화면의 묶음 나누기(층·묶음 경계·묶음 안 순서)는 판정 조건이다 — 지문에 넣는다.
+        # 없을 때는 넣지 않아 옛 묶음(practice1·qa1)의 지문이 그대로다. 같은 내용에 계획만 더한
+        # 묶음은 이 키를 뺀 지문(`content_hash`)이 옛 묶음과 같다.
+        payload["display_plan"] = display_plan_fingerprint(display_plan)
     return payload
 
 
@@ -588,7 +594,8 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
                    auxiliary_sample_seed: int | None = None,
                    tie_seed: int | None = None,
                    coverage_iterations: int | None = None,
-                   coverage_seed: int | None = None) -> EvaluationSnapshot:
+                   coverage_seed: int | None = None,
+                   display_plan: dict | None = None) -> EvaluationSnapshot:
     """진단 결과를 얼려 평가 묶음을 만든다.
 
     **재진단해도 이 묶음은 안 바뀐다.** 판정 도중에 후보가 바뀌면 이미 내린
@@ -667,18 +674,112 @@ def build_snapshot(dataset_id: str, evaluation_id: str, diagnosis: dict,
     # 합집합 추가분이 있으면 그것까지 포함한 **최종 판정 목록**에서 뽑는다.
     auxiliary = _draw_auxiliary_sample(snapshot, auxiliary_sample_fraction, auxiliary_sample_seed)
     snapshot = snapshot.model_copy(update={"auxiliary_sample": auxiliary})
-    payload = canonical_payload(dataset_id, candidates, shuffle_seed, ruler,
-                                snapshot.diagnosis_generated_at,
-                                judge_budget=judge_budget, candidate_pool=pool,
-                                total_in_queue=total, ranking_version=ranking_version,
-                                random_sample_size=random_sample_size,
-                                random_sample_seed=random_sample_seed,
-                                label_height_filter=height_filter,
-                                auxiliary_sample=auxiliary,
-                                tie_seed=tie_seed,
-                                bootstrap_coverage=snapshot.bootstrap_coverage)
+    # 묶음 표시 계획은 **판정 대상과 보조 표본이 다 정해진 뒤**, 그 가림 순서에서 만든다 —
+    # 대상·순서·표본을 바꾸지 않고 화면의 묶음 경계만 정한다.
+    if display_plan is not None:
+        snapshot = snapshot.model_copy(
+            update={"display_plan": build_display_plan(snapshot, display_plan)})
     return snapshot.model_copy(
-        update={"candidate_set_hash": candidate_set_hash(payload)})
+        update={"candidate_set_hash": candidate_set_hash(snapshot_payload(snapshot))})
+
+
+def snapshot_payload(snapshot: EvaluationSnapshot,
+                     include_display_plan: bool = True) -> dict:
+    """얼린 묶음에서 지문 재료를 다시 만든다. `build_snapshot`이 지문을 낼 때도 이것을 쓴다.
+
+    `include_display_plan=False`는 **내용 지문**의 재료다 — 묶음 표시 계획만 뺐으므로, 같은 진단·같은
+    설정으로 얼린 계획 없는 묶음의 지문과 같아야 한다(qa1 ↔ qa1b 내용 동일성 확인).
+    """
+    return canonical_payload(
+        snapshot.dataset_id, snapshot.candidates, snapshot.shuffle_seed, snapshot.ruler,
+        snapshot.diagnosis_generated_at,
+        judge_budget=snapshot.judge_budget, candidate_pool=snapshot.candidate_pool,
+        total_in_queue=snapshot.total_in_queue, ranking_version=snapshot.ranking_version,
+        random_sample_size=snapshot.random_sample_size,
+        random_sample_seed=snapshot.random_sample_seed,
+        label_height_filter=snapshot.label_height_filter,
+        auxiliary_sample=snapshot.auxiliary_sample,
+        tie_seed=snapshot.tie_seed,
+        bootstrap_coverage=snapshot.bootstrap_coverage,
+        display_plan=snapshot.display_plan if include_display_plan else None)
+
+
+def content_hash(snapshot: EvaluationSnapshot) -> str:
+    """묶음 표시 계획을 뺀 지문. 계획이 없는 묶음이면 `candidate_set_hash`와 같다."""
+    return candidate_set_hash(snapshot_payload(snapshot, include_display_plan=False))
+
+
+# ── 판정 화면의 묶음 나누기 (사전 등록 D5·D6) ─────────────────────────────────
+
+DISPLAY_PLAN_VERSION = "layer_bundles_v1"
+DISPLAY_LAYER_ORDER = ("labelled_candidates", "missing_candidates")
+DISPLAY_PLAN_RULE = (
+    "주 판정자(primary)의 가림 순서(shuffle_seed로 섞인 최종 판정 목록)에서 층마다 상대 순서를 그대로 "
+    "두고, 기존 라벨 층을 labelled_bundles개의 연속 구간으로 나눈다(크기는 고르게, 나머지는 앞 묶음부터 "
+    "1건씩). 누락 층은 별도 묶음 하나로 기존 라벨 묶음들 뒤에 둔다(D6). 빈 층은 묶음을 만들지 않는다. "
+    "층과 목록 안 위치로만 정해지므로 방법·점수·출처·무작위 표본·재표본 추가·보조 표본 여부와 무관하다")
+DISPLAY_PLAN_REST = (
+    "묶음 경계에서 쉴 수 있다. 이것은 묶음 표시 규칙이며 5-2절의 약 150건 단위 휴식 계획(운영 규칙)과 "
+    "별개다 — 둘 다 판정 대상·순서·C와 무관하다")
+
+
+def _layer_of(label_index: int | None) -> str:
+    return DISPLAY_LAYER_ORDER[0] if label_index is not None else DISPLAY_LAYER_ORDER[1]
+
+
+def _even_sizes(total: int, parts: int) -> list[int]:
+    base, extra = divmod(total, parts)
+    return [base + (1 if i < extra else 0) for i in range(parts)]
+
+
+def build_display_plan(snapshot: EvaluationSnapshot, request: dict) -> dict:
+    """묶음 표시 계획을 만든다. **결정론적** — 얼린 묶음의 가림 순서만 재료로 쓴다.
+
+    `request`는 `{"version": "layer_bundles_v1", "labelled_bundles": k}`. k는 사전 등록 D5가 정한
+    묶음 수를 그대로 적는다(코드가 대신 정하지 않는다).
+    """
+    if not isinstance(request, dict):
+        raise HTTPException(400, "묶음 표시 계획은 객체여야 합니다.")
+    unknown = sorted(set(request) - {"version", "labelled_bundles"})
+    if unknown:
+        raise HTTPException(400, f"묶음 표시 계획에 모르는 항목이 있습니다: {unknown}")
+    if request.get("version") != DISPLAY_PLAN_VERSION:
+        raise HTTPException(400, f"묶음 표시 계획 버전은 {DISPLAY_PLAN_VERSION!r}입니다.")
+    k = request.get("labelled_bundles")
+    if not isinstance(k, int) or isinstance(k, bool) or k < 1:
+        raise HTTPException(400, "labelled_bundles(기존 라벨 층 묶음 수)는 1 이상의 정수입니다.")
+    order = _shuffled_ids(snapshot, judge_ids(snapshot))
+    by_id = {c.canonical_candidate_id: c for c in snapshot.candidates}
+    labelled = [cid for cid in order if _layer_of(by_id[cid].label_index) == DISPLAY_LAYER_ORDER[0]]
+    missing = [cid for cid in order if _layer_of(by_id[cid].label_index) == DISPLAY_LAYER_ORDER[1]]
+    if labelled and k > len(labelled):
+        raise HTTPException(400, f"기존 라벨 판정 대상이 {len(labelled)}건인데 묶음 {k}개를 요청했습니다.")
+    bundles = []
+    at = 0
+    for size in (_even_sizes(len(labelled), k) if labelled else []):
+        bundles.append({"layer": DISPLAY_LAYER_ORDER[0], "candidate_ids": labelled[at:at + size]})
+        at += size
+    if missing:
+        bundles.append({"layer": DISPLAY_LAYER_ORDER[1], "candidate_ids": missing})
+    return {
+        "version": DISPLAY_PLAN_VERSION,
+        "request": {"version": DISPLAY_PLAN_VERSION, "labelled_bundles": k},
+        "rule": DISPLAY_PLAN_RULE,
+        "rest": DISPLAY_PLAN_REST,
+        "source_order": "blind_queue(primary) — shuffle_seed로 섞인 최종 판정 목록 순서",
+        "applies_to_adjudicator": PRIMARY_ADJUDICATOR,
+        "layer_order": list(DISPLAY_LAYER_ORDER),
+        "layer_sizes": {DISPLAY_LAYER_ORDER[0]: len(labelled), DISPLAY_LAYER_ORDER[1]: len(missing)},
+        "bundle_sizes": [len(b["candidate_ids"]) for b in bundles],
+        "bundles": bundles,
+    }
+
+
+def display_plan_fingerprint(plan: dict) -> dict:
+    """지문에 넣는 계획의 재료 — 버전·층 순서·묶음마다 층과 후보 id 순서. 설명 문구는 뺀다."""
+    return {"version": plan["version"], "layer_order": list(plan["layer_order"]),
+            "bundles": [{"layer": b["layer"], "candidate_ids": list(b["candidate_ids"])}
+                        for b in plan["bundles"]]}
 
 
 def save_snapshot(dataset_id: str, snapshot: EvaluationSnapshot) -> None:
@@ -876,21 +977,68 @@ def blind_queue(snapshot: EvaluationSnapshot,
         if sample is None:
             raise HTTPException(409, "이 묶음에는 보조 판정 표본이 없습니다.")
         allowed = sample if allowed is None else (allowed & sample)
+    # 묶음 표시 계획은 주 판정자 화면에만 쓴다. 보조 판정자(보조 표본만 보는 목록)는 묶음 없이 예전처럼.
+    plan = snapshot.display_plan if adjudicator == PRIMARY_ADJUDICATOR else None
+    bundle_of = _bundle_index(plan) if plan else {}
     for c in snapshot.candidates:
         if allowed is not None and c.canonical_candidate_id not in allowed:
             continue
         a = by_id.get(c.canonical_candidate_id)
+        # `bundle`은 계획이 있을 때만 넣는다 — 계획 없는 묶음의 응답 필드 집합을 바꾸지 않는다.
+        extra = ({"bundle": bundle_of[c.canonical_candidate_id]}
+                 if c.canonical_candidate_id in bundle_of else {})
         items.append(BlindCandidate(
             canonical_candidate_id=c.canonical_candidate_id,
             image=c.image, label_index=c.label_index, box=c.box,
             class_name=c.class_name,
             verdict=a.verdict if a else None,
-            unique_error_id=a.unique_error_id if a else None))
+            unique_error_id=a.unique_error_id if a else None, **extra))
+    # **섞기는 계획과 무관하게 같다.** 계획은 이 섞인 순서를 층별로 나눈 것이다.
     random.Random(snapshot.shuffle_seed).shuffle(items)
+    if not plan:
+        return BlindQueue(evaluation_id=snapshot.evaluation_id,
+                          dataset_id=snapshot.dataset_id,
+                          candidate_set_hash=snapshot.candidate_set_hash,
+                          candidates=items, damaged=saved.damaged)
+    items, bundles = _apply_display_plan(plan, items)
     return BlindQueue(evaluation_id=snapshot.evaluation_id,
                       dataset_id=snapshot.dataset_id,
                       candidate_set_hash=snapshot.candidate_set_hash,
-                      candidates=items, damaged=saved.damaged)
+                      candidates=items, damaged=saved.damaged, bundles=bundles)
+
+
+def _shuffled_ids(snapshot: EvaluationSnapshot, allowed: set[str] | None) -> list[str]:
+    """`blind_queue`(primary)와 같은 규칙의 섞인 후보 id 순서. 판정 상태와 무관하다."""
+    ids = [c.canonical_candidate_id for c in snapshot.candidates
+           if allowed is None or c.canonical_candidate_id in allowed]
+    random.Random(snapshot.shuffle_seed).shuffle(ids)
+    return ids
+
+
+def _bundle_index(plan: dict) -> dict[str, int]:
+    out: dict[str, int] = {}
+    for i, b in enumerate(plan["bundles"]):
+        for cid in b["candidate_ids"]:
+            out[cid] = i
+    return out
+
+
+def _apply_display_plan(plan: dict, items: list[BlindCandidate]
+                        ) -> tuple[list[BlindCandidate], list[BlindBundle]]:
+    """섞인 목록을 계획의 묶음 순서로 놓는다. **계획과 판정 목록이 하나라도 다르면 멈춘다** —
+    빠진 후보가 조용히 안 보이거나 묶음 밖 후보가 끼면 판정 대상이 바뀐다."""
+    by_id = {i.canonical_candidate_id: i for i in items}
+    planned = [cid for b in plan["bundles"] for cid in b["candidate_ids"]]
+    if len(planned) != len(set(planned)) or set(planned) != set(by_id):
+        raise HTTPException(500, "묶음 표시 계획이 판정 목록과 맞지 않습니다. 묶음 파일을 확인하세요.")
+    ordered = [by_id[cid] for cid in planned]
+    layers = [b["layer"] for b in plan["bundles"]]
+    bundles = [BlindBundle(index=i, layer=layer,
+                           layer_bundle=layers[:i + 1].count(layer),
+                           layer_bundles=layers.count(layer),
+                           size=len(plan["bundles"][i]["candidate_ids"]))
+               for i, layer in enumerate(layers)]
+    return ordered, bundles
 
 
 # ── 내보내기 ──────────────────────────────────────────────────────────────────
@@ -1425,6 +1573,9 @@ class StartEvaluation(BaseModel):
     # 고정 재표본 합집합 (안 (a)). 최종 분석의 부트스트랩과 같은 반복 수·씨앗이어야 한다.
     coverage_iterations: int | None = None
     coverage_seed: int | None = None
+    # 판정 화면의 묶음 나누기 (사전 등록 D5·D6). `{"version": "layer_bundles_v1", "labelled_bundles": k}`.
+    # 없으면 묶음 없이 한 목록(옛 동작). 판정 대상·후보·점수·씨앗은 바꾸지 않는다.
+    display_plan: dict | None = None
 
 
 class SaveAdjudications(BaseModel):
@@ -1461,13 +1612,14 @@ def start_evaluation(dataset_id: str, body: StartEvaluation) -> EvaluationSnapsh
                               auxiliary_sample_seed=body.auxiliary_sample_seed,
                               tie_seed=body.tie_seed,
                               coverage_iterations=body.coverage_iterations,
-                              coverage_seed=body.coverage_seed)
+                              coverage_seed=body.coverage_seed,
+                              display_plan=body.display_plan)
     save_snapshot(dataset_id, snapshot)
     return snapshot
 
 
 @router.get("/{dataset_id}/evaluations/{evaluation_id}/queue",
-            response_model=BlindQueue)
+            response_model=BlindQueue, response_model_exclude_unset=True)
 def get_blind_queue(dataset_id: str, evaluation_id: str,
                     adjudicator: str = PRIMARY_ADJUDICATOR) -> BlindQueue:
     """가림 판정 목록. 점수·순위·진단 문구가 빠져 있다. `adjudicator`가 primary가 아니면
