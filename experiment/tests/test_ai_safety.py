@@ -62,19 +62,19 @@ def run(synth, send, cap=1.0, max_attempts=2):
 
 # ── (a) val 잠금 ─────────────────────────────────────────────────────────────
 
-def test_a_지금_커밋된_사전_등록으로는_val을_열지_않는다():
-    """확정 커밋 전까지 이 검사는 거부를 기대한다. 확정 커밋에서 빈칸이 0이 되면 이 검사를 함께 고친다."""
-    with pytest.raises(ValueError):
-        V.check_preregistration(REPO, PREREG)
-    committed = subprocess.run(["git", "-C", str(REPO), "show", f"HEAD:{PREREG}"],
-                               capture_output=True).stdout.decode("utf-8")
-    left = V.unfilled_markers(committed)
-    assert left, "커밋된 사전 등록에 빈칸 표시가 없다 — 확정 커밋이면 이 검사를 갱신한다"
-
-
-def test_a_작업_폴더의_사전_등록에도_빈칸이_남아_있다():
+def test_a_작업_폴더의_사전_등록은_완료_상태다():
+    """2026-10-07 확정: 빈칸 0, AI는 `disabled`라는 유효한 상태. 다시 빈칸이 생기면 잠금이 걸려야 한다."""
     text = (REPO / PREREG).read_text(encoding="utf-8")
-    assert V.unfilled_markers(text)
+    assert V.unfilled_markers(text) == []
+    assert V.ai_state_problems(text) == []
+    assert V.preregistration_problems(text) == []
+    assert V.ai_fields(text).get("ai_adjudication") == ["disabled"]
+
+
+def test_a_확정본에_빈칸을_되살리면_다시_잠긴다():
+    text = (REPO / PREREG).read_text(encoding="utf-8")
+    assert V.preregistration_problems(text + "\n| 새 칸 | [실행 전 기입] |\n")
+    assert V.preregistration_problems(text.replace("ai_adjudication: disabled", "ai_adjudication: "))
 
 
 # ── (b) 외부 전송 입력 관문 ──────────────────────────────────────────────────

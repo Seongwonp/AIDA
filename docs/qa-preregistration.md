@@ -379,7 +379,7 @@ ai_adjudication: disabled
 | 판정 상한 C (건) | **1,000** — 운영상 하드 상한, 통계적 표본 크기 아님. 넘으면 시작하지 않고 개정·새 평가 ID(5-2절) | 사용자 결정 2026-10-07 |
 | 판정 화면 | 5-3절 — 질문 두 개, 버튼 "오류 있음"·"오류 없음"·"판단 보류"(키 1·2·3 → `hit`·`miss`·`hold`), 저장 성공 뒤 자동 넘김, 최대 약 500px + 전체 보기. 확정 커밋 시점 코드로 고정 | 사용자 결정 2026-10-07 |
 | 사람 판정 지침 부록 (헷갈린 사례) | 11-1절 — 유리 반사, nuImages 공식 지침 원문 인용만 | 사용자 결정 2026-10-07 (연습 뒤) |
-| 판정 화면 지침 패널의 유리 반사 문구 | [실행 전 기입] — 지금 `frontend/src/components/JudgingGuideline.tsx`는 11-1절에 없는 해석(선명/흐릿 구분, 차체·물웅덩이 반사는 판단 보류)을 보인다. 원문 인용으로 맞출지 사용자가 정하고, 판정 화면은 그 확정 커밋 시점으로 고정한다(5-3절) | 확정 커밋 전 |
+| 판정 화면 지침 패널의 유리 반사 문구 | 11-1절의 원문·번역·보류 원칙 세 문장만 표시(`frontend/src/components/reflectionRule.ts` → `JudgingGuideline.tsx`). 원문에 없는 해석(반사상 위 라벨의 오류 여부 예시, 차체·물웅덩이 반사, 문턱)은 삭제. 고정 코드 커밋 `bdb1943218b59563e15965f6b40bdb9be4f21de7` | 사용자 결정 2026-10-07 |
 
 이 절과 5-4절의 칸 중 하나라도 실행 전 기입 표시로 남아 있으면 이 문서는 사전 등록이 아니다 — val을 열지 않고 판정 화면을 열지 않는다
 (`nuimages_eval_sample.check_preregistration`이 그 표시를 찾아 거부한다). (두 번째 사람 판정자는 확보되지 않았다 — 개정 4. 이 평가에서 판정자 간 일치도는 보고하지 않는다.)
@@ -391,12 +391,15 @@ ai_adjudication: disabled
    > "If an object is reflected clearly in a glass window, then the reflection should be annotated."
 
    출처: nuscenes-devkit `docs/instructions_nuimages.md`, Bounding Boxes 절(2026-10-07 원문 확인). **이 부록은 원문을 인용만 한다** —
-   프로젝트가 덧붙인 해석·문턱(흐릿함의 기준 등)은 두지 않는다. 원문만으로 정할 수 없는 경우는 이미 있던 일반 규칙(망설여지면
-   판단 보류, [manual-timing-pilot.md](manual-timing-pilot.md) "경계가 조금 어긋난 것")을 따른다.
+   프로젝트가 덧붙인 해석·문턱(흐릿함의 기준 등)은 두지 않는다. 판정 화면에는 다음 세 문장만 그대로 보인다(사용자 결정 2026-10-07):
+
+   - 원문: `If an object is reflected clearly in a glass window, then the reflection should be annotated.`
+   - 번역: `객체가 유리창에 선명하게 반사되었다면 그 반사상도 라벨 대상입니다.`
+   - 보류 원칙: `이 원문만으로 판단하기 어렵거나 선명한지 애매하면 판단 보류를 선택하세요.`
 
 - 이 부록은 **연습 판정(practice1) 뒤에** 고정했다. practice1의 판정을 이 규칙으로 다시 해석하거나 다시 세지 않는다.
-- 판정 화면의 지침 패널(`frontend/src/components/JudgingGuideline.tsx`)과 AI 프롬프트의 반사 문구가 이 부록과 같은지는 확정 커밋 전에
-  대조한다(2026-10-07 기준 판정 화면 문구에는 이 부록에 없는 해석이 남아 있다 — 사용자 결정 대기).
+- 판정 화면 문구는 위 세 문장과 글자 그대로 같다 — `experiment/tests/test_prereg_ui_consistency.py`(사전 등록 ↔ `reflectionRule.ts`)와
+  `frontend/src/components/Guide.test.tsx`(화면에 세 문장만, 지운 해석 없음)가 대조한다. AI 프롬프트는 이 평가에서 `disabled`라 대조 대상이 아니다.
 
 ## 12. 후속 계획 (계획이며 약속이 아니다, 2026-10-07)
 

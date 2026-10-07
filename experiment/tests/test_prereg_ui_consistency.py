@@ -62,3 +62,48 @@ def test_판정_화면_코드의_문구_키_저장_값이_사전_등록과_같�
     assert fe["question_existing"] == pre["question_existing"]
     assert fe["question_missing"] == pre["question_missing"]
     assert fe["buttons"] == pre["buttons"]
+
+
+# ── 유리 반사 문구 (11-1절 ↔ 판정 화면) ────────────────────────────────────────
+
+REFLECTION_TS = REPO / "frontend" / "src" / "components" / "reflectionRule.ts"
+GUIDELINE_TSX = REPO / "frontend" / "src" / "components" / "JudgingGuideline.tsx"
+REFLECTION_EXPECTED = {
+    "원문": "If an object is reflected clearly in a glass window, then the reflection should be annotated.",
+    "번역": "객체가 유리창에 선명하게 반사되었다면 그 반사상도 라벨 대상입니다.",
+    "보류 원칙": "이 원문만으로 판단하기 어렵거나 선명한지 애매하면 판단 보류를 선택하세요.",
+}
+
+
+def prereg_reflection() -> dict:
+    text = PREREG.read_text(encoding="utf-8")
+    start = text.index("### 11-1.")
+    section = text[start:]
+    return {k: re.search(rf"- {k}: `([^`]+)`", section).group(1) for k in REFLECTION_EXPECTED}
+
+
+def frontend_reflection() -> dict:
+    src = REFLECTION_TS.read_text(encoding="utf-8")
+    const = lambda name: re.search(rf'export const {name} =\s*"([^"]+)";', src).group(1)
+    return {"원문": const("REFLECTION_SOURCE"), "번역": const("REFLECTION_KO"),
+            "보류 원칙": const("REFLECTION_HOLD")}
+
+
+def test_유리_반사_문구가_사전_등록과_판정_화면에서_글자_그대로_같다():
+    assert prereg_reflection() == REFLECTION_EXPECTED
+    assert frontend_reflection() == REFLECTION_EXPECTED
+
+
+def test_판정_지침_패널은_원문에_없는_반사_해석을_보이지_않는다():
+    src = GUIDELINE_TSX.read_text(encoding="utf-8")
+    for banned in ("물웅덩이", "차체", "비친 상 위", "흐릿하거나"):
+        assert banned not in src
+    for name in ("REFLECTION_SOURCE", "REFLECTION_KO", "REFLECTION_HOLD"):
+        assert name in src
+
+
+def test_사전_등록_382행_칸이_고정_코드_커밋을_적는다():
+    row = next(line for line in PREREG.read_text(encoding="utf-8").splitlines()
+               if line.startswith("| 판정 화면 지침 패널의 유리 반사 문구"))
+    assert "[실행 전 기입]" not in row
+    assert re.search(r"`[0-9a-f]{40}`", row)
