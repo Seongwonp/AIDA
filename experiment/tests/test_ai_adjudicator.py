@@ -249,3 +249,218 @@ def test_모듈은_네트워크_라이브러리를_부르지_않는다():
     src = Path(A.__file__).read_text(encoding="utf-8")
     for banned in ("requests", "urllib", "httpx", "anthropic", "openai", "socket", "http.client"):
         assert f"import {banned}" not in src
+
+
+# ── 비용 상한 ($10, 코드 상수) ────────────────────────────────────────────────
+
+def guard(cap=None, inp=3.0, out=15.0):
+    # 단가는 검사용 임의 값이다 — 실제 단가가 아니다.
+    return A.CostGuard(inp, out, "검사용 가짜 단가", cap_usd=cap)
+
+
+def test_상한_기본값은_10달러이고_올릴_수_없다():
+    assert A.COST_CAP_USD == 10.0
+    assert A.resolve_cost_cap(None) == 10.0
+    assert A.resolve_cost_cap(2.5) == 2.5
+    for bad in (10.01, 100, 0, -1, float("nan"), float("inf")):
+        with pytest.raises(ValueError):
+            A.resolve_cost_cap(bad)
+
+
+def test_단가에는_기본값이_없고_출처가_필요하다():
+    with pytest.raises(TypeError):
+        A.CostGuard()  # 단가 없이 만들 수 없다
+    with pytest.raises(ValueError):
+        A.CostGuard(3.0, 15.0, "")
+    with pytest.raises(ValueError):
+        A.CostGuard(0, 0, "출처")
+    with pytest.raises(ValueError):
+        A.CostGuard(-1, 15.0, "출처")
+
+
+def test_비용은_토큰_곱하기_백만_토큰당_단가다():
+    g = guard(inp=3.0, out=15.0)
+    assert g.cost(1_000_000, 0) == pytest.approx(3.0)
+    assert g.cost(2000, 100) == pytest.approx((2000 * 3 + 100 * 15) / 1e6)
+
+
+def test_예상_비용이_상한을_넘으면_시작하지_않는다():
+    g = guard()
+    with pytest.raises(A.CostCapError):
+        g.preflight(1000, 1_000_000, 0)                 # $3000 > $10
+    assert g.stopped_reason == "preflight" and g.calls == 0
+    ok = guard()
+    assert ok.preflight(1000, 2000, 100) == pytest.approx(1000 * (2000 * 3 + 100 * 15) / 1e6)
+
+
+def test_상한을_낮추면_낮춘_값으로_막는다():
+    g = guard(cap=1.0)
+    with pytest.raises(A.CostCapError):
+        g.preflight(1000, 2000, 100)                    # $7.5 > $1
+
+
+def test_실행_중_누적이_상한에_닿기_전에_멈춘다():
+    g = guard(cap=1.0, inp=10.0, out=0.0)               # 호출당 입력 30k 토큰 = $0.30
+    made = 0
+    with pytest.raises(A.CostCapError):
+        for _ in range(10):
+            g.before_call(30_000, 0)
+            g.record(30_000, 0)
+            made += 1
+    assert made == 3                                    # 0.9 + 0.3 > 1.0 이라 넷째 전에 멈춤
+    assert g.spent_usd <= g.cap_usd and g.stopped_reason == "before_call"
+
+
+def test_실제_사용량이_추정보다_커서_넘으면_그_뒤로_멈춘다():
+    g = guard(cap=1.0, inp=10.0, out=0.0)
+    g.before_call(1000, 0)
+    with pytest.raises(A.CostCapError):
+        g.record(200_000, 0)                            # $2 — 추정보다 훨씬 컸다
+    assert g.stopped_reason == "after_call"
+    with pytest.raises(A.CostCapError):
+        g.before_call(1, 0)
+
+
+def cli_args(tmp_path, *extra):
+    return ["--dry-run", "--queue", str(tmp_path / "queue.json"),
+            "--manifest", str(tmp_path / "manifest.json"),
+            "--prompt", str(tmp_path / "prompt.txt"), "--model", "claude-sonnet-5",
+            "--out", str(tmp_path / "b.jsonl"), "--run-manifest", str(tmp_path / "r.json"), *extra]
+
+
+def test_CLI는_상한을_넘는_예상이면_묶음을_만들지_않는다(tmp_path):
+    write_inputs(tmp_path, 4)
+    with pytest.raises(SystemExit):
+        A.main(cli_args(tmp_path, "--price-input-per-mtok", "3", "--price-output-per-mtok", "15",
+                        "--price-source", "검사용", "--est-input-tokens-per-call", "1000000",
+                        "--max-output-tokens", "1000"))
+    assert not (tmp_path / "b.jsonl").exists()
+
+
+def test_CLI는_상한을_10달러보다_올리지_못한다(tmp_path):
+    write_inputs(tmp_path)
+    with pytest.raises(SystemExit):
+        A.main(cli_args(tmp_path, "--cost-cap", "50", "--price-input-per-mtok", "3",
+                        "--price-output-per-mtok", "15", "--price-source", "검사용",
+                        "--est-input-tokens-per-call", "10", "--max-output-tokens", "10"))
+    assert not (tmp_path / "b.jsonl").exists()
+
+
+def test_CLI는_단가를_일부만_주면_거부한다(tmp_path):
+    write_inputs(tmp_path)
+    with pytest.raises(SystemExit):
+        A.main(cli_args(tmp_path, "--price-input-per-mtok", "3"))
+
+
+def test_CLI는_상한_안이면_예상_비용과_상한을_기록한다(tmp_path):
+    write_inputs(tmp_path, 4)
+    assert A.main(cli_args(tmp_path, "--price-input-per-mtok", "3", "--price-output-per-mtok", "15",
+                           "--price-source", "검사용", "--est-input-tokens-per-call", "2000",
+                           "--max-output-tokens", "100")) == 0
+    run = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
+    cg = run["cost_guard"]
+    assert cg["cap_usd"] == 10.0 and cg["hard_max_usd"] == 10.0 and cg["spent_usd"] == 0
+    assert cg["projected_usd"] == pytest.approx(4 * (2000 * 3 + 100 * 15) / 1e6)
+    assert run["calls_made"] == 0
+
+
+# ── 실행 기록의 지문 ─────────────────────────────────────────────────────────
+
+def test_실행_기록에_프롬프트_스키마_그림_지문이_있다(tmp_path):
+    import hashlib
+    write_inputs(tmp_path, 2)
+    for i in range(2):
+        (tmp_path / f"C{i}.png").write_bytes(b"crop%d" % i)
+        (tmp_path / f"C{i}.full.png").write_bytes(b"full%d" % i)
+    A.main(cli_args(tmp_path))
+    run = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
+    assert run["response_schema"] == A.RESPONSE_SCHEMA
+    assert run["response_schema_sha256"] == A.response_schema_sha256()
+    assert run["image_sha256"]["C1"] == {"full_scene": hashlib.sha256(b"full1").hexdigest(),
+                                         "crop": hashlib.sha256(b"crop1").hexdigest()}
+    assert run["image_hashes_complete"] is True
+    assert run["api_version"] == "[실행 전 기입]"       # 주지 않으면 지어내지 않는다
+    assert run["cost_guard"] is None
+
+
+def test_그림_파일이_없으면_지문을_지어내지_않는다(tmp_path):
+    write_inputs(tmp_path, 2)
+    A.main(cli_args(tmp_path))
+    run = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
+    assert run["image_sha256"]["C0"] == {"full_scene": None, "crop": None}
+    assert run["image_hashes_complete"] is False
+
+
+def test_프롬프트_지문이_사전_등록과_다르면_멈춘다(tmp_path):
+    write_inputs(tmp_path)
+    with pytest.raises(SystemExit):
+        A.main(cli_args(tmp_path, "--expected-prompt-sha256", "0" * 64))
+    assert not (tmp_path / "b.jsonl").exists()
+
+
+def test_CRLF와_LF_프롬프트는_같은_지문이다(tmp_path):
+    import hashlib
+    write_inputs(tmp_path)
+    (tmp_path / "prompt.txt").write_bytes(PROMPT.replace("\n", "\r\n").encode("utf-8"))
+    A.main(cli_args(tmp_path))
+    run = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
+    assert run["prompt_sha256"] == hashlib.sha256(PROMPT.encode("utf-8")).hexdigest()
+
+
+def test_응답_스키마와_parse_response가_같은_규칙이다():
+    assert A.RESPONSE_SCHEMA["properties"]["verdict"]["enum"] == list(A.VERDICTS)
+    assert set(A.RESPONSE_SCHEMA["required"]) == {"verdict", "reason"}
+    assert A.RESPONSE_SCHEMA["additionalProperties"] is False
+
+
+# ── 사전 등록에 고정한 프롬프트·스키마 지문 ───────────────────────────────────
+
+REPO = Path(__file__).resolve().parents[2]
+
+
+def _draft_blocks():
+    return A.prompt_blocks_from_draft(
+        (REPO / "docs" / "ai-adjudicator-prompt-draft.md").read_text(encoding="utf-8"))
+
+
+def test_프롬프트_문서에서_두_블록을_꺼낸다():
+    blocks = _draft_blocks()
+    assert blocks["system"].startswith("당신은 자율주행")
+    assert blocks["system"].endswith('"reason": "<한 문장>"}')
+    assert blocks["user_template"].startswith("[전체 장면과 대상 크롭 첨부]")
+    assert "```" not in blocks["system"] + blocks["user_template"]
+
+
+def test_사전_등록의_프롬프트와_스키마_지문이_문서와_코드에서_다시_계산한_값과_같다():
+    """프롬프트 문서나 스키마를 사전 등록 뒤에 고치면 여기서 걸린다."""
+    prereg = (REPO / "docs" / "qa-preregistration.md").read_text(encoding="utf-8")
+    blocks = _draft_blocks()
+    assert A.sha256_text(blocks["system"]) in prereg
+    assert A.sha256_text(blocks["user_template"]) in prereg
+    assert A.response_schema_sha256() in prereg
+
+
+def test_코드가_만드는_사용자_메시지는_문서의_틀과_같은_모양이다():
+    import re
+    tmpl = _draft_blocks()["user_template"].split("\n")
+    _, manifest = make_inputs(2)
+    for meta in manifest:
+        got = A._user_message(meta).split("\n")
+        assert len(got) == len(tmpl)
+        for t, g in zip(tmpl, got):
+            if t.startswith("답:"):
+                assert g == t                           # 답 형식 줄은 글자 그대로
+            else:
+                pattern = "^" + re.sub(r"\\\{[^}]*\\\}", ".+", re.escape(t)) + "$"
+                assert re.match(pattern, g), (t, g)
+
+
+def test_프롬프트_문서에서_꺼내면_사전_등록_지문과_맞는다(tmp_path):
+    write_inputs(tmp_path)
+    draft = REPO / "docs" / "ai-adjudicator-prompt-draft.md"
+    expected = A.sha256_text(_draft_blocks()["system"])
+    args = cli_args(tmp_path, "--prompt-from-draft", "--expected-prompt-sha256", expected)
+    args[args.index("--prompt") + 1] = str(draft)
+    assert A.main(args) == 0
+    run = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
+    assert run["prompt_sha256"] == expected
