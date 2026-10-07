@@ -1,0 +1,81 @@
+{
+ "name": "ai_cost_dryrun_synthetic",
+ "date": "2026-10-07",
+ "provenance": "synthetic_dryrun",
+ "label": "합성 그림 20건으로 낸 AI 보조 판정자 요청 묶음과 최대 예상 비용 — 네트워크 없는 드라이런, API 호출 0건, 비용 $0. 비용·API 계약 점검용(계획용)이며 정확도·난이도·모델 성능·일치도의 근거가 아니다.",
+ "commands": [
+  "experiment/venv python make_synthetic_ai_dryrun.py --out runs_ai_dryrun/synthetic_v1",
+  "experiment/venv python ai_provider.py --dry-run ... --model claude-sonnet-5 --max-output-tokens 1024 --thinking disabled --timeout-seconds 60 --max-attempts 3 --price-input-per-mtok 2 --price-output-per-mtok 10"
+ ],
+ "local_outputs_not_committed": "experiment/runs_ai_dryrun/synthetic_v1/ (gitignore experiment/runs_*/) — 같은 씨앗으로 다시 만들면 바이트가 같다(ai_provider.check_inputs가 대조)",
+ "synthetic_inputs": {
+  "generator": "experiment/make_synthetic_ai_dryrun.py",
+  "generator_sha256": "6cc98111fade4c6b7f467bbfe11fd24b45672f2166ede5d8cd372048b03422dc",
+  "renderer_sha256": "eb1e02723ab68fa9e9db11221e5e50384ee80f310e8d0f2335a39e60de8f6aaf",
+  "seed": 20261007,
+  "scenes": 10,
+  "candidates": 20,
+  "png_files": 40,
+  "source_size_px": [
+   1600,
+   900
+  ],
+  "contains_real_dataset_images": false
+ },
+ "input_checks": {
+  "provenance": "synthetic_dryrun",
+  "generator": "experiment/make_synthetic_ai_dryrun.py",
+  "generator_sha256": "6cc98111fade4c6b7f467bbfe11fd24b45672f2166ede5d8cd372048b03422dc",
+  "seed": 20261007,
+  "deny_list_sources": [
+   {
+    "dir": "backend/app/data/uploads/006e49d2cbc9/images",
+    "present": true,
+    "images": 620
+   }
+  ],
+  "deny_list_size": 620,
+  "reproducible_verified": true
+ },
+ "request": {
+  "model": "claude-sonnet-5",
+  "temperature": 0,
+  "temperature_note": "temperature=0을 요청에 명시했다. 0이어도 같은 입력에 같은 출력이 나온다는 보장은 없다(결정성 비보장).",
+  "thinking": "disabled",
+  "max_tokens": 1024,
+  "timeout_seconds": 60.0,
+  "max_attempts": 3,
+  "prompt_sha256": "0dc77f3fd2cf871f7d206f3a3aae9c24bfa04d20fdd083faec5232fef0514368",
+  "user_template_sha256": "909c01b5c0be63bcc43e94860b79fbddb6ec6ed50b3da71cbe2c0c6cf3e9373a",
+  "response_schema_sha256": "54a5d2cb5e509e03c189dbd35b7546f29769988d6a2f500d36437071b3ff101c",
+  "request_count": 20,
+  "note": "timeout·max_attempts·max_tokens·thinking은 제안 설계값(qa-execution-spec-proposal-2026-10-07.md)이며 사전 등록에 넣지 않았다"
+ },
+ "projection": {
+  "projected_max_usd": 0.418688,
+  "cap_usd": 1.0,
+  "upper_bound_input_tokens_max": 5442,
+  "upper_bound_input_tokens_min": 5273,
+  "full_scene_px": [
+   [
+    1600,
+    900
+   ]
+  ],
+  "crop_px_range": [
+   27972,
+   110656
+  ],
+  "method": "후보마다 (그림 두 장 토큰 상한 + 글자 UTF-8 바이트 + 64) × 입력 단가 + max_tokens × 출력 단가. 그림 토큰 상한 = max(28px 패치 수, 픽셀/750) × 1.5 — 공식은 제공자 문서로 검증 필요",
+  "price_source": "claude-api 스킬 번들 모델 표(cached 2026-09-25) claude-sonnet-5 $2/$10 per MTok — 실제 호출 전 공식 가격 페이지로 다시 확인할 것"
+ },
+ "calls_made": 0,
+ "actual_cost_usd": 0.0,
+ "not_measured": [
+  "API 버전·SDK 버전(anthropic SDK 미설치)",
+  "temperature=0 수락 여부",
+  "실제 입력 토큰(그림 토큰 공식)",
+  "제공자 쪽 축소 여부",
+  "응답 시간"
+ ]
+}

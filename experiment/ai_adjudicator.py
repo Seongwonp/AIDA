@@ -6,10 +6,13 @@
 * 입력은 `GET .../queue?adjudicator=ai`의 **가림 목록**과 `render_adjudication_images.py`의
   `manifest.json`뿐이다. 점수·순위·방법·출처·표본 여부·사람 판정은 들어오면 **거부한다**
   (렌더러와 같은 라이브러리 수준 거부).
-* 응답 형식은 프롬프트에 적힌 JSON 한 줄뿐이다. 그 밖은 형식 위반으로 거부하고, 저장할 때만
-  `hold`로 사상한다. 원문은 지우지 않는다.
+* 응답 형식은 프롬프트에 적힌 JSON 한 줄뿐이다. 그 밖(거부 포함)은 **`ai_format_error`** 상태로 남기고
+  `hold`로 사상하지 않는다(사전 등록 5-4절, 2026-10-07 개정). 고치거나 다시 묻지 않고 원문을 보존한다.
+* 처리하지 못한 후보(비용 상한·중단·전송 실패)는 **`ai_unjudged`** — `hold`와도 `ai_format_error`와도 다르다.
+  하나라도 있으면 그 실행은 부분 실행이고 AI 일치도를 내지 않는다(`ai_agreement_report`).
 * **모델 식별자·온도·프롬프트 원문·반복 수는 이 파일이 정하지 않는다.** 실행할 때 받는 값이고
-  기본값이 없다. 실제 호출은 `--provider`가 막는다 — 비용 승인이 먼저다.
+  기본값이 없다. 실제 호출은 이 파일에 없다 — 별도 도구 `ai_provider.py`가 합성 입력·명시 승인 플래그·
+  SDK·API 키를 모두 확인한 뒤에만 연다(지금은 합성 드라이런만 허용).
 * **비용 상한 $10은 코드 상수**(`COST_CAP_USD`)다. 인자로는 낮추기만 된다. 단가는 실행 시점에 읽은
   공개 단가를 인자로 받고(기본값 없음) `CostGuard`가 시작 전·호출마다 막는다(사전 등록 5-4절).
 * 실행 기록에 프롬프트·응답 스키마 SHA-256과 후보마다 두 그림 파일의 바이트 SHA-256을 남긴다.
@@ -38,6 +41,13 @@ FORBIDDEN_KEYS = (
     "ranking_version", "reason_code", "detail",
 )
 VERDICTS = ("hit", "miss", "hold")
+# 후보별 AI 처리 상태 (사전 등록 5-4절). hold는 판정이고, 아래 둘은 판정이 아니다.
+AI_JUDGED = "ai_judged"              # 형식에 맞는 응답 — verdict는 hit/miss/hold
+AI_FORMAT_ERROR = "ai_format_error"  # 응답은 받았으나 형식 위반·거부 — 원문 보존, 사상·보정 없음
+AI_UNJUDGED = "ai_unjudged"          # 처리하지 못함(비용 상한·중단·전송 실패) — hold로 채우지 않음
+AI_STATUSES = (AI_JUDGED, AI_FORMAT_ERROR, AI_UNJUDGED)
+MODEL_ID = "claude-sonnet-5"         # 사용자 결정 2026-10-07 — 응답 모델 식별자가 다르면 멈춘다
+TEMPERATURE = 0                      # 사용자 결정 2026-10-07 — 0이어도 결정성은 보장되지 않는다
 SESSION_POLICY = "new conversation per candidate"
 TEMPERATURE_NOT_EXPOSED = "not exposed"
 NOT_SET = "[실행 전 기입]"
@@ -300,8 +310,8 @@ def build_requests(queue_json: dict, rendered_manifest: Any, prompt_text: str) -
 def parse_response(text: str) -> dict:
     """프롬프트가 정한 JSON 한 줄만 받는다. 그 밖은 `ResponseFormatError`.
 
-    돌려주는 것은 `{"verdict": hit|miss|hold, "rationale": str}`. 사상·저장은 하지 않는다 —
-    형식 위반을 `hold`로 바꾸는 것은 `to_adjudications`의 일이고 원문은 따로 보존한다.
+    돌려주는 것은 `{"verdict": hit|miss|hold, "rationale": str}`. 형식 위반을 고치거나 다른 판정으로
+    사상하지 않는다 — 부르는 쪽이 `ai_format_error`로 남기고 원문을 보존한다.
     """
     if not isinstance(text, str):
         raise ResponseFormatError("응답이 문자열이 아니다")
@@ -330,9 +340,13 @@ def to_adjudications(responses: Any) -> dict:
     """`PUT .../adjudications?adjudicator=ai`에 보낼 몸통.
 
     `responses`는 응답 기록의 목록이거나 `{"candidate_set_hash": ..., "responses": [...]}`다.
-    기록마다 `canonical_candidate_id`와, `raw_text`(원문) 또는 이미 읽어 둔 `verdict`가 있어야
-    한다. 형식 위반·거부는 `hold`로 사상하고 그 사실을 `format_violations`에 남긴다 —
-    payload 자체에는 판정만 들어간다(서버 스키마).
+    기록마다 `canonical_candidate_id`와, `raw_text`(원문) 또는 이미 읽어 둔 `verdict`가 있어야 한다.
+    `status`가 `ai_unjudged`인 기록은 판정이 없다.
+
+    * 형식에 맞는 응답만 `adjudications`(hit/miss/hold)에 들어간다.
+    * 형식 위반·거부는 `format_errors`(상태 `ai_format_error`, 오류 사유)에만 — **`hold`로 사상하지 않는다**
+      (사전 등록 5-4절, 2026-10-07 개정. 이전 판은 `hold`로 사상했다).
+    * 처리하지 못한 후보는 `unjudged`(상태 `ai_unjudged`)에만.
     """
     if isinstance(responses, dict):
         rows = list(responses.get("responses") or [])
@@ -350,7 +364,7 @@ def to_adjudications(responses: Any) -> dict:
     if len(hashes) > 1:
         raise ValueError(f"응답이 서로 다른 묶음에 붙어 있다: {sorted(hashes)}")
 
-    adjudications, violations, seen = [], [], set()
+    adjudications, format_errors, unjudged, seen = [], [], [], set()
     for r in rows:
         cid = r.get("canonical_candidate_id")
         if not cid:
@@ -358,19 +372,82 @@ def to_adjudications(responses: Any) -> dict:
         if cid in seen:
             raise ValueError(f"같은 후보가 두 번 나왔다: {cid}")
         seen.add(cid)
-        if r.get("verdict") in VERDICTS:
-            verdict = r["verdict"]
-        else:
-            try:
-                verdict = parse_response(r.get("raw_text", ""))["verdict"]
-            except ResponseFormatError as exc:
-                verdict = "hold"
-                violations.append({"canonical_candidate_id": cid, "mapped_to": "hold",
-                                   "error": str(exc)})
+        status = r.get("status")
+        if status is not None and status not in AI_STATUSES:
+            raise ValueError(f"알 수 없는 AI 처리 상태: {status!r}")
+        if status == AI_UNJUDGED:
+            unjudged.append({"canonical_candidate_id": cid, "status": AI_UNJUDGED,
+                             "reason": r.get("reason")})
+            continue
+        if status != AI_FORMAT_ERROR and r.get("verdict") in VERDICTS:
+            adjudications.append({"canonical_candidate_id": cid, "verdict": r["verdict"]})
+            continue
+        try:
+            verdict = parse_response(r.get("raw_text", ""))["verdict"]
+        except ResponseFormatError as exc:
+            format_errors.append({"canonical_candidate_id": cid, "status": AI_FORMAT_ERROR,
+                                  "error": str(exc)})
+            continue
+        if status == AI_FORMAT_ERROR:
+            raise ValueError(f"{cid}: 상태는 ai_format_error인데 원문이 형식에 맞는다 — 기록이 어긋났다")
         adjudications.append({"canonical_candidate_id": cid, "verdict": verdict})
     return {"candidate_set_hash": hashes.pop(),
             "adjudications": adjudications,
-            "format_violations": violations}
+            "format_errors": format_errors,
+            "unjudged": unjudged}
+
+
+# ── 3-1. AI 일치도 (부분 실행 거부) ──────────────────────────────────────────
+
+class PartialRunError(ValueError):
+    """AI 실행이 끝나지 않았다(ai_unjudged가 있거나 중단됐다) — 전체 일치도를 내지 않는다."""
+
+
+def _load_backend_agreement():
+    """일치도 계산은 백엔드와 같은 함수를 쓴다(`backend/app/agreement.py`, 표준 라이브러리만 쓴다)."""
+    import importlib.util
+    path = Path(__file__).resolve().parent.parent / "backend" / "app" / "agreement.py"
+    spec = importlib.util.spec_from_file_location("aida_backend_agreement", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"일치도 모듈을 읽지 못했다: {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def ai_agreement_report(ai_run: dict, sample_ids: list[str], human_verdicts: dict,
+                        registry: dict | None = None) -> dict:
+    """보조 표본에서 사람–AI 일치도. **완결된 실행에서만** 낸다.
+
+    * `ai_run`은 `ai_provider.py`의 실행 기록(`candidates`: 후보별 `status`·`verdict`). 출처가 `synthetic_dryrun`이거나
+      출처 등록부의 연습·손상 자료면 거부한다.
+    * 표본의 모든 후보가 처리돼야 한다 — `ai_unjudged`가 하나라도 있거나, 표본 후보가 실행 기록에 없거나, 실행이
+      중단 사유와 함께 끝났으면 `PartialRunError`. 부분 실행으로 전체 일치도를 내지 않는다.
+    * `ai_format_error` 후보는 AI 판정이 없는 것으로 넣고(hold로 바꾸지 않는다) 건수를 따로 적는다.
+    """
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from evaluation.provenance import assert_official_input
+    assert_official_input(ai_run, "AI 실행 기록", registry=registry)
+    if not sample_ids:
+        raise PartialRunError("보조 표본이 비어 있다")
+    rows = {r["canonical_candidate_id"]: r for r in ai_run.get("candidates") or []}
+    missing = sorted(set(sample_ids) - set(rows))
+    unjudged = sorted(cid for cid in sample_ids if rows.get(cid, {}).get("status") == AI_UNJUDGED)
+    if ai_run.get("stop_reason") or ai_run.get("complete") is not True or missing or unjudged:
+        raise PartialRunError(
+            f"부분 실행이다 — 전체 AI 일치도를 내지 않는다 (중단 사유 {ai_run.get('stop_reason')!r}, "
+            f"complete={ai_run.get('complete')!r}, 기록 없음 {len(missing)}건, ai_unjudged {len(unjudged)}건)")
+    for cid in sample_ids:
+        status = rows[cid].get("status")
+        if status not in (AI_JUDGED, AI_FORMAT_ERROR):
+            raise PartialRunError(f"{cid}: 알 수 없는 상태 {status!r}")
+    ai = {cid: (rows[cid].get("verdict") if rows[cid]["status"] == AI_JUDGED else None) for cid in sample_ids}
+    report = _load_backend_agreement().agreement_report(list(sample_ids), human_verdicts, ai)
+    report["ai_format_error"] = sum(1 for cid in sample_ids if rows[cid]["status"] == AI_FORMAT_ERROR)
+    report["ai_unjudged"] = 0
+    report["ai_run_complete"] = True
+    return report
 
 
 # ── 4. 드라이런 ──────────────────────────────────────────────────────────────
@@ -400,8 +477,9 @@ def _size_counts(requests: list[dict], images_root: Path | None, key: str) -> li
             for s, n in sorted(counter.items(), key=lambda kv: (-kv[1], str(kv[0])))]
 
 
-RETRY_POLICY = ("응답을 받지 못한 전송 오류(시간 초과·연결 실패·429·5xx)만 다시 보낸다. "
-                "응답을 받았으면(형식 위반·거부 포함) 다시 묻지 않고 그 원문을 최종으로 둔다 — 반복 1회")
+RETRY_POLICY = ("응답을 받지 못한 네트워크·서버 오류(시간 초과·연결 실패·429·529 과부하·5xx)만 다시 보낸다. "
+                "응답을 받았으면(형식 위반·거부 포함) 다시 묻지도 고치지도 않고 그 원문을 ai_format_error로 둔다. "
+                "최대 시도 수를 다 써도 응답이 없으면 그 후보는 ai_unjudged — 반복 1회")
 
 
 def build_run_manifest(requests: list[dict], prompt_text: str, model: str,
@@ -463,11 +541,11 @@ def write_bundle(requests: Iterable[dict], path: Path) -> int:
 
 
 def call_provider(*args, **kwargs):
-    """일부러 막아 둔 자리. 실수로라도 호출이 나가지 않게 한다."""
+    """일부러 막아 둔 자리. 이 도구에서는 실수로라도 호출이 나가지 않게 한다."""
     raise NotImplementedError(
-        "AI 판정자 호출은 구현되어 있지 않다. 유료 모델 호출이므로 "
-        "**사용자가 비용 상한과 모델 식별자를 먼저 승인**해야 한다. "
-        "승인 전까지 이 도구는 --dry-run만 한다.")
+        "이 도구는 AI 판정자를 부르지 않는다. 유료 모델 호출이므로 "
+        "**사용자가 비용 상한과 외부 전송을 먼저 승인**해야 한다. 호출 경로는 ai_provider.py에만 있고 "
+        "합성 입력·--approve-external-call·SDK·API 키를 모두 확인한 뒤에만 연다.")
 
 
 def main(argv: list[str] | None = None) -> int:

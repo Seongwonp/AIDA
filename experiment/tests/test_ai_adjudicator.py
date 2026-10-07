@@ -132,15 +132,31 @@ def test_payload에_candidate_set_hash와_판정이_들어간다():
     assert payload["candidate_set_hash"] == "abc"
     assert payload["adjudications"] == [{"canonical_candidate_id": "C0", "verdict": "miss"},
                                         {"canonical_candidate_id": "C1", "verdict": "hit"}]
-    assert payload["format_violations"] == []
+    assert payload["format_errors"] == [] and payload["unjudged"] == []
 
 
-def test_형식_위반과_거부는_hold로_사상하고_기록을_남긴다():
+def test_형식_위반과_거부는_hold로_사상하지_않고_ai_format_error로_남긴다():
+    """사전 등록 5-4절 개정(2026-10-07): 형식 위반은 hold가 아니다."""
     payload = A.to_adjudications({"candidate_set_hash": "abc", "responses": [
         {"canonical_candidate_id": "C0", "raw_text": "판단할 수 없습니다"}]})
-    assert payload["adjudications"] == [{"canonical_candidate_id": "C0", "verdict": "hold"}]
-    assert payload["format_violations"][0]["mapped_to"] == "hold"
-    assert payload["format_violations"][0]["error"]
+    assert payload["adjudications"] == []
+    assert payload["format_errors"][0]["status"] == A.AI_FORMAT_ERROR
+    assert payload["format_errors"][0]["error"]
+
+
+def test_ai_unjudged는_판정에도_형식_오류에도_넣지_않는다():
+    payload = A.to_adjudications({"candidate_set_hash": "abc", "responses": [
+        {"canonical_candidate_id": "C0", "status": A.AI_UNJUDGED, "reason": "cost_cap"},
+        {"canonical_candidate_id": "C1", "status": A.AI_FORMAT_ERROR, "raw_text": "x"},
+        {"canonical_candidate_id": "C2", "status": A.AI_JUDGED, "verdict": "hold"}]})
+    assert payload["adjudications"] == [{"canonical_candidate_id": "C2", "verdict": "hold"}]
+    assert [r["canonical_candidate_id"] for r in payload["unjudged"]] == ["C0"]
+    assert [r["canonical_candidate_id"] for r in payload["format_errors"]] == ["C1"]
+
+
+def test_세_상태와_hold는_서로_다르다():
+    assert len({A.AI_JUDGED, A.AI_FORMAT_ERROR, A.AI_UNJUDGED, "hold"}) == 4
+    assert A.MODEL_ID == "claude-sonnet-5" and A.TEMPERATURE == 0
 
 
 def test_서로_다른_묶음의_응답은_섞지_않는다():
@@ -464,3 +480,19 @@ def test_프롬프트_문서에서_꺼내면_사전_등록_지문과_맞는다(t
     assert A.main(args) == 0
     run = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
     assert run["prompt_sha256"] == expected
+
+
+OFFICIAL_REFLECTION = ('"If an object is reflected clearly in a glass window, then the reflection '
+                       'should be annotated."')
+
+
+def test_유리_반사_규칙은_공식_원문_인용만_쓴다():
+    """사전 등록 11-1절·프롬프트 모두 nuImages 공식 문장만 — 프로젝트 해석(흐릿하면 보류 등)을 덧붙이지 않는다."""
+    system = _draft_blocks()["system"]
+    line = [ln for ln in system.split("\n") if "reflected" in ln]
+    assert len(line) == 1 and OFFICIAL_REFLECTION in line[0]
+    assert "흐릿" not in system
+    prereg = (REPO / "docs" / "qa-preregistration.md").read_text(encoding="utf-8")
+    appendix = prereg[prereg.index("### 11-1."):]
+    assert OFFICIAL_REFLECTION in appendix and "instructions_nuimages.md" in appendix
+    assert "흐릿하거나" not in appendix and "물웅덩이" not in appendix

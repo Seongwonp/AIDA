@@ -1,0 +1,26 @@
+{
+ "schema_version": 1,
+ "name": "dataset_provenance_registry",
+ "purpose": "공식 분석(analyze_qa.py)·AI 일치도의 입력으로 쓸 수 없는 데이터셋·평가와 출처 표시를 적는다. 기존 근거 JSON은 고치지 않고 이 등록부로 소비자를 막는다(experiment/evaluation/provenance.py).",
+ "entries": [
+  {
+   "dataset_id": "006e49d2cbc9",
+   "evaluation_id": "practice1",
+   "description": "nuImages v1.0-train fit_check 연습 데이터셋과 그 연습 판정 practice1",
+   "role": "practice",
+   "provenance": "damaged",
+   "allowed_uses": ["ui_reference", "timing_reference"],
+   "not_allowed_uses": ["official_performance_evidence", "main_evaluation_evidence", "reproducibility_evidence"],
+   "reason": "2026-10-07 00:50:56~00:51:00 KST(2026-10-06T15:50:56.735Z~15:51:00.771Z) UI 점검 세션 smuwuv50k-1tgrp159가 후보 Ldbc6b5d4d95dac73에 판정을 8번 눌러 adjudications.json 바이트가 다시 쓰였다. 마지막 값은 원래 값 miss와 같고 개수는 hit 19·miss 144·hold 9로 같지만, 점검 전 파일 바이트는 남아 있지 않다. 점검한 에이전트는 판정을 누르지 않았다고 보고했다(보고와 기록 불일치).",
+   "incident_doc": "docs/provenance-incident-2026-10-07-practice1.md",
+   "recorded_at": "2026-10-07"
+  }
+ ],
+ "provenance_labels": {
+  "synthetic_dryrun": {
+   "meaning": "experiment/make_synthetic_ai_dryrun.py가 코드로 그린 합성 그림과 그것으로 만든 AI 비용·API 계약 드라이런 산출물",
+   "allowed_uses": ["cost_check", "api_contract_check"],
+   "not_allowed_uses": ["accuracy_evidence", "difficulty_evidence", "model_performance_evidence", "agreement_evidence", "official_analysis_input"]
+  }
+ }
+}

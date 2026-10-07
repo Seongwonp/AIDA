@@ -9,6 +9,8 @@
   (기본 판정자 primary). 다른 판정자의 내보내기는 `--adjudicator`로 명시할 때만 받는다 — 민감도 분석용.
 - 비교는 (기준선 − aida)의 고유 오류 수 차이, 이미지·기록 묶음 짝지은 부트스트랩. Δ는 없다 —
   성공·실패를 적지 않는다.
+- 출처 관문: 내보내기의 `provenance`가 `synthetic_dryrun`이거나, dataset_id·evaluation_id가 출처 등록부
+  (`experiment/planning_evidence/dataset_provenance_registry.json`)에 연습·출처 손상으로 적혀 있으면 중단한다.
 - 이 경로가 보장하는 것은 **고정 재표본의 판정 누락이 없다**는 것뿐이다. 구간의 포함률·통계적 타당성은
   검증하지 않는다(docs/unjudged-bootstrap-review-2026-09-27.md).
 """
@@ -23,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from evaluation.bootstrap import paired_cluster_bootstrap  # noqa: E402
 from evaluation.coverage import check_export_against_coverage, unjudged_in_fixed_resamples  # noqa: E402
 from evaluation.importer import load_export  # noqa: E402
+from evaluation.provenance import assert_official_input  # noqa: E402
 from evaluation.schema import ValidationError  # noqa: E402
 from evaluation.summary import summarise  # noqa: E402
 
@@ -31,6 +34,8 @@ AIDA = "aida"
 
 def analyse(export: dict, budget: int, iterations: int, seed: int, methods: list[str],
             adjudicator: str = "primary") -> dict:
+    # 합성 드라이런(synthetic_dryrun)과 출처 등록부의 연습·출처 손상 자료(practice1 등)는 공식 분석 입력이 아니다.
+    assert_official_input(export, "내보내기")
     if export.get("adjudicator", "primary") != adjudicator:
         raise ValidationError(
             f"내보내기의 판정자({export.get('adjudicator', 'primary')})가 분석이 요구한 판정자({adjudicator})와 다르다")
