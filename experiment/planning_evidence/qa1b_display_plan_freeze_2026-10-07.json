@@ -1,0 +1,274 @@
+{
+  "purpose": "qa1b 묶음 얼리기 기록 — 사전 등록 개정 5(판정 화면 묶음 표시). qa1과 같은 얼린 입력으로 다시 얼린 평가의 내용 동일성 대조. 판정 0건. 결과·집계 아님.",
+  "date": "2026-10-07",
+  "machine": "desktop",
+  "no_new_sampling_or_inference": "val 재표집·압축 해제·변환·업로드·진단(GPU)·후보 선정 재실행 없음. 데이터셋 dcdd1be32bd3의 진단 파일·자 기록·groups.json을 그대로 읽었다(SHA-256 전후 같음). 묶음 코드가 같은 입력·같은 씨앗으로 판정 대상·coverage(2000·42)·보조 표본을 결정론적으로 다시 계산했다",
+  "evaluation": {
+    "dataset_id": "dcdd1be32bd3",
+    "evaluation_id": "qa1b",
+    "endpoint": "POST /api/datasets/dcdd1be32bd3/evaluations",
+    "http_status": 200,
+    "attempts": 1,
+    "body": {
+      "evaluation_id": "qa1b",
+      "ranking_version": "aida_v2_candidate_iou",
+      "judge_budget": 90,
+      "shuffle_seed": 20260927,
+      "random_sample_size": 50,
+      "random_sample_seed": 20260928,
+      "min_label_height_px": 30,
+      "tie_seed": 20260929,
+      "coverage_iterations": 2000,
+      "coverage_seed": 42,
+      "auxiliary_sample_fraction": 0.3,
+      "auxiliary_sample_seed": 20260930,
+      "display_plan": {
+        "version": "layer_bundles_v1",
+        "labelled_bundles": 4
+      }
+    },
+    "body_equals_qa1_body_plus_display_plan": true,
+    "display_plan_request": {
+      "version": "layer_bundles_v1",
+      "labelled_bundles": 4
+    },
+    "candidate_set_hash": "f88c38f37387aa4d09482b7d74ea797922dd6494a800732e14ee8cddb278900f",
+    "snapshot_file_sha256": "d5ea2ae6b1ec73b34ace121cbb6a01d2fbb0fbbceb479a2185d5fbde50a0a952",
+    "created_at": "2026-10-07T03:29:09.858555+00:00"
+  },
+  "hashes": {
+    "qa1_old": "92148bb3cb36730fc5a30eea6fe6a670b8e6dc778f5443610287fa24b32a8b47",
+    "qa1b_new": "f88c38f37387aa4d09482b7d74ea797922dd6494a800732e14ee8cddb278900f",
+    "qa1b_content_hash_without_display_plan": "92148bb3cb36730fc5a30eea6fe6a670b8e6dc778f5443610287fa24b32a8b47",
+    "content_hash_equals_qa1": true,
+    "reason_new_hash_differs": "묶음 표시 계획(버전·층 순서·묶음마다 후보 id 순서)은 판정 조건이라 canonical_payload에 display_plan 키로 들어간다. 계획이 없는 묶음에는 키가 없어 qa1·practice1 지문은 그대로다. content_hash = 같은 재료에서 display_plan만 뺀 지문",
+    "recomputed_from_files": {
+      "qa1": "92148bb3cb36730fc5a30eea6fe6a670b8e6dc778f5443610287fa24b32a8b47",
+      "qa1b": "f88c38f37387aa4d09482b7d74ea797922dd6494a800732e14ee8cddb278900f"
+    }
+  },
+  "identity_checks": {
+    "candidates_full_equal": true,
+    "candidate_count": 1033,
+    "judge_ids_equal": true,
+    "judge_ids_len": 474,
+    "coverage_additional_equal": true,
+    "coverage_additional_len": 117,
+    "auxiliary_ids_equal": true,
+    "auxiliary_ids_len": 143,
+    "random_sample_ids_equal": true,
+    "random_sample_len": 50,
+    "other_frozen_fields_equal": {
+      "dataset_id": true,
+      "diagnosis_generated_at": true,
+      "ruler": true,
+      "shuffle_seed": true,
+      "candidate_pool": true,
+      "total_in_queue": true,
+      "judge_budget": true,
+      "random_sample_size": true,
+      "random_sample_seed": true,
+      "ranking_version": true,
+      "label_height_filter": true,
+      "auxiliary_sample": true,
+      "tie_seed": true,
+      "bootstrap_coverage": true
+    },
+    "raw_shuffle_order_equal": true,
+    "queue_set_equal": true,
+    "labelled_relative_order_equal": true,
+    "missing_relative_order_equal": true,
+    "qa1b_queue_is_labelled_then_missing": true,
+    "inspect_candidates_and_plan_equal_qa1b": true
+  },
+  "display_plan": {
+    "version": "layer_bundles_v1",
+    "request": {
+      "version": "layer_bundles_v1",
+      "labelled_bundles": 4
+    },
+    "layer_sizes": {
+      "labelled_candidates": 384,
+      "missing_candidates": 90
+    },
+    "bundle_sizes": [
+      96,
+      96,
+      96,
+      96,
+      90
+    ],
+    "layers": [
+      "labelled_candidates",
+      "labelled_candidates",
+      "labelled_candidates",
+      "labelled_candidates",
+      "missing_candidates"
+    ],
+    "plan_equals_recomputation_from_shuffle_and_layer_only": true,
+    "every_judged_candidate_in_exactly_one_bundle": true,
+    "fingerprint_material_sha256": "00cf31011473030383bb52dfbedb702e020fc1fb34f203d506b07ca3f5bce437",
+    "queue_bundles": [
+      {
+        "index": 0,
+        "layer": "labelled_candidates",
+        "layer_bundle": 1,
+        "layer_bundles": 4,
+        "size": 96
+      },
+      {
+        "index": 1,
+        "layer": "labelled_candidates",
+        "layer_bundle": 2,
+        "layer_bundles": 4,
+        "size": 96
+      },
+      {
+        "index": 2,
+        "layer": "labelled_candidates",
+        "layer_bundle": 3,
+        "layer_bundles": 4,
+        "size": 96
+      },
+      {
+        "index": 3,
+        "layer": "labelled_candidates",
+        "layer_bundle": 4,
+        "layer_bundles": 4,
+        "size": 96
+      },
+      {
+        "index": 4,
+        "layer": "missing_candidates",
+        "layer_bundle": 1,
+        "layer_bundles": 1,
+        "size": 90
+      }
+    ],
+    "queue_item_fields": [
+      "box",
+      "bundle",
+      "canonical_candidate_id",
+      "class_name",
+      "image",
+      "label_index",
+      "unique_error_id",
+      "verdict"
+    ],
+    "qa1_queue_item_fields": [
+      "box",
+      "canonical_candidate_id",
+      "class_name",
+      "image",
+      "label_index",
+      "unique_error_id",
+      "verdict"
+    ]
+  },
+  "rebuild_in_memory_from_frozen_inputs": {
+    "hash": "f88c38f37387aa4d09482b7d74ea797922dd6494a800732e14ee8cddb278900f",
+    "equals_stored": true,
+    "plan_equal": true,
+    "candidates_equal": true
+  },
+  "code": {
+    "snapshot_code_commit_field": "58b6e4b2855791016a7dfef355b1d3597750b808",
+    "note": "snapshot.code_commit은 묶음을 만든 순간의 HEAD(58b6e4b2)다. 묶음 표시 코드는 그때 아직 커밋 전 작업 트리에 있었다 — 그 작업 트리 그대로가 사전 등록 5-3절 '고정 코드 커밋 (개정 5)'의 커밋이다. 아래 git blob 해시가 그 커밋의 같은 경로 blob(git rev-parse <커밋>:<경로>)과 같으면 qa1b를 만든 코드가 그 커밋의 코드다",
+    "git_blob_at_creation": {
+      "backend/app/models.py": "249f225df768a4ab00dd97dd1c822bbc2d28748d",
+      "backend/app/routers/evaluation.py": "501b86c1d5f2f6a7fc7953fa7c7dd3f6ae01958b"
+    }
+  },
+  "protected_files_sha256": {
+    "before": {
+      "backend/app/data/uploads/dcdd1be32bd3/evaluations/qa1/snapshot.json": "8c42d1f2da18679c680f497581c241a98ae6791aaf914ff6373c8aa14f45aad0",
+      "experiment/planning_evidence/qa_main_v1_freeze_2026-10-07.json": "cab1008baec3b949367347cab799da1c839f9d9ddbfc4d0b700ecb6f8b0889c4",
+      "backend/app/data/uploads/dcdd1be32bd3/label_diagnosis.aida_v2_candidate_iou.json": "fabeb119d1e89435adc2c6d822f0b07742d630ff34fe37c83da7b5b16f669b75",
+      "backend/app/data/uploads/dcdd1be32bd3/ruler.aida_v2_candidate_iou.json": "27fd161c8dfd91dba00e03085c8d005453ba80450e118f2d0b1d1116b2a50e15",
+      "backend/app/data/uploads/dcdd1be32bd3/groups.json": "b7427aa6d40f18108eb649e3d04836b2061edda2e4c508bc2d0d51d459770f6a",
+      "/d/AIDA-eval/nuimages/qa1_dcdd1be32bd3/SHA256SUMS.json": "0ddda0c244dde77bb31f47c49dadcae1fe42c4131422a4968fa45c6db65fb88a",
+      "/d/AIDA-eval/nuimages/splits/eval_v1/sample_summary.json": "15935629d0f1d8ab2b846193f773dc599767bfc33ffb2d0d763bc1ff13c79406",
+      "/d/AIDA-eval/nuimages/qa1_dcdd1be32bd3/evaluations/qa1/snapshot.json": "8c42d1f2da18679c680f497581c241a98ae6791aaf914ff6373c8aa14f45aad0"
+    },
+    "after": {
+      "backend/app/data/uploads/dcdd1be32bd3/evaluations/qa1/snapshot.json": "8c42d1f2da18679c680f497581c241a98ae6791aaf914ff6373c8aa14f45aad0",
+      "experiment/planning_evidence/qa_main_v1_freeze_2026-10-07.json": "cab1008baec3b949367347cab799da1c839f9d9ddbfc4d0b700ecb6f8b0889c4",
+      "backend/app/data/uploads/dcdd1be32bd3/label_diagnosis.aida_v2_candidate_iou.json": "fabeb119d1e89435adc2c6d822f0b07742d630ff34fe37c83da7b5b16f669b75",
+      "backend/app/data/uploads/dcdd1be32bd3/ruler.aida_v2_candidate_iou.json": "27fd161c8dfd91dba00e03085c8d005453ba80450e118f2d0b1d1116b2a50e15",
+      "backend/app/data/uploads/dcdd1be32bd3/groups.json": "b7427aa6d40f18108eb649e3d04836b2061edda2e4c508bc2d0d51d459770f6a",
+      "/d/AIDA-eval/nuimages/qa1_dcdd1be32bd3/SHA256SUMS.json": "0ddda0c244dde77bb31f47c49dadcae1fe42c4131422a4968fa45c6db65fb88a",
+      "/d/AIDA-eval/nuimages/splits/eval_v1/sample_summary.json": "15935629d0f1d8ab2b846193f773dc599767bfc33ffb2d0d763bc1ff13c79406",
+      "/d/AIDA-eval/nuimages/qa1_dcdd1be32bd3/evaluations/qa1/snapshot.json": "8c42d1f2da18679c680f497581c241a98ae6791aaf914ff6373c8aa14f45aad0"
+    },
+    "all_equal": true
+  },
+  "preservation_copy": {
+    "where": "AIDA-eval/nuimages/qa1_dcdd1be32bd3/",
+    "manifest_sha256": "0ddda0c244dde77bb31f47c49dadcae1fe42c4131422a4968fa45c6db65fb88a",
+    "files_checked": 605,
+    "mismatches": [],
+    "files_on_disk_equal_manifest_keys": true
+  },
+  "qa1_and_qa1b_folders_after": {
+    "qa1": [
+      "snapshot.json"
+    ],
+    "qa1b": [
+      "snapshot.json"
+    ]
+  },
+  "image_name_appendix": {
+    "where": "AIDA-eval/nuimages/splits/eval_v1/sample_image_names.json (새 파일, 읽기 전용, sample_summary.json은 그대로)",
+    "count": 300,
+    "checks": {
+      "count": 300,
+      "tokens_equal_eval_tokens_txt": true,
+      "names_equal_freeze_record_sampled_images": true,
+      "names_equal_preservation_copy_images": true,
+      "names_equal_groups_json_keys": true,
+      "unique_names": true
+    },
+    "file_sha256": "0b11779a975818af47d1f2f19c20dd1c1fdf5cc4afde3c3e7405ca3dbeb6e0ae",
+    "names_only_sha256": "9838723dca13b13581746b65be14886320d17a2962bfea73303f777f4f1b8096",
+    "names_only_rule": "파일 이름 300개를 정렬해 LF로 잇고 끝에 LF 하나, UTF-8"
+  },
+  "browser_check_inspect_qa1b": {
+    "evaluation_id": "inspect_qa1b",
+    "url": "http://localhost:5173/?evaluate=dcdd1be32bd3:inspect_qa1b",
+    "same_body_plus_display_plan": true,
+    "candidate_set_hash": "f88c38f37387aa4d09482b7d74ea797922dd6494a800732e14ee8cddb278900f",
+    "observed": [
+      "머리글 '기존 라벨 묶음 1/4 · 1/96', 묶음 단추 5개(기존 라벨 1/4~4/4 (0/96), 누락 묶음 (0/90)), 전체 장면 이미지가 그려짐",
+      "키 2로 96건 판정 → 자동 넘김이 묶음 끝에서 멈추고 묶음 완료 화면('기존 라벨 묶음 1/4 판정을 마쳤습니다 (96건). 여기서 쉬어도 됩니다 …', 단추 '다음 묶음 시작 — 기존 라벨 묶음 2/4')",
+      "새로 고침(다시 열기) → '기존 라벨 묶음 2/4 · 1/96'에서 이어짐, 진행 96/474, 뒤 묶음 단추는 비활성",
+      "묶음 2 첫 후보에서 ← 무시, 묶음 단추로 묶음 1로 돌아감, 묶음 1 끝에서 → 무시, 마지막 후보 판정을 고치자(hold) 묶음 완료 화면 → 다음 묶음 시작 → 묶음 2의 첫 미판정",
+      "묶음 2~4 판정 뒤 누락 묶음 '누락 묶음 · 1/90', 질문 '이 객체의 라벨이 누락됐는가?'",
+      "누락 90건 판정 → 기존 완료 화면, 진행 474/474"
+    ],
+    "not_checked_in_browser": "저장 실패 시 머무름(서버를 멈추지 않았다 — vitest로 확인), 누락 묶음 앞 안내 문구(vitest로 확인)",
+    "inspect_files_after": [
+      "activity.jsonl",
+      "adjudications.json",
+      "snapshot.json"
+    ],
+    "inspect_adjudications": 474,
+    "console_errors": "409 두 건(activity 전송으로 추정 — 페이지 새로 고침 직후 묶음 해시를 받기 전 전송; 같은 이벤트는 다시 보내져 서버 기록에 남음). 판정 저장 실패 없음",
+    "first_attempt_note": "처음 inspect_qa1b 생성 요청이 서버 재시작 직전의 옛 코드 프로세스에 처리되어 계획 없는 묶음(지문 92148bb3…)이 생겼다. 판정·기록 없이 그 폴더를 작업용 임시 폴더로 옮기고(지우지 않음) 새 코드로 다시 만들었다. qa1b는 새 코드로 확인된 뒤 한 번에 만들었다"
+  },
+  "forbidden_actions_confirmed": {
+    "qa1_or_qa1b_opened_in_browser": false,
+    "qa1_or_qa1b_adjudications_or_activity": false,
+    "gpu_inference": false,
+    "resampling": false,
+    "aggregation": false,
+    "ai_calls": 0,
+    "git_commit_or_push": false
+  },
+  "post_commit_verification": {
+    "feature_commit": "3ba87e999ccf90c7e1c6c67ca6290950a2bf17ca",
+    "blob_models_py": "249f225df768a4ab00dd97dd1c822bbc2d28748d",
+    "blob_evaluation_py": "501b86c1d5f2f6a7fc7953fa7c7dd3f6ae01958b",
+    "matches_blobs_at_qa1b_creation": true,
+    "preregistration_amendment_commit": "802a240b9febf426b1d39412b64c239ba8f26d53"
+  }
+}
