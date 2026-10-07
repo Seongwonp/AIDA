@@ -77,11 +77,19 @@
 | 작업 기록 결함 | 판정 186 vs 기록 185, 마지막 세션 끝 미기록, `5cf0e998`에서 수정 | `docs/prelim1-results.md` 5절 | 문서·커밋 참조 |
 | 데이터 | KITTI val Car 300장, 씨앗 20260914, 자 `runs/clean` | `docs/prelim1-preregistration.md` 2절, `prelim1_manifest.json` | 문서 |
 
-## C. Q-A 설계 (초안 8절) — 결과 없음
+## C. Q-A 설계 (초안 8절) — 결과 없음 (묶음 고정, 본 판정 0건)
 
 | 항목 | 값 | 근거 파일 |
 |---|---|---|
 | D1~D9, coverage 설정 | `docs/qa-preregistration.md` 0절 | 커밋 `cdb30a3`·`2462562` |
+| 사전 등록 확정 커밋(val 표집 시) | `2b220051…` — 작업 트리 깨끗, `check_preregistration` 통과 | `experiment/planning_evidence/qa_main_v1_freeze_2026-10-07.json` → `preregistration` |
+| 판정자 구성 | 개발자 1인 전량. AI 보조 `disabled`(개정 3) · 두 번째 사람 판정자 미확보(개정 4) · 재판정 표본 143건(ceil 0.3×474, 씨앗 20260930, D8-3 판정자 내) | `experiment/planning_evidence/qa_main_v1_freeze_2026-10-07.json` → `preregistration.ai_adjudication`, `auxiliary_sample`; `docs/qa-preregistration.md` 개정 3·4 |
+| val 표본 (판정 전) | 300장, 기록 32개(val 82개 중), 부족 0, 씨앗 20260927 | `experiment/planning_evidence/qa_main_v1_freeze_2026-10-07.json` → `sampling.summary`, `val_logs_total` |
+| 진단 (판정 전) | 기존 라벨 1,075 · AIDA 후보 360 · 미매칭 예측 231 · ObjectLab 미매칭 점수 0건(→ `unmatched_objectlab` 측정 불가) | `experiment/planning_evidence/qa_main_v1_freeze_2026-10-07.json` → `diagnosis` |
+| 묶음 구성 (판정 전, 결과 아님) | 상위 N 합집합 316(기존 226·누락 90) · K 50(겹침 9) · 기본 풀 357 · 재표본 추가 117(**+32.8%**) · 판정 대상 474(기존 384·누락 90) ≤ C 1,000 · 범위 안 기존 라벨 802 | `experiment/planning_evidence/qa_main_v1_freeze_2026-10-07.json` → `judging` |
+| 높이 필터 제외·IoU 0 (판정 전) | AIDA 후보 108 · 규칙 밖 라벨 165 제외; 범위 안 IoU 0 라벨 60, `all_label_iou` 상위 90 중 60 | `experiment/planning_evidence/qa_main_v1_freeze_2026-10-07.json` → `section8_checks` |
+| qa1 → qa1b (개정 5, 판정 0건) | 표시 계획 뺀 내용 지문 `92148bb3…` = qa1; 후보 1,033·판정 대상 474·추가 117·K 50·재판정 표본 143·섞인 순서 같음; 개정 커밋 `802a240` | `experiment/planning_evidence/qa1b_display_plan_freeze_2026-10-07.json` → `hashes`, `identity_checks` |
+| practice1 출처 | `provenance: damaged`, 허용 용도 UI·시간 참고뿐 — 본 분석 제외 | `experiment/planning_evidence/dataset_provenance_registry.json`, `docs/provenance-incident-2026-10-07-practice1.md` |
 | 자 `car_v1_e100` | SHA-256 `fffecf52…`, fit_check 짚은 비율 71.6%, ruler_val fitness 0.5162(best 93에폭), 학습 3,200장·100에폭·4,093초 | `experiment/planning_evidence/nuimages_fit_check_car_v1_e100.json`, `desktop_environment.json` |
 | fit_check 높이별 짚은 비율 | <30px 50.7% · 30–60 77.6% · 60–120 86.2% · ≥120 96.0%; IoU 0 라벨 233/1,728 | 같은 fit_check 파일 `by_height`, `labels_with_iou0` |
 | nuImages 분할 | train 67,279 키프레임·기록 350 → fit_check 620장(기록 7) · ruler_val 357(기록 3) · ruler_train 3,200(기록 303), 씨앗 20260916 | `nuimages_split_dev_v1.json` |
