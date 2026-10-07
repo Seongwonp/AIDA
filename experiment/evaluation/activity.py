@@ -18,6 +18,7 @@ import json
 import math
 import random
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from .schema import ValidationError
 
@@ -235,6 +236,54 @@ def read_events(text: str) -> list[dict]:
         except ValueError as exc:
             raise ValidationError(f"{number}번째 줄을 읽지 못했다: {exc}") from exc
     return events
+
+
+def _parse_at(value) -> "datetime":
+    """`at`(브라우저가 찍은 ISO 8601 시각)을 시간대가 있는 datetime으로.
+
+    시간대가 없는 값은 거부한다 — 지역 시각인지 UTC인지 모르는 채로 구간을 자르면
+    엉뚱한 이벤트가 빠진다.
+    """
+    if not isinstance(value, str) or not value:
+        raise ValidationError(f"at이 없다: {value!r}")
+    text = value[:-1] + "+00:00" if value.endswith("Z") else value
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError as exc:
+        raise ValidationError(f"at을 읽지 못했다: {value!r}") from exc
+    if parsed.tzinfo is None:
+        raise ValidationError(f"at에 시간대가 없다: {value!r}")
+    return parsed
+
+
+def exclude_windows(events: list[dict], windows: list[dict]
+                    ) -> tuple[list[dict], list[dict]]:
+    """명시한 시각 구간의 이벤트를 **집계에서** 뺀다. 원시 기록은 고치지 않는다.
+
+    판정이 아닌 화면 점검(UI 확인) 때문에 같은 평가의 `activity.jsonl`에 이동 기록이
+    섞였을 때 쓴다. 구간은 `{"start": ISO, "end": ISO, "reason": str}`이고
+    **반열린 구간 [start, end)**이다. 시각 비교는 각 이벤트의 `at`으로 하며, 시간대가
+    없는 값은 거부한다. 순서는 보존한다.
+
+    돌려주는 것은 (남긴 이벤트, 뺀 이벤트). 뺀 것도 돌려주는 이유 — 무엇을 뺐는지를
+    증거 파일에 적어야 하기 때문이다(판정·저장 이벤트가 섞여 있었는지 등).
+    """
+    parsed = []
+    for w in windows:
+        start, end = _parse_at(w.get("start")), _parse_at(w.get("end"))
+        if not start < end:
+            raise ValidationError(f"구간의 시작이 끝보다 앞서야 한다: {w}")
+        if not str(w.get("reason") or "").strip():
+            raise ValidationError(f"구간마다 뺀 이유를 적는다: {w}")
+        parsed.append((start, end))
+    kept, dropped = [], []
+    for e in events:
+        at = _parse_at(e.get("at"))
+        if any(start <= at < end for start, end in parsed):
+            dropped.append(e)
+        else:
+            kept.append(e)
+    return kept, dropped
 
 
 def _check(events: list[dict]) -> None:

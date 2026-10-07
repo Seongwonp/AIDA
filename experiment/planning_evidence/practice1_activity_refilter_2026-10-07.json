@@ -1,0 +1,592 @@
+{
+ "name": "practice1_activity_refilter",
+ "date": "2026-10-07",
+ "label": "practice1(train fit_check) 작업 기록에서 판정 뒤 UI 점검 구간 두 개를 뺀 재집계 — 계획용. 분석·논문 결과에 쓰지 않는다. val 미개봉.",
+ "tool": "experiment/practice1_activity_refilter.py (evaluation.activity.exclude_windows)",
+ "timestamps": {
+  "field": "at",
+  "format": "ISO 8601 UTC with 'Z' suffix (browser clock)",
+  "local_timezone": "Korea Standard Time, UTC+09:00 (Windows Get-TimeZone)"
+ },
+ "raw_activity": {
+  "path": "backend/app/data/uploads/006e49d2cbc9/evaluations/practice1/activity.jsonl",
+  "sha256_now": "d635629e94b8bbacd58700ce437de1c135339bd8c04dfab32c54ae529d56cc43",
+  "lines_now": 1511
+ },
+ "previous_summary": {
+  "file": "experiment/planning_evidence/practice1_judging_summary_2026-10-07.json",
+  "commit": "3c7b1ad0 (2026-10-07 00:36:15 KST)",
+  "inferred_input": {
+   "lines": "1-1123",
+   "events": 1123,
+   "last_event_at": "2026-10-06T15:35:55.129Z",
+   "basis": "1123줄(마지막 판정 이벤트까지)에서 기존 요약의 모든 시간 값과 '끊긴 세션 1개'(g95nj6so, session_ended가 아직 없음)가 재현된다. 1124줄이면 끊긴 세션이 0개가 되어 기존 요약의 note와 맞지 않는다. 기존 요약 파일에는 줄 수·SHA가 적혀 있지 않아 그때 원시 파일의 SHA-256은 알 수 없다."
+  }
+ },
+ "exclusion_windows": [
+  {
+   "start": "2026-10-06T15:39:22.165Z",
+   "end": "2026-10-06T16:06:48Z",
+   "start_local": "2026-10-07T00:39:22.165+09:00",
+   "end_local": "2026-10-07T01:06:48+09:00",
+   "reason": "판정 뒤 판정 화면 UI 점검(2026-10-07 00:40~01:00 KST 무렵). 점검 세션 전체가 들어가도록 기록의 첫·마지막 이벤트에 맞춰 넓혔다"
+  },
+  {
+   "start": "2026-10-07T01:05:00Z",
+   "end": "2026-10-07T01:08:00Z",
+   "start_local": "2026-10-07T10:05:00+09:00",
+   "end_local": "2026-10-07T10:08:00+09:00",
+   "reason": "판정 화면 개편 뒤 UI 확인(프론트 작업, 이동만). 작업자가 알린 01:05~01:08 UTC를 그대로 쓰고, 기록의 해당 세션(…ang8tenx, 01:07:07.408Z~01:07:59.131Z, verdict_set·save 0건)이 전부 들어감을 확인했다"
+  }
+ ],
+ "excluded": {
+  "events": 388,
+  "lines": [
+   "1124-1511"
+  ],
+  "sessions": [
+   {
+    "session_id": "smuwu1qug-g95nj6so",
+    "events": 1,
+    "first_at": "2026-10-06T15:39:22.165Z",
+    "last_at": "2026-10-06T15:39:22.165Z",
+    "event_counts": {
+     "session_ended": 1
+    }
+   },
+   {
+    "session_id": "smuwugmnm-bbbv1xn6",
+    "events": 5,
+    "first_at": "2026-10-06T15:39:22.165Z",
+    "last_at": "2026-10-06T15:39:51.157Z",
+    "event_counts": {
+     "candidate_opened": 1,
+     "queue_load_started": 1,
+     "queue_load_succeeded": 1,
+     "session_ended": 1,
+     "session_started": 1
+    }
+   },
+   {
+    "session_id": "smuwuh90z-b74qatrf",
+    "events": 4,
+    "first_at": "2026-10-06T15:39:51.158Z",
+    "last_at": "2026-10-06T15:40:06.168Z",
+    "event_counts": {
+     "queue_load_started": 1,
+     "queue_load_succeeded": 1,
+     "session_ended": 1,
+     "session_started": 1
+    }
+   },
+   {
+    "session_id": "smuwuhklv-gk18dffn",
+    "events": 4,
+    "first_at": "2026-10-06T15:40:06.175Z",
+    "last_at": "2026-10-06T15:40:15.166Z",
+    "event_counts": {
+     "queue_load_started": 1,
+     "queue_load_succeeded": 1,
+     "session_ended": 1,
+     "session_started": 1
+    }
+   },
+   {
+    "session_id": "smuwuhrjs-04vduyvi",
+    "events": 4,
+    "first_at": "2026-10-06T15:40:15.168Z",
+    "last_at": "2026-10-06T15:40:27.161Z",
+    "event_counts": {
+     "queue_load_started": 1,
+     "queue_load_succeeded": 1,
+     "session_ended": 1,
+     "session_started": 1
+    }
+   },
+   {
+    "session_id": "smuwui0t1-lqvq2umd",
+    "events": 4,
+    "first_at": "2026-10-06T15:40:27.162Z",
+    "last_at": "2026-10-06T15:40:32.155Z",
+    "event_counts": {
+     "queue_load_started": 1,
+     "queue_load_succeeded": 1,
+     "session_ended": 1,
+     "session_started": 1
+    }
+   },
+   {
+    "session_id": "smuwui4nt-qyvbwbqj",
+    "events": 4,
+    "first_at": "2026-10-06T15:40:32.156Z",
+    "last_at": "2026-10-06T15:40:36.166Z",
+    "event_counts": {
+     "queue_load_started": 1,
+     "queue_load_succeeded": 1,
+     "session_ended": 1,
+     "session_started": 1
+    }
+   },
+   {
+    "session_id": "smuwui7r6-0eswd2zp",
+    "events": 4,
+    "first_at": "2026-10-06T15:40:36.167Z",
+    "last_at": "2026-10-06T15:42:23.176Z",
+    "event_counts": {
+     "queue_load_started": 1,
+     "queue_load_succeeded": 1,
+     "session_ended": 1,
+     "session_started": 1
+    }
+   },
+   {
+    "session_id": "smuwukibo-wbtrbx6j",
+    "events": 4,
+    "first_at": "2026-10-06T15:42:23.177Z",
+    "last_at": "2026-10-06T15:42:57.172Z",
+    "event_counts": {
+     "queue_load_started": 1,
+     "queue_load_succeeded": 1,
+     "session_ended": 1,
+     "session_started": 1
+    }
+   },
+   {
+    "session_id": "smuwul8k0-6pppnbx9",
+    "events": 4,
+    "first_at": "2026-10-06T15:42:57.173Z",
+    "last_at": "2026-10-06T15:43:41.696Z",
+    "event_counts": {
+     "queue_load_started": 1,
+     "queue_load_succeeded": 1,
+     "session_ended": 1,
+     "session_started": 1
+    }
+   },
+   {
+    "session_id": "smuwum6zi-9k7hrpx5",
+    "events": 6,
+    "first_at": "2026-10-06T15:43:41.845Z",
+    "last_at": "2026-10-06T15:43:41.866Z",
+    "event_counts": {
+     "queue_load_started": 2,
+     "session_ended": 2,
+     "session_started": 2
+    }
+   },
+   {
+    "session_id": "smuwum747-m265op4m",
+    "events": 54,
+    "first_at": "2026-10-06T15:43:41.974Z",
+    "last_at": "2026-10-06T15:46:24.720Z",
+    "event_counts": {
+     "candidate_opened": 22,
+     "focus_changed": 1,
+     "moved_next": 21,
+     "moved_previous": 1,
+     "queue_load_started": 2,
+     "queue_load_succeeded": 1,
+     "session_ended": 2,
+     "session_started": 2,
+     "visibility_changed": 2
+    }
+   },
+   {
+    "session_id": "smuwupors-e4bm1jfp",
+    "events": 54,
+    "first_at": "2026-10-06T15:46:24.816Z",
+    "last_at": "2026-10-06T15:49:00.302Z",
+    "event_counts": {
+     "candidate_opened": 22,
+     "focus_changed": 1,
+     "moved_next": 21,
+     "moved_previous": 1,
+     "queue_load_started": 2,
+     "queue_load_succeeded": 1,
+     "session_ended": 2,
+     "session_started": 2,
+     "visibility_changed": 2
+    }
+   },
+   {
+    "session_id": "smuwut0u2-3f3ysg39",
+    "events": 10,
+    "first_at": "2026-10-06T15:49:00.426Z",
+    "last_at": "2026-10-06T15:52:08.606Z",
+    "event_counts": {
+     "focus_changed": 1,
+     "queue_load_started": 2,
+     "queue_load_succeeded": 1,
+     "session_ended": 2,
+     "session_started": 2,
+     "visibility_changed": 2
+    }
+   },
+   {
+    "session_id": "smuwuv4tz-5dmgylmb",
+    "events": 8,
+    "first_at": "2026-10-06T15:50:38.925Z",
+    "last_at": "2026-10-06T15:50:39.041Z",
+    "event_counts": {
+     "queue_load_started": 2,
+     "session_ended": 2,
+     "session_started": 2,
+     "visibility_changed": 2
+    }
+   },
+   {
+    "session_id": "smuwuv50k-1tgrp159",
+    "events": 36,
+    "first_at": "2026-10-06T15:50:39.194Z",
+    "last_at": "2026-10-06T15:51:01.270Z",
+    "event_counts": {
+     "candidate_opened": 2,
+     "focus_changed": 1,
+     "moved_next": 1,
+     "moved_previous": 1,
+     "queue_load_started": 2,
+     "queue_load_succeeded": 1,
+     "save_started": 8,
+     "save_succeeded": 8,
+     "session_ended": 1,
+     "session_started": 2,
+     "verdict_set": 8,
+     "visibility_changed": 1
+    }
+   },
+   {
+    "session_id": "smuwux21n-2dhdfm4c",
+    "events": 4,
+    "first_at": "2026-10-06T15:52:08.606Z",
+    "last_at": "2026-10-06T15:53:37.603Z",
+    "event_counts": {
+     "queue_load_started": 1,
+     "queue_load_succeeded": 1,
+     "session_ended": 1,
+     "session_started": 1
+    }
+   },
+   {
+    "session_id": "smuwuyysl-aho935tl",
+    "events": 12,
+    "first_at": "2026-10-06T15:53:37.709Z",
+    "last_at": "2026-10-06T15:54:01.372Z",
+    "event_counts": {
+     "candidate_opened": 1,
+     "focus_changed": 1,
+     "moved_previous": 1,
+     "queue_load_started": 2,
+     "queue_load_succeeded": 1,
+     "session_ended": 2,
+     "session_started": 2,
+     "visibility_changed": 2
+    }
+   },
+   {
+    "session_id": "smuwuzh6g-mjlhqapg",
+    "events": 7,
+    "first_at": "2026-10-06T15:54:01.545Z",
+    "last_at": "2026-10-06T15:54:33.629Z",
+    "event_counts": {
+     "queue_load_started": 2,
+     "queue_load_succeeded": 1,
+     "session_ended": 2,
+     "session_started": 2
+    }
+   },
+   {
+    "session_id": "smuwv05xw-zip7jblg",
+    "events": 4,
+    "first_at": "2026-10-06T15:54:33.631Z",
+    "last_at": "2026-10-06T15:54:38.841Z",
+    "event_counts": {
+     "queue_load_started": 1,
+     "queue_load_succeeded": 1,
+     "session_ended": 1,
+     "session_started": 1
+    }
+   },
+   {
+    "session_id": "smuwv0a1x-41222on1",
+    "events": 54,
+    "first_at": "2026-10-06T15:54:38.977Z",
+    "last_at": "2026-10-06T15:56:07.357Z",
+    "event_counts": {
+     "candidate_opened": 22,
+     "focus_changed": 1,
+     "moved_next": 21,
+     "moved_previous": 1,
+     "queue_load_started": 2,
+     "queue_load_succeeded": 1,
+     "session_ended": 2,
+     "session_started": 2,
+     "visibility_changed": 2
+    }
+   },
+   {
+    "session_id": "smuwv26da-mec8k0x1",
+    "events": 10,
+    "first_at": "2026-10-06T15:56:07.512Z",
+    "last_at": "2026-10-06T15:56:58.047Z",
+    "event_counts": {
+     "focus_changed": 1,
+     "queue_load_started": 2,
+     "queue_load_succeeded": 1,
+     "session_ended": 2,
+     "session_started": 2,
+     "visibility_changed": 2
+    }
+   },
+   {
+    "session_id": "smuwv39ic-128v39yk",
+    "events": 10,
+    "first_at": "2026-10-06T15:56:58.220Z",
+    "last_at": "2026-10-06T15:58:49.051Z",
+    "event_counts": {
+     "focus_changed": 1,
+     "queue_load_started": 2,
+     "queue_load_succeeded": 1,
+     "session_ended": 2,
+     "session_started": 2,
+     "visibility_changed": 2
+    }
+   },
+   {
+    "session_id": "smuwv5n6c-c2315yas",
+    "events": 7,
+    "first_at": "2026-10-06T15:58:49.245Z",
+    "last_at": "2026-10-06T16:00:32.296Z",
+    "event_counts": {
+     "queue_load_started": 2,
+     "queue_load_succeeded": 1,
+     "session_ended": 2,
+     "session_started": 2
+    }
+   },
+   {
+    "session_id": "smuwv7xo7-1makkpkm",
+    "events": 6,
+    "first_at": "2026-10-06T16:00:36.204Z",
+    "last_at": "2026-10-06T16:00:36.249Z",
+    "event_counts": {
+     "queue_load_started": 2,
+     "session_ended": 2,
+     "session_started": 2
+    }
+   },
+   {
+    "session_id": "smuwv7y0l-ojxzw4hg",
+    "events": 9,
+    "first_at": "2026-10-06T16:00:36.731Z",
+    "last_at": "2026-10-06T16:06:47.015Z",
+    "event_counts": {
+     "queue_load_started": 2,
+     "queue_load_succeeded": 1,
+     "session_ended": 2,
+     "session_started": 2,
+     "visibility_changed": 2
+    }
+   },
+   {
+    "session_id": "smuwvfvwq-jsuu59jf",
+    "events": 6,
+    "first_at": "2026-10-06T16:06:47.122Z",
+    "last_at": "2026-10-06T16:06:47.422Z",
+    "event_counts": {
+     "queue_load_started": 2,
+     "queue_load_succeeded": 1,
+     "session_ended": 1,
+     "session_started": 2
+    }
+   },
+   {
+    "session_id": "smuxeqrk7-ang8tenx",
+    "events": 53,
+    "first_at": "2026-10-07T01:07:07.408Z",
+    "last_at": "2026-10-07T01:07:59.131Z",
+    "event_counts": {
+     "candidate_opened": 22,
+     "focus_changed": 1,
+     "moved_next": 21,
+     "moved_previous": 1,
+     "queue_load_started": 2,
+     "queue_load_succeeded": 1,
+     "session_ended": 2,
+     "session_started": 2,
+     "visibility_changed": 1
+    }
+   }
+  ],
+  "sessions_partially_excluded": [
+   "smuwu1qug-g95nj6so"
+  ],
+  "verdict_set_events": [
+   {
+    "line": 1302,
+    "session_id": "smuwuv50k-1tgrp159",
+    "canonical_candidate_id": "Ldbc6b5d4d95dac73",
+    "at": "2026-10-06T15:50:56.735Z",
+    "verdict": "hit"
+   },
+   {
+    "line": 1305,
+    "session_id": "smuwuv50k-1tgrp159",
+    "canonical_candidate_id": "Ldbc6b5d4d95dac73",
+    "at": "2026-10-06T15:50:57.266Z",
+    "verdict": "miss"
+   },
+   {
+    "line": 1308,
+    "session_id": "smuwuv50k-1tgrp159",
+    "canonical_candidate_id": "Ldbc6b5d4d95dac73",
+    "at": "2026-10-06T15:50:57.678Z",
+    "verdict": "hold"
+   },
+   {
+    "line": 1311,
+    "session_id": "smuwuv50k-1tgrp159",
+    "canonical_candidate_id": "Ldbc6b5d4d95dac73",
+    "at": "2026-10-06T15:50:58.518Z",
+    "verdict": "miss"
+   },
+   {
+    "line": 1314,
+    "session_id": "smuwuv50k-1tgrp159",
+    "canonical_candidate_id": "Ldbc6b5d4d95dac73",
+    "at": "2026-10-06T15:50:59.358Z",
+    "verdict": "hit"
+   },
+   {
+    "line": 1317,
+    "session_id": "smuwuv50k-1tgrp159",
+    "canonical_candidate_id": "Ldbc6b5d4d95dac73",
+    "at": "2026-10-06T15:50:59.741Z",
+    "verdict": "miss"
+   },
+   {
+    "line": 1320,
+    "session_id": "smuwuv50k-1tgrp159",
+    "canonical_candidate_id": "Ldbc6b5d4d95dac73",
+    "at": "2026-10-06T15:51:00.178Z",
+    "verdict": "hold"
+   },
+   {
+    "line": 1323,
+    "session_id": "smuwuv50k-1tgrp159",
+    "canonical_candidate_id": "Ldbc6b5d4d95dac73",
+    "at": "2026-10-06T15:51:00.748Z",
+    "verdict": "miss"
+   }
+  ]
+ },
+ "kept": {
+  "events": 1123,
+  "lines": [
+   "1-1123"
+  ],
+  "identical_to_first_1123_lines": true
+ },
+ "timing_refiltered": {
+  "active_seconds": 618.1,
+  "adjudication_seconds": 597.9,
+  "median_seconds_per_candidate": 1.64,
+  "mean_seconds_per_candidate": 2.18,
+  "p75": 2.56,
+  "p90_approx": 4.14,
+  "idle_seconds_excluded": 3298.1,
+  "sessions": 4,
+  "sessions_with_judgements": 1,
+  "timing_usable_flag": false,
+  "judged_candidates": 172,
+  "save_failures": 0,
+  "save_retries": 0,
+  "incomplete_sessions": [
+   "smuwu1qug-g95nj6so"
+  ]
+ },
+ "comparison_with_previous": {
+  "active_seconds": {
+   "previous": 618.1,
+   "refiltered": 618.1,
+   "equal": true
+  },
+  "adjudication_seconds": {
+   "previous": 597.9,
+   "refiltered": 597.9,
+   "equal": true
+  },
+  "median_seconds_per_candidate": {
+   "previous": 1.64,
+   "refiltered": 1.64,
+   "equal": true
+  },
+  "mean_seconds_per_candidate": {
+   "previous": 2.18,
+   "refiltered": 2.18,
+   "equal": true
+  },
+  "p75": {
+   "previous": 2.56,
+   "refiltered": 2.56,
+   "equal": true
+  },
+  "p90_approx": {
+   "previous": 4.14,
+   "refiltered": 4.14,
+   "equal": true
+  },
+  "idle_seconds_excluded": {
+   "previous": 3298.1,
+   "refiltered": 3298.1,
+   "equal": true
+  },
+  "sessions": {
+   "previous": 4,
+   "refiltered": 4,
+   "equal": true
+  },
+  "sessions_with_judgements": {
+   "previous": 1,
+   "refiltered": 1,
+   "equal": true
+  },
+  "timing_usable_flag": {
+   "previous": false,
+   "refiltered": false,
+   "equal": true
+  },
+  "save_failures": {
+   "previous": 0,
+   "refiltered": 0,
+   "equal": true
+  },
+  "save_retries": {
+   "previous": 0,
+   "refiltered": 0,
+   "equal": true
+  }
+ },
+ "reproduces_previous": true,
+ "adjudications": {
+  "sha256_now": "3bf4546806a4e8406cc5a4e5a9cf71db4ab2a693c8c0e7e400c64c67a1fedaa5",
+  "updated_at": "2026-10-06T15:51:00.771800+00:00",
+  "entries": 172,
+  "verdicts_now": {
+   "miss": 144,
+   "hold": 9,
+   "hit": 19
+  },
+  "last_verdicts_before_window": {
+   "miss": 144,
+   "hold": 9,
+   "hit": 19
+  },
+  "candidates_differing": []
+ },
+ "findings": [
+  "점검 구간 안 세션 하나(…1tgrp159, 00:50:53~00:51:01 KST)에 판정 화면 키 점검으로 보이는 verdict_set 8건과 저장 8건이 있다 — 한 후보(Ldbc6b5d4d95dac73)에 hit→miss→hold→miss→hit→miss→hold→miss. 마지막 값 miss가 점검 전 판정과 같아 저장된 판정 수는 바뀌지 않았다(차이 0건). 다만 adjudications.json이 그때 다시 쓰여 updated_at이 점검 시각이다. 점검 전 파일의 바이트·SHA-256은 남아 있지 않다.",
+  "판정 시기 탭(…g95nj6so)의 session_ended 한 건만 구간 시작 시각에 걸려 빠진다. 그 탭이 점검 새로고침으로 닫히며 찍힌 것이고, 빼야 기존 요약의 입력(1123줄)과 같아진다.",
+  "두 번째 구간(01:05~01:08 UTC = 10:05~10:08 KST)은 판정 화면 개편 뒤 UI 확인 세션 하나(…ang8tenx)다 — session·candidate_opened 22·moved_previous 1·moved_next 21, verdict_set·save 0건. 작업자는 UTC로 알렸고 기록의 at(UTC 'Z')과 맞는다.",
+  "두 구간을 빼면 기존 요약의 시간·저장 값이 전부 재현된다(reproduces_previous)."
+ ]
+}
