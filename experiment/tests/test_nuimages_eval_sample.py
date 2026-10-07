@@ -99,6 +99,50 @@ def test_커밋된_사전_등록이면_그_커밋을_돌려준다(repo):
     assert V.check_preregistration(repo, "prereg.md") == head
 
 
+@pytest.mark.parametrize("marker_line", [
+    "| AI 판정자 | **[미기입 — 임의로 채우지 않는다]** |",
+    "| API 버전 | [실행 전 기입] |",
+    "결과: 【Q-A 결과】",
+])
+def test_커밋됐어도_빈칸_표시가_남은_사전_등록이면_val을_열지_않는다(repo, marker_line):
+    """커밋·무변경만 보면 미완성 사전 등록으로도 val이 열린다 — 빈칸 표시도 막는다."""
+    (repo / "prereg.md").write_text(f"# 사전 등록\nN=90\n{marker_line}\n", encoding="utf-8")
+    git(repo, "add", "prereg.md")
+    git(repo, "commit", "-q", "-m", "prereg")
+    with pytest.raises(ValueError, match="채우지 않은 칸") as exc:
+        V.check_preregistration(repo, "prereg.md")
+    assert "3행" in str(exc.value)
+
+
+def test_하위_폴더의_사전_등록도_빈칸을_검사한다(repo):
+    (repo / "docs").mkdir()
+    (repo / "docs" / "prereg.md").write_text("C = 1,000\n모델 [실행 전 기입]\n", encoding="utf-8")
+    git(repo, "add", "docs/prereg.md")
+    git(repo, "commit", "-q", "-m", "prereg")
+    with pytest.raises(ValueError, match="채우지 않은 칸"):
+        V.check_preregistration(repo, "docs/prereg.md")
+
+
+def test_빈칸을_채워_커밋하면_다시_열린다(repo):
+    (repo / "prereg.md").write_text("모델 [실행 전 기입]\n", encoding="utf-8")
+    git(repo, "add", "prereg.md")
+    git(repo, "commit", "-q", "-m", "draft")
+    with pytest.raises(ValueError):
+        V.check_preregistration(repo, "prereg.md")
+    (repo / "prereg.md").write_text("모델 claude-sonnet-5\n", encoding="utf-8")
+    git(repo, "commit", "-q", "-am", "filled")
+    head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"],
+                          capture_output=True, text=True).stdout.strip()
+    assert V.check_preregistration(repo, "prereg.md") == head
+
+
+def test_빈칸_표시_목록과_위치():
+    found = V.unfilled_markers("a\nb [미기입]\nc 【x】 [실행 전 기입]\n")
+    assert [(m["line"], m["marker"]) for m in found] == [
+        (2, "[미기입"), (3, "[실행 전 기입]"), (3, "【")]
+    assert V.unfilled_markers("완성본\n") == []
+
+
 def test_표본_요약은_소비한_기록과_남은_기록_수를_적는다():
     """개발/최종 경계 (사전 등록 D1). 다음 평가가 같은 기록을 다시 쓰지 않게."""
     t = tables()

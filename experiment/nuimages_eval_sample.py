@@ -30,12 +30,41 @@ def _git(repo: Path, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True)
 
 
+# 사전 등록에 남은 빈칸 표시. 하나라도 있으면 **커밋되어 있어도** 사전 등록이 아니다
+# (docs/qa-preregistration.md 11절 "하나라도 비어 있으면 이 문서는 사전 등록이 아니다").
+# 이 표시들을 사전 등록 본문의 설명 문장에 그대로 쓰지 않는다 — 쓰면 완성본도 거부된다.
+UNFILLED_MARKERS = ("[미기입", "[실행 전 기입]", "【")
+
+
+def unfilled_markers(text: str) -> list[dict]:
+    """빈칸 표시가 남은 줄. 줄 번호(1부터)·표시·줄 앞부분."""
+    found = []
+    for number, line in enumerate(text.splitlines(), start=1):
+        for marker in UNFILLED_MARKERS:
+            if marker in line:
+                found.append({"line": number, "marker": marker, "text": line.strip()[:80]})
+    return found
+
+
 def check_preregistration(repo: Path, path: str) -> str:
-    """사전 등록 파일이 커밋되어 있고 바뀌지 않았으면 그 파일의 마지막 커밋을 돌려준다."""
+    """사전 등록 파일이 커밋되어 있고, 바뀌지 않았고, **빈칸 표시가 없으면** 그 파일의 마지막 커밋을 돌려준다."""
     if _git(repo, "ls-files", "--error-unmatch", path).returncode != 0:
         raise ValueError(f"사전 등록 파일이 git에 커밋되어 있지 않다 — val을 열지 않는다: {path}")
     if _git(repo, "diff", "--quiet", "HEAD", "--", path).returncode != 0:
         raise ValueError(f"사전 등록 파일에 커밋하지 않은 변경이 있다 — val을 열지 않는다: {path}")
+    # 바이트로 받아 UTF-8로 읽는다 — Windows 기본 인코딩(cp949)으로 읽으면 표시를 놓칠 수 있다.
+    shown = subprocess.run(["git", "-C", str(repo), "show", f"HEAD:{Path(path).as_posix()}"],
+                           capture_output=True)
+    if shown.returncode != 0:
+        raise ValueError(f"커밋된 사전 등록을 읽지 못했다 — val을 열지 않는다: {path}")
+    try:
+        committed = shown.stdout.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError(f"사전 등록이 UTF-8이 아니다 — val을 열지 않는다: {path}") from exc
+    left = unfilled_markers(committed)
+    if left:
+        where = ", ".join(f"{m['line']}행 {m['marker']}" for m in left[:10])
+        raise ValueError(f"사전 등록에 채우지 않은 칸이 {len(left)}곳 남았다 — val을 열지 않는다: {where}")
     commit = _git(repo, "log", "-1", "--format=%H", "--", path).stdout.strip()
     if not commit:
         raise ValueError(f"사전 등록 파일의 커밋을 찾지 못했다: {path}")
