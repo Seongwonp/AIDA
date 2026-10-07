@@ -19,13 +19,16 @@ import {
   missingObjects,
   nextMissingObject,
   progress,
+  questionFor,
   saveMessage,
   toJudgements,
   toRequest,
   unjudgedCount,
+  VERDICT_BUTTONS,
   type BlindCandidate,
   type EvalVerdict,
   type Judgements,
+  type SaveState,
 } from "./blindAdjudicationLogic";
 
 /**
@@ -55,11 +58,9 @@ import {
  * 두 모드를 넣으면 가림이 켜졌는지 아닌지가 상태에 달리게 되고, 그건 결과가
  * 휘었는지 나중에 알 수 없다는 뜻이다.
  */
-const VERDICTS = [
-  { verdict: "hit", label: "오류였다", key: "1" },
-  { verdict: "miss", label: "오류 아니었다", key: "2" },
-  { verdict: "hold", label: "모르겠다", key: "3" },
-] as const;
+// 단추 글자가 곧 판정 결과다(오류 있음 = hit · 오류 없음 = miss · 판단 보류 = hold).
+// 대응표는 `blindAdjudicationLogic.ts`의 `VERDICT_BUTTONS` 한 곳에만 둔다.
+const VERDICTS = VERDICT_BUTTONS;
 
 const KEY_VERDICT: Record<string, EvalVerdict | undefined> = Object.fromEntries(
   VERDICTS.map((v) => [v.key, v.verdict]),
@@ -79,10 +80,23 @@ export function BlindAdjudication({
   const [error, setError] = useState<string | null>(null);
   const [damaged, setDamaged] = useState(false);
   const [conflict, setConflict] = useState(false);
-  const [save, setSave] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+  const [save, setSave] = useState<SaveState>("idle");
   // `null`은 **띄울 후보가 없다**는 뜻이다 — 아직 안 불러왔거나 전부
   // 판정했거나. 0번으로 갈음하면 이미 판정한 후보에 시간이 쌓인다.
   const [cursor, setCursor] = useState<number | null>(null);
+  // 저장 응답은 렌더가 끝난 뒤에 온다. 그때의 **최신** 목록·판정·자리를 봐야 자동 이동이 맞는 곳으로
+  // 간다 — 클로저의 값은 판정을 누른 순간의 것이다.
+  const candidatesRef = useRef<BlindCandidate[]>([]);
+  candidatesRef.current = candidates;
+  const judgementsRef = useRef<Judgements>({});
+  judgementsRef.current = judgements;
+  const cursorRef = useRef<number | null>(null);
+  cursorRef.current = cursor;
+  // 저장이 진행 중인 후보. 그 후보에 대한 판정 입력은 응답이 올 때까지 무시한다 — 연타·키 반복으로
+  // 같은 판정이 두 번 저장되거나, 자동 이동이 두 번 일어나지 않게.
+  const savingIdRef = useRef<string | null>(null);
+  // 마지막으로 저장에 실패한 후보. "다시 시도"가 성공하면 그 후보에서 자동 이동한다.
+  const failedIdRef = useRef<string | null>(null);
   // 후보를 화면에 띄운 순간. 후보별 시간은 여기서부터 잰다.
   const openedRef = useRef<string | null>(null);
   // 첫 방문이면 튜토리얼을 띄운다. 저장소가 막혔으면 `tutorialSeen`이 false라 띄운다.
@@ -128,6 +142,8 @@ export function BlindAdjudication({
     setConflict(false);
     setDamaged(false);
     setSave("idle");
+    savingIdRef.current = null;
+    failedIdRef.current = null;
 
     // 목록을 기다린 시간은 **사람이 판정한 시간이 아니다.** 그 구간을 가려낼
     // 수 있게 조회의 시작과 끝을 남긴다.
@@ -242,35 +258,84 @@ export function BlindAdjudication({
   const left = unjudgedCount(candidates, judgements);
   const done = !loading && candidates.length > 0 && cursor === null;
 
-  const persist = (next: Judgements, retry = false) => {
+  /**
+   * 판정을 저장한다. `id`는 이 저장을 일으킨 후보, `advance`가 참이면 **저장이 성공한 뒤** 그 후보에서
+   * 다음 미판정 후보로 옮긴다(뒤에 없으면 앞에서 찾는다 — "다음 미판정"과 같은 규칙, 전부 판정했으면
+   * 완료 화면).
+   *
+   * 옮기지 않는 경우:
+   * - 저장 실패 — 지금 후보에 남아 "다시 시도"를 누를 수 있게 한다.
+   * - 누락을 오류 있음으로 골랐는데 객체 번호를 아직 안 정했다 — 저장 자체를 안 한다(`blockedIds`).
+   *   번호를 고르고 그 저장이 성공해야 옮긴다.
+   * - 응답이 오기 전에 판정자가 직접 다른 후보로 옮겼다 — 한 번 더 옮기면 본 적 없는 후보를 건너뛴다.
+   * - 그 사이 다른 평가로 바뀌었다.
+   *
+   * 자동 이동은 기존 이벤트 `moved_next`에 `meta: { auto: true }`를 붙여 남긴다 — 서버가 받는 이벤트
+   * 이름은 그대로고, 손으로 옮긴 것(`meta` 없음)과 가를 수 있다.
+   */
+  const persist = (
+    next: Judgements,
+    { id = null, advance = false, retry = false }:
+      { id?: string | null; advance?: boolean; retry?: boolean } = {},
+  ) => {
     if (blockedIds(candidates, next).length > 0) {
       // 누락 hit인데 어느 객체인지 안 정했다. **보내지 않는다.**
       setSave("idle");
       return;
     }
+    const list = candidates;
     setSave("saving");
     if (retry) log.record("save_retried");
     log.record("save_started");
-    void sendToServer(toRequest(candidates, next)).then((ok) => {
+    savingIdRef.current = id;
+    void sendToServer(toRequest(list, next)).then((ok) => {
       log.record(ok ? "save_succeeded" : "save_failed");
-      setSave(ok ? "saved" : "failed");
+      if (savingIdRef.current === id) savingIdRef.current = null;
+      if (candidatesRef.current !== list) return;           // 다른 평가로 바뀌었다
+      if (!ok) {
+        failedIdRef.current = id;
+        setSave("failed");
+        return;
+      }
+      if (failedIdRef.current === id) failedIdRef.current = null;
       // **다 끝났으면 기다리지 않고 보낸다.** 기록은 12건이 쌓이거나 10초마다
       // 나가는데, 판정자는 완료 화면에서 곧 창을 닫는다. 닫을 때의 전송
       // (`pagehide`·`sendBeacon`)은 보장되지 않는다 — prelim1에서 마지막
       // 후보의 판정은 저장됐는데 그 후보의 기록은 하나도 서버에 없었다.
-      if (ok && unjudgedCount(candidates, next) === 0) void log.flush();
+      const flushNow = unjudgedCount(list, next) === 0;
+
+      const latest = judgementsRef.current;
+      const at = id === null ? -1 : list.findIndex((c) => c.canonical_candidate_id === id);
+      const stillHere = at !== -1 && cursorRef.current === at;
+      const settled = id !== null && latest[id]?.verdict != null
+        && !blockedIds(list, latest).includes(id);
+      if (advance && stillHere && settled) {
+        const target = nextUnjudgedIndex(list, latest, at);
+        log.record("moved_next", null, { auto: true });
+        // 같은 응답으로 두 번 옮기지 않게 바로 적어 둔다(렌더 전에 또 불려도 `stillHere`가 거짓이 된다).
+        cursorRef.current = target;
+        setSave(target === null ? "saved" : "advanced");
+        setCursor(target);
+      } else {
+        setSave("saved");
+      }
+      if (flushNow) void log.flush();
     });
   };
 
   // **상태 갱신 함수 안에서 저장하지 않는다.** 갱신 함수는 React가 두 번 부를
   // 수 있어(개발 모드의 StrictMode) 같은 판정이 두 번 나간다.
-  const apply = (next: Judgements) => {
+  const apply = (next: Judgements, id: string, advance: boolean) => {
+    judgementsRef.current = next;     // 같은 렌더 안의 연속 입력도 최신 판정 위에 쌓이게
     setJudgements(next);
-    persist(next);
+    persist(next, { id, advance });
   };
 
   const judge = (id: string, verdict: EvalVerdict | null) => {
-    const before = judgements[id] ?? { verdict: null };
+    // 이 후보의 저장이 아직 진행 중이면 무시한다 — 연타·반복 입력이 두 번 저장·두 번 이동을 만든다.
+    if (savingIdRef.current === id) return;
+    const base = judgementsRef.current;
+    const before = base[id] ?? { verdict: null };
     // 오류가 아니라고 바꾸면 붙여 둔 누락 객체도 뗀다 — 남겨 두면 판정과
     // 이름이 어긋난 채로 저장된다.
     const missingObject = verdict === "hit" ? before.missingObject ?? null : null;
@@ -278,22 +343,30 @@ export function BlindAdjudication({
     // 판정자가 그걸 보고 다음 판단을 조절한다.
     if (verdict === null) log.record("verdict_cleared", id);
     else log.record("verdict_set", id, { verdict });
-    apply({ ...judgements, [id]: { verdict, missingObject } });
+    // 판정 취소는 옮기지 않는다 — 다시 고르려는 것이다.
+    apply({ ...base, [id]: { verdict, missingObject } }, id, verdict !== null);
   };
 
   const link = (id: string, name: string) => {
-    const known = missingObjects(candidates, judgements,
+    if (savingIdRef.current === id) return;
+    const base = judgementsRef.current;
+    const known = missingObjects(candidates, base,
                                  candidates.find((c) =>
                                    c.canonical_candidate_id === id)?.image ?? "");
     log.record(known.includes(name) ? "missing_object_linked"
                                     : "missing_object_created", id, { name });
     apply({
-      ...judgements,
-      [id]: { verdict: judgements[id]?.verdict ?? "hit", missingObject: name },
-    });
+      ...base,
+      [id]: { verdict: base[id]?.verdict ?? "hit", missingObject: name },
+    }, id, true);
   };
 
-  const retry = () => persist(judgements, true);
+  const retry = () => {
+    const id = failedIdRef.current;
+    if (id !== null && savingIdRef.current === id) return;
+    const latest = judgementsRef.current;
+    persist(latest, { id, advance: id !== null && latest[id]?.verdict != null, retry: true });
+  };
 
   // 이동도 버튼과 단축키가 **같은 함수**를 부른다 — 기록(`moved_*`)이 갈리지 않게.
   const canPrevious = cursor !== null && cursor > 0;
@@ -302,7 +375,8 @@ export function BlindAdjudication({
   // 그 후보도 저장된 것처럼 읽힌다. 저장 중·실패는 그대로 둔다(실패는 다시 시도해야 한다).
   // 화면 표시만 바꾼다 — 저장 요청·기록은 건드리지 않는다.
   const moveTo = (index: number | null) => {
-    setSave((s) => (s === "saved" ? "idle" : s));
+    setSave((s) => (s === "saved" || s === "advanced" ? "idle" : s));
+    cursorRef.current = index;
     setCursor(index);
   };
   const goPrevious = () => {
@@ -315,7 +389,7 @@ export function BlindAdjudication({
   };
 
   /**
-   * 단축키 — 1 오류였다 · 2 오류 아니었다 · 3 모르겠다 · ←/→ 이전/다음.
+   * 단축키 — 1 오류 있음 · 2 오류 없음 · 3 판단 보류 · ←/→ 이전/다음.
    *
    * **클릭과 같은 `judge`를 부른다.** 그래야 `verdict_set`·저장 기록이 클릭과 똑같다. 입력칸에서
    * 글자를 칠 때, 튜토리얼이 떠 있을 때, 키를 누르고 있어 반복될 때는 아무것도 하지 않는다 —
@@ -324,6 +398,8 @@ export function BlindAdjudication({
   const keyRef = useRef<(e: KeyboardEvent) => void>(() => undefined);
   keyRef.current = (e: KeyboardEvent) => {
     if (tutorial || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    // 대화 상자(튜토리얼·전체 이미지 보기)가 떠 있으면 뒤 화면을 조작하지 않는다.
+    if (document.querySelector('[aria-modal="true"]')) return;
     const el = e.target as HTMLElement | null;
     const tag = el?.tagName;
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el?.isContentEditable) return;
@@ -358,7 +434,7 @@ export function BlindAdjudication({
     ? ""
     : judgements[currentId]?.verdict
       ? "이 후보의 판정은 저장되어 있습니다."
-      : "판정을 누르면 바로 저장됩니다.";
+      : "판정을 누르면 바로 저장되고 다음 후보로 넘어갑니다.";
   const saveText = save === "idle" ? idleHint : saveMessage(save);
 
   return (
@@ -415,15 +491,11 @@ export function BlindAdjudication({
             labelIndex={current.label_index}
           />
           <div className="judge-controls">
-          <p className="judge-question">
-            {current.label_index === null
-              ? `여기 ${current.class_name ?? "객체"}가 있는데 라벨이 빠졌는가?`
-              : `이 ${current.class_name ?? "객체"} 라벨이 잘 감쌌는가?`}
-          </p>
+          <p className="judge-question">{questionFor(current.label_index)}</p>
           <p className="muted judge-help">
             {current.label_index === null
-              ? "실제 객체가 있는데 라벨이 없으면 오류였다, 객체가 아니거나 라벨 대상이 아니면 오류 아니었다, 가림·해상도 때문에 불명확하면 모르겠다."
-              : "실무상 고쳐야 할 만큼 어긋났으면 오류였다, 이대로 써도 되면 오류 아니었다, 경계가 애매하거나 객체를 확인할 수 없으면 모르겠다."}
+              ? "실제 객체가 있는데 라벨(파랑)이 없으면 오류 있음, 객체가 아니거나 라벨 대상이 아니거나 이미 파랑이 덮고 있으면 오류 없음, 가림·해상도 때문에 불명확하면 판단 보류."
+              : "고쳐야 할 만큼 어긋났으면 오류 있음, 이대로 학습에 써도 되면 오류 없음, 경계가 애매하거나 객체를 확인할 수 없으면 판단 보류."}
           </p>
 
           {/* 단축키 표시는 CSS(`data-key`)로 그린다 — 버튼의 접근 이름과 글자는 판정 이름만 남는다. */}
@@ -467,7 +539,7 @@ export function BlindAdjudication({
                 <legend>어느 객체인가</legend>
                 <p className="missing-hint">
                   이 사진에서 이미 번호를 붙인 차와 <b>같은 차</b>면 그 번호를, 처음 보는 차면
-                  <b> 새 객체</b>를 고릅니다. 골라야 저장됩니다.
+                  <b> 새 객체</b>를 고릅니다. 골라야 저장되고, 저장되면 다음 후보로 넘어갑니다.
                 </p>
                 {missingObjects(candidates, judgements, current.image).map((name) => (
                   <button

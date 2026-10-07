@@ -18,9 +18,9 @@ describe("Guide", () => {
 describe("JudgingGuideline", () => {
   it("세 판정과 화면 색을 설명한다", () => {
     render(<JudgingGuideline />);
-    expect(screen.getAllByText("오류였다").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("오류 아니었다").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("모르겠다").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("오류 있음").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("오류 없음").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("판단 보류").length).toBeGreaterThan(0);
     expect(screen.getAllByText("주황 점선").length).toBeGreaterThan(0);
   });
 

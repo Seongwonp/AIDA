@@ -9,7 +9,7 @@
  * 확인한다. 실제 픽셀은 브라우저에서 눈으로 본다.
  */
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 const getLabelBoxes = vi.fn();
 vi.mock("../api", () => ({
@@ -18,16 +18,20 @@ vi.mock("../api", () => ({
 }));
 
 import { AdjudicationView, CANDIDATE_COLOR, CONTEXT_COLOR,
-         MISSING_COLOR } from "./AdjudicationView";
+         MISSING_COLOR, VIEW_MAX } from "./AdjudicationView";
+import { cropRegion } from "./adjudicationCrop";
 
 /** 그려진 사각형을 색깔·점선과 함께 모은다. */
 type Drawn = { color: string; dashed: boolean; rect: number[] };
 
 let drawn: Drawn[];
+/** drawImage 호출 인자(원본 sx, sy, sw, sh, 대상 dx, dy, dw, dh). */
+let images: number[][];
 let loadImage: (() => void) | null;
 
 beforeEach(() => {
   drawn = [];
+  images = [];
   loadImage = null;
   getLabelBoxes.mockResolvedValue({ image: "a.jpg", labels: [] });
 
@@ -44,7 +48,7 @@ beforeEach(() => {
                    rect: [x, y, w, h] });
     },
     clearRect: () => undefined,
-    drawImage: () => undefined,
+    drawImage: (_img: unknown, ...a: number[]) => void images.push(a),
     fillStyle: "",
     font: "",
     fillRect: () => undefined,
@@ -175,7 +179,7 @@ describe("범례", () => {
 
   test("누락 후보에는 무엇을 묻는지 적는다", async () => {
     show({ labelIndex: null });
-    expect(screen.getByText(/여기 라벨이 빠졌는가/)).toBeTruthy();
+    expect(screen.getByText(/이 객체의 라벨이 누락됐는가/)).toBeTruthy();
     expect(screen.getByText(/박스 품질을 보는/)).toBeTruthy();
   });
 });
@@ -195,7 +199,7 @@ describe("누락 표시 글자", () => {
     expect(fills).toHaveLength(1);
     const [x, , w] = fills[0];
     expect(x).toBeGreaterThanOrEqual(0);
-    expect(x + w).toBeLessThanOrEqual(340);
+    expect(x + w).toBeLessThanOrEqual(document.querySelector("canvas")!.width);
   });
 });
 
@@ -209,5 +213,114 @@ describe("범례 대비", () => {
     Array.from(document.querySelectorAll(".adj-legend > span")).forEach((s) => {
       expect((s as HTMLElement).style.color).toBe("");
     });
+  });
+});
+
+describe("그림 크기와 비율", () => {
+  test("자르는 창이 원본 비율을 따른다 — 정사각형으로 자르지 않는다", () => {
+    // 1600×900(16:9) 원본, 작은 박스 → 짧은 변 260(MIN_SPAN), 긴 변 260×16/9.
+    const r = cropRegion([800, 400, 840, 430], 1600, 900);
+    expect(r.sw / r.sh).toBeCloseTo(1600 / 900, 6);
+    expect(r.sh).toBeCloseTo(260, 6);
+    // 이미지보다 큰 창은 비율을 지킨 채 이미지에 맞춘다.
+    const big = cropRegion([0, 0, 1500, 880], 1600, 900);
+    expect([big.sx, big.sy]).toEqual([0, 0]);
+    expect(big.sw).toBeCloseTo(1600, 6);
+    expect(big.sh).toBeCloseTo(900, 6);
+    // 세로 사진도 같다.
+    const tall = cropRegion([100, 100, 120, 140], 600, 1000);
+    expect(tall.sw / tall.sh).toBeCloseTo(0.6, 6);
+    // 창은 이미지 밖으로 나가지 않는다.
+    const edge = cropRegion([1590, 880, 1600, 900], 1600, 900);
+    expect(edge.sx + edge.sw).toBeLessThanOrEqual(1600);
+    expect(edge.sy + edge.sh).toBeLessThanOrEqual(900);
+  });
+
+  test("캔버스는 원본 비율 그대로, devicePixelRatio배 해상도로 그린다", async () => {
+    vi.stubGlobal("devicePixelRatio", 2);
+    show();
+    await waitFor(() => expect(loadImage).toBeTruthy());
+    loadImage!();
+    const canvas = document.querySelector("canvas")!;
+    expect(canvas.width).toBe(VIEW_MAX * 2);
+    // FakeImage는 1000×800 — 그림도 5:4다(찌그러지지 않는다).
+    expect(canvas.width / canvas.height).toBeCloseTo(1000 / 800, 2);
+    const [sx, sy, sw, sh, dx, dy, dw, dh] = images.at(-1)!;
+    expect(sw / sh).toBeCloseTo(dw / dh, 2);
+    expect([dx, dy, dw, dh]).toEqual([0, 0, canvas.width, canvas.height]);
+    expect(sx).toBeGreaterThanOrEqual(0);
+    expect(sy).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("전체 이미지 보기", () => {
+  async function loaded() {
+    show();
+    await waitFor(() => expect(loadImage).toBeTruthy());
+    await act(async () => loadImage!());
+    return screen.getByRole("button", { name: "전체 이미지 크게 보기" });
+  }
+
+  test("그림 단추에 접근 이름이 있고, 불러오기 전에는 못 누른다", async () => {
+    show();
+    const trigger = screen.getByRole("button", { name: "전체 이미지 크게 보기" });
+    expect((trigger as HTMLButtonElement).disabled).toBe(true);
+    await waitFor(() => expect(loadImage).toBeTruthy());
+    await act(async () => loadImage!());
+    expect((trigger as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  test("누르면 원본 전체를 같은 박스와 함께 보여 주고, Esc로 닫으면 초점이 돌아온다", async () => {
+    const trigger = await loaded();
+    trigger.focus();
+    const before = images.length;
+    await act(async () => trigger.click());
+
+    const dialog = screen.getByRole("dialog", { name: "전체 이미지" });
+    expect(dialog.getAttribute("aria-modal")).toBe("true");
+    // 원본 전체(0,0,1000,800)를 그렸다.
+    expect(images.slice(before).some(([sx, sy, sw, sh]) =>
+      sx === 0 && sy === 0 && sw === 1000 && sh === 800)).toBe(true);
+    // 후보 박스도 같이 그렸다.
+    expect(drawn.filter((d) => d.color === CANDIDATE_COLOR).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByRole("img", { name: /a\.jpg 전체/ })).toBeTruthy();
+    // 초점은 대화 상자 안(닫기 단추)에 있다.
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "닫기 (Esc)" }));
+
+    await act(async () => {
+      fireEvent.keyDown(window, { key: "Escape" });
+    });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  test("Enter로도 열린다(단추 기본 동작)", async () => {
+    const trigger = await loaded();
+    // jsdom은 단추의 Enter → click을 흉내 내지 않는다 — 단추 요소라 브라우저가 해 준다는 것을 고정한다.
+    expect(trigger.tagName).toBe("BUTTON");
+    expect(trigger.getAttribute("type")).toBe("button");
+    await act(async () => trigger.click());
+    expect(screen.getByRole("dialog")).toBeTruthy();
+  });
+
+  test("Tab이 대화 상자 밖으로 나가지 않고, 닫기 단추·바깥 클릭으로 닫힌다", async () => {
+    const trigger = await loaded();
+    await act(async () => trigger.click());
+    const close = screen.getByRole("button", { name: "닫기 (Esc)" });
+    fireEvent.keyDown(close, { key: "Tab" });
+    expect(document.activeElement).toBe(close);
+    fireEvent.keyDown(close, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(close);
+
+    await act(async () => close.click());
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+
+    await act(async () => trigger.click());
+    const backdrop = document.querySelector(".adj-full-backdrop")!;
+    await act(async () => {
+      fireEvent.mouseDown(backdrop);
+    });
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });

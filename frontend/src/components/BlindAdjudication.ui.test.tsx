@@ -90,25 +90,23 @@ afterEach(() => {
 });
 
 describe("단축키", () => {
-  test("1·2·3이 오류였다·오류 아니었다·모르겠다를 고르고 클릭과 같이 저장한다", async () => {
-    getBlindQueue.mockResolvedValue(queue([cand()]));
-    show();
+  /** 새로 띄운 화면에서 키 하나를 눌러 저장된 판정값을 돌려준다. */
+  async function savedByKey(key: string) {
+    putAdjudications.mockClear();
+    getBlindQueue.mockResolvedValue(queue([cand(), cand({ canonical_candidate_id: "B", image: "b.jpg" })]));
+    const { unmount } = show();
     await screen.findByText("a.jpg");
-
-    await press("1");
+    await press(key);
     await waitFor(() => expect(putAdjudications).toHaveBeenCalledTimes(1));
-    expect(putAdjudications.mock.calls[0][3][0]).toMatchObject({ verdict: "hit" });
-    expect(pressed()).toEqual(["오류였다"]);
+    const row = putAdjudications.mock.calls[0][3][0];
+    await act(async () => unmount());
+    return [row.canonical_candidate_id, row.verdict];
+  }
 
-    await press("2");
-    await waitFor(() => expect(putAdjudications).toHaveBeenCalledTimes(2));
-    expect(putAdjudications.mock.calls[1][3][0]).toMatchObject({ verdict: "miss" });
-    expect(pressed()).toEqual(["오류 아니었다"]);
-
-    await press("3");
-    await waitFor(() => expect(putAdjudications).toHaveBeenCalledTimes(3));
-    expect(putAdjudications.mock.calls[2][3][0]).toMatchObject({ verdict: "hold" });
-    expect(pressed()).toEqual(["모르겠다"]);
+  test("1·2·3이 오류 있음·오류 없음·판단 보류를 고르고 hit·miss·hold로 저장한다", async () => {
+    expect(await savedByKey("1")).toEqual(["A", "hit"]);
+    expect(await savedByKey("2")).toEqual(["A", "miss"]);
+    expect(await savedByKey("3")).toEqual(["A", "hold"]);
   });
 
   test("단축키 판정의 기록이 클릭 판정의 기록과 같다", async () => {
@@ -118,8 +116,8 @@ describe("단축키", () => {
       const { unmount } = show();
       await screen.findByText("a.jpg");
       if (how === "key") await press("1");
-      else await act(async () => screen.getByRole("button", { name: "오류였다" }).click());
-      await screen.findByText("저장됨");
+      else await act(async () => screen.getByRole("button", { name: "오류 있음" }).click());
+      await screen.findByText(/모두 판정했습니다/);
       await act(async () => unmount());
       return logged()
         .filter((e) => e.event.startsWith("verdict") || e.event.startsWith("save"))
@@ -204,9 +202,9 @@ describe("단축키", () => {
     getBlindQueue.mockResolvedValue(queue([cand()]));
     show();
     await screen.findByText("a.jpg");
-    expect(screen.getByRole("button", { name: "오류였다" }).getAttribute("aria-keyshortcuts")).toBe("1");
-    expect(screen.getByRole("button", { name: "오류 아니었다" }).getAttribute("aria-keyshortcuts")).toBe("2");
-    expect(screen.getByRole("button", { name: "모르겠다" }).getAttribute("aria-keyshortcuts")).toBe("3");
+    expect(screen.getByRole("button", { name: "오류 있음" }).getAttribute("aria-keyshortcuts")).toBe("1");
+    expect(screen.getByRole("button", { name: "오류 없음" }).getAttribute("aria-keyshortcuts")).toBe("2");
+    expect(screen.getByRole("button", { name: "판단 보류" }).getAttribute("aria-keyshortcuts")).toBe("3");
     expect(screen.getByRole("button", { name: "이전" }).getAttribute("aria-keyshortcuts")).toBe("ArrowLeft");
     expect(screen.getByRole("button", { name: "다음" }).getAttribute("aria-keyshortcuts")).toBe("ArrowRight");
   });
@@ -217,16 +215,23 @@ describe("선택 표시", () => {
     getBlindQueue.mockResolvedValue(queue([cand(), cand({ canonical_candidate_id: "B" })]));
     show();
     await screen.findByText("a.jpg");
-    for (const name of ["오류였다", "오류 아니었다", "모르겠다"]) {
+    for (const name of ["오류 있음", "오류 없음", "판단 보류"]) {
       expect(screen.getByRole("button", { name }).getAttribute("aria-pressed")).toBe("false");
     }
 
-    await act(async () => screen.getByRole("button", { name: "오류 아니었다" }).click());
-    expect(screen.getByRole("button", { name: "오류 아니었다" }).getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByRole("button", { name: "오류였다" }).getAttribute("aria-pressed")).toBe("false");
+    await act(async () => screen.getByRole("button", { name: "오류 없음" }).click());
+    // 저장되면 B로 넘어간다. 돌아가면 고른 판정이 눌려 있다.
+    await screen.findByText(/앞 후보 저장됨/);
+    expect(pressed()).toEqual([]);
+    await press("ArrowLeft");
+    expect(screen.getByRole("button", { name: "오류 없음" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "오류 있음" }).getAttribute("aria-pressed")).toBe("false");
 
     await act(async () => screen.getByRole("button", { name: "판정 취소" }).click());
     expect(pressed()).toEqual([]);
+    // 판정 취소는 옮기지 않는다.
+    await screen.findByText("저장됨");
+    expect(screen.getByText("후보 1 / 2")).toBeTruthy();
   });
 });
 
@@ -283,7 +288,7 @@ describe("첫 방문 튜토리얼", () => {
 
     await act(async () => screen.getByRole("button", { name: "건너뛰기" }).click());
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.getByRole("button", { name: "오류였다" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "오류 있음" })).toBeTruthy();
   });
 
   test("튜토리얼에 후보·방법 이름·점수 값이 없다", async () => {
@@ -320,7 +325,7 @@ describe("진행 막대", () => {
     expect(bar.max).toBe(4);
     screen.getByText("1 / 4 판정 (남은 3)");
 
-    await act(async () => screen.getByRole("button", { name: "모르겠다" }).click());
+    await act(async () => screen.getByRole("button", { name: "판단 보류" }).click());
     expect(bar.value).toBe(2);
     screen.getByText("2 / 4 판정 (남은 2)");
   });
@@ -329,17 +334,27 @@ describe("진행 막대", () => {
     let release!: (v: unknown) => void;
     putAdjudications.mockReturnValueOnce(new Promise((r) => (release = r)));
     putAdjudications.mockRejectedValueOnce(new Error("끊김"));
-    getBlindQueue.mockResolvedValue(queue([cand()]));
+    getBlindQueue.mockResolvedValue(queue([
+      cand({ canonical_candidate_id: "A" }),
+      cand({ canonical_candidate_id: "B", image: "b.jpg" }),
+    ]));
     show();
     await screen.findByText("a.jpg");
 
-    await act(async () => screen.getByRole("button", { name: "오류였다" }).click());
+    await act(async () => screen.getByRole("button", { name: "오류 있음" }).click());
     expect(screen.getByText("저장 중…").className).toMatch(/save-saving/);
     await act(async () => release({}));
-    expect((await screen.findByText("저장됨")).className).toMatch(/save-saved/);
+    // 저장되면 다음 후보로 넘어오고, "저장됨"이 아니라 "앞 후보 저장됨"이라고 말한다.
+    expect((await screen.findByText(/^앞 후보 저장됨/)).className).toMatch(/save-advanced/);
+    screen.getByText("b.jpg");
 
-    await act(async () => screen.getByRole("button", { name: "모르겠다" }).click());
+    await act(async () => screen.getByRole("button", { name: "판단 보류" }).click());
     expect((await screen.findByText(/^저장 실패/)).className).toMatch(/save-failed/);
+    screen.getByText("b.jpg");
+
+    // 옮기지 않는 저장(판정 취소)은 "저장됨"이다.
+    await act(async () => screen.getByRole("button", { name: "판정 취소" }).click());
+    expect((await screen.findByText("저장됨")).className).toMatch(/save-saved/);
   });
 });
 
@@ -413,19 +428,21 @@ describe("저장 상태 안내", () => {
     ]));
     show();
     await screen.findByText("a.jpg");
-    screen.getByText("판정을 누르면 바로 저장됩니다.");
+    screen.getByText("판정을 누르면 바로 저장되고 다음 후보로 넘어갑니다.");
 
-    await act(async () => screen.getByRole("button", { name: "오류였다" }).click());
-    await screen.findByText("저장됨");
-
-    await press("ArrowRight");
+    await act(async () => screen.getByRole("button", { name: "오류 있음" }).click());
     await screen.findByText("b.jpg");
+    // 넘어온 후보에는 "저장됨"이 따라오지 않는다 — 앞 후보가 저장됐다고만 말한다.
     expect(screen.queryByText("저장됨")).toBeNull();
-    screen.getByText("판정을 누르면 바로 저장됩니다.");
+    screen.getByText(/앞 후보 저장됨/);
 
     await press("ArrowLeft");
     await screen.findByText("a.jpg");
     screen.getByText("이 후보의 판정은 저장되어 있습니다.");
+
+    await press("ArrowRight");
+    await screen.findByText("b.jpg");
+    screen.getByText("판정을 누르면 바로 저장되고 다음 후보로 넘어갑니다.");
     // 화면 표시만 바꿨다 — 저장은 처음 한 번뿐이다.
     expect(putAdjudications).toHaveBeenCalledTimes(1);
   });
@@ -438,7 +455,7 @@ describe("저장 상태 안내", () => {
     ]));
     show();
     await screen.findByText("a.jpg");
-    await act(async () => screen.getByRole("button", { name: "오류였다" }).click());
+    await act(async () => screen.getByRole("button", { name: "오류 있음" }).click());
     await screen.findByText(/^저장 실패/);
 
     await press("ArrowRight");
@@ -463,7 +480,7 @@ describe("후보 위치", () => {
     getBlindQueue.mockResolvedValue(queue([cand({ label_index: null })]));
     show();
     await screen.findByText("a.jpg");
-    await act(async () => screen.getByRole("button", { name: "오류였다" }).click());
+    await act(async () => screen.getByRole("button", { name: "오류 있음" }).click());
     expect(document.querySelector(".missing-hint")?.textContent).toMatch(/같은 차.*새 객체/);
   });
 });

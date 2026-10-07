@@ -5,7 +5,7 @@
  *
  *   1. 순위·점수·의심 유형을 **안 보여준다.** 보고 판단하면 그 순위를 평가할 수
  *      없다 — 자기가 만든 순서를 자기가 확인해 주는 셈이 된다.
- *   2. `hold`가 있다. "모르겠다"를 `miss`로 밀어 넣으면 정밀도가 낮게 나오고,
+ *   2. `hold`("판단 보류")가 있다. 보류를 `miss`로 밀어 넣으면 정밀도가 낮게 나오고,
  *      `hit`으로 밀면 높게 나온다. 어느 쪽도 사실이 아니다.
  *   3. **누락 객체는 어느 객체인지까지 정해야 한다.** 겹쳐 잡은 후보 둘을 서로
  *      다른 오류로 세면 고유 오류 수가 부풀려진다.
@@ -15,6 +15,31 @@
  */
 
 export type EvalVerdict = "hit" | "miss" | "hold";
+
+/**
+ * 판정 단추 — **단추 글자가 곧 판정 결과다.** 두 질문 모두 "예"가 오류다.
+ *
+ * | 단추 | 단축키 | 저장값 |
+ * |---|---|---|
+ * | 오류 있음 | 1 | `hit` |
+ * | 오류 없음 | 2 | `miss` |
+ * | 판단 보류 | 3 | `hold` |
+ *
+ * 질문 문구를 바꿀 때 이 대응을 뒤집지 않는다 — 저장값의 뜻은 연습 판정과 본 판정에서 같아야 한다.
+ */
+export const VERDICT_BUTTONS = [
+  { verdict: "hit", label: "오류 있음", key: "1" },
+  { verdict: "miss", label: "오류 없음", key: "2" },
+  { verdict: "hold", label: "판단 보류", key: "3" },
+] as const satisfies ReadonlyArray<{ verdict: EvalVerdict; label: string; key: string }>;
+
+/** 후보 층마다 묻는 질문. 기존 라벨은 "고쳐야 하는가", 누락은 "빠졌는가" — 둘 다 "예"가 오류 있음이다. */
+export const QUESTION_EXISTING = "이 라벨은 수정이 필요한가?";
+export const QUESTION_MISSING = "이 객체의 라벨이 누락됐는가?";
+
+export function questionFor(labelIndex: number | null): string {
+  return labelIndex === null ? QUESTION_MISSING : QUESTION_EXISTING;
+}
 
 export type BlindCandidate = {
   canonical_candidate_id: string;
@@ -193,10 +218,18 @@ export function makeAdjudicationSender<T>(
   };
 }
 
-/** 저장 상태 문구. 실패를 조용히 넘기지 않는다. */
-export function saveMessage(state: "saving" | "saved" | "failed" | "idle"): string {
+export type SaveState = "saving" | "saved" | "advanced" | "failed" | "idle";
+
+/**
+ * 저장 상태 문구. 실패를 조용히 넘기지 않는다.
+ *
+ * `advanced`는 **앞 후보의 판정이 저장돼서 이 후보로 넘어왔다**는 뜻이다. "저장됨"을 그대로 두면
+ * 아직 판정하지 않은 지금 후보가 저장된 것처럼 읽힌다.
+ */
+export function saveMessage(state: SaveState): string {
   if (state === "saving") return "저장 중…";
   if (state === "saved") return "저장됨";
+  if (state === "advanced") return "앞 후보 저장됨 — 다음 후보로 넘어왔습니다";
   if (state === "failed") return "저장 실패 — 저장하지 못했습니다. 다시 시도를 누르세요.";
   return "";
 }

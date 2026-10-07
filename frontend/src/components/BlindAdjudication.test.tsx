@@ -113,7 +113,7 @@ describe("가림", () => {
     // "여기 객체가 빠졌는가"다. 이것까지 숨기면 판정을 할 수 없다.
     getBlindQueue.mockResolvedValue(queue([cand({ label_index: null })]));
     show();
-    await screen.findByText(/라벨이 빠졌는가/);
+    await screen.findByText("이 객체의 라벨이 누락됐는가?");
   });
 
   test("안내 문구가 가리는 범위를 정확히 말한다", async () => {
@@ -134,7 +134,7 @@ describe("버튼 자리", () => {
     // **문서 순서**를 고정한다 — 상태 문구가 버튼 뒤에 있으면 위쪽이 안 변한다.
     getBlindQueue.mockResolvedValue(queue([cand()]));
     show();
-    const button = await screen.findByRole("button", { name: "오류였다" });
+    const button = await screen.findByRole("button", { name: "오류 있음" });
     const status = document.querySelector("[aria-live]")!;
 
     expect(button.compareDocumentPosition(status))
@@ -142,7 +142,7 @@ describe("버튼 자리", () => {
 
     // 저장에 실패해 "다시 시도"가 생겨도 마찬가지다.
     putAdjudications.mockRejectedValueOnce(new Error("끊김"));
-    await click("오류였다");
+    await click("오류 있음");
     const retry = await screen.findByRole("button", { name: "다시 시도" });
     expect(button.compareDocumentPosition(retry))
       .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
@@ -155,7 +155,7 @@ describe("판정 저장", () => {
     show();
     await screen.findByText("a.jpg");
 
-    await click("오류였다");
+    await click("오류 있음");
 
     await waitFor(() => expect(putAdjudications).toHaveBeenCalled());
     const [, , hash, rows] = putAdjudications.mock.calls[0];
@@ -183,18 +183,20 @@ describe("판정 저장", () => {
     expect(rows[0].verdict).toBeNull();
   });
 
-  test("저장에 실패하면 알리고, 다시 시도가 통한다", async () => {
-    getBlindQueue.mockResolvedValue(queue([cand()]));
+  test("저장에 실패하면 알리고, 다시 시도가 통한다 — 성공하면 그때 다음 후보로 넘어간다", async () => {
+    getBlindQueue.mockResolvedValue(queue([cand(), cand({ canonical_candidate_id: "B", image: "b.jpg" })]));
     putAdjudications.mockRejectedValueOnce(new Error("끊김"));
     show();
     await screen.findByText("a.jpg");
 
-    await click("오류였다");
+    await click("오류 있음");
     await screen.findByText(/저장하지 못했습니다/);
+    expect(screen.getByText("a.jpg")).toBeTruthy();      // 실패하면 그 자리에 남는다
 
     await click("다시 시도");
     await waitFor(() => expect(putAdjudications).toHaveBeenCalledTimes(2));
-    await screen.findByText("저장됨");
+    await screen.findByText("b.jpg");
+    await screen.findByText(/앞 후보 저장됨/);
   });
 });
 
@@ -209,7 +211,7 @@ describe("누락 객체", () => {
     show();
     await screen.findByText("a.jpg");
 
-    await click("오류였다");
+    await click("오류 있음");
 
     expect(putAdjudications).not.toHaveBeenCalled();
     await screen.findByText(/어느 객체인지 골라야/);
@@ -220,7 +222,7 @@ describe("누락 객체", () => {
     show();
     await screen.findByText("a.jpg");
 
-    await click("오류였다");
+    await click("오류 있음");
     await click("새 객체");
 
     await waitFor(() => expect(putAdjudications).toHaveBeenCalled());
@@ -235,10 +237,10 @@ describe("누락 객체", () => {
     show();
     await screen.findByText("a.jpg");
 
-    await click("오류였다");
+    await click("오류 있음");
     await click("새 객체");
     await click("다음");
-    await click("오류였다");
+    await click("오류 있음");
     await click("M1");
 
     const rows = putAdjudications.mock.calls.at(-1)![3];
@@ -258,7 +260,7 @@ describe("누락 객체", () => {
     await click("처음부터 다시 보기");
     await screen.findByText("a.jpg");
 
-    await click("오류 아니었다");
+    await click("오류 없음");
 
     const rows = putAdjudications.mock.calls.at(-1)![3];
     expect(rows[0]).toMatchObject({ verdict: "miss", unique_error_id: null });
@@ -274,7 +276,7 @@ describe("조회와 판정이 겹칠 때", () => {
     getBlindQueue.mockReturnValue(new Promise((r) => (release = r)));
     show();
 
-    expect(screen.queryByRole("button", { name: "오류였다" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "오류 있음" })).toBeNull();
 
     await act(async () => {
       release(queue([cand({ verdict: "hold" })]));
@@ -288,7 +290,7 @@ describe("조회와 판정이 겹칠 때", () => {
       .getAllByRole("button")
       .filter((b) => b.getAttribute("aria-pressed") === "true")
       .map((b) => b.textContent);
-    expect(pressed).toEqual(["모르겠다"]);
+    expect(pressed).toEqual(["판단 보류"]);
   });
 
   test("다른 평가로 바꾸면 옛 후보를 먼저 치운다", async () => {
@@ -304,7 +306,7 @@ describe("조회와 판정이 겹칠 때", () => {
     });
 
     expect(screen.queryByText("a.jpg")).toBeNull();
-    expect(screen.queryByRole("button", { name: "오류였다" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "오류 있음" })).toBeNull();
 
     await act(async () => {
       release(queue([cand({ image: "b.jpg" })], { candidate_set_hash: "h2" }));
@@ -334,7 +336,7 @@ describe("파일과 묶음이 어긋날 때", () => {
     show();
     await screen.findByText("a.jpg");
 
-    await click("오류였다");
+    await click("오류 있음");
     await screen.findByText(/후보 목록이 그 사이에 바뀌었습니다/);
   });
 });
@@ -362,7 +364,7 @@ describe("평가를 바꿀 때", () => {
     );
     const { rerender } = show();
     await screen.findByText("a.jpg");
-    await click("오류였다");
+    await click("오류 있음");
     await screen.findByText(/후보 목록이 그 사이에 바뀌었습니다/);
 
     putAdjudications.mockResolvedValue({});
@@ -377,11 +379,12 @@ describe("평가를 바꿀 때", () => {
   });
 
   test("손상 표시와 저장 상태도 따라오지 않는다", async () => {
-    getBlindQueue.mockResolvedValue(queue([cand()], { damaged: true }));
+    getBlindQueue.mockResolvedValue(queue([cand(), cand({ canonical_candidate_id: "B", image: "c.jpg" })],
+                                          { damaged: true }));
     const { rerender } = show();
     await screen.findByText(/읽지 못했습니다/);
-    await click("오류였다");
-    await screen.findByText("저장됨");
+    await click("오류 있음");
+    await screen.findByText(/앞 후보 저장됨/);
 
     getBlindQueue.mockResolvedValue(queue([cand({ image: "b.jpg" })]));
     await act(async () => {
@@ -391,6 +394,7 @@ describe("평가를 바꿀 때", () => {
     await screen.findByText("b.jpg");
     expect(screen.queryByText(/읽지 못했습니다/)).toBeNull();
     expect(screen.queryByText("저장됨")).toBeNull();
+    expect(screen.queryByText(/앞 후보 저장됨/)).toBeNull();
   });
 
   test("이전 평가의 늦은 응답이 새 평가를 덮지 않는다", async () => {
@@ -425,7 +429,7 @@ describe("진행 상황", () => {
     show();
     await screen.findByText("a.jpg");
 
-    await click("모르겠다");
+    await click("판단 보류");
     await screen.findByText("1 / 2 판정 (남은 1)");
   });
 });
@@ -445,9 +449,9 @@ describe("작업 기록", () => {
     const { unmount } = show();
     await screen.findByText("a.jpg");
 
-    await click("오류였다");
+    await click("오류 있음");
     await click("다음");
-    await click("모르겠다");
+    await click("판단 보류");
     await act(async () => {
       unmount();
     });
@@ -467,7 +471,7 @@ describe("작업 기록", () => {
     getBlindQueue.mockResolvedValue(queue([cand({ canonical_candidate_id: "LAST" })]));
     show();
     await screen.findByText("a.jpg");
-    await click("오류 아니었다");
+    await click("오류 없음");
     await waitFor(() => {
       const sent = logged().filter((e) => e.event === "verdict_set");
       expect(sent.map((e) => e.canonical_candidate_id)).toContain("LAST");
@@ -479,7 +483,7 @@ describe("작업 기록", () => {
     getBlindQueue.mockResolvedValue(queue([cand()]));
     const { unmount } = show();
     await screen.findByText("a.jpg");
-    await click("모르겠다");
+    await click("판단 보류");
     await act(async () => {
       unmount();
     });
@@ -496,7 +500,7 @@ describe("작업 기록", () => {
     const { unmount } = show();
     await screen.findByText("a.jpg");
 
-    await click("오류였다");
+    await click("오류 있음");
     await screen.findByText(/저장하지 못했습니다/);
     await click("다시 시도");
     await act(async () => {
@@ -519,10 +523,10 @@ describe("작업 기록", () => {
     const { unmount } = show();
     await screen.findByText("a.jpg");
 
-    await click("오류였다");
+    await click("오류 있음");
     await click("새 객체");
     await click("다음");
-    await click("오류였다");
+    await click("오류 있음");
     await click("M1");
     await act(async () => {
       unmount();
@@ -539,7 +543,7 @@ describe("작업 기록", () => {
     getBlindQueue.mockResolvedValue(queue([cand()]));
     const { unmount } = show();
     await screen.findByText("a.jpg");
-    await click("오류였다");
+    await click("오류 있음");
     await act(async () => {
       unmount();
     });
@@ -556,9 +560,9 @@ describe("작업 기록", () => {
     show();
     await screen.findByText("a.jpg");
 
-    await click("오류였다");
+    await click("오류 있음");
     await waitFor(() => expect(putAdjudications).toHaveBeenCalled());
-    await screen.findByText("저장됨");
+    await screen.findByText(/모두 판정했습니다/);
   });
 });
 
@@ -599,7 +603,7 @@ describe("종료와 대기 기록", () => {
     getBlindQueue.mockResolvedValue(queue([cand()]));
     const { unmount } = show();
     await screen.findByText("a.jpg");
-    await click("오류였다");
+    await click("오류 있음");
     await act(async () => {
       unmount();
     });
@@ -618,7 +622,7 @@ describe("종료와 대기 기록", () => {
     getBlindQueue.mockResolvedValue(queue([cand()]));
     show();
     await screen.findByText("a.jpg");
-    await click("오류였다");
+    await click("오류 있음");
 
     await act(async () => {
       window.dispatchEvent(new Event("pagehide"));
@@ -689,7 +693,7 @@ describe("두 번째 세션에서 어디부터 여는가", () => {
     const { unmount } = show();
 
     await screen.findByText(/모두 판정했습니다/);
-    expect(screen.queryByRole("button", { name: "오류였다" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "오류 있음" })).toBeNull();
     await act(async () => {
       unmount();
     });
@@ -726,7 +730,7 @@ describe("두 번째 세션에서 어디부터 여는가", () => {
     show();
     await screen.findByText("a.jpg");
 
-    await click("오류였다");
+    await click("오류 있음");
     await click("다음 미판정 (1)");
     await screen.findByText("c.jpg");
   });

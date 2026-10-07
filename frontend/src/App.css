@@ -1640,6 +1640,7 @@ code {
 }
 .save-saving,
 .save-saved,
+.save-advanced,
 .save-failed {
   padding: 4px 12px;
   border-radius: 999px;
@@ -1648,11 +1649,13 @@ code {
   color: var(--gray);
   background: var(--raise);
 }
-.save-saved {
+.save-saved,
+.save-advanced {
   color: var(--judge-ok-ink);
   background: rgba(46, 196, 182, 0.14);
 }
-.save-saved::before {
+.save-saved::before,
+.save-advanced::before {
   content: "✓ ";
 }
 .save-failed {
@@ -1696,11 +1699,74 @@ code {
 .judge-figure {
   margin: 0;
 }
+/* 그림은 원본 비율 그대로, 폭은 최대 500px이고 좁으면 줄어든다. 캔버스 자체는 devicePixelRatio배
+   해상도라(AdjudicationView) CSS가 줄여 보여도 흐려지지 않는다. */
 .judge-figure canvas {
   display: block;
-  max-inline-size: 100%;
+  inline-size: 100%;
+  max-inline-size: 500px;
   block-size: auto;
   border-radius: 6px;
+}
+/* 그림 자체가 "전체 이미지 크게 보기" 단추다 — 단추 모양을 지우고 그림만 남긴다. */
+.adj-zoom {
+  display: block;
+  inline-size: 100%;
+  max-inline-size: 500px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  cursor: zoom-in;
+}
+.adj-zoom:disabled {
+  cursor: default;
+}
+.adj-zoom-hint {
+  color: var(--gray);
+  font-size: 12px;
+}
+.adj-full-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(11, 22, 36, 0.72);
+}
+.adj-full-dialog {
+  max-inline-size: calc(100vw - 32px);
+  max-block-size: calc(100vh - 32px);
+  overflow: auto;
+  padding: 12px 16px 14px;
+  border-radius: 12px;
+  background: var(--white);
+  color: var(--black);
+  box-shadow: 0 12px 40px rgba(11, 22, 36, 0.35);
+}
+.adj-full-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.adj-full-head h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.adj-full-canvas {
+  display: block;
+  max-inline-size: 100%;
+  border-radius: 6px;
+}
+.adj-full-legend {
+  margin: 8px 0 0;
+}
+.adj-full-dialog :where(button):focus-visible {
+  outline: 3px solid var(--black);
+  outline-offset: 3px;
 }
 .adj-legend {
   display: grid;
@@ -1744,11 +1810,12 @@ code {
   color: var(--gray);
 }
 /* 넓은 화면에서는 그림 옆에 질문·단추를 둔다 — 위아래로 쌓으면 노트북 화면(높이 약 650px)에서
-   판정 단추가 첫 화면 아래로 내려가 후보마다 스크롤해야 했다. 그림 크기(340px)는 그대로다. */
+   판정 단추가 첫 화면 아래로 내려가 후보마다 스크롤해야 했다. 그림 칸은 최대 500px이고, 단추 칸이
+   320px 아래로 줄지 않게 그림 쪽이 먼저 줄어든다. */
 @media (min-width: 900px) {
   .judge-split {
     display: grid;
-    grid-template-columns: 340px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 500px) minmax(320px, 1fr);
     gap: 20px;
     align-items: start;
   }

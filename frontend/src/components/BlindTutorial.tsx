@@ -48,14 +48,14 @@ function ColorsFigure() {
 function TasksFigure() {
   return (
     <svg className="tut-figure" viewBox="0 0 300 120" role="img"
-         aria-label="왼쪽은 차 앞부분이 빠진 빨강 상자, 오른쪽은 파랑 상자 없는 차를 가리킨 주황 점선 — 둘 다 오류였다">
+         aria-label="왼쪽은 차 앞부분이 빠진 빨강 상자, 오른쪽은 파랑 상자 없는 차를 가리킨 주황 점선 — 둘 다 오류 있음">
       <Car x={20} y={40} />
       {/* 앞부분이 밖으로 나간 상자 — "고쳐야 하는가"를 묻는다. 답까지 적어 두 질문의 "예"가 같은 단추임을 보인다. */}
       <path className="tut-red" d={box(16, 44, 62, 40)} />
-      <text className="tut-caption" x="70" y="108" textAnchor="middle">앞이 잘림 → 오류였다</text>
+      <text className="tut-caption" x="70" y="108" textAnchor="middle">앞이 잘림 → 오류 있음</text>
       <Car x={180} y={40} />
       <path className="tut-orange" d={box(174, 44, 92, 44)} />
-      <text className="tut-caption" x="220" y="108" textAnchor="middle">파랑 없음 → 오류였다</text>
+      <text className="tut-caption" x="220" y="108" textAnchor="middle">파랑 없음 → 오류 있음</text>
     </svg>
   );
 }
@@ -99,10 +99,11 @@ const STEPS: { title: string; body: ReactNode }[] = [
       <>
         <TasksFigure />
         <ul>
-          <li><b>기존 라벨(빨강)</b> — 이대로 학습에 써도 되면 <b>오류 아니었다</b>, 고쳐야 하면 <b>오류였다</b>.</li>
-          <li><b>누락 확인(주황)</b> — 라벨돼야 할 객체가 있는데 파랑이 없으면 <b>오류였다</b>. 객체가 아니거나 이미 파랑이
-            덮고 있으면 <b>오류 아니었다</b>.</li>
-          <li><b>모르겠다</b> — 가림·해상도·애매한 경계 때문에 확신할 수 없을 때. 억지로 고르지 않는다.</li>
+          <li><b>기존 라벨(빨강)</b> — "이 라벨은 수정이 필요한가?" 고쳐야 하면 <b>오류 있음</b>, 이대로 학습에 써도 되면
+            <b> 오류 없음</b>.</li>
+          <li><b>누락 확인(주황)</b> — "이 객체의 라벨이 누락됐는가?" 라벨돼야 할 객체가 있는데 파랑이 없으면 <b>오류 있음</b>.
+            객체가 아니거나 이미 파랑이 덮고 있으면 <b>오류 없음</b>.</li>
+          <li><b>판단 보류</b> — 가림·해상도·애매한 경계 때문에 확신할 수 없을 때. 억지로 고르지 않는다.</li>
         </ul>
       </>
     ),
@@ -113,7 +114,7 @@ const STEPS: { title: string; body: ReactNode }[] = [
       <>
         <NumberingFigure />
         <ul>
-          <li>누락을 <b>오류였다</b>로 고르면 "어느 객체인가"를 정해야 저장된다.</li>
+          <li>누락을 <b>오류 있음</b>으로 고르면 "어느 객체인가"를 정해야 저장된다.</li>
           <li>처음 보는 객체면 <b>새 객체</b> — M1, M2… 순으로 번호가 붙는다. 번호는 사진마다 M1부터 다시 시작한다.</li>
           <li>다른 후보가 <b>같은 실제 객체</b>를 가리키면 이미 있는 번호(예: M1)를 고른다. 그래야 한 객체가 두 번 세지지 않는다.</li>
         </ul>
@@ -125,16 +126,17 @@ const STEPS: { title: string; body: ReactNode }[] = [
     body: (
       <>
         <ul className="tut-keys">
-          <li><kbd>1</kbd> 오류였다</li>
-          <li><kbd>2</kbd> 오류 아니었다</li>
-          <li><kbd>3</kbd> 모르겠다</li>
+          <li><kbd>1</kbd> 오류 있음</li>
+          <li><kbd>2</kbd> 오류 없음</li>
+          <li><kbd>3</kbd> 판단 보류</li>
           <li><kbd>←</kbd> 이전 · <kbd>→</kbd> 다음</li>
         </ul>
         <p>글자를 입력하는 칸에 있을 때는 단축키가 동작하지 않는다.</p>
         <p>
-          판정 단추를 누르면 <b>바로 저장</b>되고 단추 아래에 "저장됨"이 뜬다. 다음 후보로 저절로 넘어가지 않는다 —{" "}
-          <kbd>→</kbd> 또는 <b>다음</b>을 누른다.
+          판정 단추를 누르면 <b>바로 저장</b>되고, 저장되면 <b>다음 미판정 후보로 저절로 넘어간다</b>. 저장에 실패하면 그
+          자리에 남는다. 누락을 오류 있음으로 고르면 객체 번호를 고른 뒤에 넘어간다. 앞 후보를 고치려면 <kbd>←</kbd>.
         </p>
+        <p>사진을 누르거나 사진에서 <kbd>Enter</kbd>를 누르면 전체 이미지를 크게 본다(<kbd>Esc</kbd>로 닫기).</p>
         <p>
           후보를 누가·어떻게 골랐는지, 점수와 원래 순위는 <b>일부러 보여 주지 않는다</b>. 판정이 그 정보에 끌려가지 않게 하려는
           것이다. 판정 기준은 화면의 "판정 지침 보기"에 있다.
