@@ -305,3 +305,56 @@ docs/24 규칙대로 **"자연 오류 검증"이라고 부르지 않는다.**
 - 사전 등록한 N·방법·씨앗·1차 지표·Δ 방침은 **결과를 본 뒤 바꾸지 않는다.**
 - 다음 데이터셋은 라이선스·접근·최종 평가 경계가 확인되기 전에는 고르지 않는다(위
   "아직 못 정한 것").
+
+## 공개 판정 사이트 검토 — 이용 조건 조사 (2026-10-10, 법적 판단 아님)
+
+사용자 구상: 본 판정(Q-A)·재판정을 끝낸 뒤, 판정 화면을 공개 서버(Oracle Cloud 무료 등급)에 올려 여러 사람에게서 판정을 받는다.
+Q-A 사전 등록을 바꾸지 않는 **별도 연구**로 다룬다 — 새 사전 등록을 쓰고, 결과는 Q-A와 섞지 않는다. 아래는 원문 조사이며
+결정은 사용자가 한다. 앞 절의 "원본 이미지·라벨을 저장소나 포트폴리오에 재배포하지 않는다"는 **저장소 원칙**으로 그대로 둔다.
+
+### nuImages — 약관 원문 (nuscenes.org가 내려주는 약관 스크립트에서 본문 추출, "last updated on Nov 16, 2021")
+
+| 원문 (짧은 인용) | 요지 |
+|---|---|
+| "provided to You under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 … with the additional terms included herein" | CC BY-NC-SA 4.0 + 추가 조건. 충돌하면 추가 조건이 우선 |
+| "Use of any data derived from the Datasets, which may appear in any format such as tables and charts, is also subject to these Dataset Terms" | 판정 표·크롭·박스를 덧그린 그림도 같은 조건 |
+| "may not be redistributed or reused without the consent of the original data provider … these conditions are included in the dataset or indicator metadata" | 일부 제3자 자료 예외. **우리가 쓰는 이미지의 메타데이터에 이런 표시가 있는지 확인하지 않았다** |
+| "You may not publicly represent or imply that Motional is participating in, or has sponsored, approved, or endorsed …" | 후원·승인 암시 금지, 상표·로고 금지 |
+| "solely Your responsibility to comply with all applicable laws with regard to Your use or publication of the Datasets, including any applicable privacy …" | 공개(publication) 시 개인정보 등 법 준수는 사용자 책임 |
+
+- **추가 조건에 공개 표시·재배포를 막는 문장은 찾지 못했다.** 기본 라이선스 CC BY-NC-SA 4.0은 비상업 목적의 Share(공중에
+  제공)를 허용한다. 따라서 앞 절·사전 등록의 "공개하려면 Motional 허가를 따로 확인"은 "허가를 요구하는 문장은 없고, 아래
+  조건을 지킨다"로 좁혀 읽을 수 있다. 확실히 하려면 약관에 적힌 문의 주소로 묻는 방법이 있다(사용자 결정).
+- 지킬 조건: 비상업(광고·유료 기능 없음), 출처·라이선스 링크·변경 사항("박스를 덧그림") 표기, 파생 그림에 같은 라이선스
+  (BY-NC-SA 4.0), 후원 암시 금지.
+- 개인정보: nuScenes 논문(arXiv:1903.11027) "Privacy protection" 절은 얼굴·번호판을 **검출기로 자동** 블러했다고 적는다.
+  **nuImages에 같은 처리가 됐는지는 원문으로 확인하지 못했다.** 자동 처리라 놓친 것이 있을 수 있어 올릴 크롭을 사람이 훑는다.
+
+### KITTI (cvlibs.net/datasets/kitti, 2026-10-10 조회)
+
+- "Creative Commons Attribution-NonCommercial-ShareAlike 3.0 License", "made available for academic use only".
+- 블러 처리 언급은 없다. 찍힌 사람이 연락하면 해당 자료를 지운다는 절차만 있다 — 공개 크롭은 사람이 훑는다.
+
+### 연구윤리 (대학 IRB 안내문 기준, 법령 원문 미확인)
+
+- 생명윤리법 시행규칙의 심의 면제는 연구대상자를 특정하지 않고 민감정보를 수집·기록하지 않는 연구 등에 해당한다고 안내한다.
+  익명 판정(이름·이메일·학번을 받지 않음)이면 해당할 가능성이 있다.
+- **면제 여부는 연구자가 아니라 IRB가 정한다.** 소속 학교 IRB에 심의의뢰서를 내 면제 판정을 받아 둔다. 로그인·계정을 두면
+  식별정보 수집이 되어 면제가 어려울 수 있다 — 설계 단계에서 정한다.
+
+### 서버 (Oracle Cloud Always Free, 공식 문서 기준)
+
+- A1 Flex 월 3,000 OCPU시간·18,000 GB시간(4 OCPU·24 GB 상당), 외부 전송 월 10 TB. 축소됐다는 2026년 블로그 주장은 공식
+  문서로 확인되지 않았다.
+- 7일 동안 CPU(95분위)·네트워크·메모리(A1) 사용률이 모두 15% 미만이면 유휴로 보고 회수할 수 있다.
+- 서버에서 `ultralytics`를 돌리지 않고 미리 만든 판정 그림만 내보내면 AGPL-3.0 §13(네트워크 제공 시 소스 제공) 쟁점이 줄어든다.
+
+### 남은 확인
+
+| 할 일 | 누가 |
+|---|---|
+| 사용할 nuImages 이미지의 메타데이터에 제3자 재배포 제한 표시가 있는지 | Claude (데스크탑, 데이터 있는 곳) |
+| 올릴 크롭의 얼굴·번호판 블러 상태 | 사용자 |
+| 학교 IRB 심의 면제 의뢰 | 사용자 |
+| Motional 문의 여부 | 사용자 결정 |
+| 공개 판정 사전 등록(Q-A와 별도, 품질 관리 — 연습 문항·정답 아는 문항·중복 판정·너무 빠른 판정 제외) | 본 판정·재판정 뒤 |
