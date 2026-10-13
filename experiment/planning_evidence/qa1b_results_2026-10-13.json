@@ -1,0 +1,289 @@
+{
+ "evaluation": "dcdd1be32bd3:qa1b",
+ "adjudicator": "primary",
+ "analysed_at": "2026-10-13",
+ "preregistration_commit": "802a240b",
+ "procedure": "docs/qa-preregistration.md section 6",
+ "judging_files_sha256": {
+  "activity.jsonl": "14729326de1cdbd0e82c5c3a58c9fa1ebc25c4097902eebe7864e8e8a8f6f07c",
+  "adjudications.json": "fed93ec0604b7554ad0dd9e7142c09f22c110567d754a4c17fe1ca2d177ab390",
+  "snapshot.json": "d5ea2ae6b1ec73b34ace121cbb6a01d2fbb0fbbceb479a2185d5fbde50a0a952"
+ },
+ "exports_sha256": {
+  "export_labelled.json": "d01f2c9e6d07ae0af1441a4770d1544b1e38ca2a271fcb7294533c970870b32c",
+  "export_missing.json": "57b3eba3ae5760402c51a212df80a9e154481555d3de47acefa037a0333d9733"
+ },
+ "verdict_counts_all_474": {
+  "hit": 88,
+  "miss": 366,
+  "hold": 20
+ },
+ "primary_analysis_analyze_qa": {
+  "settings": {
+   "fingerprint": "27e1e5b0204c3c81ae93eaa541582c7157f0bd230b5a0e4b654667aa3c712eb1",
+   "iterations": 2000,
+   "seed": 42,
+   "budget": 90,
+   "methods": [
+    "aida",
+    "all_label_iou",
+    "all_label_objectlab"
+   ]
+  },
+  "adjudicator": "primary",
+  "difference_sign": "baseline - aida",
+  "guarantee": "고정 재표본의 판정 누락이 없음을 확인했다. 구간의 포함률·통계적 타당성은 검증하지 않았다",
+  "summaries": {
+   "aida": {
+    "budget": 90,
+    "in_budget": 90,
+    "judged": 90,
+    "holds": 5,
+    "decided": 85,
+    "hit_candidates": 8,
+    "unique_error_yield": 8,
+    "candidate_precision": 0.09411764705882353,
+    "hold_rate": 0.05555555555555555
+   },
+   "all_label_iou": {
+    "budget": 90,
+    "in_budget": 90,
+    "judged": 90,
+    "holds": 3,
+    "decided": 87,
+    "hit_candidates": 7,
+    "unique_error_yield": 7,
+    "candidate_precision": 0.08045977011494253,
+    "hold_rate": 0.03333333333333333
+   },
+   "all_label_objectlab": {
+    "budget": 90,
+    "in_budget": 90,
+    "judged": 90,
+    "holds": 4,
+    "decided": 86,
+    "hit_candidates": 6,
+    "unique_error_yield": 6,
+    "candidate_precision": 0.06976744186046512,
+    "hold_rate": 0.044444444444444446
+   }
+  },
+  "comparisons": {
+   "all_label_iou_minus_aida": {
+    "method": "all_label_iou",
+    "baseline": "aida",
+    "budget": 90,
+    "observed_difference": -1,
+    "ci_low": -8.0,
+    "ci_high": 7.0,
+    "iterations": 2000,
+    "seed": 42,
+    "same_candidate_set": false,
+    "datasets": [
+     "dcdd1be32bd3"
+    ],
+    "clusters": {
+     "dcdd1be32bd3": 32
+    },
+    "weighting": "데이터셋 동등 가중",
+    "unjudged_in_top_n": {
+     "all_label_iou": {
+      "mean": 0.0,
+      "max": 0,
+      "share_of_resamples_with_any": 0.0
+     },
+     "aida": {
+      "mean": 0.0,
+      "max": 0,
+      "share_of_resamples_with_any": 0.0
+     }
+    },
+    "judged_top_n_required": true
+   },
+   "all_label_objectlab_minus_aida": {
+    "method": "all_label_objectlab",
+    "baseline": "aida",
+    "budget": 90,
+    "observed_difference": -2,
+    "ci_low": -9.0,
+    "ci_high": 5.024999999999864,
+    "iterations": 2000,
+    "seed": 42,
+    "same_candidate_set": false,
+    "datasets": [
+     "dcdd1be32bd3"
+    ],
+    "clusters": {
+     "dcdd1be32bd3": 32
+    },
+    "weighting": "데이터셋 동등 가중",
+    "unjudged_in_top_n": {
+     "all_label_objectlab": {
+      "mean": 0.0,
+      "max": 0,
+      "share_of_resamples_with_any": 0.0
+     },
+     "aida": {
+      "mean": 0.0,
+      "max": 0,
+      "share_of_resamples_with_any": 0.0
+     }
+    },
+    "judged_top_n_required": true
+   }
+  }
+ },
+ "secondary": {
+  "aux_all_label_objectlab_minus_all_label_iou": {
+   "observed_difference": -1,
+   "ci_low": -8.0,
+   "ci_high": 4.0,
+   "same_candidate_set": false
+  },
+  "random_sample": {
+   "n": 50,
+   "hit": 0,
+   "miss": 49,
+   "hold": 1,
+   "unjudged": 0,
+   "rate_hit_over_decided": 0.0,
+   "wilson95_decided": [
+    0.0,
+    0.07269781922049637
+   ],
+   "rate_hit_over_all": 0.0,
+   "wilson95_all": [
+    0.0,
+    0.07134759913335872
+   ]
+  },
+  "height_strata_labelled": {
+   "aida": {
+    "120+": {
+     "in_budget": 4,
+     "judged": 4,
+     "holds": 0,
+     "decided": 4,
+     "hit_candidates": 0,
+     "unique_error_yield": 0,
+     "candidate_precision": 0.0
+    },
+    "30-60": {
+     "in_budget": 55,
+     "judged": 55,
+     "holds": 5,
+     "decided": 50,
+     "hit_candidates": 7,
+     "unique_error_yield": 7,
+     "candidate_precision": 0.14
+    },
+    "60-120": {
+     "in_budget": 31,
+     "judged": 31,
+     "holds": 0,
+     "decided": 31,
+     "hit_candidates": 1,
+     "unique_error_yield": 1,
+     "candidate_precision": 0.03225806451612903
+    }
+   },
+   "all_label_iou": {
+    "120+": {
+     "in_budget": 9,
+     "judged": 9,
+     "holds": 0,
+     "decided": 9,
+     "hit_candidates": 1,
+     "unique_error_yield": 1,
+     "candidate_precision": 0.1111111111111111
+    },
+    "30-60": {
+     "in_budget": 49,
+     "judged": 49,
+     "holds": 1,
+     "decided": 48,
+     "hit_candidates": 1,
+     "unique_error_yield": 1,
+     "candidate_precision": 0.020833333333333332
+    },
+    "60-120": {
+     "in_budget": 32,
+     "judged": 32,
+     "holds": 2,
+     "decided": 30,
+     "hit_candidates": 5,
+     "unique_error_yield": 5,
+     "candidate_precision": 0.16666666666666666
+    }
+   },
+   "all_label_objectlab": {
+    "120+": {
+     "in_budget": 8,
+     "judged": 8,
+     "holds": 0,
+     "decided": 8,
+     "hit_candidates": 0,
+     "unique_error_yield": 0,
+     "candidate_precision": 0.0
+    },
+    "30-60": {
+     "in_budget": 57,
+     "judged": 57,
+     "holds": 3,
+     "decided": 54,
+     "hit_candidates": 3,
+     "unique_error_yield": 3,
+     "candidate_precision": 0.05555555555555555
+    },
+    "60-120": {
+     "in_budget": 25,
+     "judged": 25,
+     "holds": 1,
+     "decided": 24,
+     "hit_candidates": 3,
+     "unique_error_yield": 3,
+     "candidate_precision": 0.125
+    }
+   }
+  },
+  "missing_layer": {
+   "descriptive_only": true,
+   "not_measurable_methods": [
+    "unmatched_objectlab"
+   ],
+   "method_population": {
+    "aida": 14,
+    "unmatched_confidence": 231,
+    "unmatched_objectlab": 0
+   },
+   "summaries": {
+    "aida": {
+     "budget": 90,
+     "in_budget": 14,
+     "judged": 14,
+     "holds": 0,
+     "decided": 14,
+     "hit_candidates": 12,
+     "unique_error_yield": 12,
+     "candidate_precision": 0.8571428571428571,
+     "hold_rate": 0.0
+    },
+    "unmatched_confidence": {
+     "budget": 90,
+     "in_budget": 90,
+     "judged": 90,
+     "holds": 0,
+     "decided": 90,
+     "hit_candidates": 61,
+     "unique_error_yield": 55,
+     "candidate_precision": 0.6777777777777778,
+     "hold_rate": 0.0
+    }
+   }
+  }
+ },
+ "notes": [
+  "random_sample rate: hit/decided (hold excluded) and hit/all both reported; prereg names no hold rule for this layer",
+  "secondary computed with experiment/evaluation modules (paired_cluster_bootstrap seed 42 x2000, wilson_interval, summarise_by_stratum, summarise)"
+ ]
+}
