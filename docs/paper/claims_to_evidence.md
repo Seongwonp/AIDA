@@ -77,7 +77,7 @@
 | 작업 기록 결함 | 판정 186 vs 기록 185, 마지막 세션 끝 미기록, `5cf0e998`에서 수정 | `docs/prelim1-results.md` 5절 | 문서·커밋 참조 |
 | 데이터 | KITTI val Car 300장, 씨앗 20260914, 자 `runs/clean` | `docs/prelim1-preregistration.md` 2절, `prelim1_manifest.json` | 문서 |
 
-## C. Q-A 설계 (초안 8절) — 결과 없음 (묶음 고정, 본 판정 0건)
+## C. Q-A 설계 (초안 8절) — 판정 전 값 (결과는 C2절)
 
 | 항목 | 값 | 근거 파일 |
 |---|---|---|
@@ -101,6 +101,18 @@
 | 판정 시간 상수 | `s_plan = 5.02초` (timing5, 120건 연속) | `docs/sustained-pilot-protocol.md`, `docs/25-advancement-roadmap.md` 110행 | 문서 |
 | 소비된 개발 데이터 원장 | prelim1 300장, 파일럿 `ffffffffff01~07` 338장 | `docs/evaluation-data.md` |
 
+## C2. Q-A 결과 (초안 요약·8절 표 9·9·11절) — 2026-10-13 데스크탑, 판정자 1인 `primary`
+
+| 항목 | 값 | 근거 파일 | 조건 |
+|---|---|---|---|
+| 판정 완료 | 474건: hit 88 · miss 366 · hold 20 (기존 라벨 384: hit 27·hold 20 / 누락 90: hit 61·hold 0); 고정 재표본 상위 N 미판정 0 | `experiment/planning_evidence/qa1b_results_2026-10-13.json` → `verdict_counts_all_474`, `primary_analysis_analyze_qa.comparisons.*.unjudged_in_top_n` | 스냅샷 `d5ea2ae6…`, 사전 등록 `802a240b` |
+| N=90 고유 오류 수 | aida 8 (hold 5) · all_label_iou 7 (hold 3) · all_label_objectlab 6 (hold 4) | 같은 파일 → `primary_analysis_analyze_qa.summaries` | `analyze_qa.py`, 후보 생성 포함 |
+| 1차 지표 all_label_iou − aida | −1, 95% [−8, 7] | → `comparisons.all_label_iou_minus_aida` | 기록 32개 짝지은 부트스트랩 씨앗 42·2000, `same_candidate_set: false` |
+| 보조 all_label_objectlab − aida | −2, [−9, 5.025] | → `comparisons.all_label_objectlab_minus_aida` | 같음 |
+| 보조 all_label_objectlab − all_label_iou | −1, [−8, 4] | → `secondary.aux_all_label_objectlab_minus_all_label_iou` | 같은 모듈·씨앗으로 별도 계산(`analyze_qa`는 기준선 − aida만 낸다) |
+| 표본 층 K=50 | hit 0 · miss 49 · hold 1; 0/49 Wilson [0, 0.0727]; 0/50 [0, 0.0713] | → `secondary.random_sample` | 사전 등록에 hold 규칙 없음 — 두 분모 병기 |
+| 누락 층 (기술통계) | aida 모집단 14, hit 12; unmatched_confidence 상위 90 hit 61 (고유 55); unmatched_objectlab 0건 측정 불가 | → `secondary.missing_layer` | `descriptive_only` |
+| 높이 층별 hit (30–60/60–120/120+) | aida 7/1/0 · iou 1/5/1 · objectlab 3/3/0 | → `secondary.height_strata_labelled` | 기술통계 |
 ## D. 환경·재현
 
 | 항목 | 값 | 근거 |
