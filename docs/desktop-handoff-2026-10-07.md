@@ -72,8 +72,21 @@ cd frontend; npm run dev
   `?evaluate=dcdd1be32bd3:qa1b&adjudicator=primary_retest`. 목록·판정 저장·작업 기록이 모두 `primary_retest`로 간다
   (`adjudications.primary_retest.json`, `activity.primary_retest.jsonl`). 주 판정 값은 화면에 오지 않는다. 순서는 본 판정 화면 순서에서
   143건만 추린 것(다시 섞지 않음), 묶음 없이 한 목록, "다른 라벨 숨기기" 없음.
-- **재판정 시작 전(데스크탑):** `git pull` → 백엔드·프론트 재시작 → `qa1b`의 `adjudications.json`·`activity.jsonl` SHA-256을 실행 기록에 적기 →
-  위 주소로 열어 목록이 143건인지 확인 → 판정. 끝나면 두 파일의 SHA-256이 그대로인지 다시 확인한다. 재판정 화면 고정 커밋도 실행 기록에 적는다.
+- **재판정 시작 전(데스크탑) — 순서대로, 결과는 실행 기록(`docs/qa-run-record.md`)에 적는다.**
+  1. **시작 가능 시각 확인.** `qa1b` `activity.jsonl`의 마지막 `save_succeeded` 시각(본 판정 완료)을 읽어 적고, 그 시각 + 7일 이후인지 확인한다.
+     날짜(10/20)가 아니라 이 간격이 기준이다.
+  2. `git pull` → 백엔드·프론트 재시작. 재판정 화면 고정 커밋을 적는다.
+  3. **해시 ①(점검 전):** `qa1b`의 `adjudications.json`·`activity.jsonl` SHA-256. `adjudications.primary_retest.json`·`activity.primary_retest.jsonl`이
+     **없는지**도 적는다.
+  4. **화면 점검 — Claude에게는 읽기 전용만 맡긴다.** 재판정 주소로 열어 확인: 목록 143건, 순서가 본 판정 화면 순서에서 추린 것과 같음
+     (API 응답 비교), 첫 판정 값·집계·순위·점수·방법이 보이지 않음, 묶음 없음. **판정 버튼·판정 단축키(1·2·3)·저장 동작은 누르지 않는다.**
+     화면을 여는 것만으로도 작업 기록(`activity.primary_retest.jsonl`)이 생길 수 있으므로, 점검은 가능하면 API 조회(`GET .../queue?adjudicator=primary_retest`)로
+     하고 브라우저로 열었다면 그 사실과 시각을 적는다.
+  5. 실제 저장 동작 검사가 필요하면 **별도 점검용 평가 ID**(같은 입력의 복사본)로 한다. 본 재판정 파일에 시험 판정을 넣었다 지우지 않는다.
+  6. **해시 ②(점검 후):** 3과 같은 파일을 다시 잰다. 본 판정 두 파일이 같아야 하고, `adjudications.primary_retest.json`이 생기지 않았어야 한다
+     (생겼으면 판정을 시작하지 말고 원인을 적는다).
+  7. 사용자 재판정(143건).
+  8. **해시 ③(재판정 뒤):** 본 판정 두 파일이 ①과 같은지 확인한다. 그다음 Claude가 일치율·κ·p_pos·p_neg를 낸다.
 - 재판정은 1차 분석에 쓰지 않는다. 두 번째 사람 판정자는 없다(판정자 간 일치도 보고 없음).
 
 ## 7. 판정이 끝난 뒤 (Claude에게 맡길 일)
