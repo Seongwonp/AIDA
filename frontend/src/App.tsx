@@ -5,6 +5,7 @@ import { ConditionsTable } from "./components/ConditionsTable";
 import { DatasetUpload } from "./components/DatasetUpload";
 import { ErrorReportTable } from "./components/ErrorReportTable";
 import { BlindAdjudication } from "./components/BlindAdjudication";
+import { PRIMARY_ADJUDICATOR, isAdjudicatorId } from "./adjudicator";
 import { Guide } from "./components/Guide";
 import { Landing } from "./components/Landing";
 import { MethodCard } from "./components/MethodCard";
@@ -93,7 +94,11 @@ function App() {
     const raw = new URLSearchParams(window.location.search).get("evaluate");
     if (!raw) return null;
     const [datasetId, evaluationId] = raw.split(":");
-    return datasetId && evaluationId ? { datasetId, evaluationId } : null;
+    // 판정자 (D8-3 재판정은 `&adjudicator=primary_retest`, 사전 등록 개정 6). 없으면 주 판정자.
+    // 형식이 틀리면 열지 않는다 — 잘못 친 이름으로 엉뚱한 파일에 저장하지 않게(서버와 같은 규칙).
+    const who = new URLSearchParams(window.location.search).get("adjudicator") ?? PRIMARY_ADJUDICATOR;
+    if (!isAdjudicatorId(who)) return null;
+    return datasetId && evaluationId ? { datasetId, evaluationId, adjudicator: who } : null;
   }, []);
 
   // 가림 판정은 **평가 도구이지 제품 화면이 아니다.** 탭으로 올리면 고객이
@@ -105,7 +110,8 @@ function App() {
     return (
       <div className="app">
         <BlindAdjudication datasetId={evaluating.datasetId}
-                           evaluationId={evaluating.evaluationId} />
+                           evaluationId={evaluating.evaluationId}
+                           adjudicator={evaluating.adjudicator} />
       </div>
     );
   }

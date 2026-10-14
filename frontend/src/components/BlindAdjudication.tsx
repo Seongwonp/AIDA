@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { getBlindQueue, postActivity, putAdjudications } from "../api";
+import { PRIMARY_ADJUDICATOR, adjudicatorQuery } from "../adjudicator";
 import { makeActivityLogger, queueKey } from "./activityLog";
 import { API_BASE_URL } from "../api";
 import { AdjudicationView } from "./AdjudicationView";
@@ -81,9 +82,16 @@ const KEY_VERDICT: Record<string, EvalVerdict | undefined> = Object.fromEntries(
 export function BlindAdjudication({
   datasetId,
   evaluationId,
+  adjudicator = PRIMARY_ADJUDICATOR,
 }: {
   datasetId: string;
   evaluationId: string;
+  /**
+   * 판정자. 기본은 주 판정자(예전과 같은 요청·저장). 보조 판정자(D8-3 재판정 `primary_retest` 등)면
+   * 서버가 보조 표본만, 주 판정 순서에서 추린 순서로 보내고 판정·작업 기록을 따로 저장한다(사전 등록 개정 6).
+   * 화면은 그 판정자 자신의 판정만 받는다 — 주 판정 값은 불러오지 않는다.
+   */
+  adjudicator?: string;
 }) {
   const [candidates, setCandidates] = useState<BlindCandidate[]>([]);
   const [judgements, setJudgements] = useState<Judgements>({});
@@ -132,12 +140,14 @@ export function BlindAdjudication({
   const log = useMemo(
     () =>
       makeActivityLogger(
-        (events) => postActivity(datasetId, evaluationId, hashRef.current, events),
+        (events) => postActivity(datasetId, evaluationId, hashRef.current, events, adjudicator),
         // **평가마다 따로 둔다.** 한 키에 모으면 다른 평가의 이벤트가 섞여
-        // 묶음 해시가 안 맞아 통째로 거부당한다.
-        { storageKey: queueKey(datasetId, evaluationId) },
+        // 묶음 해시가 안 맞아 통째로 거부당한다. 판정자도 가른다 — 재판정 기록이
+        // 주 판정 기록 파일로 보내지면 안 된다. 주 판정자의 키는 예전 그대로.
+        { storageKey: queueKey(datasetId, evaluationId)
+            + (adjudicator === PRIMARY_ADJUDICATOR ? "" : `.${adjudicator}`) },
       ),
-    [datasetId, evaluationId],
+    [datasetId, evaluationId, adjudicator],
   );
 
   useEffect(() => {
@@ -168,7 +178,7 @@ export function BlindAdjudication({
     // 목록을 기다린 시간은 **사람이 판정한 시간이 아니다.** 그 구간을 가려낼
     // 수 있게 조회의 시작과 끝을 남긴다.
     log.record("queue_load_started");
-    getBlindQueue(datasetId, evaluationId)
+    getBlindQueue(datasetId, evaluationId, adjudicator)
       .then((data) => {
         if (cancelled) return;
         log.record("queue_load_succeeded");
@@ -204,7 +214,7 @@ export function BlindAdjudication({
     return () => {
       cancelled = true;
     };
-  }, [datasetId, evaluationId, log]);
+  }, [datasetId, evaluationId, adjudicator, log]);
 
   useEffect(() => {
     // **여기서 새 세션을 시작하지 않는다.** 세션은 logger를 만들 때 하나
@@ -238,7 +248,7 @@ export function BlindAdjudication({
     const onPageHide = () => {
       log.record("session_ended");
       log.flushOnExit(
-        `${API_BASE_URL}/api/datasets/${datasetId}/evaluations/${evaluationId}/activity`,
+        `${API_BASE_URL}/api/datasets/${datasetId}/evaluations/${evaluationId}/activity${adjudicatorQuery(adjudicator)}`,
         (events) => ({ candidate_set_hash: hashRef.current, events }),
       );
     };
@@ -253,7 +263,7 @@ export function BlindAdjudication({
       log.record("session_ended");
       void log.flush();
     };
-  }, [log, datasetId, evaluationId]);
+  }, [log, datasetId, evaluationId, adjudicator]);
 
   useEffect(() => {
     // **실제로 띄운 후보만** 기록한다. 완료 화면에서는 아무것도 안 띄우므로
@@ -271,7 +281,7 @@ export function BlindAdjudication({
     () =>
       makeAdjudicationSender(async (rows: ReturnType<typeof toRequest>) => {
         try {
-          await putAdjudications(datasetId, evaluationId, hash, rows);
+          await putAdjudications(datasetId, evaluationId, hash, rows, adjudicator);
         } catch (e) {
           // 409는 후보 목록이 바뀐 것이다. 재시도로 풀리지 않으니 구분해 알린다.
           const status = (e as { response?: { status?: number } })?.response?.status;
@@ -279,7 +289,7 @@ export function BlindAdjudication({
           throw e;
         }
       }),
-    [datasetId, evaluationId, hash],
+    [datasetId, evaluationId, hash, adjudicator],
   );
 
   const blocked = blockedIds(candidates, judgements);

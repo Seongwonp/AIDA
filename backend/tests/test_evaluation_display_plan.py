@@ -266,3 +266,87 @@ def test_계획이_있어도_판정_저장과_보조_판정자_목록은_그대�
     assert {c["canonical_candidate_id"] for c in aux["candidates"]} == \
         set(snap["auxiliary_sample"]["candidate_ids"])
     assert all(set(item) == OLD_FIELDS for item in aux["candidates"])
+
+
+# ── 재판정(D8-3) 목록·기록 — 사전 등록 개정 6 ───────────────────────────────────
+
+def _retest_ids(client, evaluation_id):
+    q = client.get(f"/api/datasets/{DATASET}/evaluations/{evaluation_id}/queue?adjudicator=primary_retest").json()
+    return [c["canonical_candidate_id"] for c in q["candidates"]], q
+
+
+@pytest.mark.parametrize("plan", [PLAN, None])
+def test_재판정_순서는_주_판정_화면_순서에서_표본만_추린_것이다(client, plan):
+    body = {"display_plan": plan} if plan else {}
+    snap = start(client, "rt", **body)
+    sample = set(snap["auxiliary_sample"]["candidate_ids"])
+    primary = client.get(f"/api/datasets/{DATASET}/evaluations/rt/queue").json()
+    expected = [c["canonical_candidate_id"] for c in primary["candidates"]
+                if c["canonical_candidate_id"] in sample]
+    got, q = _retest_ids(client, "rt")
+    # 개수·집합이 아니라 **순서 전체**가 같아야 한다. 추린 뒤 다시 섞지 않는다.
+    assert got == expected
+    assert len(got) == len(sample)
+    assert "bundles" not in q
+
+
+def test_예전_재섞기와_다르다는_것을_이_입력에서_확인한다(client):
+    """위 검사가 실제로 차이를 잡는지 — 이 입력에서 예전 방식(표본만 추려 같은 씨앗으로 다시 섞기)의 순서는 다르다."""
+    snap = start(client, "rt", display_plan=PLAN)
+    sample = set(snap["auxiliary_sample"]["candidate_ids"])
+    old = [c.canonical_candidate_id for c in E.load_snapshot(DATASET, "rt").candidates
+           if c.canonical_candidate_id in sample]
+    random.Random(snap["shuffle_seed"]).shuffle(old)
+    got, _ = _retest_ids(client, "rt")
+    assert set(old) == set(got)
+    assert old != got
+
+
+def test_재판정_목록에는_주_판정_값이_보이지_않고_저장도_따로다(client, tmp_path):
+    snap = start(client, "rt", display_plan=PLAN)
+    sample = snap["auxiliary_sample"]["candidate_ids"]
+    target = sample[0]
+    put = lambda who, verdict: client.put(
+        f"/api/datasets/{DATASET}/evaluations/rt/adjudications?adjudicator={who}",
+        json={"candidate_set_hash": snap["candidate_set_hash"],
+              "adjudications": [{"canonical_candidate_id": target, "verdict": verdict}]})
+    assert put("primary", "hold").status_code == 200
+    _, q = _retest_ids(client, "rt")
+    assert all(c["verdict"] is None for c in q["candidates"])       # 첫 판정 비노출
+    assert put("primary_retest", "miss").status_code == 200
+    folder = tmp_path / "uploads" / DATASET / "evaluations" / "rt"
+    primary_file = json.loads((folder / "adjudications.json").read_text(encoding="utf-8"))
+    retest_file = json.loads((folder / "adjudications.primary_retest.json").read_text(encoding="utf-8"))
+    assert [a["verdict"] for a in primary_file["adjudications"]] == ["hold"]   # 덮어쓰지 않음
+    assert [a["verdict"] for a in retest_file["adjudications"]] == ["miss"]
+    # 보조 표본 밖 후보는 재판정으로 저장되지 않는다.
+    outside = next(c["canonical_candidate_id"] for c in
+                   client.get(f"/api/datasets/{DATASET}/evaluations/rt/queue").json()["candidates"]
+                   if c["canonical_candidate_id"] not in set(sample))
+    r = client.put(f"/api/datasets/{DATASET}/evaluations/rt/adjudications?adjudicator=primary_retest",
+                   json={"candidate_set_hash": snap["candidate_set_hash"],
+                         "adjudications": [{"canonical_candidate_id": outside, "verdict": "miss"}]})
+    assert r.status_code >= 400
+
+
+def test_재판정_작업_기록은_따로_쌓이고_본_판정_기록에_섞이지_않는다(client, tmp_path):
+    snap = start(client, "rt", display_plan=PLAN)
+    event = {"session_id": "s1", "event": "session_started", "event_id": "e0", "sequence": 0,
+             "canonical_candidate_id": None, "at": "2026-10-20T00:00:00+00:00",
+             "elapsed_ms": 0, "meta": {}}
+    r = client.post(f"/api/datasets/{DATASET}/evaluations/rt/activity?adjudicator=primary_retest",
+                    json={"candidate_set_hash": snap["candidate_set_hash"], "events": [event]})
+    assert r.status_code == 200, r.text
+    folder = tmp_path / "uploads" / DATASET / "evaluations" / "rt"
+    assert (folder / "activity.primary_retest.jsonl").exists()
+    assert not (folder / "activity.jsonl").exists()
+    # 주 판정자 기록은 예전 이름 그대로.
+    r = client.post(f"/api/datasets/{DATASET}/evaluations/rt/activity",
+                    json={"candidate_set_hash": snap["candidate_set_hash"],
+                          "events": [{**event, "event_id": "p0"}]})
+    assert r.status_code == 200, r.text
+    lines = (folder / "activity.jsonl").read_text(encoding="utf-8").splitlines()
+    assert [json.loads(x)["event_id"] for x in lines] == ["p0"]
+    bad = client.post(f"/api/datasets/{DATASET}/evaluations/rt/activity?adjudicator=Bad!",
+                      json={"candidate_set_hash": snap["candidate_set_hash"], "events": [event]})
+    assert bad.status_code == 400

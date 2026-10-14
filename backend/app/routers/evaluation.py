@@ -50,6 +50,14 @@ def adjudications_file(adjudicator: str) -> str:
             else f"adjudications.{adjudicator}.json")
 # 작업 기록. **판정 결과와 섞지 않는다** — 수명도 쓰임도 다르다.
 ACTIVITY_FILE = "activity.jsonl"
+
+
+def activity_file(adjudicator: str) -> str:
+    """판정자별 작업 기록 파일. 주 판정자는 예전 이름 그대로 — 본 판정 시간 집계가 이 이름만 읽는다.
+    보조 판정자(D8-3 재판정 등)는 따로 쌓아 본 판정 기록에 섞지 않는다(사전 등록 개정 6)."""
+    require_adjudicator(adjudicator)
+    return (ACTIVITY_FILE if adjudicator == PRIMARY_ADJUDICATOR
+            else f"activity.{adjudicator}.jsonl")
 EVENT_SCHEMA_VERSION = 1
 # 한 번에 받는 이벤트 수. 화면이 폭주해도 파일이 무한정 커지지 않게.
 MAX_EVENTS_PER_REQUEST = 500
@@ -976,7 +984,7 @@ def blind_queue(snapshot: EvaluationSnapshot,
         sample = auxiliary_ids(snapshot)
         if sample is None:
             raise HTTPException(409, "이 묶음에는 보조 판정 표본이 없습니다.")
-        allowed = sample if allowed is None else (allowed & sample)
+        return _auxiliary_queue(snapshot, saved, sample)
     # 묶음 표시 계획은 주 판정자 화면에만 쓴다. 보조 판정자(보조 표본만 보는 목록)는 묶음 없이 예전처럼.
     plan = snapshot.display_plan if adjudicator == PRIMARY_ADJUDICATOR else None
     bundle_of = _bundle_index(plan) if plan else {}
@@ -1013,6 +1021,48 @@ def _shuffled_ids(snapshot: EvaluationSnapshot, allowed: set[str] | None) -> lis
            if allowed is None or c.canonical_candidate_id in allowed]
     random.Random(snapshot.shuffle_seed).shuffle(ids)
     return ids
+
+
+def primary_display_order(snapshot: EvaluationSnapshot) -> list[str]:
+    """주 판정자 화면이 실제로 보인 후보 순서 — 섞인 순서에 표시 계획(있으면)의 묶음 순서를 적용한 것.
+
+    계획이 있으면 계획의 후보 id 순서가 곧 화면 순서다(`_apply_display_plan`과 같다). 계획과 판정
+    목록이 다르면 멈춘다.
+    """
+    shuffled = _shuffled_ids(snapshot, judge_ids(snapshot))
+    plan = snapshot.display_plan
+    if not plan:
+        return shuffled
+    planned = [cid for b in plan["bundles"] for cid in b["candidate_ids"]]
+    if len(planned) != len(set(planned)) or set(planned) != set(shuffled):
+        raise HTTPException(500, "묶음 표시 계획이 판정 목록과 맞지 않습니다. 묶음 파일을 확인하세요.")
+    return planned
+
+
+def _auxiliary_queue(snapshot: EvaluationSnapshot, saved: EvaluationAdjudications,
+                     sample: set[str]) -> BlindQueue:
+    """보조 판정자(D8-3 재판정 등)의 가림 목록 — 사전 등록 개정 6.
+
+    **순서는 주 판정 화면이 보인 순서에서 보조 표본만 추린 것이고, 추린 뒤 다시 섞지 않는다.**
+    (예전에는 표본만 추린 뒤 같은 씨앗으로 다시 섞어, 목록 길이가 달라 순서가 본 판정과 달랐다.)
+    묶음 없이 한 목록이다. 판정은 이 판정자의 파일(`saved`)에서만 붙인다 — 주 판정 값은 보이지 않는다.
+    """
+    by_candidate = {c.canonical_candidate_id: c for c in snapshot.candidates}
+    by_verdict = {a.canonical_candidate_id: a for a in saved.adjudications}
+    items = []
+    for cid in primary_display_order(snapshot):
+        if cid not in sample:
+            continue
+        c = by_candidate[cid]
+        a = by_verdict.get(cid)
+        items.append(BlindCandidate(
+            canonical_candidate_id=cid, image=c.image, label_index=c.label_index, box=c.box,
+            class_name=c.class_name,
+            verdict=a.verdict if a else None,
+            unique_error_id=a.unique_error_id if a else None))
+    return BlindQueue(evaluation_id=snapshot.evaluation_id, dataset_id=snapshot.dataset_id,
+                      candidate_set_hash=snapshot.candidate_set_hash,
+                      candidates=items, damaged=saved.damaged)
 
 
 def _bundle_index(plan: dict) -> dict[str, int]:
@@ -1824,7 +1874,8 @@ def _stored_event_ids(path: Path) -> set[str]:
 
 @router.post("/{dataset_id}/evaluations/{evaluation_id}/activity")
 def append_activity(dataset_id: str, evaluation_id: str,
-                    body: ActivityEvents) -> dict:
+                    body: ActivityEvents,
+                    adjudicator: str = PRIMARY_ADJUDICATOR) -> dict:
     """작업 기록을 **이어붙인다.**
 
     덮어쓰지 않는다 — 기록은 지난 일이라 나중 것이 앞의 것을 무효로 만들지
@@ -1839,6 +1890,7 @@ def append_activity(dataset_id: str, evaluation_id: str,
 
     묶음이 다르면 받지 않는다 — 다른 후보 목록에서 잰 시간이다.
     """
+    require_adjudicator(adjudicator)
     snapshot = load_snapshot(dataset_id, evaluation_id)
     if body.candidate_set_hash != snapshot.candidate_set_hash:
         raise HTTPException(
@@ -1856,7 +1908,7 @@ def append_activity(dataset_id: str, evaluation_id: str,
     # **먼저 전부 검사한다.** 쓰다가 멈추면 기록에 구멍이 남는다.
     validate_events(body.events, snapshot)
 
-    path = eval_dir(dataset_id, evaluation_id) / ACTIVITY_FILE
+    path = eval_dir(dataset_id, evaluation_id) / activity_file(adjudicator)
     already = _stored_event_ids(path)
     lines = []
     deduplicated = 0

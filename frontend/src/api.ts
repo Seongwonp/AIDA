@@ -14,6 +14,7 @@ import type {
   UploadedDatasetInfo,
 } from "./types";
 import { RANKING_V1 } from "./ranking";
+import { PRIMARY_ADJUDICATOR, adjudicatorQuery } from "./adjudicator";
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
@@ -183,9 +184,11 @@ export const startEvaluation = (
     })
     .then((res) => res.data);
 
-export const getBlindQueue = (datasetId: string, evaluationId: string) =>
+export const getBlindQueue = (datasetId: string, evaluationId: string,
+                              adjudicator: string = PRIMARY_ADJUDICATOR) =>
   client
-    .get<BlindQueueResponse>(`/api/datasets/${datasetId}/evaluations/${evaluationId}/queue`)
+    .get<BlindQueueResponse>(
+      `/api/datasets/${datasetId}/evaluations/${evaluationId}/queue${adjudicatorQuery(adjudicator)}`)
     .then((res) => res.data);
 
 // `candidateSetHash`를 함께 보낸다. 안 맞으면 서버가 저장하지 않는다 — 다른
@@ -195,9 +198,10 @@ export const putAdjudications = (
   evaluationId: string,
   candidateSetHash: string,
   adjudications: AdjudicationRow[],
+  adjudicator: string = PRIMARY_ADJUDICATOR,
 ) =>
   client
-    .put(`/api/datasets/${datasetId}/evaluations/${evaluationId}/adjudications`, {
+    .put(`/api/datasets/${datasetId}/evaluations/${evaluationId}/adjudications${adjudicatorQuery(adjudicator)}`, {
       candidate_set_hash: candidateSetHash,
       adjudications,
     })
@@ -215,9 +219,10 @@ export const postActivity = (
   evaluationId: string,
   candidateSetHash: string,
   events: unknown[],
+  adjudicator: string = PRIMARY_ADJUDICATOR,
 ) =>
   client
-    .post(`/api/datasets/${datasetId}/evaluations/${evaluationId}/activity`, {
+    .post(`/api/datasets/${datasetId}/evaluations/${evaluationId}/activity${adjudicatorQuery(adjudicator)}`, {
       candidate_set_hash: candidateSetHash,
       events,
     })
