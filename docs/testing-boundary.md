@@ -98,7 +98,7 @@ GPU 수치를 CI에서 못 재는 대신, **그 수치를 만든 규칙이 조�
   검사하지만(jsdom + Testing Library) `DatasetUpload`·`RulerCard`·`MethodCard`는
   아직 순수 함수와 눈으로 본 것뿐이다.
 
-> **시간 파일럿의 현재 상태**: [HANDOFF_2026-09-12.md](./archive/HANDOFF_2026-09-12.md).
+> **시간 파일럿의 현재 상태**: [sustained-pilot-protocol.md](sustained-pilot-protocol.md)·[capacity-vs-sample-size.md](capacity-vs-sample-size.md) (당시 인계는 비공개 기록).
 > **다음 작업(지속 판정)의 규약**:
 > [sustained-pilot-protocol.md](sustained-pilot-protocol.md) — 성공 기준과
 > 분석법을 데이터 만들기 전에 고정했다.
@@ -393,4 +393,4 @@ timing1에서 또 하나 잡혔다. **온전한 세션 수만 세느라** 열고
 
 ## 2026-09-27 노트북 인수인계 보강
 
-실험 전체 548개 통과(Python 3.12 격리 venv). 원래 상위 N의 미판정 거부, 전체 장면+크롭 파일과 크롭 밖 다른 라벨 보존, 기존 판정·점수 입력 거부를 합성 자료로 확인했다. backend/frontend 전체 검사·실제 장면·AI 호출·추론은 이번 작업에서 실행하지 않았다. 최초 번들 환경의 권한/하위 프로세스 의존성 실패는 격리 환경에서 재실행하여 해소했다. [인수인계](desktop-handoff-2026-09-27.md).
+실험 전체 548개 통과(Python 3.12 격리 venv). 원래 상위 N의 미판정 거부, 전체 장면+크롭 파일과 크롭 밖 다른 라벨 보존, 기존 판정·점수 입력 거부를 합성 자료로 확인했다. backend/frontend 전체 검사·실제 장면·AI 호출·추론은 이번 작업에서 실행하지 않았다. 최초 번들 환경의 권한/하위 프로세스 의존성 실패는 격리 환경에서 재실행하여 해소했다. 실행 절차는 [development.md](development.md).

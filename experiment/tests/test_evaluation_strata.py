@@ -1,4 +1,4 @@
-"""층별(상자 높이) 기술통계 (docs/archive/advice-w5-2026-09-16.md).
+"""층별(상자 높이) 기술통계 (docs/qa-preregistration-proposal-2026-09-27.md D7 층별 보고).
 
 **손계산 세계** — 이미지 하나, 후보 넷.
 

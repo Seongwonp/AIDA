@@ -20,9 +20,7 @@
 | [prelim1-results.md](./prelim1-results.md) · [prelim1-failure-analysis.md](./prelim1-failure-analysis.md) · [prelim1-decision.md](./prelim1-decision.md) | **예비 비교 결과와 감사.** 현재 제품 순위가 단순 IoU 순서보다 나빴다(N=90, 4 대 14). 사후 분석은 가설일 뿐 |
 | [adr-ranking-separation.md](./adr-ranking-separation.md) | **결정 (2026-09-14).** 데이터셋 진단과 후보 재검수 순위를 분리 — v1 보존, v2는 검증 안 된 시험 버전 |
 | [next-evaluation-proposal.md](./next-evaluation-proposal.md) | **다음 평가 제안 (실행 안 함).** v1 대 v2, 후보 생성, 전체 라벨 IoU 비교와 데이터셋 후보·법적 위험 |
-| [HANDOFF_2026-09-16.md](./archive/HANDOFF_2026-09-16.md) | **최신 인계 기록.** Q-A 결정, 모집단·비교 모드 구현, 경로 드라이런, 노트북에서 되는 것 |
-| [HANDOFF_2026-09-14.md](./archive/HANDOFF_2026-09-14.md) | 그 전 인계. prelim1 감사, 순위 분리, 목적 A와 라이선스 차단점 |
-| [HANDOFF_2026-09-13.md](./archive/HANDOFF_2026-09-13.md) | 그 전 인계. 12절이 노트북 작업(평가 순서·모집단 수정) |
+| [development.md](./development.md) | **개발 환경·실행·검증 명령.** 날짜별 인계 기록은 비공개이며 그 결정은 ADR·사전 등록·실행 기록에 반영돼 있다 |
 | [evaluation-adjudication-design.md](./evaluation-adjudication-design.md) | **가림 판정의 생산 경로.** 묶음 고정, 후보 이름, AIDA 순서=제품 순위, 상위 N 합집합 판정, 판정자 간 불일치(미설계) |
 | [24-development-plan.md](./24-development-plan.md) | 기존 장기 계획과 A·B·C 산출물 기록. 후속 검증과 우선순위는 25번을 따른다 |
 | [23-plan.md](./archive/23-plan.md) | 이전 연구 계획. 실험 배경과 미완료 과제의 기록 |
@@ -51,7 +49,6 @@
 | [power-sensitivity-2026-09-13.md](./power-sensitivity-2026-09-13.md) | 탐색 격자 전체 표 (전부 `official=False`) |
 | [pilot-evaluation-plan.md](./pilot-evaluation-plan.md) | 계측 계약, N·Δ 결정 절차 |
 | [manual-timing-pilot.md](./manual-timing-pilot.md) · [timing4-realistic-protocol.md](./timing4-realistic-protocol.md) · [sustained-pilot-protocol.md](./sustained-pilot-protocol.md) | 시간 파일럿 규약과 결과 (timing1~5, `s_plan`) |
-| [HANDOFF_2026-09-12.md](./archive/HANDOFF_2026-09-12.md) · [HANDOFF_2026-09-10.md](./archive/HANDOFF_2026-09-10.md) | 그 시점 인계 기록. 파일럿 원본 SHA-256은 09-12에 있다 |
 
 ## 배경과 원리 (대체로 유효)
 
@@ -88,7 +85,6 @@
 | [17-professor-feedback-response.md](./archive/17-professor-feedback-response.md) | 교수님 피드백 답변 + 통합 결과 보고서 |
 | [18-presentation-material-guide.md](./archive/18-presentation-material-guide.md) | 발표자료 제작 가이드 |
 | [19-report-sections-6-12-draft.md](./archive/19-report-sections-6-12-draft.md) | 보고서 6~12장 초안 |
-| [20-local-claude-handoff.md](./archive/20-local-claude-handoff.md) | 과거 OBB 작업 인수인계. 현재 지시는 루트 CLAUDE.md 참고 |
 
 ## 문서 관리 기준
 

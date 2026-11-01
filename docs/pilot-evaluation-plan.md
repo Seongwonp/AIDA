@@ -8,7 +8,7 @@
 >
 > 작성 2026-09-09.
 >
-> **현재 상태와 다음 작업**: [HANDOFF_2026-09-12.md](./archive/HANDOFF_2026-09-12.md).
+> **현재 상태와 다음 작업**: [25-advancement-roadmap.md](25-advancement-roadmap.md)·[qa-run-record.md](qa-run-record.md) (당시 인계는 비공개 기록).
 > `D`·`T`·`N`·`Δ`는 **전부 미정**이고, 계획값 `s_plan`도 아직 채택하지
 > 않았다 — 지속 판정 자료가 없다. 그 자료를 얻는 규약은
 > [sustained-pilot-protocol.md](sustained-pilot-protocol.md)에 **판정 전에**

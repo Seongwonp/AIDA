@@ -48,4 +48,4 @@ python experiment/render_adjudication_images.py --queue practice_ai_queue.json -
 - 판정 상한 C(건)를 정해 실행 계획에 적는다.
 - **그 뒤에** 사전 등록 확정본 커밋 → val 표집. 연습 묶음·판정은 분석에 쓰지 않고 실행 기록에만 남긴다.
 
-상세 환경 경계와 인수인계는 [데스크탑 실행 절차](desktop-handoff-2026-09-27.md)를 따른다.
+환경 준비·실행·검증 명령은 [development.md](development.md)를 따른다.
