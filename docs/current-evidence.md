@@ -38,9 +38,19 @@
 **순위 v2가 말하지 않는 것** ([adr-ranking-separation.md](adr-ranking-separation.md)).
 
 - v2의 기존 라벨 순서는 IoU 불일치(`1 − label_iou`)다. **그것은 제품 부품으로 쓰는 것이지 AIDA가
-  기준선을 이겼다는 근거가 아니다.** v2는 평가되지 않은 시험 버전이다.
-- 제품 전체의 가치는 AIDA 후보 안의 재정렬이 아니라 **후보 생성과 검수 흐름까지 포함한 새 평가**가
-  있어야 말할 수 있다 — [next-evaluation-proposal.md](next-evaluation-proposal.md).
+  기준선을 이겼다는 근거가 아니다.**
+- v2는 아래 0-1절의 Q-A에서 평가했다. 그 비교는 후보 안의 순서가 아니라 **후보 생성**을 잰 것이다.
+
+## 0-1. 후보 생성 포함 비교 — Q-A (2026-10-13 추가)
+
+| | |
+|---|---|
+| **주장** | nuImages val 300장에서 AIDA v2(후보 생성 + `1 − label_iou` 순서)는 전체 라벨 IoU·ObjectLab 적응 기준선과 **구별되지 않았다** — N=90 고유 오류 8 · 7 · 6, 1차 지표(IoU − AIDA) −1, 95% 구간 [−8, 7] |
+| **상태** | 사전 등록(`802a240b`) 비교, 개발자 1인 판정 474건(hit 88 · miss 366 · hold 20). 이 300장은 소비된 데이터다 |
+| **근거 파일** | `experiment/planning_evidence/qa1b_results_2026-10-13.json` |
+| **조건** | Car, 원본 높이 30px 이상 기존 라벨, 자 `car_v1_e100`(nuImages train으로 학습), 기록 32개 묶음 짝지은 부트스트랩(씨앗 42·2000회), 고정 재표본 상위 N 전량 판정 |
+| **한계** | 판정자 1인, 판정자 간 일치도 없음. 구간이 0을 포함하지만 "차이 없음"으로 단정하지 않는다. 구간 포함률은 검증하지 않았다. 재판정(판정자 내 일관성) 143건은 아직 안 했다 |
+| **문서** | [qa-results-2026-10-13.md](qa-results-2026-10-13.md) · [qa-preregistration.md](qa-preregistration.md) |
 
 ---
 
